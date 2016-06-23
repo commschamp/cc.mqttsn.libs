@@ -187,6 +187,7 @@ private:
             requiredRemainingSize = static_cast<std::size_t>(longLengthField.field().value());
         } while (false);
 
+        GASSERT(field.length() == (shortLengthField.length() + longLengthField.length()));
         if (actualRemainingSize < requiredRemainingSize) {
             if (missingSize != nullptr) {
                 *missingSize = requiredRemainingSize - actualRemainingSize;

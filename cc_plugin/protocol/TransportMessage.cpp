@@ -53,6 +53,7 @@ QVariantMap createMsgTypeProperties()
     return
         cc::property::field::ForField<mqttsn::field::MsgType<FieldBase> >()
             .name("MsgType")
+            .add("ADVERTISE", mqttsn::MsgTypeId_ADVERTISE)
             .add("SEARCHGW", mqttsn::MsgTypeId_SEARCHGW)
             .add("GWINFO", mqttsn::MsgTypeId_GWINFO)
             .add("CONNECT", mqttsn::MsgTypeId_CONNECT)
@@ -88,19 +89,20 @@ QVariantMap createLengthProperties()
         cc::property::field::ForField<mqttsn::protocol::LengthField>()
             .add(
                 cc::property::field::ForField<mqttsn::protocol::ShortLengthField>()
-                    .name("Length1")
+                    .name("Length")
                     .displayOffset(1)
                     .asMap()
             )
             .add(
                 cc::property::field::ForField<mqttsn::protocol::LongLengthField>()
-                    .name("Length2")
+                    .name("Length (ext)")
                     .field(
                         cc::property::field::IntValue()
-                            .name("Length2")
+                            .name("Length (ext)")
                             .displayOffset(3)
                             .asMap()
                     )
+                    .uncheckable()
                     .asMap()
             )
             .serialisedHidden()
@@ -125,10 +127,69 @@ QVariantList createFieldsProperties()
 
 }  // namespace
 
+TransportMessage::TransportMessage()
+{
+    auto& allFields = fields();
+    auto& lengthField = std::get<FieldIdx_Length>(allFields);
+    auto& lengthSubFields = lengthField.value();
+    auto& lengthLongField = std::get<mqttsn::protocol::LengthFieldIdx_Long>(lengthSubFields);
+    lengthLongField.setMode(comms::field::OptionalMode::Missing);
+}
+
 const QVariantList& TransportMessage::fieldsPropertiesImpl() const
 {
     static const auto Props = createFieldsProperties();
     return Props;
+}
+
+comms::ErrorStatus TransportMessage::readImpl(ReadIterator& iter, std::size_t size)
+{
+    auto& allFields = fields();
+    auto& lengthField = std::get<FieldIdx_Length>(allFields);
+    auto& lengthSubFields = lengthField.value();
+    auto& lengthShortField = std::get<mqttsn::protocol::LengthFieldIdx_Short>(lengthSubFields);
+    auto& lengthLongField = std::get<mqttsn::protocol::LengthFieldIdx_Long>(lengthSubFields);
+
+    auto es = lengthShortField.read(iter, size);
+    if (es != comms::ErrorStatus::Success) {
+        return es;
+    }
+
+    if (0 < lengthShortField.value()) {
+        lengthLongField.setMode(comms::field::OptionalMode::Missing);
+    }
+    else {
+        lengthLongField.setMode(comms::field::OptionalMode::Exists);
+    }
+
+    es = lengthLongField.read(iter, size - lengthShortField.length());
+    if (es != comms::ErrorStatus::Success) {
+        return es;
+    }
+
+    std::size_t remainingSize = size - lengthField.length();
+    return readFieldsFrom<FieldIdx_Type>(iter, remainingSize);
+}
+
+bool TransportMessage::refreshImpl()
+{
+    auto& allFields = fields();
+    auto& lengthField = std::get<FieldIdx_Length>(allFields);
+    auto& lengthSubFields = lengthField.value();
+    auto& lengthShortField = std::get<mqttsn::protocol::LengthFieldIdx_Short>(lengthSubFields);
+    auto& lengthLongField = std::get<mqttsn::protocol::LengthFieldIdx_Long>(lengthSubFields);
+
+    auto expectedLongLengthMode = comms::field::OptionalMode::Missing;
+    if (lengthShortField.value() == 0) {
+        expectedLongLengthMode = comms::field::OptionalMode::Exists;
+    }
+
+    if (lengthLongField.getMode() == expectedLongLengthMode) {
+        return false;
+    }
+
+    lengthLongField.setMode(expectedLongLengthMode);
+    return true;
 }
 
 }  // namespace protocol
