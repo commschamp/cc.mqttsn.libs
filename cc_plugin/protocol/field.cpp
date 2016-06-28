@@ -22,6 +22,8 @@
 
 #include "mqttsn/field.h"
 
+namespace cc = comms_champion;
+
 namespace mqttsn
 {
 
@@ -44,26 +46,88 @@ typedef cc_plugin::protocol::Message::Field FieldBase;
 QVariantMap createProps_gwId()
 {
     typedef mqttsn::field::GwId<FieldBase> Field;
-    return comms_champion::property::field::ForField<Field>().name("GwId").asMap();
+    return cc::property::field::ForField<Field>().name("GwId").asMap();
 }
 
 QVariantMap createProps_duration()
 {
     typedef mqttsn::field::Duration<FieldBase> Field;
-    return comms_champion::property::field::ForField<Field>().name("Duration").asMap();
+    return cc::property::field::ForField<Field>().name("Duration").asMap();
 }
 
 QVariantMap createProps_radius()
 {
     typedef mqttsn::field::Radius<FieldBase> Field;
-    return comms_champion::property::field::ForField<Field>().name("Radius").asMap();
+    return cc::property::field::ForField<Field>().name("Radius").asMap();
 }
 
 QVariantMap createProps_gwAdd()
 {
     typedef mqttsn::field::GwAdd<FieldBase> Field;
-    return comms_champion::property::field::ForField<Field>().name("GwAdd").asMap();
+    return cc::property::field::ForField<Field>().name("GwAdd").asMap();
 }
+
+QVariantMap createProps_flags()
+{
+    typedef mqttsn::field::TopicIdType<FieldBase> TopicIdTypeField;
+    cc::property::field::ForField<TopicIdTypeField> topicIdProps;
+    topicIdProps
+        .name("TopicIdType")
+        .serialisedHidden()
+        .add("Normal")
+        .add("Pre-defined")
+        .add("Topic-name");
+    assert(topicIdProps.values().size() == (int)mqttsn::field::TopicIdTypeVal::NumOfValues);
+
+    typedef mqttsn::field::MidFlags<FieldBase> MidFlagsField;
+    cc::property::field::ForField<MidFlagsField> midFlagsProps;
+    midFlagsProps
+        .serialisedHidden()
+        .add("Clean Session")
+        .add("Will")
+        .add("Retain");
+    assert(midFlagsProps.bits().size() == mqttsn::field::MidFlagsBits_numOfValues);
+
+    typedef mqttsn::field::QoS<FieldBase> QoSField;
+    cc::property::field::ForField<QoSField> qosProps;
+    qosProps
+        .name("QoS")
+        .serialisedHidden()
+        .add("At most once delivery")
+        .add("At least once delivery")
+        .add("Exactly once delivery");
+    assert(qosProps.values().size() == (int)mqttsn::field::QosType::NumOfValues);
+
+    typedef mqttsn::field::DupFlags<FieldBase> DupFlagsField;
+    cc::property::field::ForField<DupFlagsField> dupFlagsProps;
+    dupFlagsProps
+        .serialisedHidden()
+        .add("DUP");
+    assert(dupFlagsProps.bits().size() == mqttsn::field::DupFlagsBits_numOfValues);
+
+    typedef mqttsn::field::Flags<FieldBase> FlagsField;
+    return
+        cc::property::field::ForField<FlagsField>()
+            .name("Flags")
+            .add(topicIdProps.asMap())
+            .add(midFlagsProps.asMap())
+            .add(qosProps.asMap())
+            .add(dupFlagsProps.asMap())
+            .asMap();
+}
+
+QVariantMap createProps_protocolId()
+{
+    typedef mqttsn::field::ProtocolId<FieldBase> Field;
+    return cc::property::field::ForField<Field>().name("ProtocolId").asMap();
+}
+
+QVariantMap createProps_clientId()
+{
+    typedef mqttsn::field::ClientId<FieldBase> Field;
+    return cc::property::field::ForField<Field>().name("ClientId").asMap();
+}
+
 
 }  // namespace field
 

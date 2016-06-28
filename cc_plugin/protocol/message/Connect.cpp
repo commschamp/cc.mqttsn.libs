@@ -15,14 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <type_traits>
+#include <functional>
+#include <cassert>
 
-#pragma once
+#include "cc_plugin/protocol/field.h"
+#include "Connect.h"
 
-#include "comms/CompileControl.h"
-
-CC_DISABLE_WARNINGS()
-#include <QtCore/QVariantMap>
-CC_ENABLE_WARNINGS()
+namespace cc = comms_champion;
 
 namespace mqttsn
 {
@@ -33,23 +33,43 @@ namespace cc_plugin
 namespace protocol
 {
 
-namespace field
+namespace message
 {
 
-QVariantMap createProps_gwId();
-QVariantMap createProps_duration();
-QVariantMap createProps_radius();
-QVariantMap createProps_gwAdd();
-QVariantMap createProps_flags();
-QVariantMap createProps_protocolId();
-QVariantMap createProps_clientId();
+namespace
+{
 
-}  // namespace field
+QVariantList createFieldsProperties()
+{
+    QVariantList props;
+    props.append(field::createProps_flags());
+    props.append(field::createProps_protocolId());
+    props.append(field::createProps_duration());
+    props.append(field::createProps_clientId());
+
+    assert(props.size() == Connect::FieldIdx_numOfValues);
+    return props;
+}
+
+}  // namespace
+
+const char* Connect::nameImpl() const
+{
+    static const char* Str = "CONNECT";
+    return Str;
+}
+
+const QVariantList& Connect::fieldsPropertiesImpl() const
+{
+    static const auto Props = createFieldsProperties();
+    return Props;
+}
+
+}  // namespace message
 
 }  // namespace protocol
 
 }  // namespace cc_plugin
 
 }  // namespace mqttsn
-
 

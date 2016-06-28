@@ -26,6 +26,7 @@ function (cc_plugin_mqttsn)
         message/Advertise.cpp
         message/Searchgw.cpp
         message/Gwinfo.cpp
+        message/Connect.cpp
     )
     
     set (hdr
