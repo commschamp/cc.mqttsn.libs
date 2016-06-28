@@ -53,7 +53,7 @@ QVariantList createFieldsProperties()
 
 const char* Willmsg::nameImpl() const
 {
-    static const char* Str = "WILLTOPIC";
+    static const char* Str = "WILLMSG";
     return Str;
 }
 

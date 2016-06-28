@@ -154,6 +154,24 @@ QVariantMap createProps_willMsg()
     return cc::property::field::ForField<Field>().name("WillMsg").asMap();
 }
 
+QVariantMap createProps_topidId()
+{
+    typedef mqttsn::field::TopicId<FieldBase> Field;
+    return cc::property::field::ForField<Field>().name("TopicId").asMap();
+}
+
+QVariantMap createProps_msgId()
+{
+    typedef mqttsn::field::MsgId<FieldBase> Field;
+    return cc::property::field::ForField<Field>().name("MsgId").asMap();
+}
+
+QVariantMap createProps_topicName()
+{
+    typedef mqttsn::field::TopicName<FieldBase> Field;
+    return cc::property::field::ForField<Field>().name("TopicName").asMap();
+}
+
 }  // namespace field
 
 }  // namespace protocol
