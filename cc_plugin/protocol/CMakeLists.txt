@@ -31,6 +31,7 @@ function (cc_plugin_mqttsn)
         message/Willtopicreq.cpp
         message/Willtopic.cpp
         message/Willmsgreq.cpp
+        message/Willmsg.cpp
     )
     
     set (hdr

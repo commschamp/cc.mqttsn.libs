@@ -148,6 +148,11 @@ QVariantMap createProps_willTopic()
     return cc::property::field::ForField<Field>().name("WillTopic").asMap();
 }
 
+QVariantMap createProps_willMsg()
+{
+    typedef mqttsn::field::WillMsg<FieldBase> Field;
+    return cc::property::field::ForField<Field>().name("WillMsg").asMap();
+}
 
 }  // namespace field
 

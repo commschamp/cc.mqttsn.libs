@@ -18,34 +18,37 @@
 
 #pragma once
 
-#include <tuple>
-
-#include "message/Advertise.h"
-#include "message/Searchgw.h"
-#include "message/Gwinfo.h"
-#include "message/Connect.h"
-#include "message/Connack.h"
-#include "message/Willtopicreq.h"
-#include "message/Willtopic.h"
-#include "message/Willmsgreq.h"
-#include "message/Willmsg.h"
+#include "comms_champion/comms_champion.h"
+#include "mqttsn/message/Willmsg.h"
+#include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
 {
 
-template <typename TMsgBase>
-using AllMessages =
-    std::tuple<
-        message::Advertise<TMsgBase>,
-        message::Searchgw<TMsgBase>,
-        message::Gwinfo<TMsgBase>,
-        message::Connect<TMsgBase>,
-        message::Connack<TMsgBase>,
-        message::Willtopicreq<TMsgBase>,
-        message::Willtopic<TMsgBase>,
-        message::Willmsgreq<TMsgBase>,
-        message::Willmsg<TMsgBase>
-    >;
+namespace cc_plugin
+{
+
+namespace protocol
+{
+
+namespace message
+{
+
+class Willmsg : public
+    comms_champion::ProtocolMessageBase<
+        mqttsn::message::Willmsg<mqttsn::cc_plugin::protocol::Message>,
+        Willmsg>
+{
+protected:
+    virtual const char* nameImpl() const override;
+    virtual const QVariantList& fieldsPropertiesImpl() const override;
+};
+
+}  // namespace message
+
+}  // namespace protocol
+
+}  // namespace cc_plugin
 
 }  // namespace mqttsn
 

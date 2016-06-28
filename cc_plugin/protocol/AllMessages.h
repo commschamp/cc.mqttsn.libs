@@ -30,6 +30,7 @@
 #include "cc_plugin/protocol/message/Willtopicreq.h"
 #include "cc_plugin/protocol/message/Willtopic.h"
 #include "cc_plugin/protocol/message/Willmsgreq.h"
+#include "cc_plugin/protocol/message/Willmsg.h"
 
 namespace mqttsn
 {
@@ -48,7 +49,8 @@ typedef std::tuple<
     cc_plugin::protocol::message::Connack,
     cc_plugin::protocol::message::Willtopicreq,
     cc_plugin::protocol::message::Willtopic,
-    cc_plugin::protocol::message::Willmsgreq
+    cc_plugin::protocol::message::Willmsgreq,
+    cc_plugin::protocol::message::Willmsg
 > AllMessages;
 
 }  // namespace protocol
