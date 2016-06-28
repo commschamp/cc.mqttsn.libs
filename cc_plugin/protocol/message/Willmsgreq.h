@@ -18,18 +18,9 @@
 
 #pragma once
 
-
-#include <tuple>
+#include "comms_champion/comms_champion.h"
+#include "mqttsn/message/Willmsgreq.h"
 #include "cc_plugin/protocol/Message.h"
-
-#include "cc_plugin/protocol/message/Advertise.h"
-#include "cc_plugin/protocol/message/Searchgw.h"
-#include "cc_plugin/protocol/message/Gwinfo.h"
-#include "cc_plugin/protocol/message/Connect.h"
-#include "cc_plugin/protocol/message/Connack.h"
-#include "cc_plugin/protocol/message/Willtopicreq.h"
-#include "cc_plugin/protocol/message/Willtopic.h"
-#include "cc_plugin/protocol/message/Willmsgreq.h"
 
 namespace mqttsn
 {
@@ -40,23 +31,25 @@ namespace cc_plugin
 namespace protocol
 {
 
-typedef std::tuple<
-    cc_plugin::protocol::message::Advertise,
-    cc_plugin::protocol::message::Searchgw,
-    cc_plugin::protocol::message::Gwinfo,
-    cc_plugin::protocol::message::Connect,
-    cc_plugin::protocol::message::Connack,
-    cc_plugin::protocol::message::Willtopicreq,
-    cc_plugin::protocol::message::Willtopic,
-    cc_plugin::protocol::message::Willmsgreq
-> AllMessages;
+namespace message
+{
+
+class Willmsgreq : public
+    comms_champion::ProtocolMessageBase<
+        mqttsn::message::Willmsgreq<mqttsn::cc_plugin::protocol::Message>,
+        Willmsgreq>
+{
+protected:
+    virtual const char* nameImpl() const override;
+    virtual const QVariantList& fieldsPropertiesImpl() const override;
+};
+
+}  // namespace message
 
 }  // namespace protocol
 
 }  // namespace cc_plugin
 
 }  // namespace mqttsn
-
-
 
 
