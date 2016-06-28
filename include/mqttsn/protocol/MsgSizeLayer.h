@@ -245,8 +245,8 @@ private:
                 break;
             }
 
-            typedef typename std::decay<decltype(shortLengthField)>::type LongField;
-            typedef typename LongField::ValueType LongFieldValueType;
+            typedef typename std::decay<decltype(longLengthField)>::type LongField;
+            typedef typename LongField::Field::ValueType LongFieldValueType;
             longLengthField.setMode(comms::field::OptionalMode::Exists);
             shortLengthField.value() = 0;
             longLengthField.field().value() = static_cast<LongFieldValueType>(writeLength);

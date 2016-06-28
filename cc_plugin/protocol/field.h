@@ -39,6 +39,7 @@ namespace field
 QVariantMap createProps_gwId();
 QVariantMap createProps_duration();
 QVariantMap createProps_radius();
+QVariantMap createProps_gwAdd();
 
 }  // namespace field
 

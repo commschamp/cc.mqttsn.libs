@@ -59,6 +59,12 @@ QVariantMap createProps_radius()
     return comms_champion::property::field::ForField<Field>().name("Radius").asMap();
 }
 
+QVariantMap createProps_gwAdd()
+{
+    typedef mqttsn::field::GwAdd<FieldBase> Field;
+    return comms_champion::property::field::ForField<Field>().name("GwAdd").asMap();
+}
+
 }  // namespace field
 
 }  // namespace protocol

@@ -18,22 +18,37 @@
 
 #pragma once
 
-#include <tuple>
-
-#include "message/Advertise.h"
-#include "message/Searchgw.h"
-#include "message/Gwinfo.h"
+#include "comms_champion/comms_champion.h"
+#include "mqttsn/message/Gwinfo.h"
+#include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
 {
 
-template <typename TMsgBase>
-using AllMessages =
-    std::tuple<
-        message::Advertise<TMsgBase>,
-        message::Searchgw<TMsgBase>,
-        message::Gwinfo<TMsgBase>
-    >;
+namespace cc_plugin
+{
+
+namespace protocol
+{
+
+namespace message
+{
+
+class Gwinfo : public
+    comms_champion::ProtocolMessageBase<
+        mqttsn::message::Gwinfo<mqttsn::cc_plugin::protocol::Message>,
+        Gwinfo>
+{
+protected:
+    virtual const char* nameImpl() const override;
+    virtual const QVariantList& fieldsPropertiesImpl() const override;
+};
+
+}  // namespace message
+
+}  // namespace protocol
+
+}  // namespace cc_plugin
 
 }  // namespace mqttsn
 

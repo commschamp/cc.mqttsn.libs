@@ -15,16 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <type_traits>
+#include <functional>
+#include <cassert>
 
-#pragma once
+#include "cc_plugin/protocol/field.h"
+#include "Gwinfo.h"
 
-
-#include <tuple>
-#include "cc_plugin/protocol/Message.h"
-
-#include "cc_plugin/protocol/message/Advertise.h"
-#include "cc_plugin/protocol/message/Searchgw.h"
-#include "cc_plugin/protocol/message/Gwinfo.h"
+namespace cc = comms_champion;
 
 namespace mqttsn
 {
@@ -35,18 +33,41 @@ namespace cc_plugin
 namespace protocol
 {
 
-typedef std::tuple<
-    cc_plugin::protocol::message::Advertise,
-    cc_plugin::protocol::message::Searchgw,
-    cc_plugin::protocol::message::Gwinfo
-> AllMessages;
+namespace message
+{
+
+namespace
+{
+
+QVariantList createFieldsProperties()
+{
+    QVariantList props;
+    props.append(field::createProps_gwId());
+    props.append(field::createProps_gwAdd());
+
+    assert(props.size() == Gwinfo::FieldIdx_numOfValues);
+    return props;
+}
+
+}  // namespace
+
+const char* Gwinfo::nameImpl() const
+{
+    static const char* Str = "GWINFO";
+    return Str;
+}
+
+const QVariantList& Gwinfo::fieldsPropertiesImpl() const
+{
+    static const auto Props = createFieldsProperties();
+    return Props;
+}
+
+}  // namespace message
 
 }  // namespace protocol
 
 }  // namespace cc_plugin
 
 }  // namespace mqttsn
-
-
-
 
