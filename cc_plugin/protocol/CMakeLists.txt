@@ -34,6 +34,7 @@ function (cc_plugin_mqttsn)
         message/Willmsg.cpp
         message/Register.cpp
         message/Regack.cpp
+        message/Publish.cpp
     )
     
     set (hdr

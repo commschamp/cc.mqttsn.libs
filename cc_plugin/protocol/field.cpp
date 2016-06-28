@@ -172,6 +172,12 @@ QVariantMap createProps_topicName()
     return cc::property::field::ForField<Field>().name("TopicName").asMap();
 }
 
+QVariantMap createProps_data()
+{
+    typedef mqttsn::field::Data<FieldBase> Field;
+    return cc::property::field::ForField<Field>().name("Data").asMap();
+}
+
 }  // namespace field
 
 }  // namespace protocol
