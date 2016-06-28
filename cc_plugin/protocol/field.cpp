@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <cassert>
 
 #include "field.h"
 
@@ -126,6 +127,19 @@ QVariantMap createProps_clientId()
 {
     typedef mqttsn::field::ClientId<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("ClientId").asMap();
+}
+
+QVariantMap createProps_returnCode()
+{
+    typedef mqttsn::field::ReturnCode<FieldBase> Field;
+    cc::property::field::ForField<Field> props;
+    props.name("ReturnCode")
+         .add("Accepted")
+         .add("Conjestion")
+         .add("Invalid Topic ID")
+         .add("Not Supported");
+    assert(props.values().size() == (int)mqttsn::field::ReturnCodeVal::NumOfValues);
+    return props.asMap();
 }
 
 

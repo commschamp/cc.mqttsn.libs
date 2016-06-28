@@ -18,11 +18,9 @@
 
 #pragma once
 
-#include "comms/CompileControl.h"
-
-CC_DISABLE_WARNINGS()
-#include <QtCore/QVariantMap>
-CC_ENABLE_WARNINGS()
+#include "comms_champion/comms_champion.h"
+#include "mqttsn/message/Connack.h"
+#include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
 {
@@ -33,19 +31,20 @@ namespace cc_plugin
 namespace protocol
 {
 
-namespace field
+namespace message
 {
 
-QVariantMap createProps_gwId();
-QVariantMap createProps_duration();
-QVariantMap createProps_radius();
-QVariantMap createProps_gwAdd();
-QVariantMap createProps_flags();
-QVariantMap createProps_protocolId();
-QVariantMap createProps_clientId();
-QVariantMap createProps_returnCode();
+class Connack : public
+    comms_champion::ProtocolMessageBase<
+        mqttsn::message::Connack<mqttsn::cc_plugin::protocol::Message>,
+        Connack>
+{
+protected:
+    virtual const char* nameImpl() const override;
+    virtual const QVariantList& fieldsPropertiesImpl() const override;
+};
 
-}  // namespace field
+}  // namespace message
 
 }  // namespace protocol
 

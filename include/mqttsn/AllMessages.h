@@ -24,6 +24,7 @@
 #include "message/Searchgw.h"
 #include "message/Gwinfo.h"
 #include "message/Connect.h"
+#include "message/Connack.h"
 
 namespace mqttsn
 {
@@ -34,7 +35,8 @@ using AllMessages =
         message::Advertise<TMsgBase>,
         message::Searchgw<TMsgBase>,
         message::Gwinfo<TMsgBase>,
-        message::Connect<TMsgBase>
+        message::Connect<TMsgBase>,
+        message::Connack<TMsgBase>
     >;
 
 }  // namespace mqttsn

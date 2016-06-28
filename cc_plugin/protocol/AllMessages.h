@@ -26,6 +26,7 @@
 #include "cc_plugin/protocol/message/Searchgw.h"
 #include "cc_plugin/protocol/message/Gwinfo.h"
 #include "cc_plugin/protocol/message/Connect.h"
+#include "cc_plugin/protocol/message/Connack.h"
 
 namespace mqttsn
 {
@@ -40,7 +41,8 @@ typedef std::tuple<
     cc_plugin::protocol::message::Advertise,
     cc_plugin::protocol::message::Searchgw,
     cc_plugin::protocol::message::Gwinfo,
-    cc_plugin::protocol::message::Connect
+    cc_plugin::protocol::message::Connect,
+    cc_plugin::protocol::message::Connack
 > AllMessages;
 
 }  // namespace protocol
