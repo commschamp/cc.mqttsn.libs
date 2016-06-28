@@ -32,6 +32,7 @@
 #include "cc_plugin/protocol/message/Willmsgreq.h"
 #include "cc_plugin/protocol/message/Willmsg.h"
 #include "cc_plugin/protocol/message/Register.h"
+#include "cc_plugin/protocol/message/Regack.h"
 
 namespace mqttsn
 {
@@ -52,7 +53,8 @@ typedef std::tuple<
     cc_plugin::protocol::message::Willtopic,
     cc_plugin::protocol::message::Willmsgreq,
     cc_plugin::protocol::message::Willmsg,
-    cc_plugin::protocol::message::Register
+    cc_plugin::protocol::message::Register,
+    cc_plugin::protocol::message::Regack
 > AllMessages;
 
 }  // namespace protocol

@@ -168,7 +168,7 @@ using TopicId =
     comms::field::IntValue<
         TFieldBase,
         std::uint16_t,
-        comms::option::ValidNumValueRange<1, 0xfffe>
+        comms::option::ValidNumValueRange<0, 0xfffe>
     >;
 
 template <typename TFieldBase, typename... TExtraOpt>

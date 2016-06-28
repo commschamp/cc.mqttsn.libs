@@ -30,6 +30,7 @@
 #include "message/Willmsgreq.h"
 #include "message/Willmsg.h"
 #include "message/Register.h"
+#include "message/Regack.h"
 
 namespace mqttsn
 {
@@ -46,7 +47,8 @@ using AllMessages =
         message::Willtopic<TMsgBase>,
         message::Willmsgreq<TMsgBase>,
         message::Willmsg<TMsgBase>,
-        message::Register<TMsgBase>
+        message::Register<TMsgBase>,
+        message::Regack<TMsgBase>
     >;
 
 }  // namespace mqttsn

@@ -33,6 +33,7 @@ function (cc_plugin_mqttsn)
         message/Willmsgreq.cpp
         message/Willmsg.cpp
         message/Register.cpp
+        message/Regack.cpp
     )
     
     set (hdr
