@@ -35,6 +35,7 @@
 #include "message/Puback.h"
 #include "message/Pubcomp.h"
 #include "message/Pubrec.h"
+#include "message/Pubrel.h"
 
 namespace mqttsn
 {
@@ -56,7 +57,8 @@ using AllMessages =
         message::Publish<TMsgBase>,
         message::Puback<TMsgBase>,
         message::Pubcomp<TMsgBase>,
-        message::Pubrec<TMsgBase>
+        message::Pubrec<TMsgBase>,
+        message::Pubrel<TMsgBase>
     >;
 
 }  // namespace mqttsn

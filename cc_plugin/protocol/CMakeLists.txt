@@ -38,6 +38,7 @@ function (cc_plugin_mqttsn)
         message/Puback.cpp
         message/Pubcomp.cpp
         message/Pubrec.cpp
+        message/Pubrel.cpp
     )
     
     set (hdr
