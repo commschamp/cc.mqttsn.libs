@@ -21,6 +21,7 @@
 #include <tuple>
 
 #include "message/Advertise.h"
+#include "message/Searchgw.h"
 
 namespace mqttsn
 {
@@ -28,7 +29,8 @@ namespace mqttsn
 template <typename TMsgBase>
 using AllMessages =
     std::tuple<
-        message::Advertise<TMsgBase>
+        message::Advertise<TMsgBase>,
+        message::Searchgw<TMsgBase>
     >;
 
 }  // namespace mqttsn

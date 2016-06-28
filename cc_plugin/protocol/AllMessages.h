@@ -23,6 +23,7 @@
 #include "cc_plugin/protocol/Message.h"
 
 #include "cc_plugin/protocol/message/Advertise.h"
+#include "cc_plugin/protocol/message/Searchgw.h"
 
 namespace mqttsn
 {
@@ -34,7 +35,8 @@ namespace protocol
 {
 
 typedef std::tuple<
-    cc_plugin::protocol::message::Advertise
+    cc_plugin::protocol::message::Advertise,
+    cc_plugin::protocol::message::Searchgw
 > AllMessages;
 
 }  // namespace protocol

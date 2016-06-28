@@ -53,6 +53,12 @@ QVariantMap createProps_duration()
     return comms_champion::property::field::ForField<Field>().name("Duration").asMap();
 }
 
+QVariantMap createProps_radius()
+{
+    typedef mqttsn::field::Radius<FieldBase> Field;
+    return comms_champion::property::field::ForField<Field>().name("Radius").asMap();
+}
+
 }  // namespace field
 
 }  // namespace protocol
