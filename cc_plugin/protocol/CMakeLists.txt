@@ -28,6 +28,7 @@ function (cc_plugin_mqttsn)
         message/Gwinfo.cpp
         message/Connect.cpp
         message/Connack.cpp
+        message/Willtopicreq.cpp
     )
     
     set (hdr

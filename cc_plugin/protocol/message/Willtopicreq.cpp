@@ -15,32 +15,44 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <type_traits>
+#include <functional>
+#include <cassert>
 
-#pragma once
+#include "cc_plugin/protocol/field.h"
+#include "Willtopicreq.h"
 
-#include <tuple>
-
-#include "message/Advertise.h"
-#include "message/Searchgw.h"
-#include "message/Gwinfo.h"
-#include "message/Connect.h"
-#include "message/Connack.h"
-#include "message/Willtopicreq.h"
+namespace cc = comms_champion;
 
 namespace mqttsn
 {
 
-template <typename TMsgBase>
-using AllMessages =
-    std::tuple<
-        message::Advertise<TMsgBase>,
-        message::Searchgw<TMsgBase>,
-        message::Gwinfo<TMsgBase>,
-        message::Connect<TMsgBase>,
-        message::Connack<TMsgBase>,
-        message::Willtopicreq<TMsgBase>
-    >;
+namespace cc_plugin
+{
+
+namespace protocol
+{
+
+namespace message
+{
+
+const char* Willtopicreq::nameImpl() const
+{
+    static const char* Str = "WILLTOPICREQ";
+    return Str;
+}
+
+const QVariantList& Willtopicreq::fieldsPropertiesImpl() const
+{
+    static const QVariantList Props;
+    return Props;
+}
+
+}  // namespace message
+
+}  // namespace protocol
+
+}  // namespace cc_plugin
 
 }  // namespace mqttsn
-
 
