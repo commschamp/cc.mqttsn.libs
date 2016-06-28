@@ -26,6 +26,36 @@ namespace mqttsn
 namespace protocol
 {
 
+namespace details
+{
+
+struct LengthFieldReader
+{
+    template <typename TField, typename TIter>
+    comms::ErrorStatus operator()(TField& field, TIter& iter, std::size_t len) const
+    {
+        auto& members = field.value();
+        auto& first = std::get<0>(members);
+        auto& second = std::get<1>(members);
+
+        auto es = first.read(iter, len);
+        if (es != comms::ErrorStatus::Success) {
+            return es;
+        }
+
+        if (first.value() != 0) {
+            second.setMode(comms::field::OptionalMode::Missing);
+        }
+        else {
+            second.setMode(comms::field::OptionalMode::Exists);
+        }
+
+        return second.read(iter, len - first.length());
+    }
+};
+
+}  // namespace details
+
 using ShortLengthField =
     comms::field::IntValue<
         comms::Field<comms::option::BigEndian>,
@@ -39,15 +69,18 @@ using LongLengthField =
             comms::Field<comms::option::BigEndian>,
             std::uint16_t,
             comms::option::NumValueSerOffset<sizeof(std::uint8_t) + sizeof(std::uint16_t)>
-        >
+        >,
+        comms::option::DefaultOptionalMode<comms::field::OptionalMode::Missing>
     >;
 
 using LengthField =
     comms::field::Bundle<
+        comms::Field<comms::option::BigEndian>,
         std::tuple<
             ShortLengthField,
             LongLengthField
-        >
+        >,
+        comms::option::CustomValueReader<details::LengthFieldReader>
     >;
 
 enum LengthFieldIdx
@@ -147,47 +180,26 @@ private:
             std::is_base_of<std::random_access_iterator_tag, IterTag>::value,
             "Current implementation of MsgSizeLayer requires ReadIterator to be random-access one.");
 
-        auto& members = field.value();
-        auto& shortLengthField = std::get<LengthFieldIdx_Short>(members);
-        auto& longLengthField = std::get<LengthFieldIdx_Long>(members);
-        longLengthField.setMode(comms::field::OptionalMode::Missing);
-
-        auto es = shortLengthField.read(iter, size);
-        if (es == comms::ErrorStatus::NotEnoughData) {
-            Base::updateMissingSize(field, size, missingSize);
-        }
-
+        auto es = field.read(iter, size);
         if (es != comms::ErrorStatus::Success) {
             return es;
         }
 
+        auto& members = field.value();
+        auto& shortLengthField = std::get<LengthFieldIdx_Short>(members);
+
         auto fromIter = iter;
-        auto actualRemainingSize = (size - shortLengthField.length());
+        auto actualRemainingSize = (size - field.length());
         auto requiredRemainingSize = static_cast<std::size_t>(shortLengthField.value());
-
-        do {
-            if (0U < requiredRemainingSize) {
-                break;
-            }
-
-            longLengthField.setMode(comms::field::OptionalMode::Exists);
-            GASSERT(0U < longLengthField.length());
-
-            es = longLengthField.read(iter, size);
-            if (es == comms::ErrorStatus::NotEnoughData) {
-                Base::updateMissingSize(field, size, missingSize);
-            }
-
-            if (es != comms::ErrorStatus::Success) {
-                return es;
-            }
-
-            fromIter = iter;
-            actualRemainingSize = (size - longLengthField.length());
+        if (requiredRemainingSize == 0U) {
+            auto& longLengthField = std::get<LengthFieldIdx_Long>(members);
+            GASSERT(longLengthField.getMode() == comms::field::OptionalMode::Exists);
             requiredRemainingSize = static_cast<std::size_t>(longLengthField.field().value());
-        } while (false);
+        }
+        else {
+            GASSERT(std::get<LengthFieldIdx_Long>(members).getMode() == comms::field::OptionalMode::Missing);
+        }
 
-        GASSERT(field.length() == (shortLengthField.length() + longLengthField.length()));
         if (actualRemainingSize < requiredRemainingSize) {
             if (missingSize != nullptr) {
                 *missingSize = requiredRemainingSize - actualRemainingSize;

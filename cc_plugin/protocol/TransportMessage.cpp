@@ -127,48 +127,10 @@ QVariantList createFieldsProperties()
 
 }  // namespace
 
-TransportMessage::TransportMessage()
-{
-    auto& allFields = fields();
-    auto& lengthField = std::get<FieldIdx_Length>(allFields);
-    auto& lengthSubFields = lengthField.value();
-    auto& lengthLongField = std::get<mqttsn::protocol::LengthFieldIdx_Long>(lengthSubFields);
-    lengthLongField.setMode(comms::field::OptionalMode::Missing);
-}
-
 const QVariantList& TransportMessage::fieldsPropertiesImpl() const
 {
     static const auto Props = createFieldsProperties();
     return Props;
-}
-
-comms::ErrorStatus TransportMessage::readImpl(ReadIterator& iter, std::size_t size)
-{
-    auto& allFields = fields();
-    auto& lengthField = std::get<FieldIdx_Length>(allFields);
-    auto& lengthSubFields = lengthField.value();
-    auto& lengthShortField = std::get<mqttsn::protocol::LengthFieldIdx_Short>(lengthSubFields);
-    auto& lengthLongField = std::get<mqttsn::protocol::LengthFieldIdx_Long>(lengthSubFields);
-
-    auto es = lengthShortField.read(iter, size);
-    if (es != comms::ErrorStatus::Success) {
-        return es;
-    }
-
-    if (0 < lengthShortField.value()) {
-        lengthLongField.setMode(comms::field::OptionalMode::Missing);
-    }
-    else {
-        lengthLongField.setMode(comms::field::OptionalMode::Exists);
-    }
-
-    es = lengthLongField.read(iter, size - lengthShortField.length());
-    if (es != comms::ErrorStatus::Success) {
-        return es;
-    }
-
-    std::size_t remainingSize = size - lengthField.length();
-    return readFieldsFrom<FieldIdx_Type>(iter, remainingSize);
 }
 
 bool TransportMessage::refreshImpl()

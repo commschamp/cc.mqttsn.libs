@@ -37,10 +37,9 @@ class TransportMessage : public
         cc_plugin::protocol::Stack::AllFields>
 {
 public:
-    TransportMessage();
+    TransportMessage() = default;
 protected:
     virtual const QVariantList& fieldsPropertiesImpl() const override;
-    virtual comms::ErrorStatus readImpl(ReadIterator& iter, std::size_t size) override;
     virtual bool refreshImpl() override;
 };
 
