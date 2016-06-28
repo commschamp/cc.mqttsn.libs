@@ -28,6 +28,7 @@
 #include "cc_plugin/protocol/message/Connect.h"
 #include "cc_plugin/protocol/message/Connack.h"
 #include "cc_plugin/protocol/message/Willtopicreq.h"
+#include "cc_plugin/protocol/message/Willtopic.h"
 
 namespace mqttsn
 {
@@ -44,7 +45,8 @@ typedef std::tuple<
     cc_plugin::protocol::message::Gwinfo,
     cc_plugin::protocol::message::Connect,
     cc_plugin::protocol::message::Connack,
-    cc_plugin::protocol::message::Willtopicreq
+    cc_plugin::protocol::message::Willtopicreq,
+    cc_plugin::protocol::message::Willtopic
 > AllMessages;
 
 }  // namespace protocol
