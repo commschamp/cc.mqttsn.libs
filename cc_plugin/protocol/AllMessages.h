@@ -36,6 +36,7 @@
 #include "cc_plugin/protocol/message/Publish.h"
 #include "cc_plugin/protocol/message/Puback.h"
 #include "cc_plugin/protocol/message/Pubcomp.h"
+#include "cc_plugin/protocol/message/Pubrec.h"
 
 namespace mqttsn
 {
@@ -60,7 +61,8 @@ typedef std::tuple<
     cc_plugin::protocol::message::Regack,
     cc_plugin::protocol::message::Publish,
     cc_plugin::protocol::message::Puback,
-    cc_plugin::protocol::message::Pubcomp
+    cc_plugin::protocol::message::Pubcomp,
+    cc_plugin::protocol::message::Pubrec
 > AllMessages;
 
 }  // namespace protocol
