@@ -47,8 +47,10 @@ QVariantMap createProps_returnCode();
 QVariantMap createProps_willTopic();
 QVariantMap createProps_willMsg();
 QVariantMap createProps_topicId();
+QVariantMap createProps_topicIdOpt();
 QVariantMap createProps_msgId();
 QVariantMap createProps_topicName();
+QVariantMap createProps_topicNameOpt();
 QVariantMap createProps_data();
 
 }  // namespace field

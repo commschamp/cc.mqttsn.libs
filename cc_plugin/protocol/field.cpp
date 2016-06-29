@@ -160,6 +160,16 @@ QVariantMap createProps_topicId()
     return cc::property::field::ForField<Field>().name("TopicId").asMap();
 }
 
+QVariantMap createProps_topicIdOpt()
+{
+    return
+        cc::property::field::Optional()
+            .name("TopicId")
+            .field(createProps_topicId())
+            .uncheckable()
+            .asMap();
+}
+
 QVariantMap createProps_msgId()
 {
     typedef mqttsn::field::MsgId<FieldBase> Field;
@@ -170,6 +180,16 @@ QVariantMap createProps_topicName()
 {
     typedef mqttsn::field::TopicName<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("TopicName").asMap();
+}
+
+QVariantMap createProps_topicNameOpt()
+{
+    return
+        cc::property::field::Optional()
+            .name("TopicName")
+            .field(createProps_topicName())
+            .uncheckable()
+            .asMap();
 }
 
 QVariantMap createProps_data()

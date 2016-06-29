@@ -18,22 +18,37 @@
 
 #pragma once
 
-#include "SubUnsubBase.h"
+#include "comms_champion/comms_champion.h"
+#include "mqttsn/message/Unsubscribe.h"
+#include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
+{
+
+namespace cc_plugin
+{
+
+namespace protocol
 {
 
 namespace message
 {
 
-
-template <typename TMsgBase>
-class Subscribe : public
-        SubUnsubBase<TMsgBase, mqttsn::MsgTypeId_SUBSCRIBE, Subscribe<TMsgBase> >
+class Unsubscribe : public
+    comms_champion::ProtocolMessageBase<
+        mqttsn::message::Unsubscribe<mqttsn::cc_plugin::protocol::Message>,
+        Unsubscribe>
 {
+protected:
+    virtual const char* nameImpl() const override;
+    virtual const QVariantList& fieldsPropertiesImpl() const override;
 };
 
 }  // namespace message
+
+}  // namespace protocol
+
+}  // namespace cc_plugin
 
 }  // namespace mqttsn
 

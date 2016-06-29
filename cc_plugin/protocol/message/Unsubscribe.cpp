@@ -20,7 +20,7 @@
 #include <cassert>
 
 #include "cc_plugin/protocol/field.h"
-#include "Subscribe.h"
+#include "Unsubscribe.h"
 
 namespace cc = comms_champion;
 
@@ -47,19 +47,19 @@ QVariantList createFieldsProperties()
     props.append(field::createProps_topicIdOpt());
     props.append(field::createProps_topicNameOpt());
 
-    assert(props.size() == Subscribe::FieldIdx_numOfValues);
+    assert(props.size() == Unsubscribe::FieldIdx_numOfValues);
     return props;
 }
 
 }  // namespace
 
-const char* Subscribe::nameImpl() const
+const char* Unsubscribe::nameImpl() const
 {
-    static const char* Str = "SUBSCRIBE";
+    static const char* Str = "UNSUBSCRIBE";
     return Str;
 }
 
-const QVariantList& Subscribe::fieldsPropertiesImpl() const
+const QVariantList& Unsubscribe::fieldsPropertiesImpl() const
 {
     static const auto Props = createFieldsProperties();
     return Props;

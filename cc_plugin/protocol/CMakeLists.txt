@@ -41,6 +41,7 @@ function (cc_plugin_mqttsn)
         message/Pubrel.cpp
         message/Subscribe.cpp
         message/Suback.cpp
+        message/Unsubscribe.cpp
     )
     
     set (hdr

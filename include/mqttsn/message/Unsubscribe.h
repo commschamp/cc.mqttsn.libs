@@ -26,10 +26,9 @@ namespace mqttsn
 namespace message
 {
 
-
 template <typename TMsgBase>
-class Subscribe : public
-        SubUnsubBase<TMsgBase, mqttsn::MsgTypeId_SUBSCRIBE, Subscribe<TMsgBase> >
+class Unsubscribe : public
+        SubUnsubBase<TMsgBase, mqttsn::MsgTypeId_UNSUBSCRIBE, Unsubscribe<TMsgBase> >
 {
 };
 
