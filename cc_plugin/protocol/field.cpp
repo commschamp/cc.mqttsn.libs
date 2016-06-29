@@ -56,6 +56,15 @@ QVariantMap createProps_duration()
     return cc::property::field::ForField<Field>().name("Duration").asMap();
 }
 
+QVariantMap createProps_durationOpt()
+{
+    return
+        cc::property::field::Optional()
+            .name("Duration")
+            .field(createProps_duration())
+            .asMap();
+}
+
 QVariantMap createProps_radius()
 {
     typedef mqttsn::field::Radius<FieldBase> Field;

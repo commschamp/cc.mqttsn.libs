@@ -45,6 +45,7 @@ function (cc_plugin_mqttsn)
         message/Unsuback.cpp
         message/Pingreq.cpp
         message/Pingresp.cpp
+        message/Disconnect.cpp
     )
     
     set (hdr
