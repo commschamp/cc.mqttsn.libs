@@ -44,6 +44,7 @@
 #include "message/Pingresp.h"
 #include "message/Disconnect.h"
 #include "message/Willtopicupd.h"
+#include "message/Willmsgupd.h"
 
 namespace mqttsn
 {
@@ -74,7 +75,8 @@ using AllMessages =
         message::Pingreq<TMsgBase>,
         message::Pingresp<TMsgBase>,
         message::Disconnect<TMsgBase>,
-        message::Willtopicupd<TMsgBase>
+        message::Willtopicupd<TMsgBase>,
+        message::Willmsgupd<TMsgBase>
     >;
 
 }  // namespace mqttsn

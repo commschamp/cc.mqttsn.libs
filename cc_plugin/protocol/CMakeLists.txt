@@ -47,6 +47,7 @@ function (cc_plugin_mqttsn)
         message/Pingresp.cpp
         message/Disconnect.cpp
         message/Willtopicupd.cpp
+        message/Willmsgupd.cpp
     )
     
     set (hdr

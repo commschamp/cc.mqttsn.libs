@@ -20,7 +20,7 @@
 #include <cassert>
 
 #include "cc_plugin/protocol/field.h"
-#include "Willmsg.h"
+#include "Willmsgupd.h"
 
 namespace cc = comms_champion;
 
@@ -42,22 +42,21 @@ namespace
 QVariantList createFieldsProperties()
 {
     QVariantList props;
-    props.append(field::createProps_flags());
     props.append(field::createProps_willMsg());
 
-    assert(props.size() == Willmsg::FieldIdx_numOfValues);
+    assert(props.size() == Willmsgupd::FieldIdx_numOfValues);
     return props;
 }
 
 }  // namespace
 
-const char* Willmsg::nameImpl() const
+const char* Willmsgupd::nameImpl() const
 {
-    static const char* Str = "WILLMSG";
+    static const char* Str = "WILLMSGUPD";
     return Str;
 }
 
-const QVariantList& Willmsg::fieldsPropertiesImpl() const
+const QVariantList& Willmsgupd::fieldsPropertiesImpl() const
 {
     static const auto Props = createFieldsProperties();
     return Props;
