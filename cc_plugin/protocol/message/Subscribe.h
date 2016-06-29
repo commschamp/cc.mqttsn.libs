@@ -15,14 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <type_traits>
-#include <functional>
-#include <cassert>
 
-#include "cc_plugin/protocol/field.h"
-#include "Regack.h"
+#pragma once
 
-namespace cc = comms_champion;
+#include "comms_champion/comms_champion.h"
+#include "mqttsn/message/Subscribe.h"
+#include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
 {
@@ -36,33 +34,15 @@ namespace protocol
 namespace message
 {
 
-namespace
+class Subscribe : public
+    comms_champion::ProtocolMessageBase<
+        mqttsn::message::Subscribe<mqttsn::cc_plugin::protocol::Message>,
+        Subscribe>
 {
-
-QVariantList createFieldsProperties()
-{
-    QVariantList props;
-    props.append(field::createProps_topicId());
-    props.append(field::createProps_msgId());
-    props.append(field::createProps_returnCode());
-
-    assert(props.size() == Regack::FieldIdx_numOfValues);
-    return props;
-}
-
-}  // namespace
-
-const char* Regack::nameImpl() const
-{
-    static const char* Str = "REGACK";
-    return Str;
-}
-
-const QVariantList& Regack::fieldsPropertiesImpl() const
-{
-    static const auto Props = createFieldsProperties();
-    return Props;
-}
+protected:
+    virtual const char* nameImpl() const override;
+    virtual const QVariantList& fieldsPropertiesImpl() const override;
+};
 
 }  // namespace message
 
@@ -71,4 +51,5 @@ const QVariantList& Regack::fieldsPropertiesImpl() const
 }  // namespace cc_plugin
 
 }  // namespace mqttsn
+
 

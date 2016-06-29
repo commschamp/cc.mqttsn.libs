@@ -154,7 +154,7 @@ QVariantMap createProps_willMsg()
     return cc::property::field::ForField<Field>().name("WillMsg").asMap();
 }
 
-QVariantMap createProps_topidId()
+QVariantMap createProps_topicId()
 {
     typedef mqttsn::field::TopicId<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("TopicId").asMap();

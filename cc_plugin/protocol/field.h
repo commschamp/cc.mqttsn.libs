@@ -46,7 +46,7 @@ QVariantMap createProps_clientId();
 QVariantMap createProps_returnCode();
 QVariantMap createProps_willTopic();
 QVariantMap createProps_willMsg();
-QVariantMap createProps_topidId();
+QVariantMap createProps_topicId();
 QVariantMap createProps_msgId();
 QVariantMap createProps_topicName();
 QVariantMap createProps_data();

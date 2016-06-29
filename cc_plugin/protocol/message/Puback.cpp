@@ -42,7 +42,7 @@ namespace
 QVariantList createFieldsProperties()
 {
     QVariantList props;
-    props.append(field::createProps_topidId());
+    props.append(field::createProps_topicId());
     props.append(field::createProps_msgId());
     props.append(field::createProps_returnCode());
 

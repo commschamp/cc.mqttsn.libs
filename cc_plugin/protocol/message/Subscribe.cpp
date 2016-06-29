@@ -20,7 +20,7 @@
 #include <cassert>
 
 #include "cc_plugin/protocol/field.h"
-#include "Regack.h"
+#include "Subscribe.h"
 
 namespace cc = comms_champion;
 
@@ -39,26 +39,47 @@ namespace message
 namespace
 {
 
+QVariantMap createProps_topicIdOpt()
+{
+    return
+        cc::property::field::Optional()
+            .name("TopicId")
+            .field(field::createProps_topicId())
+            .uncheckable()
+            .asMap();
+}
+
+QVariantMap createProps_topicNameOpt()
+{
+    return
+        cc::property::field::Optional()
+            .name("TopicName")
+            .field(field::createProps_topicName())
+            .uncheckable()
+            .asMap();
+}
+
 QVariantList createFieldsProperties()
 {
     QVariantList props;
-    props.append(field::createProps_topicId());
+    props.append(field::createProps_flags());
     props.append(field::createProps_msgId());
-    props.append(field::createProps_returnCode());
+    props.append(createProps_topicIdOpt());
+    props.append(createProps_topicNameOpt());
 
-    assert(props.size() == Regack::FieldIdx_numOfValues);
+    assert(props.size() == Subscribe::FieldIdx_numOfValues);
     return props;
 }
 
 }  // namespace
 
-const char* Regack::nameImpl() const
+const char* Subscribe::nameImpl() const
 {
-    static const char* Str = "REGACK";
+    static const char* Str = "SUBSCRIBE";
     return Str;
 }
 
-const QVariantList& Regack::fieldsPropertiesImpl() const
+const QVariantList& Subscribe::fieldsPropertiesImpl() const
 {
     static const auto Props = createFieldsProperties();
     return Props;
