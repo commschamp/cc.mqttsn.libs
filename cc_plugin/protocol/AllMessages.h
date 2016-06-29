@@ -43,6 +43,7 @@
 #include "cc_plugin/protocol/message/Unsubscribe.h"
 #include "cc_plugin/protocol/message/Unsuback.h"
 #include "cc_plugin/protocol/message/Pingreq.h"
+#include "cc_plugin/protocol/message/Pingresp.h"
 
 namespace mqttsn
 {
@@ -74,7 +75,8 @@ typedef std::tuple<
     cc_plugin::protocol::message::Suback,
     cc_plugin::protocol::message::Unsubscribe,
     cc_plugin::protocol::message::Unsuback,
-    cc_plugin::protocol::message::Pingreq
+    cc_plugin::protocol::message::Pingreq,
+    cc_plugin::protocol::message::Pingresp
 > AllMessages;
 
 }  // namespace protocol
