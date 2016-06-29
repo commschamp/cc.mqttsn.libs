@@ -40,6 +40,7 @@
 #include "message/Suback.h"
 #include "message/Unsubscribe.h"
 #include "message/Unsuback.h"
+#include "message/Pingreq.h"
 
 namespace mqttsn
 {
@@ -66,7 +67,8 @@ using AllMessages =
         message::Subscribe<TMsgBase>,
         message::Suback<TMsgBase>,
         message::Unsubscribe<TMsgBase>,
-        message::Unsuback<TMsgBase>
+        message::Unsuback<TMsgBase>,
+        message::Pingreq<TMsgBase>
     >;
 
 }  // namespace mqttsn

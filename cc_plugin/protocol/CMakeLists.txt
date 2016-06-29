@@ -43,6 +43,7 @@ function (cc_plugin_mqttsn)
         message/Suback.cpp
         message/Unsubscribe.cpp
         message/Unsuback.cpp
+        message/Pingreq.cpp
     )
     
     set (hdr
