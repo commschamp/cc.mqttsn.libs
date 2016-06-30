@@ -21,7 +21,7 @@
 
 #include <QtCore/QVariantMap>
 
-#include "mqttsn/MsgTypeId.h"
+#include "mqttsn/protocol/MsgTypeId.h"
 #include "comms/Assert.h"
 
 namespace cc = comms_champion;
@@ -51,35 +51,35 @@ typedef Message::Field FieldBase;
 QVariantMap createMsgTypeProperties()
 {
     return
-        cc::property::field::ForField<mqttsn::field::MsgType<FieldBase> >()
+        cc::property::field::ForField<mqttsn::protocol::field::MsgType<FieldBase> >()
             .name("MsgType")
-            .add("ADVERTISE", mqttsn::MsgTypeId_ADVERTISE)
-            .add("SEARCHGW", mqttsn::MsgTypeId_SEARCHGW)
-            .add("GWINFO", mqttsn::MsgTypeId_GWINFO)
-            .add("CONNECT", mqttsn::MsgTypeId_CONNECT)
-            .add("CONNACK", mqttsn::MsgTypeId_CONNACK)
-            .add("WILLTOPICREQ", mqttsn::MsgTypeId_WILLTOPICREQ)
-            .add("WILLTOPIC", mqttsn::MsgTypeId_WILLTOPIC)
-            .add("WILLMSGREQ", mqttsn::MsgTypeId_WILLMSGREQ)
-            .add("WILLMSG", mqttsn::MsgTypeId_WILLMSG)
-            .add("REGISTER", mqttsn::MsgTypeId_REGISTER)
-            .add("REGACK", mqttsn::MsgTypeId_REGACK)
-            .add("PUBLISH", mqttsn::MsgTypeId_PUBLISH)
-            .add("PUBACK", mqttsn::MsgTypeId_PUBACK)
-            .add("PUBCOMP", mqttsn::MsgTypeId_PUBCOMP)
-            .add("PUBREC", mqttsn::MsgTypeId_PUBREC)
-            .add("PUBREL", mqttsn::MsgTypeId_PUBREL)
-            .add("SUBSCRIBE", mqttsn::MsgTypeId_SUBSCRIBE)
-            .add("SUBACK", mqttsn::MsgTypeId_SUBACK)
-            .add("UNSUBSCRIBE", mqttsn::MsgTypeId_UNSUBSCRIBE)
-            .add("UNSUBACK", mqttsn::MsgTypeId_UNSUBACK)
-            .add("PINGREQ", mqttsn::MsgTypeId_PINGREQ)
-            .add("PINGRESP", mqttsn::MsgTypeId_PINGRESP)
-            .add("DISCONNECT", mqttsn::MsgTypeId_DISCONNECT)
-            .add("WILLTOPICUPD", mqttsn::MsgTypeId_WILLTOPICUPD)
-            .add("WILLTOPICRESP", mqttsn::MsgTypeId_WILLTOPICRESP)
-            .add("WILLMSGUPD", mqttsn::MsgTypeId_WILLMSGUPD)
-            .add("WILLMSGRESP", mqttsn::MsgTypeId_WILLMSGRESP)
+            .add("ADVERTISE", mqttsn::protocol::MsgTypeId_ADVERTISE)
+            .add("SEARCHGW", mqttsn::protocol::MsgTypeId_SEARCHGW)
+            .add("GWINFO", mqttsn::protocol::MsgTypeId_GWINFO)
+            .add("CONNECT", mqttsn::protocol::MsgTypeId_CONNECT)
+            .add("CONNACK", mqttsn::protocol::MsgTypeId_CONNACK)
+            .add("WILLTOPICREQ", mqttsn::protocol::MsgTypeId_WILLTOPICREQ)
+            .add("WILLTOPIC", mqttsn::protocol::MsgTypeId_WILLTOPIC)
+            .add("WILLMSGREQ", mqttsn::protocol::MsgTypeId_WILLMSGREQ)
+            .add("WILLMSG", mqttsn::protocol::MsgTypeId_WILLMSG)
+            .add("REGISTER", mqttsn::protocol::MsgTypeId_REGISTER)
+            .add("REGACK", mqttsn::protocol::MsgTypeId_REGACK)
+            .add("PUBLISH", mqttsn::protocol::MsgTypeId_PUBLISH)
+            .add("PUBACK", mqttsn::protocol::MsgTypeId_PUBACK)
+            .add("PUBCOMP", mqttsn::protocol::MsgTypeId_PUBCOMP)
+            .add("PUBREC", mqttsn::protocol::MsgTypeId_PUBREC)
+            .add("PUBREL", mqttsn::protocol::MsgTypeId_PUBREL)
+            .add("SUBSCRIBE", mqttsn::protocol::MsgTypeId_SUBSCRIBE)
+            .add("SUBACK", mqttsn::protocol::MsgTypeId_SUBACK)
+            .add("UNSUBSCRIBE", mqttsn::protocol::MsgTypeId_UNSUBSCRIBE)
+            .add("UNSUBACK", mqttsn::protocol::MsgTypeId_UNSUBACK)
+            .add("PINGREQ", mqttsn::protocol::MsgTypeId_PINGREQ)
+            .add("PINGRESP", mqttsn::protocol::MsgTypeId_PINGRESP)
+            .add("DISCONNECT", mqttsn::protocol::MsgTypeId_DISCONNECT)
+            .add("WILLTOPICUPD", mqttsn::protocol::MsgTypeId_WILLTOPICUPD)
+            .add("WILLTOPICRESP", mqttsn::protocol::MsgTypeId_WILLTOPICRESP)
+            .add("WILLMSGUPD", mqttsn::protocol::MsgTypeId_WILLMSGUPD)
+            .add("WILLMSGRESP", mqttsn::protocol::MsgTypeId_WILLMSGRESP)
             .asMap();
 }
 

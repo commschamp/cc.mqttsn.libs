@@ -21,7 +21,7 @@
 
 #include "cc_plugin/protocol/Message.h"
 
-#include "mqttsn/field.h"
+#include "mqttsn/protocol/field.h"
 
 namespace cc = comms_champion;
 
@@ -46,13 +46,13 @@ typedef cc_plugin::protocol::Message::Field FieldBase;
 
 QVariantMap createProps_gwId()
 {
-    typedef mqttsn::field::GwId<FieldBase> Field;
+    typedef mqttsn::protocol::field::GwId<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("GwId").asMap();
 }
 
 QVariantMap createProps_duration()
 {
-    typedef mqttsn::field::Duration<FieldBase> Field;
+    typedef mqttsn::protocol::field::Duration<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("Duration").asMap();
 }
 
@@ -67,19 +67,19 @@ QVariantMap createProps_durationOpt()
 
 QVariantMap createProps_radius()
 {
-    typedef mqttsn::field::Radius<FieldBase> Field;
+    typedef mqttsn::protocol::field::Radius<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("Radius").asMap();
 }
 
 QVariantMap createProps_gwAdd()
 {
-    typedef mqttsn::field::GwAdd<FieldBase> Field;
+    typedef mqttsn::protocol::field::GwAdd<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("GwAdd").asMap();
 }
 
 QVariantMap createProps_flags()
 {
-    typedef mqttsn::field::TopicIdType<FieldBase> TopicIdTypeField;
+    typedef mqttsn::protocol::field::TopicIdType<FieldBase> TopicIdTypeField;
     cc::property::field::ForField<TopicIdTypeField> topicIdProps;
     topicIdProps
         .name("TopicIdType")
@@ -87,18 +87,18 @@ QVariantMap createProps_flags()
         .add("Normal")
         .add("Pre-defined")
         .add("Topic-name");
-    assert(topicIdProps.values().size() == (int)mqttsn::field::TopicIdTypeVal::NumOfValues);
+    assert(topicIdProps.values().size() == (int)mqttsn::protocol::field::TopicIdTypeVal::NumOfValues);
 
-    typedef mqttsn::field::MidFlags<FieldBase> MidFlagsField;
+    typedef mqttsn::protocol::field::MidFlags<FieldBase> MidFlagsField;
     cc::property::field::ForField<MidFlagsField> midFlagsProps;
     midFlagsProps
         .serialisedHidden()
         .add("Clean Session")
         .add("Will")
         .add("Retain");
-    assert(midFlagsProps.bits().size() == mqttsn::field::MidFlagsBits_numOfValues);
+    assert(midFlagsProps.bits().size() == mqttsn::protocol::field::MidFlagsBits_numOfValues);
 
-    typedef mqttsn::field::QoS<FieldBase> QoSField;
+    typedef mqttsn::protocol::field::QoS<FieldBase> QoSField;
     cc::property::field::ForField<QoSField> qosProps;
     qosProps
         .name("QoS")
@@ -106,16 +106,16 @@ QVariantMap createProps_flags()
         .add("At most once delivery")
         .add("At least once delivery")
         .add("Exactly once delivery");
-    assert(qosProps.values().size() == (int)mqttsn::field::QosType::NumOfValues);
+    assert(qosProps.values().size() == (int)mqttsn::protocol::field::QosType::NumOfValues);
 
-    typedef mqttsn::field::DupFlags<FieldBase> DupFlagsField;
+    typedef mqttsn::protocol::field::DupFlags<FieldBase> DupFlagsField;
     cc::property::field::ForField<DupFlagsField> dupFlagsProps;
     dupFlagsProps
         .serialisedHidden()
         .add("DUP");
-    assert(dupFlagsProps.bits().size() == mqttsn::field::DupFlagsBits_numOfValues);
+    assert(dupFlagsProps.bits().size() == mqttsn::protocol::field::DupFlagsBits_numOfValues);
 
-    typedef mqttsn::field::Flags<FieldBase> FlagsField;
+    typedef mqttsn::protocol::field::Flags<FieldBase> FlagsField;
     return
         cc::property::field::ForField<FlagsField>()
             .name("Flags")
@@ -128,44 +128,44 @@ QVariantMap createProps_flags()
 
 QVariantMap createProps_protocolId()
 {
-    typedef mqttsn::field::ProtocolId<FieldBase> Field;
+    typedef mqttsn::protocol::field::ProtocolId<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("ProtocolId").asMap();
 }
 
 QVariantMap createProps_clientId()
 {
-    typedef mqttsn::field::ClientId<FieldBase> Field;
+    typedef mqttsn::protocol::field::ClientId<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("ClientId").asMap();
 }
 
 QVariantMap createProps_returnCode()
 {
-    typedef mqttsn::field::ReturnCode<FieldBase> Field;
+    typedef mqttsn::protocol::field::ReturnCode<FieldBase> Field;
     cc::property::field::ForField<Field> props;
     props.name("ReturnCode")
          .add("Accepted")
          .add("Conjestion")
          .add("Invalid Topic ID")
          .add("Not Supported");
-    assert(props.values().size() == (int)mqttsn::field::ReturnCodeVal::NumOfValues);
+    assert(props.values().size() == (int)mqttsn::protocol::field::ReturnCodeVal::NumOfValues);
     return props.asMap();
 }
 
 QVariantMap createProps_willTopic()
 {
-    typedef mqttsn::field::WillTopic<FieldBase> Field;
+    typedef mqttsn::protocol::field::WillTopic<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("WillTopic").asMap();
 }
 
 QVariantMap createProps_willMsg()
 {
-    typedef mqttsn::field::WillMsg<FieldBase> Field;
+    typedef mqttsn::protocol::field::WillMsg<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("WillMsg").asMap();
 }
 
 QVariantMap createProps_topicId()
 {
-    typedef mqttsn::field::TopicId<FieldBase> Field;
+    typedef mqttsn::protocol::field::TopicId<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("TopicId").asMap();
 }
 
@@ -181,13 +181,13 @@ QVariantMap createProps_topicIdOpt()
 
 QVariantMap createProps_msgId()
 {
-    typedef mqttsn::field::MsgId<FieldBase> Field;
+    typedef mqttsn::protocol::field::MsgId<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("MsgId").asMap();
 }
 
 QVariantMap createProps_topicName()
 {
-    typedef mqttsn::field::TopicName<FieldBase> Field;
+    typedef mqttsn::protocol::field::TopicName<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("TopicName").asMap();
 }
 
@@ -203,7 +203,7 @@ QVariantMap createProps_topicNameOpt()
 
 QVariantMap createProps_data()
 {
-    typedef mqttsn::field::Data<FieldBase> Field;
+    typedef mqttsn::protocol::field::Data<FieldBase> Field;
     return cc::property::field::ForField<Field>().name("Data").asMap();
 }
 

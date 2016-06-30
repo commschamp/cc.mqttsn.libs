@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "mqttsn/Stack.h"
+#include "mqttsn/protocol/Stack.h"
 #include "Message.h"
 #include "AllMessages.h"
 
@@ -31,7 +31,7 @@ namespace cc_plugin
 namespace protocol
 {
 
-typedef mqttsn::Stack<
+typedef mqttsn::protocol::Stack<
     cc_plugin::protocol::Message,
     cc_plugin::protocol::AllMessages
 > Stack;

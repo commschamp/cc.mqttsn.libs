@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Searchgw.h"
+#include "mqttsn/protocol/message/Searchgw.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Searchgw : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Searchgw<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Searchgw<mqttsn::cc_plugin::protocol::Message>,
         Searchgw>
 {
 protected:

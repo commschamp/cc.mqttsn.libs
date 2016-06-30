@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Willtopic.h"
+#include "mqttsn/protocol/message/Willtopic.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Willtopic : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Willtopic<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Willtopic<mqttsn::cc_plugin::protocol::Message>,
         Willtopic>
 {
 protected:

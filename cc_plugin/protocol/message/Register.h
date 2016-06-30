@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Register.h"
+#include "mqttsn/protocol/message/Register.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Register : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Register<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Register<mqttsn::cc_plugin::protocol::Message>,
         Register>
 {
 protected:

@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Connack.h"
+#include "mqttsn/protocol/message/Connack.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Connack : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Connack<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Connack<mqttsn::cc_plugin::protocol::Message>,
         Connack>
 {
 protected:

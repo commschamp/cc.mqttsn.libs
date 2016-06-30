@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Subscribe.h"
+#include "mqttsn/protocol/message/Subscribe.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Subscribe : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Subscribe<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Subscribe<mqttsn::cc_plugin::protocol::Message>,
         Subscribe>
 {
 protected:

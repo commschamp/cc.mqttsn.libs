@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/Message.h"
+#include "mqttsn/protocol/Message.h"
 
 
 namespace mqttsn
@@ -32,9 +32,9 @@ namespace protocol
 {
 
 template <typename... TOptions>
-class MessageT : public comms_champion::MessageBase<mqttsn::MessageT, TOptions...>
+class MessageT : public comms_champion::MessageBase<mqttsn::protocol::MessageT, TOptions...>
 {
-    typedef comms_champion::MessageBase<mqttsn::MessageT, TOptions...> Base;
+    typedef comms_champion::MessageBase<mqttsn::protocol::MessageT, TOptions...> Base;
 public:
     MessageT() = default;
     MessageT(const MessageT&) = default;

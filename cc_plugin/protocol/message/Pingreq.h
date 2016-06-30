@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Pingreq.h"
+#include "mqttsn/protocol/message/Pingreq.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Pingreq : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Pingreq<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Pingreq<mqttsn::cc_plugin::protocol::Message>,
         Pingreq>
 {
 protected:

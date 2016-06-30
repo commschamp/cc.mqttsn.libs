@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Regack.h"
+#include "mqttsn/protocol/message/Regack.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Regack : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Regack<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Regack<mqttsn::cc_plugin::protocol::Message>,
         Regack>
 {
 protected:

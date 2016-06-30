@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Advertise.h"
+#include "mqttsn/protocol/message/Advertise.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Advertise : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Advertise<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Advertise<mqttsn::cc_plugin::protocol::Message>,
         Advertise>
 {
 protected:

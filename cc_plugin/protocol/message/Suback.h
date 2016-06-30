@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms_champion/comms_champion.h"
-#include "mqttsn/message/Suback.h"
+#include "mqttsn/protocol/message/Suback.h"
 #include "cc_plugin/protocol/Message.h"
 
 namespace mqttsn
@@ -36,7 +36,7 @@ namespace message
 
 class Suback : public
     comms_champion::ProtocolMessageBase<
-        mqttsn::message::Suback<mqttsn::cc_plugin::protocol::Message>,
+        mqttsn::protocol::message::Suback<mqttsn::cc_plugin::protocol::Message>,
         Suback>
 {
 protected:
