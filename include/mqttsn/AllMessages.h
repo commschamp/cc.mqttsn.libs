@@ -46,6 +46,7 @@
 #include "message/Willtopicupd.h"
 #include "message/Willtopicresp.h"
 #include "message/Willmsgupd.h"
+#include "message/Willmsgresp.h"
 
 namespace mqttsn
 {
@@ -78,7 +79,8 @@ using AllMessages =
         message::Disconnect<TMsgBase>,
         message::Willtopicupd<TMsgBase>,
         message::Willtopicresp<TMsgBase>,
-        message::Willmsgupd<TMsgBase>
+        message::Willmsgupd<TMsgBase>,
+        message::Willmsgresp<TMsgBase>
     >;
 
 }  // namespace mqttsn

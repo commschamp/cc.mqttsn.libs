@@ -48,6 +48,7 @@
 #include "cc_plugin/protocol/message/Willtopicupd.h"
 #include "cc_plugin/protocol/message/Willtopicresp.h"
 #include "cc_plugin/protocol/message/Willmsgupd.h"
+#include "cc_plugin/protocol/message/Willmsgresp.h"
 
 namespace mqttsn
 {
@@ -84,7 +85,8 @@ typedef std::tuple<
     cc_plugin::protocol::message::Disconnect,
     cc_plugin::protocol::message::Willtopicupd,
     cc_plugin::protocol::message::Willtopicresp,
-    cc_plugin::protocol::message::Willmsgupd
+    cc_plugin::protocol::message::Willmsgupd,
+    cc_plugin::protocol::message::Willmsgresp
 > AllMessages;
 
 }  // namespace protocol
