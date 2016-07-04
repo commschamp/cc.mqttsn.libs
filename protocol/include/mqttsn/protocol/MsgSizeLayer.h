@@ -230,6 +230,8 @@ private:
         std::size_t size,
         TWriter&& nextLayerWriter) const
     {
+        static_assert(Message::InterfaceOptions::HasLength,
+            "Message interface class is expected to provide serialisation length.");
         auto writeLength = Base::nextLayer().length(msg);
         auto& members = field.value();
         auto& shortLengthField = std::get<LengthFieldIdx_Short>(members);

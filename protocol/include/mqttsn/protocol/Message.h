@@ -41,6 +41,7 @@ class MessageT : public
     comms::Message<
         comms::option::BigEndian,
         comms::option::MsgIdType<MsgTypeId>,
+        comms::option::LengthInfoInterface,
         comms::option::RefreshInterface,
         TOptions...
     >
@@ -48,6 +49,7 @@ class MessageT : public
     typedef     comms::Message<
         comms::option::BigEndian,
         comms::option::MsgIdType<MsgTypeId>,
+        comms::option::LengthInfoInterface,
         comms::option::RefreshInterface,
         TOptions...
     > Base;
