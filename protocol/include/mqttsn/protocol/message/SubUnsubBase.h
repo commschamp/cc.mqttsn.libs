@@ -46,20 +46,18 @@ using SubUnsubBaseFields =
         >
     >;
 
-template <typename TMsgBase, MsgTypeId TId, typename TActual>
-class SubUnsubBase : public
+template <typename TMsgBase>
+class SubUnsubFieldsBase : public
     comms::MessageBase<
         TMsgBase,
-        comms::option::StaticNumIdImpl<TId>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<TActual>
+        comms::option::NoDefaultFieldsReadImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
-        comms::option::StaticNumIdImpl<TId>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<TActual >
+        comms::option::NoDefaultFieldsReadImpl
     > Base;
 
 public:
@@ -133,6 +131,17 @@ protected:
 
         return refreshed;
     }
+};
+
+
+template <typename TMsgBase, MsgTypeId TId, typename TActual>
+class SubUnsubBase : public
+    comms::MessageBase<
+        SubUnsubFieldsBase<TMsgBase>,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::DispatchImpl<TActual>
+    >
+{
 };
 
 }  // namespace message

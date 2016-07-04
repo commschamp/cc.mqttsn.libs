@@ -1,10 +1,12 @@
 if (NOT MQTTSN_CLIENT_LIB)
     return ()
 endif ()
+
+set (MQTTSN_CLIENT_LIB_NAME "mqttsn_client")
 ######################################################################
 
 function (lib_mqttsn_client)
-    set (name "mqttsn_client")
+    set (name "${MQTTSN_CLIENT_LIB_NAME}")
     
     set (src
         src/client.cpp
@@ -49,3 +51,5 @@ endif ()
 
 
 lib_mqttsn_client ()
+
+add_subdirectory (test)
