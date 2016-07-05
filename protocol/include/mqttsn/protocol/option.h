@@ -45,6 +45,12 @@ struct TopicNameStaticStorageSize
     static const std::size_t Value = TSize;
 };
 
+template <std::size_t TSize>
+struct MessageDataStaticStorageSize
+{
+    static const std::size_t Value = TSize;
+};
+
 }  // namespace option
 
 }  // namespace protocol

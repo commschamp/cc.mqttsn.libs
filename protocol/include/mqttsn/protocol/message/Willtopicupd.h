@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,26 +32,26 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase>
+template <typename TFieldBase, typename TOptions>
 using WilltopicupdFields =
     std::tuple<
         field::Flags<TFieldBase>,
-        field::WillTopic<TFieldBase>
+        field::WillTopic<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Willtopicupd : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICUPD>,
-        comms::option::FieldsImpl<WilltopicupdFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<WilltopicupdFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Willtopicupd<TMsgBase> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICUPD>,
-        comms::option::FieldsImpl<WilltopicupdFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<WilltopicupdFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Willtopicupd<TMsgBase> >
     > Base;
 

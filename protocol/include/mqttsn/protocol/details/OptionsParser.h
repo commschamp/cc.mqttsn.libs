@@ -40,6 +40,7 @@ struct OptionsParser<>
     static const bool HasGwAddStaticStorageSize = false;
     static const bool HasClientIdStaticStorageSize = false;
     static const bool HasTopicNameStaticStorageSize = false;
+    static const bool HasMessageDataStaticStorageSize = false;
 };
 
 template <std::size_t TSize, typename... TOptions>
@@ -74,6 +75,18 @@ public:
     static const bool HasTopicNameStaticStorageSize = true;
     static const std::size_t TopicNameStaticStorageSize = Option::Value;
 };
+
+template <std::size_t TSize, typename... TOptions>
+class OptionsParser<
+    option::MessageDataStaticStorageSize<TSize>,
+    TOptions...> : public OptionsParser<TOptions...>
+{
+    typedef option::MessageDataStaticStorageSize<TSize> Option;
+public:
+    static const bool HasMessageDataStaticStorageSize = true;
+    static const std::size_t MessageDataStaticStorageSize = Option::Value;
+};
+
 
 template <typename... TTupleOptions, typename... TOptions>
 class OptionsParser<

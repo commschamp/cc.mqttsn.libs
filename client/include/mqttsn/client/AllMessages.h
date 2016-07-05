@@ -22,32 +22,6 @@
 
 #include "mqttsn/protocol/AllMessages.h"
 #include "Message.h"
-//#include "message/Searchgw.h"
-//#include "message/Gwinfo.h"
-//#include "message/Connect.h"
-//#include "message/Connack.h"
-//#include "message/Willtopicreq.h"
-//#include "message/Willtopic.h"
-//#include "message/Willmsgreq.h"
-//#include "message/Willmsg.h"
-//#include "message/Register.h"
-//#include "message/Regack.h"
-//#include "message/Publish.h"
-//#include "message/Puback.h"
-//#include "message/Pubcomp.h"
-//#include "message/Pubrec.h"
-//#include "message/Pubrel.h"
-//#include "message/Subscribe.h"
-//#include "message/Suback.h"
-//#include "message/Unsubscribe.h"
-//#include "message/Unsuback.h"
-//#include "message/Pingreq.h"
-//#include "message/Pingresp.h"
-//#include "message/Disconnect.h"
-//#include "message/Willtopicupd.h"
-//#include "message/Willtopicresp.h"
-//#include "message/Willmsgupd.h"
-//#include "message/Willmsgresp.h"
 
 namespace mqttsn
 {
@@ -57,35 +31,7 @@ namespace client
 
 template <typename TOptions>
 using AllMessages =
-    std::tuple<
-        protocol::message::Advertise<Message>,
-        protocol::message::Searchgw<Message>,
-        protocol::message::Gwinfo<Message, TOptions>,
-        protocol::message::Connect<Message, TOptions>,
-//        message::Connack<TMsgBase>,
-//        message::Willtopicreq<TMsgBase>,
-//        message::Willtopic<TMsgBase>,
-//        message::Willmsgreq<TMsgBase>,
-//        message::Willmsg<TMsgBase>,
-//        message::Register<TMsgBase>,
-//        message::Regack<TMsgBase>,
-//        message::Publish<TMsgBase>,
-//        message::Puback<TMsgBase>,
-//        message::Pubcomp<TMsgBase>,
-//        message::Pubrec<TMsgBase>,
-//        message::Pubrel<TMsgBase>,
-        protocol::message::Subscribe<Message, TOptions>,
-//        message::Suback<TMsgBase>,
-        protocol::message::Unsubscribe<Message, TOptions>//,
-//        message::Unsuback<TMsgBase>,
-//        message::Pingreq<TMsgBase>,
-//        message::Pingresp<TMsgBase>,
-//        message::Disconnect<TMsgBase>,
-//        message::Willtopicupd<TMsgBase>,
-//        message::Willtopicresp<TMsgBase>,
-//        message::Willmsgupd<TMsgBase>,
-//        message::Willmsgresp<TMsgBase>
-    >;
+    mqttsn::protocol::AllMessages<Message, TOptions>;
 
 }  // namespace client
 

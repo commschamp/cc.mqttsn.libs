@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,28 +32,28 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase>
+template <typename TFieldBase, typename TOptions>
 using PublishFields =
     std::tuple<
         field::Flags<TFieldBase>,
         field::TopicId<TFieldBase>,
         field::MsgId<TFieldBase>,
-        field::Data<TFieldBase>
+        field::Data<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Publish : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
-        comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Publish<TMsgBase> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
-        comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Publish<TMsgBase> >
     > Base;
 

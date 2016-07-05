@@ -41,7 +41,7 @@ using ClientId =
     >;
 
 
-template <typename TOptions, bool TClientIdStaticStorageSize>
+template <typename TOptions, bool THasClientIdStaticStorageSize>
 struct ClientIdExtraOpts;
 
 template <typename TOptions>
@@ -69,7 +69,7 @@ using GwAdd =
         TExtraOpt...
     >;
 
-template <typename TOptions, bool TGwAddStaticStorageSize>
+template <typename TOptions, bool THasGwAddStaticStorageSize>
 struct GwAddExtraOpts;
 
 template <typename TOptions>
@@ -91,7 +91,7 @@ using GwAddExtraOptsT =
 template <typename TFieldBase, typename... TExtraOpt>
 using TopicName = comms::field::String<TFieldBase, TExtraOpt...>;
 
-template <typename TOptions, bool TTopicNameStaticStorageSize>
+template <typename TOptions, bool THasTopicNameStaticStorageSize>
 struct TopicNameExtraOpts;
 
 template <typename TOptions>
@@ -110,11 +110,8 @@ template <typename TOptions>
 using TopicNameExtraOptsT =
     typename TopicNameExtraOpts<TOptions, TOptions::HasTopicNameStaticStorageSize>::Type;
 
-}  // namespace details
-
-template <typename TFieldBase, typename TOptions>
-using ClientId =
-    details::ClientId<TFieldBase, details::ClientIdExtraOptsT<TOptions> >;
+template <typename TFieldBase, typename... TExtraOpt>
+using WillTopic = comms::field::String<TFieldBase, TExtraOpt...>;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using Data =
@@ -123,6 +120,39 @@ using Data =
         std::uint8_t,
         TExtraOpt...
     >;
+
+template <typename TOptions, bool THasMessageDataStaticStorageSize>
+struct DataExtraOpts;
+
+template <typename TOptions>
+struct DataExtraOpts<TOptions, true>
+{
+    typedef comms::option::FixedSizeStorage<TOptions::MessageDataStaticStorageSize> Type;
+};
+
+template <typename TOptions>
+struct DataExtraOpts<TOptions, false>
+{
+    typedef comms::option::EmptyOption Type;
+};
+
+template <typename TOptions>
+using DataExtraOptsT =
+    typename DataExtraOpts<TOptions, TOptions::HasMessageDataStaticStorageSize>::Type;
+
+template <typename TFieldBase, typename... TExtraOpt>
+using WillMsg =
+    comms::field::ArrayList<TFieldBase, std::uint8_t, TExtraOpt...>;
+
+}  // namespace details
+
+template <typename TFieldBase, typename TOptions = ParsedOptions<> >
+using ClientId =
+    details::ClientId<TFieldBase, details::ClientIdExtraOptsT<TOptions> >;
+
+template <typename TFieldBase, typename TOptions = ParsedOptions<> >
+using Data =
+    details::Data<TFieldBase, details::DataExtraOptsT<TOptions> >;
 
 template <typename TFieldBase>
 using Duration = comms::field::IntValue<TFieldBase, std::uint16_t>;
@@ -257,11 +287,13 @@ template <typename TFieldBase, typename TOptions = ParsedOptions<> >
 using TopicName =
     details::TopicName<TFieldBase, details::TopicNameExtraOptsT<TOptions> >;
 
-template <typename TFieldBase, typename... TExtraOpt>
-using WillMsg = comms::field::ArrayList<TFieldBase, std::uint8_t, TExtraOpt...>;
+template <typename TFieldBase, typename TOptions = ParsedOptions<> >
+using WillMsg =
+    details::WillMsg<TFieldBase, details::DataExtraOptsT<TOptions> >;
 
-template <typename TFieldBase, typename... TExtraOpt>
-using WillTopic = comms::field::String<TFieldBase, TExtraOpt...>;
+template <typename TFieldBase, typename TOptions = ParsedOptions<> >
+using WillTopic =
+    details::WillTopic<TFieldBase, details::TopicNameExtraOptsT<TOptions> >;
 
 template <typename TFieldBase>
 using MsgType = comms::field::EnumValue<TFieldBase, MsgTypeId>;
