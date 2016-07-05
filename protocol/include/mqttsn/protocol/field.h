@@ -33,6 +33,60 @@ namespace field
 
 namespace details
 {
+template <typename TFieldBase, typename... TExtraOpt>
+using ClientId =
+    comms::field::String<
+        TFieldBase,
+        TExtraOpt...
+    >;
+
+
+template <typename TOptions, bool TClientIdStaticStorageSize>
+struct ClientIdExtraOpts;
+
+template <typename TOptions>
+struct ClientIdExtraOpts<TOptions, true>
+{
+    typedef comms::option::FixedSizeStorage<TOptions::ClientIdStaticStorageSize> Type;
+};
+
+template <typename TOptions>
+struct ClientIdExtraOpts<TOptions, false>
+{
+    typedef comms::option::EmptyOption Type;
+};
+
+template <typename TOptions>
+using ClientIdExtraOptsT =
+    typename ClientIdExtraOpts<TOptions, TOptions::HasClientIdStaticStorageSize>::Type;
+
+
+template <typename TFieldBase, typename... TExtraOpt>
+using GwAdd =
+    comms::field::ArrayList<
+        TFieldBase,
+        std::uint8_t,
+        TExtraOpt...
+    >;
+
+template <typename TOptions, bool TGwAddStaticStorageSize>
+struct GwAddExtraOpts;
+
+template <typename TOptions>
+struct GwAddExtraOpts<TOptions, true>
+{
+    typedef comms::option::FixedSizeStorage<TOptions::GwAddStaticStorageSize> Type;
+};
+
+template <typename TOptions>
+struct GwAddExtraOpts<TOptions, false>
+{
+    typedef comms::option::EmptyOption Type;
+};
+
+template <typename TOptions>
+using GwAddExtraOptsT =
+    typename GwAddExtraOpts<TOptions, TOptions::HasGwAddStaticStorageSize>::Type;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using TopicName = comms::field::String<TFieldBase, TExtraOpt...>;
@@ -58,12 +112,9 @@ using TopicNameExtraOptsT =
 
 }  // namespace details
 
-template <typename TFieldBase, typename... TExtraOpt>
+template <typename TFieldBase, typename TOptions>
 using ClientId =
-    comms::field::String<
-        TFieldBase,
-        TExtraOpt...
-    >;
+    details::ClientId<TFieldBase, details::ClientIdExtraOptsT<TOptions> >;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using Data =
@@ -157,8 +208,8 @@ using Flags =
         >
     >;
 
-template <typename TFieldBase, typename... TExtraOpt>
-using GwAdd = comms::field::String<TFieldBase, TExtraOpt...>;
+template <typename TFieldBase, typename TOptions = ParsedOptions<> >
+using GwAdd = details::GwAdd<TFieldBase, details::GwAddExtraOptsT<TOptions> >;
 
 template <typename TFieldBase>
 using GwId = comms::field::IntValue<TFieldBase, std::uint8_t>;

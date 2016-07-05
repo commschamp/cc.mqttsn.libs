@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,28 +32,28 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase>
+template <typename TFieldBase, typename TOptions>
 using ConnectFields =
     std::tuple<
         field::Flags<TFieldBase>,
         field::ProtocolId<TFieldBase>,
         field::Duration<TFieldBase>,
-        field::ClientId<TFieldBase>
+        field::ClientId<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Connect : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
-        comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Connect<TMsgBase> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
-        comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Connect<TMsgBase> >
     > Base;
 

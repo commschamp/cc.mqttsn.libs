@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,26 +32,26 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase>
+template <typename TFieldBase, typename TOptions>
 using GwinfoFields =
     std::tuple<
         field::GwId<TFieldBase>,
-        field::GwAdd<TFieldBase>
+        field::GwAdd<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Gwinfo : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
-        comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Gwinfo<TMsgBase> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
-        comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Gwinfo<TMsgBase> >
     > Base;
 

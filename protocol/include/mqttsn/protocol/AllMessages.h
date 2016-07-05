@@ -60,8 +60,8 @@ using AllMessages =
     std::tuple<
         message::Advertise<TMsgBase>,
         message::Searchgw<TMsgBase>,
-        message::Gwinfo<TMsgBase>,
-        message::Connect<TMsgBase>,
+        message::Gwinfo<TMsgBase, TOptions>,
+        message::Connect<TMsgBase, TOptions>,
         message::Connack<TMsgBase>,
         message::Willtopicreq<TMsgBase>,
         message::Willtopic<TMsgBase>,

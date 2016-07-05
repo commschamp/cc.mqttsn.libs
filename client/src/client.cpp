@@ -28,6 +28,8 @@ namespace
 {
 
 typedef std::tuple<
+        mqttsn::protocol::option::ClientIdStaticStorageSize<21>,
+        mqttsn::protocol::option::GwAddStaticStorageSize<4>,
         mqttsn::protocol::option::TopicNameStaticStorageSize<128>
     > ProtocolOptions;
 

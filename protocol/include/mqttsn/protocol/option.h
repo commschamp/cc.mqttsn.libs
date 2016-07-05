@@ -28,6 +28,18 @@ namespace option
 {
 
 template <std::size_t TSize>
+struct GwAddStaticStorageSize
+{
+    static const std::size_t Value = TSize;
+};
+
+template <std::size_t TSize>
+struct ClientIdStaticStorageSize
+{
+    static const std::size_t Value = TSize;
+};
+
+template <std::size_t TSize>
 struct TopicNameStaticStorageSize
 {
     static const std::size_t Value = TSize;

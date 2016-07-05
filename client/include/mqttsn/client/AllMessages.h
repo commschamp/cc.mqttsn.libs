@@ -59,9 +59,9 @@ template <typename TOptions>
 using AllMessages =
     std::tuple<
         protocol::message::Advertise<Message>,
-//        message::Searchgw<TMsgBase>,
-//        message::Gwinfo<TMsgBase>,
-//        message::Connect<TMsgBase>,
+        protocol::message::Searchgw<Message>,
+        protocol::message::Gwinfo<Message, TOptions>,
+        protocol::message::Connect<Message, TOptions>,
 //        message::Connack<TMsgBase>,
 //        message::Willtopicreq<TMsgBase>,
 //        message::Willtopic<TMsgBase>,

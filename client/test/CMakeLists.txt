@@ -16,9 +16,9 @@ function (link_app tgt)
         COMMAND 
             ${CMAKE_OBJCOPY} $<TARGET_FILE:${tgt}> -O binary
                                         $<TARGET_FILE_DIR:${tgt}>/${tgt}.img
-#        COMMAND 
-#            ${CMAKE_OBJDUMP} -D -S $<TARGET_FILE:${tgt}> >
-#                                        $<TARGET_FILE_DIR:${tgt}>/kernel.list
+        COMMAND 
+            ${CMAKE_OBJDUMP} -C -D -S $<TARGET_FILE:${tgt}> >
+                                        $<TARGET_FILE_DIR:${tgt}>/${tgt}.list
 #        COMMAND 
 #            ${CMAKE_OBJDUMP} -t $<TARGET_FILE:${tgt}> >
 #                                        $<TARGET_FILE_DIR:${tgt}>/kernel.syms

@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,25 +32,25 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase>
+template <typename TFieldBase, typename TOptions>
 using PingreqFields =
     std::tuple<
-        field::ClientId<TFieldBase>
+        field::ClientId<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Pingreq : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PINGREQ>,
-        comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Pingreq<TMsgBase> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PINGREQ>,
-        comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Pingreq<TMsgBase> >
     > Base;
 
