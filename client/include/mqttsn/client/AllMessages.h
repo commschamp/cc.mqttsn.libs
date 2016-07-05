@@ -55,6 +55,7 @@ namespace mqttsn
 namespace client
 {
 
+template <typename TOptions>
 using AllMessages =
     std::tuple<
         protocol::message::Advertise<Message>,
@@ -73,9 +74,9 @@ using AllMessages =
 //        message::Pubcomp<TMsgBase>,
 //        message::Pubrec<TMsgBase>,
 //        message::Pubrel<TMsgBase>,
-        protocol::message::Subscribe<Message>,
+        protocol::message::Subscribe<Message, TOptions>,
 //        message::Suback<TMsgBase>,
-        protocol::message::Unsubscribe<Message>//,
+        protocol::message::Unsubscribe<Message, TOptions>//,
 //        message::Unsuback<TMsgBase>,
 //        message::Pingreq<TMsgBase>,
 //        message::Pingresp<TMsgBase>,

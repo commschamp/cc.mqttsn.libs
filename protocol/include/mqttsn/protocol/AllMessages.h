@@ -20,6 +20,7 @@
 
 #include <tuple>
 
+#include "ParsedOptions.h"
 #include "message/Advertise.h"
 #include "message/Searchgw.h"
 #include "message/Gwinfo.h"
@@ -54,7 +55,7 @@ namespace mqttsn
 namespace protocol
 {
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 using AllMessages =
     std::tuple<
         message::Advertise<TMsgBase>,
@@ -66,16 +67,16 @@ using AllMessages =
         message::Willtopic<TMsgBase>,
         message::Willmsgreq<TMsgBase>,
         message::Willmsg<TMsgBase>,
-        message::Register<TMsgBase>,
+        message::Register<TMsgBase, TOptions>,
         message::Regack<TMsgBase>,
         message::Publish<TMsgBase>,
         message::Puback<TMsgBase>,
         message::Pubcomp<TMsgBase>,
         message::Pubrec<TMsgBase>,
         message::Pubrel<TMsgBase>,
-        message::Subscribe<TMsgBase>,
+        message::Subscribe<TMsgBase, TOptions>,
         message::Suback<TMsgBase>,
-        message::Unsubscribe<TMsgBase>,
+        message::Unsubscribe<TMsgBase, TOptions>,
         message::Unsuback<TMsgBase>,
         message::Pingreq<TMsgBase>,
         message::Pingresp<TMsgBase>,

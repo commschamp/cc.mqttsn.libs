@@ -15,38 +15,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "mqttsn/client/Client.h"
-#include "mqttsn/protocol/option.h"
 
-extern "C"
-{
-void* mqttsn_client_new();
-void mqttsn_client_process_data(const unsigned char** from, unsigned len);
-}
+#pragma once
 
-namespace
+#include "details/OptionsParser.h"
+
+namespace mqttsn
 {
 
-typedef std::tuple<
-        mqttsn::protocol::option::TopicNameStaticStorageSize<128>
-    > ProtocolOptions;
-
-typedef mqttsn::client::Client<ProtocolOptions> MqttsnClient;
-MqttsnClient& getClient()
+namespace protocol
 {
-    static MqttsnClient Client;
-    return Client;
-}
 
-}  // namespace
+template <typename... TOptions>
+using ParsedOptions = details::OptionsParser<TOptions...>;
 
-void* mqttsn_client_new()
-{
-    return &(getClient());
-}
+}  // namespace protocol
 
-void mqttsn_client_process_data(const unsigned char** from, unsigned len)
-{
-    getClient().processData(*from, len);
-}
+}  // namespace mqttsn
+
 

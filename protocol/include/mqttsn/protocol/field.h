@@ -20,6 +20,7 @@
 
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -29,6 +30,33 @@ namespace protocol
 
 namespace field
 {
+
+namespace details
+{
+
+template <typename TFieldBase, typename... TExtraOpt>
+using TopicName = comms::field::String<TFieldBase, TExtraOpt...>;
+
+template <typename TOptions, bool TTopicNameStaticStorageSize>
+struct TopicNameExtraOpts;
+
+template <typename TOptions>
+struct TopicNameExtraOpts<TOptions, true>
+{
+    typedef comms::option::FixedSizeStorage<TOptions::TopicNameStaticStorageSize> Type;
+};
+
+template <typename TOptions>
+struct TopicNameExtraOpts<TOptions, false>
+{
+    typedef comms::option::EmptyOption Type;
+};
+
+template <typename TOptions>
+using TopicNameExtraOptsT =
+    typename TopicNameExtraOpts<TOptions, TOptions::HasTopicNameStaticStorageSize>::Type;
+
+}  // namespace details
 
 template <typename TFieldBase, typename... TExtraOpt>
 using ClientId =
@@ -174,8 +202,9 @@ using TopicId =
         comms::option::ValidNumValueRange<0, 0xfffe>
     >;
 
-template <typename TFieldBase, typename... TExtraOpt>
-using TopicName = comms::field::String<TFieldBase, TExtraOpt...>;
+template <typename TFieldBase, typename TOptions = ParsedOptions<> >
+using TopicName =
+    details::TopicName<TFieldBase, details::TopicNameExtraOptsT<TOptions> >;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using WillMsg = comms::field::ArrayList<TFieldBase, std::uint8_t, TExtraOpt...>;

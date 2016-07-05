@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,7 +32,7 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase>
+template <typename TFieldBase, typename TOptions>
 using SubUnsubBaseFields =
     std::tuple<
         field::Flags<TFieldBase>,
@@ -41,22 +42,22 @@ using SubUnsubBaseFields =
             comms::option::DefaultOptionalMode<comms::field::OptionalMode::Exists>
         >,
         comms::field::Optional<
-            field::TopicName<TFieldBase>,
+            field::TopicName<TFieldBase, TOptions>,
             comms::option::DefaultOptionalMode<comms::field::OptionalMode::Missing>
         >
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions>
 class SubUnsubFieldsBase : public
     comms::MessageBase<
         TMsgBase,
-        comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
         comms::option::NoDefaultFieldsReadImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
-        comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
         comms::option::NoDefaultFieldsReadImpl
     > Base;
 
@@ -134,10 +135,14 @@ protected:
 };
 
 
-template <typename TMsgBase, MsgTypeId TId, typename TActual>
+template <
+    typename TMsgBase,
+    MsgTypeId TId,
+    typename TActual,
+    typename TOptions = ParsedOptions<> >
 class SubUnsubBase : public
     comms::MessageBase<
-        SubUnsubFieldsBase<TMsgBase>,
+        SubUnsubFieldsBase<TMsgBase, TOptions>,
         comms::option::StaticNumIdImpl<TId>,
         comms::option::DispatchImpl<TActual>
     >

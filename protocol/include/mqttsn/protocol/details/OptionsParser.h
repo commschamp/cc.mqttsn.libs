@@ -18,7 +18,9 @@
 
 #pragma once
 
-#include "SubUnsubBase.h"
+#include <tuple>
+
+#include "mqttsn/protocol/option.h"
 
 namespace mqttsn
 {
@@ -26,16 +28,38 @@ namespace mqttsn
 namespace protocol
 {
 
-namespace message
+namespace details
 {
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Unsubscribe : public
-        SubUnsubBase<TMsgBase, MsgTypeId_UNSUBSCRIBE, Unsubscribe<TMsgBase>, TOptions>
+template <typename... TOptions>
+struct OptionsParser;
+
+template <>
+struct OptionsParser<>
+{
+    static const bool HasTopicNameStaticStorageSize = false;
+};
+
+template <std::size_t TSize, typename... TOptions>
+class OptionsParser<
+    option::TopicNameStaticStorageSize<TSize>,
+    TOptions...> : public OptionsParser<TOptions...>
+{
+    typedef option::TopicNameStaticStorageSize<TSize> Option;
+public:
+    static const bool HasTopicNameStaticStorageSize = true;
+    static const std::size_t TopicNameStaticStorageSize = Option::Value;
+};
+
+template <typename... TTupleOptions, typename... TOptions>
+class OptionsParser<
+    std::tuple<TTupleOptions...>,
+    TOptions...> : public OptionsParser<TTupleOptions..., TOptions...>
 {
 };
 
-}  // namespace message
+
+}  // namespace details
 
 }  // namespace protocol
 

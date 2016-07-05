@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,27 +32,27 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase>
+template <typename TFieldBase, typename TOptions>
 using RegisterFields =
     std::tuple<
         field::TopicId<TFieldBase>,
         field::MsgId<TFieldBase>,
-        field::TopicName<TFieldBase>
+        field::TopicName<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Register : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
-        comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Register<TMsgBase> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
-        comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field> >,
+        comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
         comms::option::DispatchImpl<Register<TMsgBase> >
     > Base;
 

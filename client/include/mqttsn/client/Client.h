@@ -28,7 +28,7 @@ namespace mqttsn
 namespace client
 {
 
-template <typename... TOptions>
+template <typename TLibOptions = std::tuple<> >
 class Client
 {
 public:
@@ -46,8 +46,9 @@ public:
     }
 
 private:
-    typedef protocol::Stack<Message, AllMessages, comms::option::InPlaceAllocation> ProtStack;
-    typedef ProtStack::MsgPtr MsgPtr;
+    typedef mqttsn::protocol::ParsedOptions<TLibOptions> ParsedLibOptions;
+    typedef protocol::Stack<Message, AllMessages<ParsedLibOptions>, comms::option::InPlaceAllocation> ProtStack;
+    typedef typename ProtStack::MsgPtr MsgPtr;
 
    ProtStack m_stack;
 };

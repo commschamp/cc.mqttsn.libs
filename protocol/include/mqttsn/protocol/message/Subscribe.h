@@ -30,9 +30,9 @@ namespace message
 {
 
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Subscribe : public
-        SubUnsubBase<TMsgBase, MsgTypeId_SUBSCRIBE, Subscribe<TMsgBase> >
+        SubUnsubBase<TMsgBase, MsgTypeId_SUBSCRIBE, Subscribe<TMsgBase>, TOptions>
 {
 };
 
