@@ -44,14 +44,14 @@ class Willmsgupd : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGUPD>,
         comms::option::FieldsImpl<WillmsgupdFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsgupd<TMsgBase> >
+        comms::option::DispatchImpl<Willmsgupd<TMsgBase, TOptions> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGUPD>,
         comms::option::FieldsImpl<WillmsgupdFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsgupd<TMsgBase> >
+        comms::option::DispatchImpl<Willmsgupd<TMsgBase, TOptions> >
     > Base;
 
 public:

@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "mqttsn/client/Client.h"
+#include "mqttsn/client/Message.h"
 #include "mqttsn/protocol/option.h"
 
 extern "C"
@@ -34,7 +35,30 @@ typedef std::tuple<
         mqttsn::protocol::option::MessageDataStaticStorageSize<256>
     > ProtocolOptions;
 
-typedef mqttsn::client::Client<ProtocolOptions> MqttsnClient;
+typedef mqttsn::client::AllMessages<mqttsn::protocol::ParsedOptions<ProtocolOptions> > AllMsgs;
+
+}  // namespace
+
+
+namespace mqttsn
+{
+
+namespace client
+{
+
+class MsgHandler : public comms::GenericHandler<Message, AllMsgs>
+{
+};
+
+}  // namespace client
+
+}  // namespace mqttsn
+
+
+namespace
+{
+
+typedef mqttsn::client::Client<mqttsn::client::MsgHandler, ProtocolOptions> MqttsnClient;
 MqttsnClient& getClient()
 {
     static MqttsnClient Client;

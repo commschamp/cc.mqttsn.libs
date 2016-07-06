@@ -45,14 +45,14 @@ class Gwinfo : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase> >
+        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase> >
+        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >
     > Base;
 
 public:

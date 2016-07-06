@@ -28,8 +28,8 @@ namespace mqttsn
 namespace client
 {
 
-template <typename TLibOptions = std::tuple<> >
-class Client
+template <typename THandler, typename TLibOptions = std::tuple<> >
+class Client : public THandler
 {
 public:
     Client() = default;

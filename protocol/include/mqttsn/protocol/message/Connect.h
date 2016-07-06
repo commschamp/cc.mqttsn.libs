@@ -47,14 +47,14 @@ class Connect : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
         comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Connect<TMsgBase> >
+        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
         comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Connect<TMsgBase> >
+        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >
     > Base;
 
 public:

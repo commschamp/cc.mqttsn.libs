@@ -45,14 +45,14 @@ class Willmsg : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
         comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase> >
+        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
         comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase> >
+        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >
     > Base;
 
 public:

@@ -45,14 +45,14 @@ class Willtopic : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPIC>,
         comms::option::FieldsImpl<WilltopicFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willtopic<TMsgBase> >
+        comms::option::DispatchImpl<Willtopic<TMsgBase, TOptions> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPIC>,
         comms::option::FieldsImpl<WilltopicFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willtopic<TMsgBase> >
+        comms::option::DispatchImpl<Willtopic<TMsgBase, TOptions> >
     > Base;
 
 public:

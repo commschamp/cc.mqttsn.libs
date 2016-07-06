@@ -46,14 +46,14 @@ class Register : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
         comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Register<TMsgBase> >
+        comms::option::DispatchImpl<Register<TMsgBase, TOptions> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
         comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Register<TMsgBase> >
+        comms::option::DispatchImpl<Register<TMsgBase, TOptions> >
     > Base;
 
 public:

@@ -32,7 +32,7 @@ namespace message
 
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Subscribe : public
-        SubUnsubBase<TMsgBase, MsgTypeId_SUBSCRIBE, Subscribe<TMsgBase>, TOptions>
+        SubUnsubBase<TMsgBase, MsgTypeId_SUBSCRIBE, Subscribe<TMsgBase, TOptions>, TOptions>
 {
 };
 

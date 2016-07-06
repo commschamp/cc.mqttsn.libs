@@ -47,14 +47,14 @@ class Publish : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
         comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Publish<TMsgBase> >
+        comms::option::DispatchImpl<Publish<TMsgBase, TOptions> >
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
         comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Publish<TMsgBase> >
+        comms::option::DispatchImpl<Publish<TMsgBase, TOptions> >
     > Base;
 
 public:

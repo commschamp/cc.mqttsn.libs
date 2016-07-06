@@ -23,9 +23,12 @@ namespace mqttsn
 namespace client
 {
 
+class MsgHandler;
+
 typedef mqttsn::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
-    comms::option::WriteIterator<std::uint8_t*>
+    comms::option::WriteIterator<std::uint8_t*>,
+    comms::option::Handler<MsgHandler>
 > Message;
 
 }  // namespace client

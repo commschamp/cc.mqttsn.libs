@@ -31,7 +31,7 @@ namespace message
 
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Unsubscribe : public
-        SubUnsubBase<TMsgBase, MsgTypeId_UNSUBSCRIBE, Unsubscribe<TMsgBase>, TOptions>
+        SubUnsubBase<TMsgBase, MsgTypeId_UNSUBSCRIBE, Unsubscribe<TMsgBase, TOptions>, TOptions>
 {
 };
 
