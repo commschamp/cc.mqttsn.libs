@@ -16,13 +16,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "mqttsn/client/Client.h"
+#include "mqttsn/client/ClientMgr.h"
 #include "mqttsn/client/Message.h"
+#include "mqttsn/client/option.h"
+#include "mqttsn/client/ParsedOptions.h"
 #include "mqttsn/protocol/option.h"
 
 extern "C"
 {
 void* mqttsn_client_new();
-void mqttsn_client_process_data(const unsigned char** from, unsigned len);
+void mqttsn_client_free(void* client);
+void mqttsn_client_process_data(void* client, const unsigned char** from, unsigned len);
 }
 
 namespace
@@ -35,7 +39,15 @@ typedef std::tuple<
         mqttsn::protocol::option::MessageDataStaticStorageSize<256>
     > ProtocolOptions;
 
-typedef mqttsn::client::AllMessages<mqttsn::protocol::ParsedOptions<ProtocolOptions> > AllMsgs;
+typedef mqttsn::protocol::ParsedOptions<ProtocolOptions> ParsedProtocolOptions;
+
+typedef mqttsn::client::AllMessages<ParsedProtocolOptions> AllMsgs;
+
+typedef std::tuple<
+    mqttsn::client::option::ClientAllocLimit<1>
+> ClientOptions;
+
+typedef mqttsn::client::ParsedOptions<ClientOptions> ParsedClientOptions;
 
 }  // namespace
 
@@ -59,21 +71,33 @@ namespace
 {
 
 typedef mqttsn::client::Client<mqttsn::client::MsgHandler, ProtocolOptions> MqttsnClient;
-MqttsnClient& getClient()
+typedef mqttsn::client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
+
+MqttsnClientMgr& getClientMgr()
 {
-    static MqttsnClient Client;
-    return Client;
+    static MqttsnClientMgr Mgr;
+    return Mgr;
 }
 
 }  // namespace
 
 void* mqttsn_client_new()
 {
-    return &(getClient());
+    auto client = getClientMgr().alloc();
+    return client.release();
 }
 
-void mqttsn_client_process_data(const unsigned char** from, unsigned len)
+void mqttsn_client_free(void* client)
 {
-    getClient().processData(*from, len);
+    getClientMgr().free(reinterpret_cast<MqttsnClient*>(client));
+}
+
+void mqttsn_client_process_data(
+    void* client,
+    const unsigned char** from,
+    unsigned len)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->processData(*from, len);
 }
 
