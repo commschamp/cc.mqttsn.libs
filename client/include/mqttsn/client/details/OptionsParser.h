@@ -36,17 +36,29 @@ template <>
 struct OptionsParser<>
 {
     static const bool HasClientsAllocLimit = false;
+    static const bool HasTrackedGatewaysLimit = false;
 };
 
 template <std::size_t TLimit, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::ClientAllocLimit<TLimit>,
+    mqttsn::client::option::ClientsAllocLimit<TLimit>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::ClientAllocLimit<TLimit> Option;
+    typedef mqttsn::client::option::ClientsAllocLimit<TLimit> Option;
 public:
     static const bool HasClientsAllocLimit = true;
     static const std::size_t ClientsAllocLimit = Option::Value;
+};
+
+template <std::size_t TLimit, typename... TOptions>
+class OptionsParser<
+    mqttsn::client::option::TrackedGatewaysLimit<TLimit>,
+    TOptions...> : public OptionsParser<TOptions...>
+{
+    typedef mqttsn::client::option::TrackedGatewaysLimit<TLimit> Option;
+public:
+    static const bool HasTrackedGatewaysLimit = true;
+    static const std::size_t TrackedGatewaysLimit = Option::Value;
 };
 
 template <typename... TTupleOptions, typename... TOptions>

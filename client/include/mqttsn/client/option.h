@@ -28,10 +28,17 @@ namespace option
 {
 
 template <std::size_t TLimit>
-struct ClientAllocLimit
+struct ClientsAllocLimit
 {
     static const std::size_t Value = TLimit;
 };
+
+template <std::size_t TLimit>
+struct TrackedGatewaysLimit
+{
+    static const std::size_t Value = TLimit;
+};
+
 
 }  // namespace option
 

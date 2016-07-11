@@ -29,6 +29,7 @@ extern "C"
 void* mqttsn_client_new();
 void mqttsn_client_free(void* client);
 void mqttsn_client_process_data(void* client, const unsigned char** from, unsigned len);
+void mqttsn_client_tick(void* client, unsigned ms);
 }
 
 int main(int argc, const char** argv)
@@ -43,6 +44,7 @@ int main(int argc, const char** argv)
 
     const unsigned char* from = &Seq[0];
     mqttsn_client_process_data(client, &from, SeqSize);
+    mqttsn_client_tick(client, 10);
     mqttsn_client_free(client);
     while (true) {};
     return 0;

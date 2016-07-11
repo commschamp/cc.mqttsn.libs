@@ -27,6 +27,7 @@ extern "C"
 void* mqttsn_client_new();
 void mqttsn_client_free(void* client);
 void mqttsn_client_process_data(void* client, const unsigned char** from, unsigned len);
+void mqttsn_client_tick(void* client, unsigned ms);
 }
 
 namespace
@@ -44,7 +45,8 @@ typedef mqttsn::protocol::ParsedOptions<ProtocolOptions> ParsedProtocolOptions;
 typedef mqttsn::client::AllMessages<ParsedProtocolOptions> AllMsgs;
 
 typedef std::tuple<
-    mqttsn::client::option::ClientAllocLimit<1>
+    mqttsn::client::option::ClientsAllocLimit<1>,
+    mqttsn::client::option::TrackedGatewaysLimit<1>
 > ClientOptions;
 
 typedef mqttsn::client::ParsedOptions<ClientOptions> ParsedClientOptions;
@@ -70,7 +72,7 @@ class MsgHandler : public comms::GenericHandler<Message, AllMsgs>
 namespace
 {
 
-typedef mqttsn::client::Client<mqttsn::client::MsgHandler, ProtocolOptions> MqttsnClient;
+typedef mqttsn::client::Client<mqttsn::client::MsgHandler, ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
 typedef mqttsn::client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
 
 MqttsnClientMgr& getClientMgr()
@@ -99,5 +101,11 @@ void mqttsn_client_process_data(
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->processData(*from, len);
+}
+
+void mqttsn_client_tick(void* client, unsigned ms)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->tick(ms);
 }
 
