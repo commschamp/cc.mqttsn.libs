@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "mqttsn/client/option.h"
+#include "option.h"
 
 namespace mqttsn
 {

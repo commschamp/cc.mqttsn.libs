@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "mqttsn/client/Client.h"
-#include "mqttsn/client/ClientMgr.h"
-#include "mqttsn/client/Message.h"
-#include "mqttsn/client/option.h"
-#include "mqttsn/client/ParsedOptions.h"
 #include "mqttsn/protocol/option.h"
+#include "Client.h"
+#include "ClientMgr.h"
+#include "Message.h"
+#include "option.h"
+#include "ParsedOptions.h"
 
 extern "C"
 {
