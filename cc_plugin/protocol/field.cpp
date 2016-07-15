@@ -147,7 +147,7 @@ QVariantMap createProps_returnCode()
          .add("Conjestion")
          .add("Invalid Topic ID")
          .add("Not Supported");
-    assert(props.values().size() == (int)mqttsn::protocol::field::ReturnCodeVal::NumOfValues);
+    assert(props.values().size() == (int)mqttsn::protocol::field::ReturnCodeVal_NumOfValues);
     return props.asMap();
 }
 

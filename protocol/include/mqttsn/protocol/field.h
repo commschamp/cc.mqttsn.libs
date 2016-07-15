@@ -260,11 +260,11 @@ using Radius = comms::field::IntValue<TFieldBase, std::uint8_t>;
 
 enum ReturnCodeVal : std::uint8_t
 {
-    Accepted,
-    Conjestion,
-    InvalidTopicId,
-    NotSupported,
-    NumOfValues
+    ReturnCodeVal_Accepted,
+    ReturnCodeVal_Conjestion,
+    ReturnCodeVal_InvalidTopicId,
+    ReturnCodeVal_NotSupported,
+    ReturnCodeVal_NumOfValues
 };
 
 template <typename TFieldBase>
@@ -272,7 +272,7 @@ using ReturnCode =
     comms::field::EnumValue<
         TFieldBase,
         ReturnCodeVal,
-        comms::option::ValidNumValueRange<0, (int)ReturnCodeVal::NumOfValues - 1>
+        comms::option::ValidNumValueRange<0, (int)ReturnCodeVal_NumOfValues - 1>
     >;
 
 template <typename TFieldBase>

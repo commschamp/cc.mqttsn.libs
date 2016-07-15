@@ -19,18 +19,31 @@
 // This function is required by common startup code
 #include <type_traits>
 
+#include "mqttsn/client/client.h"
+
 extern "C"
 void interruptHandler()
 {
 }
 
-extern "C"
+void programNextTick(void* data, unsigned duration)
 {
-void* mqttsn_client_new();
-void mqttsn_client_free(void* client);
-void mqttsn_client_process_data(void* client, const unsigned char** from, unsigned len);
-void mqttsn_client_tick(void* client, unsigned ms);
+    static_cast<void>(data);
+    static_cast<void>(duration);
 }
+
+unsigned cancelTick(void* data)
+{
+    static_cast<void>(data);
+    return 0U;
+}
+
+void connectStatus(void* data, MqttsnConnectStatus status)
+{
+    static_cast<void>(data);
+    static_cast<void>(status);
+}
+
 
 int main(int argc, const char** argv)
 {
@@ -38,13 +51,20 @@ int main(int argc, const char** argv)
     static_cast<void>(argv);
 
     auto* client = mqttsn_client_new();
+    mqttsn_client_set_gw_advertise_period(client, 15 * 60 * 1000);
+    mqttsn_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
+    mqttsn_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
+    if (mqttsn_client_start(client) == 0) {
+        return -1;
+    }
 
     static const unsigned char Seq[] = {0x00, 0xf0};
     static const std::size_t SeqSize = std::extent<decltype(Seq)>::value;
 
     const unsigned char* from = &Seq[0];
-    mqttsn_client_process_data(client, &from, SeqSize);
+    mqttsn_client_process_data(client, from, SeqSize);
     mqttsn_client_tick(client, 10);
+    mqttsn_client_connect(client, "my_id", 60, true, &connectStatus, nullptr);
     mqttsn_client_free(client);
     while (true) {};
     return 0;

@@ -66,6 +66,15 @@ void* memmove( void* dest, const void* src, std::size_t count )
     return nullptr;
 }
 
+extern "C"
+void* memcpy( void* dest, const void* src, std::size_t count )
+{
+    static_cast<void>(dest);
+    static_cast<void>(src);
+    static_cast<void>(count);
+    return nullptr;
+}
+
 
 
 
