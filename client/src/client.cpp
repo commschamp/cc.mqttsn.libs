@@ -147,28 +147,22 @@ void mqttsn_client_set_response_timeout_period(ClientHandle client, unsigned val
     clientObj->setResponseTimeoutPeriod(value);
 }
 
-void mqttsn_client_set_will_topic(ClientHandle client, const char* topic)
-{
-    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->setWillTopic(topic);
-}
-
-void mqttsn_client_set_will_msg(ClientHandle client, const unsigned char* msg, unsigned msgLen)
-{
-    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->setWillMsg(msg, msgLen);
-}
-
-MqttsnOperationStatus mqttsn_client_connect(
+MqttsnErrorCode mqttsn_client_connect(
     ClientHandle client,
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
+    const MqttsnWillInfo* willInfo,
     ConnectStatusReportFn completeReportFn,
     void* completeReportData)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    return clientObj->connect(clientId, keepAliveSeconds, cleanSession, completeReportFn, completeReportData);
+    return clientObj->connect(
+        clientId,
+        keepAliveSeconds,
+        cleanSession,
+        willInfo,
+        completeReportFn, completeReportData);
 }
 
 

@@ -35,7 +35,6 @@ namespace message
 template <typename TFieldBase, typename TOptions>
 using WillmsgFields =
     std::tuple<
-        field::Flags<TFieldBase>,
         field::WillMsg<TFieldBase, TOptions>
     >;
 
@@ -58,7 +57,6 @@ class Willmsg : public
 public:
     enum FieldIdx
     {
-        FieldIdx_flags,
         FieldIdx_willMsg,
         FieldIdx_numOfValues
     };

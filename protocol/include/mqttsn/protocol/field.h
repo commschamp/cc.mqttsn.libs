@@ -185,19 +185,19 @@ using MidFlags =
         comms::option::FixedLength<1>,
         comms::option::FixedBitLength<3> >;
 
-enum class QosType : std::uint8_t
+enum class QosType : std::int8_t
 {
+    NoGwPublish = -1,
     AtMostOnceDelivery,
     AtLeastOnceDelivery,
-    ExactlyOnceDelivery,
-    NumOfValues
+    ExactlyOnceDelivery
 };
 
 template <typename TFieldBase>
 using QoS = comms::field::EnumValue<
         TFieldBase,
         QosType,
-        comms::option::ValidNumValueRange<(int)QosType::AtMostOnceDelivery, (int)QosType::NumOfValues - 1>,
+        comms::option::ValidNumValueRange<(int)QosType::NoGwPublish, (int)QosType::ExactlyOnceDelivery>,
         comms::option::FixedBitLength<2>
     >;
 

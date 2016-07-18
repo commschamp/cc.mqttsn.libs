@@ -33,6 +33,14 @@ extern "C" {
 
 #endif // #ifdef __cplusplus
 
+enum MqttsnQoS
+{
+    MqttsnQoS_NoGwPublish = -1,
+    MqttsnQoS_AtMostOnceDelivery,
+    MqttsnQoS_AtLeastOnceDelivery,
+    MqttsnQoS_ExactlyOnceDelivery
+};
+
 enum MqttsnConnectStatus
 {
     MqttsnReturnCode_Connected,
@@ -41,11 +49,20 @@ enum MqttsnConnectStatus
     MqttsnReturnCode_Timeout,
 };
 
-enum MqttsnOperationStatus
+enum MqttsnErrorCode
 {
-    MqttsnOperationStatus_Success,
-    MqttsnOperationStatus_InvalidOperation,
-    MqttsnOperationStatus_Busy
+    MqttsnErrorCode_Success,
+    MqttsnErrorCode_InvalidOperation,
+    MqttsnErrorCode_Busy
+};
+
+struct MqttsnWillInfo
+{
+    const char* topic;
+    const unsigned char* msg;
+    unsigned msgLen;
+    MqttsnQoS qos;
+    bool retain;
 };
 
 typedef void* ClientHandle;
@@ -73,14 +90,13 @@ unsigned mqttsn_client_process_data(ClientHandle client, const unsigned char* fr
 void mqttsn_client_tick(ClientHandle client, unsigned ms);
 void mqttsn_client_set_gw_advertise_period(ClientHandle client, unsigned value);
 void mqttsn_client_set_response_timeout_period(ClientHandle client, unsigned value);
-void mqttsn_client_set_will_topic(ClientHandle client, const char* topic);
-void mqttsn_client_set_will_msg(ClientHandle client, const unsigned char* msg, unsigned msgLen);
 
-MqttsnOperationStatus mqttsn_client_connect(
+MqttsnErrorCode mqttsn_client_connect(
     ClientHandle client,
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
+    const MqttsnWillInfo* willInfo,
     ConnectStatusReportFn completeReportFn,
     void* completeReportData);
 

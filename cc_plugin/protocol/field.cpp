@@ -103,10 +103,10 @@ QVariantMap createProps_flags()
     qosProps
         .name("QoS")
         .serialisedHidden()
-        .add("At most once delivery")
-        .add("At least once delivery")
-        .add("Exactly once delivery");
-    assert(qosProps.values().size() == (int)mqttsn::protocol::field::QosType::NumOfValues);
+        .add("No Gateway Publish", (int)mqttsn::protocol::field::QosType::NoGwPublish)
+        .add("At most once delivery", (int)mqttsn::protocol::field::QosType::AtMostOnceDelivery)
+        .add("At least once delivery", (int)mqttsn::protocol::field::QosType::AtLeastOnceDelivery)
+        .add("Exactly once delivery", (int)mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
 
     typedef mqttsn::protocol::field::DupFlags<FieldBase> DupFlagsField;
     cc::property::field::ForField<DupFlagsField> dupFlagsProps;

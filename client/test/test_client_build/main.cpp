@@ -64,7 +64,7 @@ int main(int argc, const char** argv)
     const unsigned char* from = &Seq[0];
     mqttsn_client_process_data(client, from, SeqSize);
     mqttsn_client_tick(client, 10);
-    mqttsn_client_connect(client, "my_id", 60, true, &connectStatus, nullptr);
+    mqttsn_client_connect(client, "my_id", 60, true, nullptr, &connectStatus, nullptr);
     mqttsn_client_free(client);
     while (true) {};
     return 0;

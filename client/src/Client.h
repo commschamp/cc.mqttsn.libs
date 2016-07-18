@@ -58,6 +58,27 @@ template <typename TInfo, typename TOpts>
 using GwInfoStorageTypeT =
     typename GwInfoStorageType<TInfo, TOpts, TOpts::HasTrackedGatewaysLimit>::Type;
 
+mqttsn::protocol::field::QosType translateQosValue(MqttsnQoS val)
+{
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::NoGwPublish == MqttsnQoS_NoGwPublish,
+        "Invalid mapping");
+
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
+        "Invalid mapping");
+
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::AtLeastOnceDelivery == MqttsnQoS_AtLeastOnceDelivery,
+        "Invalid mapping");
+
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
+        "Invalid mapping");
+
+    return static_cast<mqttsn::protocol::field::QosType>(val);
+}
+
 }  // namespace details
 
 template <
@@ -94,6 +115,10 @@ public:
     typedef mqttsn::protocol::message::Gwinfo<Message, TProtOpts> GwinfoMsg;
     typedef mqttsn::protocol::message::Connect<Message, TProtOpts> ConnectMsg;
     typedef mqttsn::protocol::message::Connack<Message> ConnackMsg;
+    typedef mqttsn::protocol::message::Willtopicreq<Message> WilltopicreqMsg;
+    typedef mqttsn::protocol::message::Willtopic<Message, TProtOpts> WilltopicMsg;
+    typedef mqttsn::protocol::message::Willmsgreq<Message> WillmsgreqMsg;
+    typedef mqttsn::protocol::message::Willmsg<Message, TProtOpts> WillmsgMsg;
     Client() = default;
     virtual ~Client() = default;
 
@@ -117,30 +142,6 @@ public:
     unsigned getGwAdvertisePeriod() const
     {
         return m_advertisePeriod;
-    }
-
-    void setWillTopic(const char* topic)
-    {
-        m_willTopic = topic;
-
-        if ((m_currOp != Op::None) ||
-            (!m_connected)) {
-            return;
-        }
-
-        // TODO: update will topic
-    }
-
-    void setWillMsg(const std::uint8_t* msg, std::size_t len)
-    {
-        m_willMsg.assign(msg, msg + len);
-
-        if ((m_currOp != Op::None) ||
-            (!m_connected)) {
-            return;
-        }
-
-        // TODO: update will msg
     }
 
     void setNextTickProgramCallback(NextTickProgramFn cb, void* data)
@@ -211,19 +212,20 @@ public:
         return static_cast<std::size_t>(std::distance(iterOrig, iter));
     }
 
-    MqttsnOperationStatus connect(
+    MqttsnErrorCode connect(
         const char* clientId,
         unsigned short keepAlivePeriod,
         bool cleanSession,
+        const MqttsnWillInfo* willInfo,
         ConnectStatusReportFn cb,
         void* data)
     {
         if (m_connected) {
-            return MqttsnOperationStatus_InvalidOperation;
+            return MqttsnErrorCode_InvalidOperation;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnOperationStatus_Busy;
+            return MqttsnErrorCode_Busy;
         }
 
         m_keepAlivePeriod = keepAlivePeriod * 1000;
@@ -231,6 +233,9 @@ public:
 
         auto* connectOp = new (&m_opStorage) ConnectOp;
         connectOp->m_lastMsgTimestamp = m_timestamp;
+        if (willInfo != nullptr) {
+            connectOp->m_willInfo = *willInfo;
+        }
         connectOp->m_cb = cb;
         connectOp->m_cbData = data;
 
@@ -242,13 +247,14 @@ public:
         auto& durationField = std::get<ConnectMsg::FieldIdx_duration>(fields);
         auto& clientIdField = std::get<ConnectMsg::FieldIdx_clientId>(fields);
 
+        bool hasWill = (willInfo != nullptr) && (willInfo->topic != nullptr) && (willInfo->topic[0] != '\0');
         midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession, cleanSession);
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, !m_willTopic.empty());
+        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
 
         durationField.value() = keepAlivePeriod;
         clientIdField.value() = clientId;
 
-        sendMessage(msg);        return MqttsnOperationStatus_Success;
+        sendMessage(msg);        return MqttsnErrorCode_Success;
     }
 
     using Base::handle;
@@ -338,6 +344,54 @@ public:
         op.m_cb(op.m_cbData, status);
     }
 
+    virtual void handle(WilltopicreqMsg& msg) override
+    {
+        static_cast<void>(msg);
+        if (m_currOp != Op::Connect) {
+            return;
+        }
+
+        auto* op = reinterpret_cast<ConnectOp*>(&m_opStorage);
+        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+            return;
+        }
+
+        op->m_lastMsgTimestamp = m_timestamp;
+        WilltopicMsg outMsg;
+        auto& fields = outMsg.fields();
+        auto& flagsField = std::get<WilltopicMsg::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+        auto& topicField = std::get<WilltopicMsg::FieldIdx_willTopic>(fields);
+
+        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_willInfo.retain);
+        qosField.value() = details::translateQosValue(op->m_willInfo.qos);
+        topicField.value() = op->m_willInfo.topic;
+        sendMessage(outMsg);
+    }
+
+    virtual void handle(WillmsgreqMsg& msg) override
+    {
+        static_cast<void>(msg);
+        if (m_currOp != Op::Connect) {
+            return;
+        }
+
+        auto* op = reinterpret_cast<ConnectOp*>(&m_opStorage);
+        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+            return;
+        }
+
+        op->m_lastMsgTimestamp = m_timestamp;
+        WillmsgMsg outMsg;
+        auto& fields = outMsg.fields();
+        auto& willMsgField = std::get<WillmsgMsg::FieldIdx_willMsg>(fields);
+
+        willMsgField.value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+        sendMessage(outMsg);
+    }
+
 private:
 
     enum class Op
@@ -354,6 +408,7 @@ private:
 
     struct ConnectOp : public OpBase
     {
+        MqttsnWillInfo m_willInfo = MqttsnWillInfo();
         ConnectStatusReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
     };
@@ -588,9 +643,6 @@ private:
 
     Op m_currOp = Op::None;
     OpStorageType m_opStorage;
-
-    WillTopicType m_willTopic;
-    WillMsgType m_willMsg;
 
     NextTickProgramFn m_nextTickProgramFn = nullptr;
     void* m_nextTickProgramData = nullptr;
