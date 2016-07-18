@@ -27,6 +27,7 @@
 #include "comms/comms.h"
 #include "mqttsn/client/client.h"
 #include "mqttsn/protocol/Stack.h"
+#include "details/WriteBufStorageType.h"
 #include "Message.h"
 #include "AllMessages.h"
 
@@ -57,6 +58,8 @@ struct GwInfoStorageType<TInfo, TOpts, false>
 template <typename TInfo, typename TOpts>
 using GwInfoStorageTypeT =
     typename GwInfoStorageType<TInfo, TOpts, TOpts::HasTrackedGatewaysLimit>::Type;
+
+//-----------------------------------------------------------
 
 mqttsn::protocol::field::QosType translateQosValue(MqttsnQoS val)
 {
@@ -156,6 +159,12 @@ public:
         m_cancelNextTickWaitData = data;
     }
 
+    void setSendOutputDataCallback(SendOutputDataFn cb, void* data)
+    {
+        m_sendOutputDataFn = cb;
+        m_sendOutputDataData = data;
+    }
+
     void setNewGwReportCallback(NewGwReportFn cb, void* data)
     {
         m_newGwReportFn = cb;
@@ -165,7 +174,8 @@ public:
     bool start()
     {
         if ((m_nextTickProgramFn == nullptr) ||
-            (m_cancelNextTickWaitFn == nullptr)) {
+            (m_cancelNextTickWaitFn == nullptr) ||
+            (m_sendOutputDataFn == nullptr)) {
             return false;
         }
 
@@ -254,7 +264,8 @@ public:
         durationField.value() = keepAlivePeriod;
         clientIdField.value() = clientId;
 
-        sendMessage(msg);        return MqttsnErrorCode_Success;
+        sendMessage(msg);
+        return MqttsnErrorCode_Success;
     }
 
     using Base::handle;
@@ -598,7 +609,7 @@ private:
         auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
         radiusField.value() = m_broadcastRadius;
 
-        sendMessage(msg);
+        sendMessage(msg, true);
         m_lastGwSearchTimestamp = m_timestamp;
     }
 
@@ -612,10 +623,29 @@ private:
         }
     }
 
-    void sendMessage(const Message& msg)
+    void sendMessage(const Message& msg, bool broadcast = false)
     {
-        static_cast<void>(msg);
-        // TODO
+        if (m_sendOutputDataFn == nullptr) {
+            GASSERT(!"Unexpected send");
+            return;
+        }
+
+        typedef details::WriteBufStorageTypeT<TProtOpts> DataStorage;
+
+        DataStorage data(m_stack.length(msg));
+        GASSERT(!data.empty());
+        typename ProtStack::WriteIterator writeIter = &data[0];
+        auto es = m_stack.write(msg, writeIter, data.size());
+        GASSERT(es == comms::ErrorStatus::Success);
+        if (es != comms::ErrorStatus::Success) {
+            // Buffer is too small
+            return;
+        }
+
+        auto writtenBytes = static_cast<std::size_t>(
+            std::distance(typename ProtStack::WriteIterator(&data[0]), writeIter));
+
+        m_sendOutputDataFn(m_sendOutputDataData, &data[0], writtenBytes, broadcast);
     }
 
     template <typename TOp>
@@ -649,6 +679,9 @@ private:
 
     CancelNextTickWaitFn m_cancelNextTickWaitFn = nullptr;
     void* m_cancelNextTickWaitData = nullptr;
+
+    SendOutputDataFn m_sendOutputDataFn = nullptr;
+    void* m_sendOutputDataData = nullptr;
 
     NewGwReportFn m_newGwReportFn = nullptr;
     void* m_newGwReportData = nullptr;

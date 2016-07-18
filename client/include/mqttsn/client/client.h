@@ -68,6 +68,7 @@ struct MqttsnWillInfo
 typedef void* ClientHandle;
 typedef void (*NextTickProgramFn)(void* data, unsigned duration);
 typedef unsigned (*CancelNextTickWaitFn)(void* data);
+typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
 typedef void (*NewGwReportFn)(void* data, unsigned short gwId);
 typedef void (*ConnectStatusReportFn)(void* data, MqttsnConnectStatus status);
 
@@ -80,6 +81,10 @@ void mqttsn_client_set_next_tick_program_callback(
 void mqttsn_client_set_cancel_next_tick_wait_callback(
     ClientHandle client,
     CancelNextTickWaitFn fn,
+    void* data);
+void mqttsn_client_set_send_output_data_callback(
+    ClientHandle client,
+    SendOutputDataFn fn,
     void* data);
 void mqttsn_client_set_new_gw_report_callback(
     ClientHandle client,

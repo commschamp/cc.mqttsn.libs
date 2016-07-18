@@ -44,6 +44,14 @@ void connectStatus(void* data, MqttsnConnectStatus status)
     static_cast<void>(status);
 }
 
+void sendOutputData(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast)
+{
+    static_cast<void>(data);
+    static_cast<void>(buf);
+    static_cast<void>(bufLen);
+    static_cast<void>(broadcast);
+}
+
 
 int main(int argc, const char** argv)
 {
@@ -54,6 +62,7 @@ int main(int argc, const char** argv)
     mqttsn_client_set_gw_advertise_period(client, 15 * 60 * 1000);
     mqttsn_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
     mqttsn_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
+    mqttsn_client_set_send_output_data_callback(client, &sendOutputData, nullptr);
     if (mqttsn_client_start(client) == 0) {
         return -1;
     }

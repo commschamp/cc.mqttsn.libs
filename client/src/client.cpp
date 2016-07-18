@@ -105,6 +105,15 @@ void mqttsn_client_set_cancel_next_tick_wait_callback(
     clientObj->setCancelNextTickWaitCallback(fn, data);
 }
 
+void mqttsn_client_set_send_output_data_callback(
+    ClientHandle client,
+    SendOutputDataFn fn,
+    void* data)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->setSendOutputDataCallback(fn, data);
+}
+
 void mqttsn_client_set_new_gw_report_callback(
     ClientHandle client,
     NewGwReportFn fn,
