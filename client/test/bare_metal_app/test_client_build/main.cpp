@@ -19,7 +19,7 @@
 // This function is required by common startup code
 #include <type_traits>
 
-#include "mqttsn/client/client.h"
+#include "test_bare_metal_client.h"
 
 extern "C"
 void interruptHandler()
@@ -58,12 +58,12 @@ int main(int argc, const char** argv)
     static_cast<void>(argc);
     static_cast<void>(argv);
 
-    auto* client = mqttsn_client_new();
-    mqttsn_client_set_gw_advertise_period(client, 15 * 60 * 1000);
-    mqttsn_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
-    mqttsn_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
-    mqttsn_client_set_send_output_data_callback(client, &sendOutputData, nullptr);
-    if (mqttsn_client_start(client) == 0) {
+    auto* client = mqttsn_test_bare_metal_client_new();
+    mqttsn_test_bare_metal_client_set_gw_advertise_period(client, 15 * 60 * 1000);
+    mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
+    mqttsn_test_bare_metal_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
+    mqttsn_test_bare_metal_client_set_send_output_data_callback(client, &sendOutputData, nullptr);
+    if (mqttsn_test_bare_metal_client_start(client) == 0) {
         return -1;
     }
 
@@ -71,10 +71,10 @@ int main(int argc, const char** argv)
     static const std::size_t SeqSize = std::extent<decltype(Seq)>::value;
 
     const unsigned char* from = &Seq[0];
-    mqttsn_client_process_data(client, from, SeqSize);
-    mqttsn_client_tick(client, 10);
-    mqttsn_client_connect(client, "my_id", 60, true, nullptr, &connectStatus, nullptr);
-    mqttsn_client_free(client);
+    mqttsn_test_bare_metal_client_process_data(client, from, SeqSize);
+    mqttsn_test_bare_metal_client_tick(client, 10);
+    mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr, &connectStatus, nullptr);
+    mqttsn_test_bare_metal_client_free(client);
     while (true) {};
     return 0;
 }
