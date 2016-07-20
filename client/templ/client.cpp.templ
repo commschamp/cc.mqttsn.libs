@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "mqttsn/client/client.h"
+#include "##NAME##client.h"
 #include "mqttsn/protocol/option.h"
 #include "Client.h"
 #include "ClientMgr.h"
@@ -27,10 +27,7 @@ namespace
 {
 
 typedef std::tuple<
-        mqttsn::protocol::option::ClientIdStaticStorageSize<21>,
-        mqttsn::protocol::option::GwAddStaticStorageSize<4>,
-        mqttsn::protocol::option::TopicNameStaticStorageSize<128>,
-        mqttsn::protocol::option::MessageDataStaticStorageSize<256>
+        ##PROT_OPTS##
     > ProtocolOptions;
 
 typedef mqttsn::protocol::ParsedOptions<ProtocolOptions> ParsedProtocolOptions;
@@ -38,8 +35,7 @@ typedef mqttsn::protocol::ParsedOptions<ProtocolOptions> ParsedProtocolOptions;
 typedef mqttsn::client::AllMessages<ParsedProtocolOptions> AllMsgs;
 
 typedef std::tuple<
-    mqttsn::client::option::ClientsAllocLimit<1>,
-    mqttsn::client::option::TrackedGatewaysLimit<1>
+    ##CLIENT_OPTS##
 > ClientOptions;
 
 typedef mqttsn::client::ParsedOptions<ClientOptions> ParsedClientOptions;
@@ -76,18 +72,18 @@ MqttsnClientMgr& getClientMgr()
 
 }  // namespace
 
-ClientHandle mqttsn_client_new()
+ClientHandle mqttsn_##NAME##client_new()
 {
     auto client = getClientMgr().alloc();
     return client.release();
 }
 
-void mqttsn_client_free(ClientHandle client)
+void mqttsn_##NAME##client_free(ClientHandle client)
 {
     getClientMgr().free(reinterpret_cast<MqttsnClient*>(client));
 }
 
-void mqttsn_client_set_next_tick_program_callback(
+void mqttsn_##NAME##client_set_next_tick_program_callback(
     ClientHandle client,
     NextTickProgramFn fn,
     void* data)
@@ -96,7 +92,7 @@ void mqttsn_client_set_next_tick_program_callback(
     clientObj->setNextTickProgramCallback(fn, data);
 }
 
-void mqttsn_client_set_cancel_next_tick_wait_callback(
+void mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
     ClientHandle client,
     CancelNextTickWaitFn fn,
     void* data)
@@ -105,7 +101,7 @@ void mqttsn_client_set_cancel_next_tick_wait_callback(
     clientObj->setCancelNextTickWaitCallback(fn, data);
 }
 
-void mqttsn_client_set_send_output_data_callback(
+void mqttsn_##NAME##client_set_send_output_data_callback(
     ClientHandle client,
     SendOutputDataFn fn,
     void* data)
@@ -114,7 +110,7 @@ void mqttsn_client_set_send_output_data_callback(
     clientObj->setSendOutputDataCallback(fn, data);
 }
 
-void mqttsn_client_set_new_gw_report_callback(
+void mqttsn_##NAME##client_set_new_gw_report_callback(
     ClientHandle client,
     NewGwReportFn fn,
     void* data)
@@ -123,13 +119,13 @@ void mqttsn_client_set_new_gw_report_callback(
     clientObj->setNewGwReportCallback(fn, data);
 }
 
-bool mqttsn_client_start(ClientHandle client)
+bool mqttsn_##NAME##client_start(ClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     return clientObj->start();
 }
 
-unsigned mqttsn_client_process_data(
+unsigned mqttsn_##NAME##client_process_data(
     void* client,
     const unsigned char* from,
     unsigned len)
@@ -138,25 +134,25 @@ unsigned mqttsn_client_process_data(
     return clientObj->processData(from, len);
 }
 
-void mqttsn_client_tick(void* client, unsigned ms)
+void mqttsn_##NAME##client_tick(void* client, unsigned ms)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->tick(ms);
 }
 
-void mqttsn_client_set_gw_advertise_period(ClientHandle client, unsigned value)
+void mqttsn_##NAME##client_set_gw_advertise_period(ClientHandle client, unsigned value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->setGwAdvertisePeriod(value);
 }
 
-void mqttsn_client_set_response_timeout_period(ClientHandle client, unsigned value)
+void mqttsn_##NAME##client_set_response_timeout_period(ClientHandle client, unsigned value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->setResponseTimeoutPeriod(value);
 }
 
-MqttsnErrorCode mqttsn_client_connect(
+MqttsnErrorCode mqttsn_##NAME##client_connect(
     ClientHandle client,
     const char* clientId,
     unsigned short keepAliveSeconds,
@@ -173,6 +169,3 @@ MqttsnErrorCode mqttsn_client_connect(
         willInfo,
         completeReportFn, completeReportData);
 }
-
-
-

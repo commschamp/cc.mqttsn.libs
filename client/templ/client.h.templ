@@ -1,0 +1,62 @@
+//
+// Copyright 2016 (C). Alex Robenko. All rights reserved.
+//
+
+// This file is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+#pragma once
+
+#include "mqttsn/client/common.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif // #ifdef __cplusplus
+
+ClientHandle mqttsn_##NAME##client_new();
+void mqttsn_##NAME##client_free(ClientHandle client);
+void mqttsn_##NAME##client_set_next_tick_program_callback(
+    ClientHandle client,
+    NextTickProgramFn fn,
+    void* data);
+void mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
+    ClientHandle client,
+    CancelNextTickWaitFn fn,
+    void* data);
+void mqttsn_##NAME##client_set_send_output_data_callback(
+    ClientHandle client,
+    SendOutputDataFn fn,
+    void* data);
+void mqttsn_##NAME##client_set_new_gw_report_callback(
+    ClientHandle client,
+    NewGwReportFn fn,
+    void* data);
+bool mqttsn_##NAME##client_start(ClientHandle client);
+unsigned mqttsn_##NAME##client_process_data(ClientHandle client, const unsigned char* from, unsigned len);
+void mqttsn_##NAME##client_tick(ClientHandle client, unsigned ms);
+void mqttsn_##NAME##client_set_gw_advertise_period(ClientHandle client, unsigned value);
+void mqttsn_##NAME##client_set_response_timeout_period(ClientHandle client, unsigned value);
+
+MqttsnErrorCode mqttsn_##NAME##client_connect(
+    ClientHandle client,
+    const char* clientId,
+    unsigned short keepAliveSeconds,
+    bool cleanSession,
+    const MqttsnWillInfo* willInfo,
+    ConnectStatusReportFn completeReportFn,
+    void* completeReportData);
+
+#ifdef __cplusplus
+}
+#endif

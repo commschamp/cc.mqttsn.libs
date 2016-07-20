@@ -72,39 +72,6 @@ typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned 
 typedef void (*NewGwReportFn)(void* data, unsigned short gwId);
 typedef void (*ConnectStatusReportFn)(void* data, MqttsnConnectStatus status);
 
-ClientHandle mqttsn_client_new();
-void mqttsn_client_free(ClientHandle client);
-void mqttsn_client_set_next_tick_program_callback(
-    ClientHandle client,
-    NextTickProgramFn fn,
-    void* data);
-void mqttsn_client_set_cancel_next_tick_wait_callback(
-    ClientHandle client,
-    CancelNextTickWaitFn fn,
-    void* data);
-void mqttsn_client_set_send_output_data_callback(
-    ClientHandle client,
-    SendOutputDataFn fn,
-    void* data);
-void mqttsn_client_set_new_gw_report_callback(
-    ClientHandle client,
-    NewGwReportFn fn,
-    void* data);
-bool mqttsn_client_start(ClientHandle client);
-unsigned mqttsn_client_process_data(ClientHandle client, const unsigned char* from, unsigned len);
-void mqttsn_client_tick(ClientHandle client, unsigned ms);
-void mqttsn_client_set_gw_advertise_period(ClientHandle client, unsigned value);
-void mqttsn_client_set_response_timeout_period(ClientHandle client, unsigned value);
-
-MqttsnErrorCode mqttsn_client_connect(
-    ClientHandle client,
-    const char* clientId,
-    unsigned short keepAliveSeconds,
-    bool cleanSession,
-    const MqttsnWillInfo* willInfo,
-    ConnectStatusReportFn completeReportFn,
-    void* completeReportData);
-
 #ifdef __cplusplus
 }
 #endif

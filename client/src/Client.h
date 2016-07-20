@@ -25,7 +25,7 @@
 #include <limits>
 
 #include "comms/comms.h"
-#include "mqttsn/client/client.h"
+#include "mqttsn/client/common.h"
 #include "mqttsn/protocol/Stack.h"
 #include "details/WriteBufStorageType.h"
 #include "Message.h"

@@ -11,7 +11,7 @@ endif()
 option (MQTTSN_INSTALL_PROTOCOL_HEADERS "Install headers for MQTT-SN protocol implementation library. " OFF)
 option (MQTTSN_CC_PROTOCOL_PLUGIN "Build and install protocol plugin for CommsChampion." ON)
 option (MQTTSN_CC_PLUGIN_COPY_TO_CC_INSTALL_PATH "Copy plugins for CommsChampion to the install path of the latter." ON)
-option (MQTTSN_CLIENT_LIB "Build and install MQTT-SN Client library" ON)
+option (MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 
 if (CMAKE_COMPILER_IS_GNUCC)
     set (extra_flags_list

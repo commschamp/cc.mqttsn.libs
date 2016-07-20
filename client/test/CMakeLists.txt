@@ -2,6 +2,12 @@ if (NOT CMAKE_CROSSCOMPILING)
     return ()
 endif ()
 
+add_definitions("-DNOSTDLIB")
+if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CROSSCOMPILING)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-threadsafe-statics -fno-exceptions -fno-unwind-tables -fno-rtti -nostdlib") 
+endif ()
+
+
 set (STARTUP_LIB_NAME "startup")
 set (LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/raspberrypi.ld")
 
@@ -32,4 +38,5 @@ endfunction ()
 
 add_subdirectory (startup)
 add_subdirectory (test_client_build)
+
 
