@@ -56,6 +56,12 @@ enum MqttsnErrorCode
     MqttsnErrorCode_Busy
 };
 
+enum MqttsnGwStatus
+{
+    MqttsnGwStatus_TimedOut,
+    MqttsnGwStatus_Available
+};
+
 struct MqttsnWillInfo
 {
     const char* topic;
@@ -69,7 +75,7 @@ typedef void* ClientHandle;
 typedef void (*NextTickProgramFn)(void* data, unsigned duration);
 typedef unsigned (*CancelNextTickWaitFn)(void* data);
 typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
-typedef void (*NewGwReportFn)(void* data, unsigned short gwId);
+typedef void (*GwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
 typedef void (*ConnectStatusReportFn)(void* data, MqttsnConnectStatus status);
 
 #ifdef __cplusplus

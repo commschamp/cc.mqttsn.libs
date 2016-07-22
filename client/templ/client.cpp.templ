@@ -110,13 +110,13 @@ void mqttsn_##NAME##client_set_send_output_data_callback(
     clientObj->setSendOutputDataCallback(fn, data);
 }
 
-void mqttsn_##NAME##client_set_new_gw_report_callback(
+void mqttsn_##NAME##client_set_gw_status_report_callback(
     ClientHandle client,
-    NewGwReportFn fn,
+    GwStatusReportFn fn,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->setNewGwReportCallback(fn, data);
+    clientObj->setGwStatusReportCallback(fn, data);
 }
 
 bool mqttsn_##NAME##client_start(ClientHandle client)

@@ -8,6 +8,27 @@ if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     endif()
 endif()
 
+set (EXTERNALS_DIR "${CMAKE_SOURCE_DIR}/external")
+
+find_package (Git)
+
+if (GIT_FOUND)
+    execute_process (
+    COMMAND ${GIT_EXECUTABLE} submodule update --init
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endif () 
+
+if (NOT CMAKE_CROSSCOMPILING)
+    set (CXXTEST_INCLUDE_DIR "${EXTERNALS_DIR}/cxxtest")
+    set (CXXTEST_PYTHON_TESTGEN_EXECUTABLE "${CXXTEST_INCLUDE_DIR}/bin/cxxtestgen")
+    
+    find_package (CxxTest)
+    if (CXXTEST_FOUND)
+        enable_testing ()
+    endif ()
+endif ()
+
+
 option (MQTTSN_INSTALL_PROTOCOL_HEADERS "Install headers for MQTT-SN protocol implementation library. " OFF)
 option (MQTTSN_CC_PROTOCOL_PLUGIN "Build and install protocol plugin for CommsChampion." ON)
 option (MQTTSN_CC_PLUGIN_COPY_TO_CC_INSTALL_PATH "Copy plugins for CommsChampion to the install path of the latter." ON)

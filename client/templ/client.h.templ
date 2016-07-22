@@ -38,9 +38,9 @@ void mqttsn_##NAME##client_set_send_output_data_callback(
     ClientHandle client,
     SendOutputDataFn fn,
     void* data);
-void mqttsn_##NAME##client_set_new_gw_report_callback(
+void mqttsn_##NAME##client_set_gw_status_report_callback(
     ClientHandle client,
-    NewGwReportFn fn,
+    GwStatusReportFn fn,
     void* data);
 bool mqttsn_##NAME##client_start(ClientHandle client);
 unsigned mqttsn_##NAME##client_process_data(ClientHandle client, const unsigned char* from, unsigned len);

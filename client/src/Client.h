@@ -165,10 +165,10 @@ public:
         m_sendOutputDataData = data;
     }
 
-    void setNewGwReportCallback(NewGwReportFn cb, void* data)
+    void setGwStatusReportCallback(GwStatusReportFn cb, void* data)
     {
-        m_newGwReportFn = cb;
-        m_newGwReportData = data;
+        m_gwStatusReportFn = cb;
+        m_gwStatusReportData = data;
     }
 
     bool start()
@@ -289,7 +289,7 @@ public:
         auto& newElem = m_gwInfos.back();
         newElem.m_duration = durationField.value();
 
-        reportNewGw(idField.value());
+        reportGwStatus(idField.value(), MqttsnGwStatus_Available);
     }
 
     virtual void handle(GwinfoMsg& msg) override
@@ -316,7 +316,7 @@ public:
 //            iter->m_addr = addrField.value();
 //        }
 
-        reportNewGw(idField.value());
+        reportGwStatus(idField.value(), MqttsnGwStatus_Available);
     }
 
     virtual void handle(ConnackMsg& msg) override
@@ -526,14 +526,32 @@ private:
 
     void checkAvailableGateways()
     {
+        auto checkMustRemoveFunc =
+            [this](typename GwInfoStorage::const_reference elem) -> bool
+            {
+                return
+                    (elem.m_duration != 0U) &&
+                    (m_timestamp < (elem.m_timestamp + elem.m_duration));
+            };
+
+        bool mustRemove = false;
+        auto iter = m_gwInfos.begin();
+        while (iter != m_gwInfos.end()) {
+            if (checkMustRemoveFunc(*iter)) {
+                mustRemove = true;
+                reportGwStatus(iter->m_id, MqttsnGwStatus_TimedOut);
+            }
+            ++iter;
+        }
+
+        if (!mustRemove) {
+            return;
+        }
+
         m_gwInfos.erase(
             std::remove_if(
                 m_gwInfos.begin(), m_gwInfos.end(),
-                [this](typename GwInfoStorage::const_reference elem) -> bool
-                {
-                    return (elem.m_duration != 0U) &&
-                           (m_timestamp < (elem.m_timestamp + elem.m_duration));
-                }),
+                checkMustRemoveFunc),
             m_gwInfos.end());
     }
 
@@ -595,10 +613,10 @@ private:
         return true;
     }
 
-    void reportNewGw(GwIdValueType id)
+    void reportGwStatus(GwIdValueType id, MqttsnGwStatus status)
     {
-        if (m_newGwReportFn != nullptr) {
-            m_newGwReportFn(m_newGwReportData, id);
+        if (m_gwStatusReportFn != nullptr) {
+            m_gwStatusReportFn(m_gwStatusReportData, id, status);
         }
     }
 
@@ -683,8 +701,8 @@ private:
     SendOutputDataFn m_sendOutputDataFn = nullptr;
     void* m_sendOutputDataData = nullptr;
 
-    NewGwReportFn m_newGwReportFn = nullptr;
-    void* m_newGwReportData = nullptr;
+    GwStatusReportFn m_gwStatusReportFn = nullptr;
+    void* m_gwStatusReportData = nullptr;
 
     ConnectStatusReportFn m_connectStatusReportFn = nullptr;
     void* m_connectStatusReportData = nullptr;

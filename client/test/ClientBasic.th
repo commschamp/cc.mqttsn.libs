@@ -1,0 +1,108 @@
+//
+// Copyright 2016 (C). Alex Robenko. All rights reserved.
+//
+
+// This file is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+#include "comms/comms.h"
+#include "mqttsn/client/common.h"
+#include "client.h"
+
+CC_DISABLE_WARNINGS()
+#include "cxxtest/TestSuite.h"
+CC_ENABLE_WARNINGS()
+
+#include "CommonTestClient.h"
+
+class FieldsTestSuite : public CxxTest::TestSuite
+{
+public:
+    void test1();
+    void test2();
+
+private:
+
+    static const unsigned DefaultAdvertisePeriod = 1 * 60 * 1000;
+    static const unsigned DefaultResponseTimeout = 5;
+
+    typedef std::vector<std::uint8_t> DataSeq;
+
+    typedef CommonTestClient::Ptr ClientPtr;
+    ClientPtr allocClient(
+        unsigned* nextRequestedTicks = nullptr,
+        unsigned* nextElapsedTicks = nullptr,
+        DataSeq* nextOutput = nullptr,
+        bool* broadcastFlag = nullptr)
+    {
+        auto ptr = CommonTestClient::alloc();
+        assert(ptr);
+        ptr->setGwAdvertisePeriod(DefaultAdvertisePeriod);
+        ptr->setResponseTimeoutPeriod(DefaultResponseTimeout);
+
+        if (nextRequestedTicks != nullptr) {
+            ptr->setProgramNextTickCallback(
+                [nextRequestedTicks](unsigned duration)
+                {
+                    *nextRequestedTicks = duration;
+                });
+        }
+
+        if (nextElapsedTicks != nullptr) {
+            ptr->setCancelNextTickCallback(
+                [nextElapsedTicks]() -> unsigned
+                {
+                    return *nextElapsedTicks;
+                });
+        }
+
+        if (nextOutput != nullptr) {
+            ptr->setSendDataCallback(
+                [nextOutput, broadcastFlag](const std::uint8_t* buf, unsigned bufLen, bool broadcast)
+                {
+                    nextOutput->insert(nextOutput->end(), buf, buf + bufLen);
+                    if (broadcastFlag != nullptr) {
+                        *broadcastFlag = broadcast;
+                    }
+                });
+        }
+
+        return std::move(ptr);
+    }
+};
+
+void FieldsTestSuite::test1()
+{
+    auto client = allocClient();
+    static_cast<void>(client);
+}
+
+void FieldsTestSuite::test2()
+{
+    unsigned nextRequestedTicks = 0;
+    unsigned nextElapsedTicks = 0;
+    DataSeq nextOutput;
+    bool broadcast = false;
+
+    auto client = allocClient(&nextRequestedTicks, &nextElapsedTicks, &nextOutput, &broadcast);
+    client->start();
+    TS_ASSERT(!nextOutput.empty());
+    TS_ASSERT(broadcast);
+    TS_ASSERT_LESS_THAN(0, nextRequestedTicks);
+    TS_TRACE(nextRequestedTicks);
+}
+
+
+
+
