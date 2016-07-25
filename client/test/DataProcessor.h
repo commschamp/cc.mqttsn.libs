@@ -19,6 +19,8 @@
 #pragma once
 
 #include <cassert>
+#include <vector>
+#include <cstdint>
 
 #include "comms/comms.h"
 #include "mqttsn/protocol/Stack.h"
@@ -27,16 +29,21 @@ class DataProcessor;
 
 typedef mqttsn::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
+    comms::option::WriteIterator<std::uint8_t*>,
     comms::option::Handler<DataProcessor>
-> OutputMessage;
+> TestMessage;
 
-typedef mqttsn::protocol::AllMessages<OutputMessage> AllOutputMessages;
+typedef mqttsn::protocol::AllMessages<TestMessage> AllTestMessages;
 
-class DataProcessor : public comms::GenericHandler<OutputMessage, AllOutputMessages>
+class DataProcessor : public comms::GenericHandler<TestMessage, AllTestMessages>
 {
-    typedef comms::GenericHandler<OutputMessage, AllOutputMessages> Base;
+    typedef comms::GenericHandler<TestMessage, AllTestMessages> Base;
 public:
-    typedef mqttsn::protocol::message::Searchgw<OutputMessage> SearchgwMsg;
+    typedef std::vector<std::uint8_t> DataBuf;
+
+    typedef mqttsn::protocol::message::Advertise<TestMessage> AdvertiseMsg;
+    typedef mqttsn::protocol::message::Searchgw<TestMessage> SearchgwMsg;
+    typedef mqttsn::protocol::message::Gwinfo<TestMessage> GwinfoMsg;
 
     virtual ~DataProcessor();
 
@@ -46,8 +53,10 @@ public:
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
+    DataBuf prepareInput(const TestMessage& msg);
+
 private:
-    typedef mqttsn::protocol::Stack<OutputMessage, AllOutputMessages> ProtStack;
+    typedef mqttsn::protocol::Stack<TestMessage, AllTestMessages> ProtStack;
 
     ProtStack m_stack;
     SearchgwMsgReportCallback m_searchgwMsgReportCallback;

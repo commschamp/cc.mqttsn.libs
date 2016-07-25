@@ -137,9 +137,14 @@ public:
         m_advertisePeriod = val;
     }
 
-    void setResponseTimeoutPeriod(unsigned val)
+    void setRetryPeriod(unsigned val)
     {
-        m_responseTimeoutPeriod = val;
+        m_retryPeriod = val;
+    }
+
+    void setBroadcastRadius(std::uint8_t val)
+    {
+        m_broadcastRadius = val;
     }
 
     unsigned getGwAdvertisePeriod() const
@@ -281,13 +286,9 @@ public:
             return;
         }
 
-        if (!addNewGw(idField.value())) {
+        if (!addNewGw(idField.value(), durationField.value() * 1000)) {
             return;
         }
-
-        GASSERT(!m_gwInfos.empty());
-        auto& newElem = m_gwInfos.back();
-        newElem.m_duration = durationField.value();
 
         reportGwStatus(idField.value(), MqttsnGwStatus_Available);
     }
@@ -305,13 +306,11 @@ public:
             return;
         }
 
-        if (!addNewGw(idField.value())) {
+        if (!addNewGw(idField.value(), m_advertisePeriod)) {
             return;
         }
 
         GASSERT(!m_gwInfos.empty());
-        auto& newElem = m_gwInfos.back();
-        newElem.m_duration = m_advertisePeriod;
 //        if (!addrField.value().empty()) {
 //            iter->m_addr = addrField.value();
 //        }
@@ -486,7 +485,7 @@ private:
             return std::numeric_limits<unsigned>::max();
         }
 
-        auto nextSearchTimestamp = m_lastGwSearchTimestamp + RepeatSearchGwPeriod;
+        auto nextSearchTimestamp = m_lastGwSearchTimestamp + m_retryPeriod;
         if (nextSearchTimestamp <= m_timestamp) {
             return 1U;
         }
@@ -501,7 +500,7 @@ private:
         }
 
         auto* op = reinterpret_cast<OpBase*>(&m_opStorage);
-        auto nextOpTimestamp = op->m_lastMsgTimestamp + m_responseTimeoutPeriod;
+        auto nextOpTimestamp = op->m_lastMsgTimestamp + m_retryPeriod;
         if (nextOpTimestamp <= m_timestamp) {
             return 1U;
         }
@@ -529,9 +528,8 @@ private:
         auto checkMustRemoveFunc =
             [this](typename GwInfoStorage::const_reference elem) -> bool
             {
-                return
-                    (elem.m_duration != 0U) &&
-                    (m_timestamp < (elem.m_timestamp + elem.m_duration));
+                GASSERT(elem.m_duration != 0U);
+                return (m_timestamp <= (elem.m_timestamp + elem.m_duration));
             };
 
         bool mustRemove = false;
@@ -558,7 +556,7 @@ private:
     void checkGwSearchReq()
     {
         if (m_gwInfos.empty() &&
-            ((m_lastGwSearchTimestamp + RepeatSearchGwPeriod) <= m_timestamp)) {
+            ((m_lastGwSearchTimestamp + m_retryPeriod) <= m_timestamp)) {
             sendGwSearchReq();
         }
     }
@@ -570,7 +568,7 @@ private:
         }
 
         auto* op = reinterpret_cast<OpBase*>(&m_opStorage);
-        if (m_timestamp < (op->m_lastMsgTimestamp + m_responseTimeoutPeriod)) {
+        if (m_timestamp < (op->m_lastMsgTimestamp + m_retryPeriod)) {
             return;
         }
 
@@ -600,7 +598,7 @@ private:
         checkOpTimeout();
     }
 
-    bool addNewGw(GwIdValueType id)
+    bool addNewGw(GwIdValueType id, DurationValueType duration)
     {
         if (m_gwInfos.max_size() <= m_gwInfos.size()) {
             return false;
@@ -610,6 +608,7 @@ private:
         auto& newElem = m_gwInfos.back();
         newElem.m_timestamp = m_timestamp;
         newElem.m_id = id;
+        newElem.m_duration = duration;
         return true;
     }
 
@@ -682,7 +681,7 @@ private:
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
     unsigned m_advertisePeriod = DefaultAdvertisePeriod;
-    unsigned m_responseTimeoutPeriod = DefaultResponseTimeoutPeriod;
+    unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_keepAlivePeriod = 0;
     std::uint8_t m_broadcastRadius = DefaultBroadcastRadius;
 
@@ -708,9 +707,8 @@ private:
     void* m_connectStatusReportData = nullptr;
 
     static const unsigned DefaultAdvertisePeriod = 30 * 60 * 1000;
-    static const unsigned DefaultResponseTimeoutPeriod = 15 * 1000;
-    static const std::uint8_t DefaultBroadcastRadius = 1;
-    static const unsigned RepeatSearchGwPeriod = 30 * 1000;
+    static const unsigned DefaultRetryPeriod = 15 * 1000;
+    static const std::uint8_t DefaultBroadcastRadius = 0U;
 };
 
 }  // namespace client

@@ -35,7 +35,8 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_processDataFunc = &mqttsn_client_process_data;
     funcs.m_tickFunc = &mqttsn_client_tick;
     funcs.m_setGwAdvertisePeriodFunc = &mqttsn_client_set_gw_advertise_period;
-    funcs.m_setResponseTimeoutPeriodFunc = &mqttsn_client_set_response_timeout_period;
+    funcs.m_setRetryPeriodFunc = &mqttsn_client_set_retry_period;
+    funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
     return funcs;
 }
 
@@ -102,10 +103,16 @@ void CommonTestClient::setGwAdvertisePeriod(unsigned ms)
     (m_libFuncs.m_setGwAdvertisePeriodFunc)(m_client, ms);
 }
 
-void CommonTestClient::setResponseTimeoutPeriod(unsigned ms)
+void CommonTestClient::setRetryPeriod(unsigned ms)
 {
-    assert(m_libFuncs.m_setResponseTimeoutPeriodFunc != nullptr);
-    (m_libFuncs.m_setResponseTimeoutPeriodFunc)(m_client, ms);
+    assert(m_libFuncs.m_setRetryPeriodFunc != nullptr);
+    (m_libFuncs.m_setRetryPeriodFunc)(m_client, ms);
+}
+
+void CommonTestClient::setBroadcastRadius(unsigned char val)
+{
+    assert(m_libFuncs.m_setBroadcastRadius != nullptr);
+    (m_libFuncs.m_setBroadcastRadius)(m_client, val);
 }
 
 CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)

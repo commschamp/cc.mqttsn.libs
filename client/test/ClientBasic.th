@@ -34,11 +34,15 @@ public:
     void test2();
 
 private:
+    typedef DataProcessor::DataBuf DataBuf;
 
+    typedef DataProcessor::AdvertiseMsg AdvertiseMsg;
     typedef DataProcessor::SearchgwMsg SearchgwMsg;
+    typedef DataProcessor::GwinfoMsg GwinfoMsg;
 
     static const unsigned DefaultAdvertisePeriod = 1 * 60 * 1000;
-    static const unsigned DefaultResponseTimeout = 5;
+    static const unsigned DefaultRetryTimeout = 5 * 1000;
+    static const unsigned char DefaultBroadcastRadius = 0;
 
     typedef std::vector<std::uint8_t> DataSeq;
 
@@ -52,7 +56,8 @@ private:
         auto ptr = CommonTestClient::alloc();
         assert(ptr);
         ptr->setGwAdvertisePeriod(DefaultAdvertisePeriod);
-        ptr->setResponseTimeoutPeriod(DefaultResponseTimeout);
+        ptr->setRetryPeriod(DefaultRetryTimeout);
+        ptr->setBroadcastRadius(DefaultBroadcastRadius);
 
         if (nextRequestedTicks != nullptr) {
             ptr->setProgramNextTickCallback(
@@ -83,6 +88,31 @@ private:
 
         return std::move(ptr);
     }
+
+    DataBuf prepareGwinfoMsg(std::uint8_t id)
+    {
+        GwinfoMsg msg;
+        auto& fields = msg.fields();
+        auto& gwIdField = std::get<GwinfoMsg::FieldIdx_gwId>(fields);
+        gwIdField.value() = id;
+        assert(msg.length() == 1U);
+        auto buf = DataProcessor().prepareInput(msg);
+        assert(buf.size() == 3U);
+        return buf;
+    }
+
+    DataBuf prepareAdvertiseMsg(std::uint8_t id, unsigned short duration)
+    {
+        AdvertiseMsg msg;
+        auto& fields = msg.fields();
+        auto& gwIdField = std::get<AdvertiseMsg::FieldIdx_gwId>(fields);
+        auto& durationField = std::get<AdvertiseMsg::FieldIdx_duration>(fields);
+        gwIdField.value() = id;
+        durationField.value() = duration;
+        auto buf = DataProcessor().prepareInput(msg);
+        assert(buf.size() == 5U);
+        return buf;
+    }
 };
 
 void FieldsTestSuite::test1()
@@ -99,25 +129,96 @@ void FieldsTestSuite::test2()
     unsigned nextElapsedTicks = 0;
     DataSeq nextOutput;
     bool broadcast = false;
-
-    auto client = allocClient(&nextRequestedTicks, &nextElapsedTicks, &nextOutput, &broadcast);
-    client->start();
-    TS_ASSERT(!nextOutput.empty());
-    TS_ASSERT(broadcast);
-    TS_ASSERT_LESS_THAN(0, nextRequestedTicks);
-    TS_TRACE(nextRequestedTicks);
-
     bool searchgwSent = false;
+
     dataProcessor.setSearchgwMsgReportCallback(
         [&searchgwSent](const SearchgwMsg& msg)
         {
-            TS_TRACE("Searchgw");
-            static_cast<void>(msg);
+            auto& fields = msg.fields();
+            auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
+            TS_ASSERT_EQUALS(radiusField.value(), DefaultBroadcastRadius);
             searchgwSent = true;
         });
 
-    dataProcessor.checkWrittenMsg(&nextOutput[0], nextOutput.size());
-    TS_ASSERT(searchgwSent);
+    auto checkSearchgwMessage =
+        [&]()
+        {
+            TS_ASSERT(!nextOutput.empty());
+            TS_ASSERT(broadcast);
+            TS_ASSERT_EQUALS(nextRequestedTicks, DefaultRetryTimeout);
+
+            dataProcessor.checkWrittenMsg(&nextOutput[0], nextOutput.size());
+            TS_ASSERT(searchgwSent);
+        };
+
+    auto clearState =
+        [&]()
+        {
+            nextRequestedTicks = 0;
+            nextOutput.clear();
+            broadcast = false;
+            searchgwSent = false;
+        };
+
+    auto client = allocClient(&nextRequestedTicks, &nextElapsedTicks, &nextOutput, &broadcast);
+    client->start();
+
+    checkSearchgwMessage();
+    clearState();
+    client->tick(DefaultRetryTimeout);
+    checkSearchgwMessage();
+    clearState();
+
+    MqttsnGwStatus reportedGwStatus = MqttsnGwStatus_TimedOut;
+    std::uint8_t reportedGwId = 0U;
+    bool gwStatusReported = false;
+    client->setGwStatusReportCallback(
+        [&](unsigned short gwId, MqttsnGwStatus status)
+        {
+            reportedGwId = gwId;
+            reportedGwStatus = status;
+            gwStatusReported = true;
+        });
+
+    static const std::uint8_t GwId = 5U;
+    auto gwInfoData = prepareGwinfoMsg(GwId);
+    TS_ASSERT(!gwInfoData.empty());
+
+    nextElapsedTicks = 1 * 1000;
+    client->inputData(&gwInfoData[0], gwInfoData.size());
+
+    TS_ASSERT(gwStatusReported);
+    TS_ASSERT_EQUALS(reportedGwId, GwId);
+    TS_ASSERT_EQUALS(reportedGwStatus, MqttsnGwStatus_Available);
+    TS_ASSERT_EQUALS(nextRequestedTicks, DefaultAdvertisePeriod);
+
+    clearState();
+    gwStatusReported = false;
+    client->tick(DefaultAdvertisePeriod);
+    TS_ASSERT(gwStatusReported);
+    TS_ASSERT_EQUALS(reportedGwId, GwId);
+    TS_ASSERT_EQUALS(reportedGwStatus, MqttsnGwStatus_TimedOut);
+    checkSearchgwMessage();
+
+    clearState();
+    auto advertiseData = prepareAdvertiseMsg(GwId, (DefaultAdvertisePeriod / 1000) + 1);
+    TS_ASSERT(!advertiseData.empty());
+    nextElapsedTicks = 1 * 1000;
+
+    client->inputData(&advertiseData[0], advertiseData.size());
+
+    TS_ASSERT(gwStatusReported);
+    TS_ASSERT_EQUALS(reportedGwId, GwId);
+    TS_ASSERT_EQUALS(reportedGwStatus, MqttsnGwStatus_Available);
+    TS_ASSERT_EQUALS(nextRequestedTicks, DefaultAdvertisePeriod  + 1000);
+
+    clearState();
+    gwStatusReported = false;
+    client->tick(DefaultAdvertisePeriod  + 1000);
+    TS_ASSERT(gwStatusReported);
+    TS_ASSERT_EQUALS(reportedGwId, GwId);
+    TS_ASSERT_EQUALS(reportedGwStatus, MqttsnGwStatus_TimedOut);
+    checkSearchgwMessage();
 }
 
 

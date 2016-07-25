@@ -164,6 +164,22 @@ public:
                 Base::template createNextLayerCachedFieldsWriter<TIdx>(allFields));
     }
 
+    constexpr std::size_t length() const
+    {
+        return ShortLengthField::minLength() + Base::nextLayer().length();
+    }
+
+    template <typename TMsg>
+    std::size_t length(const TMsg& msg) const
+    {
+        auto minLen = ShortLengthField::minLength() + Base::nextLayer().length(msg);
+        if (minLen <= std::numeric_limits<std::uint8_t>::max()) {
+            return minLen;
+        }
+
+        return minLen + sizeof(std::uint16_t);
+    }
+
 private:
 
     template <typename TMsgPtr, typename TReader>

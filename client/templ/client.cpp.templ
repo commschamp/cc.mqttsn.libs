@@ -146,10 +146,16 @@ void mqttsn_##NAME##client_set_gw_advertise_period(ClientHandle client, unsigned
     clientObj->setGwAdvertisePeriod(value);
 }
 
-void mqttsn_##NAME##client_set_response_timeout_period(ClientHandle client, unsigned value)
+void mqttsn_##NAME##client_set_retry_period(ClientHandle client, unsigned value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->setResponseTimeoutPeriod(value);
+    clientObj->setRetryPeriod(value);
+}
+
+void mqttsn_##NAME##client_set_broadcast_radius(ClientHandle client, unsigned char value)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->setBroadcastRadius(value);
 }
 
 MqttsnErrorCode mqttsn_##NAME##client_connect(

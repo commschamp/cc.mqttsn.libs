@@ -36,7 +36,8 @@ typedef decltype(&mqttsn_client_start) StartFunc;
 typedef decltype(&mqttsn_client_process_data) ProcessDataFunc;
 typedef decltype(&mqttsn_client_tick) TickFunc;
 typedef decltype(&mqttsn_client_set_gw_advertise_period) SetGwAdvertisePeriodFunc;
-typedef decltype(&mqttsn_client_set_response_timeout_period) SetResponseTimeoutPeriodFunc;
+typedef decltype(&mqttsn_client_set_retry_period) SetRetryPeriodFunc;
+typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
 
 
 struct ClientLibFuncs
@@ -51,7 +52,8 @@ struct ClientLibFuncs
     ProcessDataFunc m_processDataFunc = nullptr;
     TickFunc m_tickFunc = nullptr;
     SetGwAdvertisePeriodFunc m_setGwAdvertisePeriodFunc = nullptr;
-    SetResponseTimeoutPeriodFunc m_setResponseTimeoutPeriodFunc = nullptr;
+    SetRetryPeriodFunc m_setRetryPeriodFunc = nullptr;
+    SetBroadcastRadiusFunc m_setBroadcastRadius = nullptr;
 };
 
 class CommonTestClient
@@ -75,7 +77,8 @@ public:
     void inputData(const std::uint8_t* buf, std::size_t bufLen);
     void tick(unsigned ms);
     void setGwAdvertisePeriod(unsigned ms);
-    void setResponseTimeoutPeriod(unsigned ms);
+    void setRetryPeriod(unsigned ms);
+    void setBroadcastRadius(unsigned char val);
 
 private:
     typedef std::vector<std::uint8_t> InputData;

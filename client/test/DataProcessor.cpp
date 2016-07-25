@@ -17,6 +17,8 @@
 
 #include "DataProcessor.h"
 
+#include <iostream>
+
 DataProcessor::~DataProcessor() = default;
 
 void DataProcessor::setSearchgwMsgReportCallback(SearchgwMsgReportCallback&& func)
@@ -40,4 +42,15 @@ void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
     assert(es == comms::ErrorStatus::Success);
     assert(msg);
     msg->dispatch(*this);
+}
+
+DataProcessor::DataBuf DataProcessor::prepareInput(const TestMessage& msg)
+{
+    DataBuf buf(m_stack.length(msg));
+    assert(buf.size() == m_stack.length(msg));
+    ProtStack::WriteIterator writeIter = &buf[0];
+    auto es = m_stack.write(msg, writeIter, buf.size());
+    static_cast<void>(es);
+    assert(es == comms::ErrorStatus::Success);
+    return buf;
 }
