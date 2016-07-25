@@ -25,6 +25,7 @@ CC_DISABLE_WARNINGS()
 CC_ENABLE_WARNINGS()
 
 #include "CommonTestClient.h"
+#include "DataProcessor.h"
 
 class FieldsTestSuite : public CxxTest::TestSuite
 {
@@ -33,6 +34,8 @@ public:
     void test2();
 
 private:
+
+    typedef DataProcessor::SearchgwMsg SearchgwMsg;
 
     static const unsigned DefaultAdvertisePeriod = 1 * 60 * 1000;
     static const unsigned DefaultResponseTimeout = 5;
@@ -90,6 +93,8 @@ void FieldsTestSuite::test1()
 
 void FieldsTestSuite::test2()
 {
+    DataProcessor dataProcessor;
+
     unsigned nextRequestedTicks = 0;
     unsigned nextElapsedTicks = 0;
     DataSeq nextOutput;
@@ -101,6 +106,18 @@ void FieldsTestSuite::test2()
     TS_ASSERT(broadcast);
     TS_ASSERT_LESS_THAN(0, nextRequestedTicks);
     TS_TRACE(nextRequestedTicks);
+
+    bool searchgwSent = false;
+    dataProcessor.setSearchgwMsgReportCallback(
+        [&searchgwSent](const SearchgwMsg& msg)
+        {
+            TS_TRACE("Searchgw");
+            static_cast<void>(msg);
+            searchgwSent = true;
+        });
+
+    dataProcessor.checkWrittenMsg(&nextOutput[0], nextOutput.size());
+    TS_ASSERT(searchgwSent);
 }
 
 

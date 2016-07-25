@@ -16,6 +16,7 @@ set (COMMON_TEST_CLIENT_LIB "CommonTestClient")
 function (lib_common_test_client)
     set (src
         "CommonTestClient.cpp"
+        "DataProcessor.cpp"
     )
     add_library (${COMMON_TEST_CLIENT_LIB} STATIC ${src})
 endfunction ()
