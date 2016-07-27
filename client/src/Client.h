@@ -222,6 +222,7 @@ public:
             }
 
             GASSERT(msg);
+            m_lastMsgTimestamp = m_timestamp;
             msg->dispatch(*this);
 
             consumed += static_cast<std::size_t>(std::distance(iter, iterTmp));
@@ -368,6 +369,11 @@ public:
         auto returnCode = returnCodeField.value();
         if (returnCode < StatusMapSize) {
             status = StatusMap[returnCode];
+        }
+
+        GASSERT(!m_connected);
+        if (status == MqttsnConnectStatus_Connected) {
+            m_connected = true;
         }
 
         cb(cbData, status);
@@ -535,12 +541,27 @@ private:
         return static_cast<unsigned>(nextOpTimestamp - m_timestamp);
     }
 
+    unsigned calcPingTimeout()
+    {
+        if (!m_connected) {
+            return NoTimeout;
+        }
+
+        auto pingTimestamp = m_lastMsgTimestamp + m_keepAlivePeriod;
+        if (pingTimestamp <= m_timestamp) {
+            return 1U;
+        }
+
+        return static_cast<unsigned>(pingTimestamp - m_timestamp);
+    }
+
     void programNextTimeout()
     {
         unsigned delay = NoTimeout;
         delay = std::min(delay, calcGwReleaseTimeout());
         delay = std::min(delay, calcSearchGwSendTimeout());
         delay = std::min(delay, calcCurrentOpTimeout());
+        delay = std::min(delay, calcPingTimeout());
 
         if (delay == NoTimeout) {
             return;
@@ -729,6 +750,7 @@ private:
     Timestamp m_timestamp = 0;
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
+    Timestamp m_lastMsgTimestamp = 0;
     unsigned m_advertisePeriod = DefaultAdvertisePeriod;
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
