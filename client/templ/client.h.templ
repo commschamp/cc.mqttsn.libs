@@ -47,6 +47,7 @@ unsigned mqttsn_##NAME##client_process_data(ClientHandle client, const unsigned 
 void mqttsn_##NAME##client_tick(ClientHandle client, unsigned ms);
 void mqttsn_##NAME##client_set_gw_advertise_period(ClientHandle client, unsigned value);
 void mqttsn_##NAME##client_set_retry_period(ClientHandle client, unsigned value);
+void mqttsn_##NAME##client_set_retry_count(ClientHandle client, unsigned value);
 void mqttsn_##NAME##client_set_broadcast_radius(ClientHandle client, unsigned char value);
 
 MqttsnErrorCode mqttsn_##NAME##client_connect(

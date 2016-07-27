@@ -18,6 +18,7 @@
 #include "CommonTestClient.h"
 
 #include <cassert>
+#include <iostream>
 
 namespace
 {
@@ -36,7 +37,9 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_tickFunc = &mqttsn_client_tick;
     funcs.m_setGwAdvertisePeriodFunc = &mqttsn_client_set_gw_advertise_period;
     funcs.m_setRetryPeriodFunc = &mqttsn_client_set_retry_period;
+    funcs.m_setRetryCountFunc = &mqttsn_client_set_retry_count;
     funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
+    funcs.m_connectFunc = &mqttsn_client_connect;
     return funcs;
 }
 
@@ -83,10 +86,14 @@ bool CommonTestClient::start()
 
 void CommonTestClient::inputData(const std::uint8_t* buf, std::size_t bufLen)
 {
+    assert(m_inData.empty());
     m_inData.insert(m_inData.end(), buf, buf + bufLen);
     assert(m_libFuncs.m_processDataFunc != nullptr);
     assert(!m_inData.empty());
     unsigned count = (m_libFuncs.m_processDataFunc)(m_client, &m_inData[0], m_inData.size());
+    if (m_inData.size() < count) {
+        std::cout << "Processed " << count << " bytes, while having only " << m_inData.size() << std::endl;
+    }
     assert(count <= m_inData.size());
     m_inData.erase(m_inData.begin(), m_inData.begin() + count);
 }
@@ -109,10 +116,38 @@ void CommonTestClient::setRetryPeriod(unsigned ms)
     (m_libFuncs.m_setRetryPeriodFunc)(m_client, ms);
 }
 
+void CommonTestClient::setRetryCount(unsigned value)
+{
+    assert(m_libFuncs.m_setRetryCountFunc != nullptr);
+    (m_libFuncs.m_setRetryCountFunc)(m_client, value);
+}
+
 void CommonTestClient::setBroadcastRadius(unsigned char val)
 {
     assert(m_libFuncs.m_setBroadcastRadius != nullptr);
     (m_libFuncs.m_setBroadcastRadius)(m_client, val);
+}
+
+MqttsnErrorCode CommonTestClient::connect(
+    const char* clientId,
+    unsigned short keepAliveSeconds,
+    bool cleanSession,
+    const MqttsnWillInfo* willInfo,
+    ConnectStatusReportCallback&& cb)
+{
+    assert(m_libFuncs.m_connectFunc != nullptr);
+    assert(!m_connectStatusReportCallback);
+    m_connectStatusReportCallback = std::move(cb);
+
+    return
+        (m_libFuncs.m_connectFunc)(
+            m_client,
+            clientId,
+            keepAliveSeconds,
+            cleanSession,
+            willInfo,
+            &CommonTestClient::connectStatusCallback,
+            this);
 }
 
 CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)
@@ -162,6 +197,14 @@ void CommonTestClient::reportGwStatus(unsigned short gwId, MqttsnGwStatus status
     }
 }
 
+void CommonTestClient::reportConnectStatus(MqttsnConnectStatus status)
+{
+    assert(m_connectStatusReportCallback);
+    decltype(m_connectStatusReportCallback) func(std::move(m_connectStatusReportCallback));
+    m_connectStatusReportCallback = nullptr;
+    func(status);
+}
+
 void CommonTestClient::nextTickProgramCallback(void* data, unsigned duration)
 {
     assert(data != nullptr);
@@ -191,4 +234,10 @@ void CommonTestClient::gwStatusReportCallback(
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportGwStatus(gwId, status);
+}
+
+void CommonTestClient::connectStatusCallback(void* data, MqttsnConnectStatus status)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportConnectStatus(status);
 }

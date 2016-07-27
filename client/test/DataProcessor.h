@@ -44,22 +44,33 @@ public:
     typedef mqttsn::protocol::message::Advertise<TestMessage> AdvertiseMsg;
     typedef mqttsn::protocol::message::Searchgw<TestMessage> SearchgwMsg;
     typedef mqttsn::protocol::message::Gwinfo<TestMessage> GwinfoMsg;
+    typedef mqttsn::protocol::message::Connect<TestMessage> ConnectMsg;
+    typedef mqttsn::protocol::message::Connack<TestMessage> ConnackMsg;
 
     virtual ~DataProcessor();
 
     typedef std::function<void (const SearchgwMsg& msg)> SearchgwMsgReportCallback;
     void setSearchgwMsgReportCallback(SearchgwMsgReportCallback&& func);
 
+    typedef std::function<void (const ConnectMsg& msg)> ConnectMsgReportCallback;
+    void setConnectMsgReportCallback(ConnectMsgReportCallback&& func);
+
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
+    virtual void handle(ConnectMsg& msg) override;
+
+
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
     DataBuf prepareInput(const TestMessage& msg);
+
+    DataBuf prepareConnack(mqttsn::protocol::field::ReturnCodeVal val);
 
 private:
     typedef mqttsn::protocol::Stack<TestMessage, AllTestMessages> ProtStack;
 
     ProtStack m_stack;
     SearchgwMsgReportCallback m_searchgwMsgReportCallback;
+    ConnectMsgReportCallback m_connectMsgReportCallback;
 };
 
 

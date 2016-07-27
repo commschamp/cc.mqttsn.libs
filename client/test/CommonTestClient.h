@@ -37,7 +37,9 @@ typedef decltype(&mqttsn_client_process_data) ProcessDataFunc;
 typedef decltype(&mqttsn_client_tick) TickFunc;
 typedef decltype(&mqttsn_client_set_gw_advertise_period) SetGwAdvertisePeriodFunc;
 typedef decltype(&mqttsn_client_set_retry_period) SetRetryPeriodFunc;
+typedef decltype(&mqttsn_client_set_retry_count) SetRetryCountFunc;
 typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
+typedef decltype(&mqttsn_client_connect) ConnectFunc;
 
 
 struct ClientLibFuncs
@@ -53,7 +55,9 @@ struct ClientLibFuncs
     TickFunc m_tickFunc = nullptr;
     SetGwAdvertisePeriodFunc m_setGwAdvertisePeriodFunc = nullptr;
     SetRetryPeriodFunc m_setRetryPeriodFunc = nullptr;
+    SetRetryCountFunc m_setRetryCountFunc = nullptr;
     SetBroadcastRadiusFunc m_setBroadcastRadius = nullptr;
+    ConnectFunc m_connectFunc = nullptr;
 };
 
 class CommonTestClient
@@ -78,7 +82,16 @@ public:
     void tick(unsigned ms);
     void setGwAdvertisePeriod(unsigned ms);
     void setRetryPeriod(unsigned ms);
+    void setRetryCount(unsigned value);
     void setBroadcastRadius(unsigned char val);
+
+    typedef std::function<void (MqttsnConnectStatus)> ConnectStatusReportCallback;
+    MqttsnErrorCode connect(
+        const char* clientId,
+        unsigned short keepAliveSeconds,
+        bool cleanSession,
+        const MqttsnWillInfo* willInfo,
+        ConnectStatusReportCallback&& cb);
 
 private:
     typedef std::vector<std::uint8_t> InputData;
@@ -89,11 +102,13 @@ private:
     unsigned cancelNextTick();
     void sendOutputData(const unsigned char* buf, unsigned bufLen, bool broadcast);
     void reportGwStatus(unsigned short gwId, MqttsnGwStatus status);
+    void reportConnectStatus(MqttsnConnectStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
     static void sendOutputDataCallback(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void gwStatusReportCallback(void* data, unsigned short gwId, MqttsnGwStatus status);
+    static void connectStatusCallback(void* data, MqttsnConnectStatus status);
 
     ClientLibFuncs m_libFuncs;
     ClientHandle m_client = nullptr;
@@ -103,6 +118,7 @@ private:
     CancelNextTickCallback m_cancelNextTickCallback;
     SendDataCallback m_sendDataCallback;
     GwStatusReportCallback m_gwStatusReportCallback;
+    ConnectStatusReportCallback m_connectStatusReportCallback;
 
     static const ClientLibFuncs DefaultFuncs;
 };

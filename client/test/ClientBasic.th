@@ -27,11 +27,12 @@ CC_ENABLE_WARNINGS()
 #include "CommonTestClient.h"
 #include "DataProcessor.h"
 
-class FieldsTestSuite : public CxxTest::TestSuite
+class ClientBasic : public CxxTest::TestSuite
 {
 public:
     void test1();
     void test2();
+    void test3();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -39,50 +40,74 @@ private:
     typedef DataProcessor::AdvertiseMsg AdvertiseMsg;
     typedef DataProcessor::SearchgwMsg SearchgwMsg;
     typedef DataProcessor::GwinfoMsg GwinfoMsg;
+    typedef DataProcessor::ConnectMsg ConnectMsg;
 
-    static const unsigned DefaultAdvertisePeriod = 1 * 60 * 1000;
+    static const unsigned DefaultAdvertisePeriod = 5 * 60 * 1000;
     static const unsigned DefaultRetryTimeout = 5 * 1000;
+    static const unsigned DefaultRetryCount = 3;
     static const unsigned char DefaultBroadcastRadius = 0;
 
     typedef std::vector<std::uint8_t> DataSeq;
 
+    struct TestBasicState
+    {
+        unsigned m_nextRequestedTicks = 0;
+        unsigned m_nextElapsedTicks = 0;
+        DataSeq m_nextOutput;
+        bool m_broadcast;
+    };
+
+    template <typename TState>
+    void clearState(TState& state)
+    {
+        state = TState();
+    }
+
     typedef CommonTestClient::Ptr ClientPtr;
-    ClientPtr allocClient(
-        unsigned* nextRequestedTicks = nullptr,
-        unsigned* nextElapsedTicks = nullptr,
-        DataSeq* nextOutput = nullptr,
-        bool* broadcastFlag = nullptr)
+    ClientPtr allocClient(TestBasicState* state = nullptr, DataProcessor* dataProc = nullptr)
     {
         auto ptr = CommonTestClient::alloc();
         assert(ptr);
         ptr->setGwAdvertisePeriod(DefaultAdvertisePeriod);
         ptr->setRetryPeriod(DefaultRetryTimeout);
+        ptr->setRetryCount(DefaultRetryCount);
         ptr->setBroadcastRadius(DefaultBroadcastRadius);
 
-        if (nextRequestedTicks != nullptr) {
+        if (state != nullptr) {
             ptr->setProgramNextTickCallback(
-                [nextRequestedTicks](unsigned duration)
+                [state](unsigned duration)
                 {
-                    *nextRequestedTicks = duration;
+                    state->m_nextRequestedTicks = duration;
                 });
-        }
 
-        if (nextElapsedTicks != nullptr) {
             ptr->setCancelNextTickCallback(
-                [nextElapsedTicks]() -> unsigned
+                [state]() -> unsigned
                 {
-                    return *nextElapsedTicks;
+                    return state->m_nextElapsedTicks;
+                });
+
+            ptr->setSendDataCallback(
+                [state](const std::uint8_t* buf, unsigned bufLen, bool broadcast)
+                {
+                    state->m_nextOutput.insert(state->m_nextOutput.end(), buf, buf + bufLen);
+                    state->m_broadcast = broadcast;
                 });
         }
 
-        if (nextOutput != nullptr) {
-            ptr->setSendDataCallback(
-                [nextOutput, broadcastFlag](const std::uint8_t* buf, unsigned bufLen, bool broadcast)
+        if (dataProc != nullptr)
+        {
+            dataProc->setSearchgwMsgReportCallback(
+                [](const SearchgwMsg& msg)
                 {
-                    nextOutput->insert(nextOutput->end(), buf, buf + bufLen);
-                    if (broadcastFlag != nullptr) {
-                        *broadcastFlag = broadcast;
-                    }
+                    static_cast<void>(msg);
+                    TS_TRACE("SEARCHGW");
+                });
+
+            dataProc->setConnectMsgReportCallback(
+                [](const ConnectMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("CONNECT");
                 });
         }
 
@@ -115,59 +140,51 @@ private:
     }
 };
 
-void FieldsTestSuite::test1()
+void ClientBasic::test1()
 {
     auto client = allocClient();
     static_cast<void>(client);
 }
 
-void FieldsTestSuite::test2()
+void ClientBasic::test2()
 {
-    DataProcessor dataProcessor;
+    DataProcessor dataProc;
+    struct Test2State : public TestBasicState
+    {
+        bool m_searchgwSent = false;
+    };
 
-    unsigned nextRequestedTicks = 0;
-    unsigned nextElapsedTicks = 0;
-    DataSeq nextOutput;
-    bool broadcast = false;
-    bool searchgwSent = false;
+    Test2State state;
 
-    dataProcessor.setSearchgwMsgReportCallback(
-        [&searchgwSent](const SearchgwMsg& msg)
+    auto client = allocClient(&state, &dataProc);
+
+    dataProc.setSearchgwMsgReportCallback(
+        [&state](const SearchgwMsg& msg)
         {
             auto& fields = msg.fields();
             auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
             TS_ASSERT_EQUALS(radiusField.value(), DefaultBroadcastRadius);
-            searchgwSent = true;
+            state.m_searchgwSent = true;
         });
 
     auto checkSearchgwMessage =
         [&]()
         {
-            TS_ASSERT(!nextOutput.empty());
-            TS_ASSERT(broadcast);
-            TS_ASSERT_EQUALS(nextRequestedTicks, DefaultRetryTimeout);
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(state.m_broadcast);
+            TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
-            dataProcessor.checkWrittenMsg(&nextOutput[0], nextOutput.size());
-            TS_ASSERT(searchgwSent);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+            TS_ASSERT(state.m_searchgwSent);
         };
 
-    auto clearState =
-        [&]()
-        {
-            nextRequestedTicks = 0;
-            nextOutput.clear();
-            broadcast = false;
-            searchgwSent = false;
-        };
-
-    auto client = allocClient(&nextRequestedTicks, &nextElapsedTicks, &nextOutput, &broadcast);
     client->start();
 
     checkSearchgwMessage();
-    clearState();
+    clearState(state);
     client->tick(DefaultRetryTimeout);
     checkSearchgwMessage();
-    clearState();
+    clearState(state);
 
     MqttsnGwStatus reportedGwStatus = MqttsnGwStatus_TimedOut;
     std::uint8_t reportedGwId = 0U;
@@ -184,15 +201,16 @@ void FieldsTestSuite::test2()
     auto gwInfoData = prepareGwinfoMsg(GwId);
     TS_ASSERT(!gwInfoData.empty());
 
-    nextElapsedTicks = 1 * 1000;
+    assert(state.m_nextRequestedTicks == 0U);
+    state.m_nextElapsedTicks = 1 * 1000;
     client->inputData(&gwInfoData[0], gwInfoData.size());
 
     TS_ASSERT(gwStatusReported);
     TS_ASSERT_EQUALS(reportedGwId, GwId);
     TS_ASSERT_EQUALS(reportedGwStatus, MqttsnGwStatus_Available);
-    TS_ASSERT_EQUALS(nextRequestedTicks, DefaultAdvertisePeriod);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultAdvertisePeriod);
 
-    clearState();
+    clearState(state);
     gwStatusReported = false;
     client->tick(DefaultAdvertisePeriod);
     TS_ASSERT(gwStatusReported);
@@ -200,19 +218,19 @@ void FieldsTestSuite::test2()
     TS_ASSERT_EQUALS(reportedGwStatus, MqttsnGwStatus_TimedOut);
     checkSearchgwMessage();
 
-    clearState();
+    clearState(state);
     auto advertiseData = prepareAdvertiseMsg(GwId, (DefaultAdvertisePeriod / 1000) + 1);
     TS_ASSERT(!advertiseData.empty());
-    nextElapsedTicks = 1 * 1000;
+    state.m_nextElapsedTicks = 1 * 1000;
 
     client->inputData(&advertiseData[0], advertiseData.size());
 
     TS_ASSERT(gwStatusReported);
     TS_ASSERT_EQUALS(reportedGwId, GwId);
     TS_ASSERT_EQUALS(reportedGwStatus, MqttsnGwStatus_Available);
-    TS_ASSERT_EQUALS(nextRequestedTicks, DefaultAdvertisePeriod  + 1000);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultAdvertisePeriod  + 1000);
 
-    clearState();
+    clearState(state);
     gwStatusReported = false;
     client->tick(DefaultAdvertisePeriod  + 1000);
     TS_ASSERT(gwStatusReported);
@@ -221,6 +239,119 @@ void FieldsTestSuite::test2()
     checkSearchgwMessage();
 }
 
+void ClientBasic::test3()
+{
+    DataProcessor dataProc;
+    struct Test3State : public TestBasicState
+    {
+        bool m_connectMsgSent = false;
+        bool m_connected = false;
+    };
 
+    Test3State state;
+
+    auto client = allocClient(&state, &dataProc);
+
+    client->start();
+
+    static const std::uint8_t GwId = 5U;
+    client->setGwStatusReportCallback(
+        [](unsigned short gwId, MqttsnGwStatus status)
+        {
+            TS_ASSERT_EQUALS(gwId, GwId);
+            TS_ASSERT_EQUALS(status, MqttsnGwStatus_Available);
+        });
+
+    auto gwInfoData = prepareGwinfoMsg(GwId);
+    TS_ASSERT(!gwInfoData.empty());
+
+    state.m_nextElapsedTicks = 1 * 1000;
+    client->inputData(&gwInfoData[0], gwInfoData.size());
+    clearState(state);
+
+    static const std::string ClientId = "bla";
+    static const unsigned short KeepAlive = 60;
+
+    dataProc.setConnectMsgReportCallback(
+        [&](const ConnectMsg& msg)
+        {
+            state.m_connectMsgSent = true;
+            auto& fields = msg.fields();
+            auto& flagsField = std::get<ConnectMsg::FieldIdx_flags>(fields);
+            auto& flagsMembers = flagsField.value();
+            auto& midFlags = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+            auto& protocolIdField = std::get<ConnectMsg::FieldIdx_protocolId>(fields);
+            auto& durationField = std::get<ConnectMsg::FieldIdx_duration>(fields);
+            auto& clientIdField = std::get<ConnectMsg::FieldIdx_clientId>(fields);
+
+            TS_ASSERT(midFlags.getBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession));
+            TS_ASSERT(!(midFlags.getBitValue(mqttsn::protocol::field::MidFlagsBits_will)));
+            TS_ASSERT_EQUALS(protocolIdField.value(), 1);
+            TS_ASSERT_EQUALS(durationField.value(), KeepAlive);
+            TS_ASSERT_EQUALS(clientIdField.value(), ClientId);
+        });
+
+    TS_TRACE("Connecting...");
+    state.m_nextElapsedTicks = 0;
+    auto result =
+        client->connect(
+            ClientId.c_str(), KeepAlive, true, nullptr,
+            [&](MqttsnConnectStatus val)
+            {
+                // First connect is expected to be timed out
+                TS_TRACE("Connect status reported: " + std::to_string((int)val));
+                TS_ASSERT_EQUALS(val, MqttsnConnectStatus_Timeout);
+
+                auto result2 =
+                    client->connect(
+                        ClientId.c_str(), KeepAlive, true, nullptr,
+                        [&state](MqttsnConnectStatus val2)
+                        {
+                            TS_TRACE("Connect status reported: " + std::to_string((int)val2));
+                            TS_ASSERT_EQUALS(val2, MqttsnConnectStatus_Connected);
+                            state.m_connected = true;
+                        });
+
+                TS_ASSERT_EQUALS(result2, MqttsnErrorCode_Success);
+            });
+
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+
+    auto checkConnectMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_connectMsgSent);
+            TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+        };
+
+    checkConnectMessage();
+    auto nextTick = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTick);
+    checkConnectMessage();
+
+    nextTick = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTick);
+    checkConnectMessage();
+
+    nextTick = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTick);
+
+    // Timeout and new connect attempt is expected here
+
+    checkConnectMessage();
+    clearState(state);
+    auto connackMsg = dataProc.prepareConnack(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    client->inputData(&connackMsg[0], connackMsg.size());
+
+    TS_ASSERT(state.m_connected);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, KeepAlive * 1000);
+}
 
 

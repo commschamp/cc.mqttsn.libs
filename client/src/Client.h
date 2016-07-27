@@ -31,6 +31,8 @@
 #include "Message.h"
 #include "AllMessages.h"
 
+//#include <iostream>
+
 namespace mqttsn
 {
 
@@ -96,7 +98,6 @@ public:
     typedef Message::Field FieldBase;
     typedef typename mqttsn::protocol::field::GwId<FieldBase>::ValueType GwIdValueType;
     //typedef typename mqttsn::protocol::field::GwAdd<FieldBase, TProtOpts>::ValueType GwAddValueType;
-    typedef typename mqttsn::protocol::field::Duration<FieldBase>::ValueType DurationValueType;
     typedef typename mqttsn::protocol::field::WillTopic<FieldBase, TProtOpts>::ValueType WillTopicType;
     typedef typename mqttsn::protocol::field::WillMsg<FieldBase, TProtOpts>::ValueType WillMsgType;
     typedef unsigned long long Timestamp;
@@ -108,7 +109,7 @@ public:
         Timestamp m_timestamp = 0;
         GwIdValueType m_id = 0;
         //GwAddValueType m_addr;
-        DurationValueType m_duration = 0;
+        unsigned m_duration = 0;
     };
 
     typedef details::GwInfoStorageTypeT<GwInfo, TClientOpts> GwInfoStorage;
@@ -140,6 +141,11 @@ public:
     void setRetryPeriod(unsigned val)
     {
         m_retryPeriod = val;
+    }
+
+    void setRetryCount(unsigned val)
+    {
+        m_retryCount = std::max(1U, val);
     }
 
     void setBroadcastRadius(std::uint8_t val)
@@ -200,12 +206,12 @@ public:
 
     std::size_t processData(ReadIterator& iter, std::size_t len)
     {
-        auto iterOrig = iter;
         bool timerWasActive = updateTimestamp();
+        std::size_t consumed = 0;
         while (true) {
             auto iterTmp = iter;
             MsgPtr msg;
-            auto es = m_stack.read(msg, iterTmp, len);
+            auto es = m_stack.read(msg, iterTmp, len - consumed);
             if (es == comms::ErrorStatus::NotEnoughData) {
                 break;
             }
@@ -217,6 +223,8 @@ public:
 
             GASSERT(msg);
             msg->dispatch(*this);
+
+            consumed += static_cast<std::size_t>(std::distance(iter, iterTmp));
             iter = iterTmp;
         }
 
@@ -224,7 +232,7 @@ public:
             programNextTimeout();
         }
 
-        return static_cast<std::size_t>(std::distance(iterOrig, iter));
+        return consumed;
     }
 
     MqttsnErrorCode connect(
@@ -243,6 +251,8 @@ public:
             return MqttsnErrorCode_Busy;
         }
 
+        bool timerWasActive = updateTimestamp();
+
         m_keepAlivePeriod = keepAlivePeriod * 1000;
         m_currOp = Op::Connect;
 
@@ -254,8 +264,7 @@ public:
         connectOp->m_cb = cb;
         connectOp->m_cbData = data;
 
-        ConnectMsg msg;
-        auto& fields = msg.fields();
+        auto& fields = connectOp->m_connectMsg.fields();
         auto& flagsField = std::get<ConnectMsg::FieldIdx_flags>(fields);
         auto& flagsMembers = flagsField.value();
         auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
@@ -269,7 +278,14 @@ public:
         durationField.value() = keepAlivePeriod;
         clientIdField.value() = clientId;
 
-        sendMessage(msg);
+        bool result = doConnect();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
         return MqttsnErrorCode_Success;
     }
 
@@ -286,7 +302,7 @@ public:
             return;
         }
 
-        if (!addNewGw(idField.value(), durationField.value() * 1000)) {
+        if (!addNewGw(idField.value(), durationField.value() * 1000U)) {
             return;
         }
 
@@ -324,17 +340,20 @@ public:
             return;
         }
 
-        auto op = finaliseOp<ConnectOp>();
-        if (op.m_cb == nullptr) {
+        auto cb = opPtr<ConnectOp>()->m_cb;
+        auto cbData = opPtr<ConnectOp>()->m_cbData;
+        finaliseOp<ConnectOp>();
+
+        if (cb == nullptr) {
             return;
         }
 
         static_cast<void>(msg);
         static const MqttsnConnectStatus StatusMap[] = {
-            /* ReturnCodeVal_Accepted */ MqttsnReturnCode_Connected,
-            /* ReturnCodeVal_Conjestion */ MqttsnReturnCode_Conjestion,
-            /* ReturnCodeVal_InvalidTopicId */ MqttsnReturnCode_Denied,
-            /* ReturnCodeVal_NotSupported */ MqttsnReturnCode_Denied
+            /* ReturnCodeVal_Accepted */ MqttsnConnectStatus_Connected,
+            /* ReturnCodeVal_Conjestion */ MqttsnConnectStatus_Conjestion,
+            /* ReturnCodeVal_InvalidTopicId */ MqttsnConnectStatus_Denied,
+            /* ReturnCodeVal_NotSupported */ MqttsnConnectStatus_Denied
         };
 
         static const std::size_t StatusMapSize =
@@ -343,7 +362,7 @@ public:
             StatusMapSize == mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
             "Incorrect map");
 
-        MqttsnConnectStatus status = MqttsnReturnCode_Denied;
+        MqttsnConnectStatus status = MqttsnConnectStatus_Denied;
         auto& fields = msg.fields();
         auto& returnCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
         auto returnCode = returnCodeField.value();
@@ -351,7 +370,7 @@ public:
             status = StatusMap[returnCode];
         }
 
-        op.m_cb(op.m_cbData, status);
+        cb(cbData, status);
     }
 
     virtual void handle(WilltopicreqMsg& msg) override
@@ -361,7 +380,7 @@ public:
             return;
         }
 
-        auto* op = reinterpret_cast<ConnectOp*>(&m_opStorage);
+        auto* op = opPtr<ConnectOp>();
         if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
             return;
         }
@@ -388,7 +407,7 @@ public:
             return;
         }
 
-        auto* op = reinterpret_cast<ConnectOp*>(&m_opStorage);
+        auto* op = opPtr<ConnectOp>();
         if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
             return;
         }
@@ -421,6 +440,8 @@ private:
         MqttsnWillInfo m_willInfo = MqttsnWillInfo();
         ConnectStatusReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
+        ConnectMsg m_connectMsg;
+        unsigned m_attempt = 0;
     };
 
     typedef typename comms::util::AlignedUnion<
@@ -429,6 +450,12 @@ private:
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
+
+    template <typename TOp>
+    TOp* opPtr()
+    {
+        return reinterpret_cast<TOp*>(&m_opStorage);
+    }
 
     typename GwInfoStorage::iterator findGwInfo(GwIdValueType id)
     {
@@ -457,7 +484,7 @@ private:
     unsigned calcGwReleaseTimeout() const
     {
         if (m_gwInfos.empty()) {
-            return std::numeric_limits<unsigned>::max();
+            return NoTimeout;
         }
 
         auto iter = std::min_element(
@@ -482,7 +509,7 @@ private:
     unsigned calcSearchGwSendTimeout()
     {
         if (!m_gwInfos.empty()) {
-            return std::numeric_limits<unsigned>::max();
+            return NoTimeout;
         }
 
         auto nextSearchTimestamp = m_lastGwSearchTimestamp + m_retryPeriod;
@@ -496,10 +523,10 @@ private:
     unsigned calcCurrentOpTimeout()
     {
         if (m_currOp == Op::None) {
-            return std::numeric_limits<unsigned>::max();
+            return NoTimeout;
         }
 
-        auto* op = reinterpret_cast<OpBase*>(&m_opStorage);
+        auto* op = opPtr<OpBase>();
         auto nextOpTimestamp = op->m_lastMsgTimestamp + m_retryPeriod;
         if (nextOpTimestamp <= m_timestamp) {
             return 1U;
@@ -510,11 +537,14 @@ private:
 
     void programNextTimeout()
     {
-        static const unsigned DefaultNextTimeout = 5 * 60 * 1000;
-        unsigned delay = DefaultNextTimeout;
+        unsigned delay = NoTimeout;
         delay = std::min(delay, calcGwReleaseTimeout());
         delay = std::min(delay, calcSearchGwSendTimeout());
         delay = std::min(delay, calcCurrentOpTimeout());
+
+        if (delay == NoTimeout) {
+            return;
+        }
 
         // TODO: other delays
         GASSERT(m_nextTickProgramFn != nullptr);
@@ -529,7 +559,7 @@ private:
             [this](typename GwInfoStorage::const_reference elem) -> bool
             {
                 GASSERT(elem.m_duration != 0U);
-                return (m_timestamp <= (elem.m_timestamp + elem.m_duration));
+                return ((elem.m_timestamp + elem.m_duration) <= m_timestamp);
             };
 
         bool mustRemove = false;
@@ -567,7 +597,7 @@ private:
             return;
         }
 
-        auto* op = reinterpret_cast<OpBase*>(&m_opStorage);
+        auto* op = opPtr<OpBase>();
         if (m_timestamp < (op->m_lastMsgTimestamp + m_retryPeriod)) {
             return;
         }
@@ -598,7 +628,7 @@ private:
         checkOpTimeout();
     }
 
-    bool addNewGw(GwIdValueType id, DurationValueType duration)
+    bool addNewGw(GwIdValueType id, unsigned duration)
     {
         if (m_gwInfos.max_size() <= m_gwInfos.size()) {
             return false;
@@ -634,9 +664,16 @@ private:
     {
         GASSERT(m_currOp == Op::Connect);
 
-        auto op = finaliseOp<ConnectOp>();
-        if (op.m_cb != nullptr) {
-            op.m_cb(op.m_cbData, MqttsnReturnCode_Timeout);
+        if (doConnect()) {
+            opPtr<ConnectOp>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        auto cb = opPtr<ConnectOp>()->m_cb;
+        auto cbData = opPtr<ConnectOp>()->m_cbData;
+        finaliseOp<ConnectOp>();
+        if (cb != nullptr) {
+            cb(cbData, MqttsnConnectStatus_Timeout);
         }
     }
 
@@ -666,13 +703,25 @@ private:
     }
 
     template <typename TOp>
-    TOp finaliseOp()
+    void finaliseOp()
     {
-        auto* op = reinterpret_cast<TOp*>(&m_opStorage);
-        TOp opTmp = *op;
+        auto* op = opPtr<TOp>();
         op->~TOp();
         m_currOp = Op::None;
-        return opTmp;
+    }
+
+    bool doConnect()
+    {
+        GASSERT (m_currOp == Op::Connect);
+
+        auto* op = opPtr<ConnectOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+        sendMessage(op->m_connectMsg);
+        return true;
     }
 
     ProtStack m_stack;
@@ -682,6 +731,7 @@ private:
     Timestamp m_lastGwSearchTimestamp = 0;
     unsigned m_advertisePeriod = DefaultAdvertisePeriod;
     unsigned m_retryPeriod = DefaultRetryPeriod;
+    unsigned m_retryCount = DefaultRetryCount;
     unsigned m_keepAlivePeriod = 0;
     std::uint8_t m_broadcastRadius = DefaultBroadcastRadius;
 
@@ -708,7 +758,10 @@ private:
 
     static const unsigned DefaultAdvertisePeriod = 30 * 60 * 1000;
     static const unsigned DefaultRetryPeriod = 15 * 1000;
+    static const unsigned DefaultRetryCount = 3;
     static const std::uint8_t DefaultBroadcastRadius = 0U;
+
+    static const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
 };
 
 }  // namespace client

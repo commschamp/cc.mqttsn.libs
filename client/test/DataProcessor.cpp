@@ -26,10 +26,22 @@ void DataProcessor::setSearchgwMsgReportCallback(SearchgwMsgReportCallback&& fun
     m_searchgwMsgReportCallback = std::move(func);
 }
 
+void DataProcessor::setConnectMsgReportCallback(ConnectMsgReportCallback&& func)
+{
+    m_connectMsgReportCallback = std::move(func);
+}
+
 void DataProcessor::handle(SearchgwMsg& msg)
 {
     if (m_searchgwMsgReportCallback) {
         m_searchgwMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(ConnectMsg& msg)
+{
+    if (m_connectMsgReportCallback) {
+        m_connectMsgReportCallback(msg);
     }
 }
 
@@ -52,5 +64,16 @@ DataProcessor::DataBuf DataProcessor::prepareInput(const TestMessage& msg)
     auto es = m_stack.write(msg, writeIter, buf.size());
     static_cast<void>(es);
     assert(es == comms::ErrorStatus::Success);
+    return buf;
+}
+
+DataProcessor::DataBuf DataProcessor::prepareConnack(mqttsn::protocol::field::ReturnCodeVal val)
+{
+    ConnackMsg msg;
+    auto& fields = msg.fields();
+    auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
+    retCodeField.value() = val;
+    auto buf = prepareInput(msg);
+    assert(buf.size() == 3U);
     return buf;
 }

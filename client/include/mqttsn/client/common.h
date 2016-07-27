@@ -43,10 +43,10 @@ enum MqttsnQoS
 
 enum MqttsnConnectStatus
 {
-    MqttsnReturnCode_Connected,
-    MqttsnReturnCode_Denied,
-    MqttsnReturnCode_Conjestion,
-    MqttsnReturnCode_Timeout,
+    MqttsnConnectStatus_Connected,
+    MqttsnConnectStatus_Denied,
+    MqttsnConnectStatus_Conjestion,
+    MqttsnConnectStatus_Timeout,
 };
 
 enum MqttsnErrorCode

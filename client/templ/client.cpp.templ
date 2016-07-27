@@ -152,6 +152,12 @@ void mqttsn_##NAME##client_set_retry_period(ClientHandle client, unsigned value)
     clientObj->setRetryPeriod(value);
 }
 
+void mqttsn_##NAME##client_set_retry_count(ClientHandle client, unsigned value)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->setRetryCount(value);
+}
+
 void mqttsn_##NAME##client_set_broadcast_radius(ClientHandle client, unsigned char value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
