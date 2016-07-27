@@ -114,29 +114,41 @@ private:
         return std::move(ptr);
     }
 
-    DataBuf prepareGwinfoMsg(std::uint8_t id)
+    void doGwInfo(CommonTestClient& client, DataProcessor& dataProc, TestBasicState& state)
     {
-        GwinfoMsg msg;
-        auto& fields = msg.fields();
-        auto& gwIdField = std::get<GwinfoMsg::FieldIdx_gwId>(fields);
-        gwIdField.value() = id;
-        assert(msg.length() == 1U);
-        auto buf = DataProcessor().prepareInput(msg);
-        assert(buf.size() == 3U);
-        return buf;
-    }
+        bool searchgwSent = false;
+        static const std::uint8_t GwId = 5U;
+        client.setGwStatusReportCallback(
+            [](unsigned short gwId, MqttsnGwStatus status)
+            {
+                TS_ASSERT_EQUALS(gwId, GwId);
+                TS_ASSERT_EQUALS(status, MqttsnGwStatus_Available);
+            });
 
-    DataBuf prepareAdvertiseMsg(std::uint8_t id, unsigned short duration)
-    {
-        AdvertiseMsg msg;
-        auto& fields = msg.fields();
-        auto& gwIdField = std::get<AdvertiseMsg::FieldIdx_gwId>(fields);
-        auto& durationField = std::get<AdvertiseMsg::FieldIdx_duration>(fields);
-        gwIdField.value() = id;
-        durationField.value() = duration;
-        auto buf = DataProcessor().prepareInput(msg);
-        assert(buf.size() == 5U);
-        return buf;
+        auto oldSearchgwMsgReportCallback = dataProc.setSearchgwMsgReportCallback(
+            [&searchgwSent](const SearchgwMsg& msg)
+            {
+                TS_TRACE("SEARCHGW");
+                auto& fields = msg.fields();
+                auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
+                TS_ASSERT_EQUALS(radiusField.value(), DefaultBroadcastRadius);
+                searchgwSent = true;
+            });
+
+        TS_ASSERT(!state.m_nextOutput.empty());
+        TS_ASSERT(state.m_broadcast);
+        TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+        dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+        TS_ASSERT(searchgwSent);
+
+        auto gwInfoData = dataProc.prepareGwinfoMsg(GwId);
+        TS_ASSERT(!gwInfoData.empty());
+
+        state.m_nextElapsedTicks = 1 * 1000;
+        client.inputData(&gwInfoData[0], gwInfoData.size());
+        clearState(state);
+        dataProc.setSearchgwMsgReportCallback(std::move(oldSearchgwMsgReportCallback));
     }
 };
 
@@ -198,7 +210,7 @@ void ClientBasic::test2()
         });
 
     static const std::uint8_t GwId = 5U;
-    auto gwInfoData = prepareGwinfoMsg(GwId);
+    auto gwInfoData = dataProc.prepareGwinfoMsg(GwId);
     TS_ASSERT(!gwInfoData.empty());
 
     assert(state.m_nextRequestedTicks == 0U);
@@ -219,7 +231,7 @@ void ClientBasic::test2()
     checkSearchgwMessage();
 
     clearState(state);
-    auto advertiseData = prepareAdvertiseMsg(GwId, (DefaultAdvertisePeriod / 1000) + 1);
+    auto advertiseData = dataProc.prepareAdvertiseMsg(GwId, (DefaultAdvertisePeriod / 1000) + 1);
     TS_ASSERT(!advertiseData.empty());
     state.m_nextElapsedTicks = 1 * 1000;
 
@@ -241,6 +253,7 @@ void ClientBasic::test2()
 
 void ClientBasic::test3()
 {
+    // Connect without will
     DataProcessor dataProc;
     struct Test3State : public TestBasicState
     {
@@ -251,23 +264,9 @@ void ClientBasic::test3()
     Test3State state;
 
     auto client = allocClient(&state, &dataProc);
-
     client->start();
 
-    static const std::uint8_t GwId = 5U;
-    client->setGwStatusReportCallback(
-        [](unsigned short gwId, MqttsnGwStatus status)
-        {
-            TS_ASSERT_EQUALS(gwId, GwId);
-            TS_ASSERT_EQUALS(status, MqttsnGwStatus_Available);
-        });
-
-    auto gwInfoData = prepareGwinfoMsg(GwId);
-    TS_ASSERT(!gwInfoData.empty());
-
-    state.m_nextElapsedTicks = 1 * 1000;
-    client->inputData(&gwInfoData[0], gwInfoData.size());
-    clearState(state);
+    doGwInfo(*client, dataProc, state);
 
     static const std::string ClientId = "bla";
     static const unsigned short KeepAlive = 60;

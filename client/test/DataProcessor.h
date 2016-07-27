@@ -50,10 +50,10 @@ public:
     virtual ~DataProcessor();
 
     typedef std::function<void (const SearchgwMsg& msg)> SearchgwMsgReportCallback;
-    void setSearchgwMsgReportCallback(SearchgwMsgReportCallback&& func);
+    SearchgwMsgReportCallback setSearchgwMsgReportCallback(SearchgwMsgReportCallback&& func);
 
     typedef std::function<void (const ConnectMsg& msg)> ConnectMsgReportCallback;
-    void setConnectMsgReportCallback(ConnectMsgReportCallback&& func);
+    ConnectMsgReportCallback setConnectMsgReportCallback(ConnectMsgReportCallback&& func);
 
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
@@ -63,6 +63,8 @@ public:
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
     DataBuf prepareInput(const TestMessage& msg);
 
+    DataBuf prepareGwinfoMsg(std::uint8_t id);
+    DataBuf prepareAdvertiseMsg(std::uint8_t id, unsigned short duration);
     DataBuf prepareConnack(mqttsn::protocol::field::ReturnCodeVal val);
 
 private:

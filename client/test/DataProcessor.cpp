@@ -21,14 +21,18 @@
 
 DataProcessor::~DataProcessor() = default;
 
-void DataProcessor::setSearchgwMsgReportCallback(SearchgwMsgReportCallback&& func)
+DataProcessor::SearchgwMsgReportCallback DataProcessor::setSearchgwMsgReportCallback(SearchgwMsgReportCallback&& func)
 {
+    SearchgwMsgReportCallback old(std::move(m_searchgwMsgReportCallback));
     m_searchgwMsgReportCallback = std::move(func);
+    return old;
 }
 
-void DataProcessor::setConnectMsgReportCallback(ConnectMsgReportCallback&& func)
+DataProcessor::ConnectMsgReportCallback DataProcessor::setConnectMsgReportCallback(ConnectMsgReportCallback&& func)
 {
+    ConnectMsgReportCallback old(std::move(m_connectMsgReportCallback));
     m_connectMsgReportCallback = std::move(func);
+    return old;
 }
 
 void DataProcessor::handle(SearchgwMsg& msg)
@@ -64,6 +68,31 @@ DataProcessor::DataBuf DataProcessor::prepareInput(const TestMessage& msg)
     auto es = m_stack.write(msg, writeIter, buf.size());
     static_cast<void>(es);
     assert(es == comms::ErrorStatus::Success);
+    return buf;
+}
+
+DataProcessor::DataBuf DataProcessor::prepareGwinfoMsg(std::uint8_t id)
+{
+    GwinfoMsg msg;
+    auto& fields = msg.fields();
+    auto& gwIdField = std::get<GwinfoMsg::FieldIdx_gwId>(fields);
+    gwIdField.value() = id;
+    assert(msg.length() == 1U);
+    auto buf = prepareInput(msg);
+    assert(buf.size() == 3U);
+    return buf;
+}
+
+DataProcessor::DataBuf DataProcessor::prepareAdvertiseMsg(std::uint8_t id, unsigned short duration)
+{
+    AdvertiseMsg msg;
+    auto& fields = msg.fields();
+    auto& gwIdField = std::get<AdvertiseMsg::FieldIdx_gwId>(fields);
+    auto& durationField = std::get<AdvertiseMsg::FieldIdx_duration>(fields);
+    gwIdField.value() = id;
+    durationField.value() = duration;
+    auto buf = prepareInput(msg);
+    assert(buf.size() == 5U);
     return buf;
 }
 
