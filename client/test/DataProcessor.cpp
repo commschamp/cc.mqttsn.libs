@@ -35,6 +35,23 @@ DataProcessor::ConnectMsgReportCallback DataProcessor::setConnectMsgReportCallba
     return old;
 }
 
+DataProcessor::WilltopicMsgReportCallback DataProcessor::setWilltopicMsgReportCallback(
+    WilltopicMsgReportCallback&& func)
+{
+    WilltopicMsgReportCallback old = std::move(m_willtopicMsgReportCallback);
+    m_willtopicMsgReportCallback = std::move(func);
+    return old;
+}
+
+DataProcessor::WillmsgMsgReportCallback DataProcessor::setWillmsgMsgReportCallback(
+    WillmsgMsgReportCallback&& func)
+{
+    WillmsgMsgReportCallback old = std::move(m_willmsgMsgReportCallback);
+    m_willmsgMsgReportCallback = std::move(func);
+    return old;
+}
+
+
 void DataProcessor::handle(SearchgwMsg& msg)
 {
     if (m_searchgwMsgReportCallback) {
@@ -48,6 +65,21 @@ void DataProcessor::handle(ConnectMsg& msg)
         m_connectMsgReportCallback(msg);
     }
 }
+
+void DataProcessor::handle(WilltopicMsg& msg)
+{
+    if (m_willtopicMsgReportCallback) {
+        m_willtopicMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(WillmsgMsg& msg)
+{
+    if (m_willmsgMsgReportCallback) {
+        m_willmsgMsgReportCallback(msg);
+    }
+}
+
 
 void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
 {
@@ -105,4 +137,14 @@ DataProcessor::DataBuf DataProcessor::prepareConnack(mqttsn::protocol::field::Re
     auto buf = prepareInput(msg);
     assert(buf.size() == 3U);
     return buf;
+}
+
+DataProcessor::DataBuf DataProcessor::preapareWilltopicreq()
+{
+    return prepareInput(WilltopicreqMsg());
+}
+
+DataProcessor::DataBuf DataProcessor::preapareWillmsgreq()
+{
+    return prepareInput(WillmsgreqMsg());
 }

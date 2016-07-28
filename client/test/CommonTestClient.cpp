@@ -150,6 +150,28 @@ MqttsnErrorCode CommonTestClient::connect(
             this);
 }
 
+MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
+{
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::NoGwPublish == MqttsnQoS_NoGwPublish,
+        "Invalid mapping");
+
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
+        "Invalid mapping");
+
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::AtLeastOnceDelivery == MqttsnQoS_AtLeastOnceDelivery,
+        "Invalid mapping");
+
+    static_assert(
+        (int)mqttsn::protocol::field::QosType::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
+        "Invalid mapping");
+
+    return static_cast<MqttsnQoS>(val);
+
+}
+
 CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)
   : m_libFuncs(libFuncs),
     m_client((libFuncs.m_newFunc)())

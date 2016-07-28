@@ -46,6 +46,11 @@ public:
     typedef mqttsn::protocol::message::Gwinfo<TestMessage> GwinfoMsg;
     typedef mqttsn::protocol::message::Connect<TestMessage> ConnectMsg;
     typedef mqttsn::protocol::message::Connack<TestMessage> ConnackMsg;
+    typedef mqttsn::protocol::message::Willtopicreq<TestMessage> WilltopicreqMsg;
+    typedef mqttsn::protocol::message::Willtopic<TestMessage> WilltopicMsg;
+    typedef mqttsn::protocol::message::Willmsgreq<TestMessage> WillmsgreqMsg;
+    typedef mqttsn::protocol::message::Willmsg<TestMessage> WillmsgMsg;
+
 
     virtual ~DataProcessor();
 
@@ -55,9 +60,17 @@ public:
     typedef std::function<void (const ConnectMsg& msg)> ConnectMsgReportCallback;
     ConnectMsgReportCallback setConnectMsgReportCallback(ConnectMsgReportCallback&& func);
 
+    typedef std::function<void (const WilltopicMsg& msg)> WilltopicMsgReportCallback;
+    WilltopicMsgReportCallback setWilltopicMsgReportCallback(WilltopicMsgReportCallback&& func);
+
+    typedef std::function<void (const WillmsgMsg& msg)> WillmsgMsgReportCallback;
+    WillmsgMsgReportCallback setWillmsgMsgReportCallback(WillmsgMsgReportCallback&& func);
+
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
     virtual void handle(ConnectMsg& msg) override;
+    virtual void handle(WilltopicMsg& msg) override;
+    virtual void handle(WillmsgMsg& msg) override;
 
 
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
@@ -66,6 +79,8 @@ public:
     DataBuf prepareGwinfoMsg(std::uint8_t id);
     DataBuf prepareAdvertiseMsg(std::uint8_t id, unsigned short duration);
     DataBuf prepareConnack(mqttsn::protocol::field::ReturnCodeVal val);
+    DataBuf preapareWilltopicreq();
+    DataBuf preapareWillmsgreq();
 
 private:
     typedef mqttsn::protocol::Stack<TestMessage, AllTestMessages> ProtStack;
@@ -73,6 +88,8 @@ private:
     ProtStack m_stack;
     SearchgwMsgReportCallback m_searchgwMsgReportCallback;
     ConnectMsgReportCallback m_connectMsgReportCallback;
+    WilltopicMsgReportCallback m_willtopicMsgReportCallback;
+    WillmsgMsgReportCallback m_willmsgMsgReportCallback;
 };
 
 

@@ -24,6 +24,7 @@
 #include <cstdint>
 
 #include "mqttsn/client/common.h"
+#include "mqttsn/protocol/field.h"
 #include "client.h"
 
 typedef decltype(&mqttsn_client_new) ClientNewFunc;
@@ -92,6 +93,8 @@ public:
         bool cleanSession,
         const MqttsnWillInfo* willInfo,
         ConnectStatusReportCallback&& cb);
+
+    static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
 
 private:
     typedef std::vector<std::uint8_t> InputData;

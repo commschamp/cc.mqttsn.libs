@@ -341,6 +341,13 @@ public:
             return;
         }
 
+        auto* op = opPtr<ConnectOp>();
+        bool hasWill = (op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0');
+        bool willReported = (op->m_willTopicSent && op->m_willMsgSent);
+        if (hasWill && (!willReported)) {
+            return;
+        }
+
         auto cb = opPtr<ConnectOp>()->m_cb;
         auto cbData = opPtr<ConnectOp>()->m_cbData;
         finaliseOp<ConnectOp>();
@@ -403,6 +410,7 @@ public:
         midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_willInfo.retain);
         qosField.value() = details::translateQosValue(op->m_willInfo.qos);
         topicField.value() = op->m_willInfo.topic;
+        op->m_willTopicSent = true;
         sendMessage(outMsg);
     }
 
@@ -424,6 +432,7 @@ public:
         auto& willMsgField = std::get<WillmsgMsg::FieldIdx_willMsg>(fields);
 
         willMsgField.value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+        op->m_willMsgSent = true;
         sendMessage(outMsg);
     }
 
@@ -448,6 +457,8 @@ private:
         void* m_cbData = nullptr;
         ConnectMsg m_connectMsg;
         unsigned m_attempt = 0;
+        bool m_willTopicSent = false;
+        bool m_willMsgSent = false;
     };
 
     typedef typename comms::util::AlignedUnion<
