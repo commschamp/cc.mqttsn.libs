@@ -119,6 +119,16 @@ void mqttsn_##NAME##client_set_gw_status_report_callback(
     clientObj->setGwStatusReportCallback(fn, data);
 }
 
+void mqttsn_##NAME##client_set_connection_status_report_callback(
+    ClientHandle client,
+    ConnectionStatusReportFn fn,
+    void* data)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->setConnectionStatusReportCallback(fn, data);
+}
+
+
 bool mqttsn_##NAME##client_start(ClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
@@ -169,15 +179,12 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
-    const MqttsnWillInfo* willInfo,
-    ConnectStatusReportFn completeReportFn,
-    void* completeReportData)
+    const MqttsnWillInfo* willInfo)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     return clientObj->connect(
         clientId,
         keepAliveSeconds,
         cleanSession,
-        willInfo,
-        completeReportFn, completeReportData);
+        willInfo);
 }

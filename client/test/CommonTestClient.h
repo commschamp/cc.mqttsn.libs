@@ -33,6 +33,7 @@ typedef decltype(&mqttsn_client_set_next_tick_program_callback) NextTickProgramC
 typedef decltype(&mqttsn_client_set_cancel_next_tick_wait_callback) CancelNextTickCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_send_output_data_callback) SendOutDataCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_gw_status_report_callback) GwStatusReportCallbackSetFunc;
+typedef decltype(&mqttsn_client_set_connection_status_report_callback) ConnectionStatusReportCallbackSetFunc;
 typedef decltype(&mqttsn_client_start) StartFunc;
 typedef decltype(&mqttsn_client_process_data) ProcessDataFunc;
 typedef decltype(&mqttsn_client_tick) TickFunc;
@@ -51,6 +52,7 @@ struct ClientLibFuncs
     CancelNextTickCallbackSetFunc m_cancelNextTickCallbackSetFunc = nullptr;
     SendOutDataCallbackSetFunc m_sentOutDataCallbackSetFunc = nullptr;
     GwStatusReportCallbackSetFunc m_gwStatusReportCallbackSetFunc = nullptr;
+    ConnectionStatusReportCallbackSetFunc m_connectionStatusReportCallbackSetFunc = nullptr;
     StartFunc m_startFunc = nullptr;
     ProcessDataFunc m_processDataFunc = nullptr;
     TickFunc m_tickFunc = nullptr;
@@ -69,13 +71,15 @@ public:
     typedef std::function<unsigned ()> CancelNextTickCallback;
     typedef std::function<void (const std::uint8_t* buf, unsigned bufLen, bool broadcast)> SendDataCallback;
     typedef std::function<void (unsigned short gwId, MqttsnGwStatus status)> GwStatusReportCallback;
+    typedef std::function<void (MqttsnConnectionStatus status)> ConnectionStatusReportCallback;
 
     ~CommonTestClient();
 
-    void setProgramNextTickCallback(ProgramNextTickCallback&& func);
-    void setCancelNextTickCallback(CancelNextTickCallback&& func);
-    void setSendDataCallback(SendDataCallback&& func);
-    void setGwStatusReportCallback(GwStatusReportCallback&& func);
+    ProgramNextTickCallback setProgramNextTickCallback(ProgramNextTickCallback&& func);
+    CancelNextTickCallback setCancelNextTickCallback(CancelNextTickCallback&& func);
+    SendDataCallback setSendDataCallback(SendDataCallback&& func);
+    GwStatusReportCallback setGwStatusReportCallback(GwStatusReportCallback&& func);
+    ConnectionStatusReportCallback setConnectionStatusReportCallback(ConnectionStatusReportCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
     bool start();
@@ -86,13 +90,11 @@ public:
     void setRetryCount(unsigned value);
     void setBroadcastRadius(unsigned char val);
 
-    typedef std::function<void (MqttsnConnectStatus)> ConnectStatusReportCallback;
     MqttsnErrorCode connect(
         const char* clientId,
         unsigned short keepAliveSeconds,
         bool cleanSession,
-        const MqttsnWillInfo* willInfo,
-        ConnectStatusReportCallback&& cb);
+        const MqttsnWillInfo* willInfo);
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
 
@@ -105,13 +107,13 @@ private:
     unsigned cancelNextTick();
     void sendOutputData(const unsigned char* buf, unsigned bufLen, bool broadcast);
     void reportGwStatus(unsigned short gwId, MqttsnGwStatus status);
-    void reportConnectStatus(MqttsnConnectStatus status);
+    void reportConnectionStatus(MqttsnConnectionStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
     static void sendOutputDataCallback(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void gwStatusReportCallback(void* data, unsigned short gwId, MqttsnGwStatus status);
-    static void connectStatusCallback(void* data, MqttsnConnectStatus status);
+    static void connectionStatusReportCallback(void* data, MqttsnConnectionStatus status);
 
     ClientLibFuncs m_libFuncs;
     ClientHandle m_client = nullptr;
@@ -121,7 +123,7 @@ private:
     CancelNextTickCallback m_cancelNextTickCallback;
     SendDataCallback m_sendDataCallback;
     GwStatusReportCallback m_gwStatusReportCallback;
-    ConnectStatusReportCallback m_connectStatusReportCallback;
+    ConnectionStatusReportCallback m_connectionStatusReportCallback;
 
     static const ClientLibFuncs DefaultFuncs;
 };

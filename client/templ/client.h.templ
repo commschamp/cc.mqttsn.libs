@@ -42,6 +42,10 @@ void mqttsn_##NAME##client_set_gw_status_report_callback(
     ClientHandle client,
     GwStatusReportFn fn,
     void* data);
+void mqttsn_##NAME##client_set_connection_status_report_callback(
+    ClientHandle client,
+    ConnectionStatusReportFn fn,
+    void* data);
 bool mqttsn_##NAME##client_start(ClientHandle client);
 unsigned mqttsn_##NAME##client_process_data(ClientHandle client, const unsigned char* from, unsigned len);
 void mqttsn_##NAME##client_tick(ClientHandle client, unsigned ms);
@@ -55,9 +59,7 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
-    const MqttsnWillInfo* willInfo,
-    ConnectStatusReportFn completeReportFn,
-    void* completeReportData);
+    const MqttsnWillInfo* willInfo);
 
 #ifdef __cplusplus
 }

@@ -41,12 +41,16 @@ enum MqttsnQoS
     MqttsnQoS_ExactlyOnceDelivery
 };
 
-enum MqttsnConnectStatus
+enum MqttsnConnectionStatus
 {
-    MqttsnConnectStatus_Connected,
-    MqttsnConnectStatus_Denied,
-    MqttsnConnectStatus_Conjestion,
-    MqttsnConnectStatus_Timeout,
+    MqttsnConnectionStatus_Invalid,
+    MqttsnConnectionStatus_Connected,
+    MqttsnConnectionStatus_Denied,
+    MqttsnConnectionStatus_Conjestion,
+    MqttsnConnectionStatus_Timeout,
+    MqttsnConnectionStatus_Disconnected,
+    MqttsnConnectionStatus_DisconnectedAsleep,
+    MqttsnConnectionStatus_NumOfValues
 };
 
 enum MqttsnErrorCode
@@ -76,7 +80,7 @@ typedef void (*NextTickProgramFn)(void* data, unsigned duration);
 typedef unsigned (*CancelNextTickWaitFn)(void* data);
 typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
 typedef void (*GwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
-typedef void (*ConnectStatusReportFn)(void* data, MqttsnConnectStatus status);
+typedef void (*ConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
 
 #ifdef __cplusplus
 }

@@ -160,20 +160,26 @@ public:
 
     void setNextTickProgramCallback(NextTickProgramFn cb, void* data)
     {
-        m_nextTickProgramFn = cb;
-        m_nextTickProgramData = data;
+        if (cb != nullptr) {
+            m_nextTickProgramFn = cb;
+            m_nextTickProgramData = data;
+        }
     }
 
     void setCancelNextTickWaitCallback(CancelNextTickWaitFn cb, void* data)
     {
-        m_cancelNextTickWaitFn = cb;
-        m_cancelNextTickWaitData = data;
+        if (cb != nullptr) {
+            m_cancelNextTickWaitFn = cb;
+            m_cancelNextTickWaitData = data;
+        }
     }
 
     void setSendOutputDataCallback(SendOutputDataFn cb, void* data)
     {
-        m_sendOutputDataFn = cb;
-        m_sendOutputDataData = data;
+        if (cb != nullptr) {
+            m_sendOutputDataFn = cb;
+            m_sendOutputDataData = data;
+        }
     }
 
     void setGwStatusReportCallback(GwStatusReportFn cb, void* data)
@@ -182,11 +188,20 @@ public:
         m_gwStatusReportData = data;
     }
 
+    void setConnectionStatusReportCallback(ConnectionStatusReportFn cb, void* data)
+    {
+        if (cb != nullptr) {
+            m_connectionStatusReportFn = cb;
+            m_connectionStatusReportData = data;
+        }
+    }
+
     bool start()
     {
         if ((m_nextTickProgramFn == nullptr) ||
             (m_cancelNextTickWaitFn == nullptr) ||
-            (m_sendOutputDataFn == nullptr)) {
+            (m_sendOutputDataFn == nullptr) ||
+            (m_connectionStatusReportFn == nullptr)) {
             return false;
         }
 
@@ -240,9 +255,7 @@ public:
         const char* clientId,
         unsigned short keepAlivePeriod,
         bool cleanSession,
-        const MqttsnWillInfo* willInfo,
-        ConnectStatusReportFn cb,
-        void* data)
+        const MqttsnWillInfo* willInfo)
     {
         if (m_connected) {
             return MqttsnErrorCode_InvalidOperation;
@@ -262,8 +275,6 @@ public:
         if (willInfo != nullptr) {
             connectOp->m_willInfo = *willInfo;
         }
-        connectOp->m_cb = cb;
-        connectOp->m_cbData = data;
 
         auto& fields = connectOp->m_connectMsg.fields();
         auto& flagsField = std::get<ConnectMsg::FieldIdx_flags>(fields);
@@ -348,20 +359,14 @@ public:
             return;
         }
 
-        auto cb = opPtr<ConnectOp>()->m_cb;
-        auto cbData = opPtr<ConnectOp>()->m_cbData;
         finaliseOp<ConnectOp>();
 
-        if (cb == nullptr) {
-            return;
-        }
-
         static_cast<void>(msg);
-        static const MqttsnConnectStatus StatusMap[] = {
-            /* ReturnCodeVal_Accepted */ MqttsnConnectStatus_Connected,
-            /* ReturnCodeVal_Conjestion */ MqttsnConnectStatus_Conjestion,
-            /* ReturnCodeVal_InvalidTopicId */ MqttsnConnectStatus_Denied,
-            /* ReturnCodeVal_NotSupported */ MqttsnConnectStatus_Denied
+        static const MqttsnConnectionStatus StatusMap[] = {
+            /* ReturnCodeVal_Accepted */ MqttsnConnectionStatus_Connected,
+            /* ReturnCodeVal_Conjestion */ MqttsnConnectionStatus_Conjestion,
+            /* ReturnCodeVal_InvalidTopicId */ MqttsnConnectionStatus_Denied,
+            /* ReturnCodeVal_NotSupported */ MqttsnConnectionStatus_Denied
         };
 
         static const std::size_t StatusMapSize =
@@ -370,7 +375,7 @@ public:
             StatusMapSize == mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
             "Incorrect map");
 
-        MqttsnConnectStatus status = MqttsnConnectStatus_Denied;
+        MqttsnConnectionStatus status = MqttsnConnectionStatus_Denied;
         auto& fields = msg.fields();
         auto& returnCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
         auto returnCode = returnCodeField.value();
@@ -379,11 +384,12 @@ public:
         }
 
         GASSERT(!m_connected);
-        if (status == MqttsnConnectStatus_Connected) {
+        if (status == MqttsnConnectionStatus_Connected) {
             m_connected = true;
         }
 
-        cb(cbData, status);
+        GASSERT(m_connectionStatusReportFn != nullptr);
+        m_connectionStatusReportFn(m_connectionStatusReportData, status);
     }
 
     virtual void handle(WilltopicreqMsg& msg) override
@@ -453,8 +459,6 @@ private:
     struct ConnectOp : public OpBase
     {
         MqttsnWillInfo m_willInfo = MqttsnWillInfo();
-        ConnectStatusReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
         ConnectMsg m_connectMsg;
         unsigned m_attempt = 0;
         bool m_willTopicSent = false;
@@ -701,12 +705,9 @@ private:
             return;
         }
 
-        auto cb = opPtr<ConnectOp>()->m_cb;
-        auto cbData = opPtr<ConnectOp>()->m_cbData;
         finaliseOp<ConnectOp>();
-        if (cb != nullptr) {
-            cb(cbData, MqttsnConnectStatus_Timeout);
-        }
+        GASSERT(m_connectionStatusReportFn != nullptr);
+        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Timeout);
     }
 
     void sendMessage(const Message& msg, bool broadcast = false)
@@ -786,8 +787,8 @@ private:
     GwStatusReportFn m_gwStatusReportFn = nullptr;
     void* m_gwStatusReportData = nullptr;
 
-    ConnectStatusReportFn m_connectStatusReportFn = nullptr;
-    void* m_connectStatusReportData = nullptr;
+    ConnectionStatusReportFn m_connectionStatusReportFn = nullptr;
+    void* m_connectionStatusReportData = nullptr;
 
     static const unsigned DefaultAdvertisePeriod = 30 * 60 * 1000;
     static const unsigned DefaultRetryPeriod = 15 * 1000;

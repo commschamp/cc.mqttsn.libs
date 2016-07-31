@@ -61,6 +61,7 @@ private:
         unsigned m_nextElapsedTicks = 0;
         DataSeq m_nextOutput;
         bool m_broadcast;
+        MqttsnConnectionStatus m_connectionStatus = MqttsnConnectionStatus_Invalid;
     };
 
     template <typename TState>
@@ -98,6 +99,12 @@ private:
                     state->m_nextOutput.insert(state->m_nextOutput.end(), buf, buf + bufLen);
                     state->m_broadcast = broadcast;
                 });
+            ptr->setConnectionStatusReportCallback(
+                [state](MqttsnConnectionStatus status)
+                {
+                    state->m_connectionStatus = status;
+                });
+
         }
 
         if (dataProc != nullptr)
@@ -279,7 +286,6 @@ void ClientBasic::test3()
     struct Test3State : public TestBasicState
     {
         bool m_connectMsgSent = false;
-        bool m_connected = false;
     };
 
     Test3State state;
@@ -313,27 +319,31 @@ void ClientBasic::test3()
 
     TS_TRACE("Connecting...");
     state.m_nextElapsedTicks = 0;
+
+    client->setConnectionStatusReportCallback(
+        [&](MqttsnConnectionStatus val)
+        {
+            // First connect is expected to be timed out
+            TS_TRACE("Connect status reported: " + std::to_string((int)val));
+            TS_ASSERT_EQUALS(val, MqttsnConnectionStatus_Timeout);
+
+            client->setConnectionStatusReportCallback(
+                [&](MqttsnConnectionStatus val2)
+                {
+                    TS_TRACE("Connect status reported: " + std::to_string((int)val2));
+                    TS_ASSERT_EQUALS(val2, MqttsnConnectionStatus_Connected);
+                    state.m_connectionStatus = val2;
+                });
+
+            auto result2 =
+                client->connect(ClientId.c_str(), KeepAlive, true, nullptr);
+
+            TS_ASSERT_EQUALS(result2, MqttsnErrorCode_Success);
+
+        });
+
     auto result =
-        client->connect(
-            ClientId.c_str(), KeepAlive, true, nullptr,
-            [&](MqttsnConnectStatus val)
-            {
-                // First connect is expected to be timed out
-                TS_TRACE("Connect status reported: " + std::to_string((int)val));
-                TS_ASSERT_EQUALS(val, MqttsnConnectStatus_Timeout);
-
-                auto result2 =
-                    client->connect(
-                        ClientId.c_str(), KeepAlive, true, nullptr,
-                        [&state](MqttsnConnectStatus val2)
-                        {
-                            TS_TRACE("Connect status reported: " + std::to_string((int)val2));
-                            TS_ASSERT_EQUALS(val2, MqttsnConnectStatus_Connected);
-                            state.m_connected = true;
-                        });
-
-                TS_ASSERT_EQUALS(result2, MqttsnErrorCode_Success);
-            });
+        client->connect(ClientId.c_str(), KeepAlive, true, nullptr);
 
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
 
@@ -370,7 +380,7 @@ void ClientBasic::test3()
     auto connackMsg = dataProc.prepareConnack(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     client->inputData(&connackMsg[0], connackMsg.size());
 
-    TS_ASSERT(state.m_connected);
+    TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnConnectionStatus_Connected);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, KeepAlive * 1000);
 }
 
@@ -458,17 +468,18 @@ void ClientBasic::test4()
     willInfo.qos = WillQos;
     willInfo.retain = WillRetain;
 
+    client->setConnectionStatusReportCallback(
+        [&](MqttsnConnectionStatus val)
+        {
+            // First connect is expected to be timed out
+            TS_TRACE("Connect status reported: " + std::to_string((int)val));
+            TS_ASSERT_EQUALS(val, MqttsnConnectionStatus_Connected);
+            state.m_connectComplete = true;
+        });
+
     state.m_nextElapsedTicks = 0;
     auto result =
-        client->connect(
-            ClientId.c_str(), KeepAlive, true, &willInfo,
-            [&](MqttsnConnectStatus val)
-            {
-                // First connect is expected to be timed out
-                TS_TRACE("Connect status reported: " + std::to_string((int)val));
-                TS_ASSERT_EQUALS(val, MqttsnConnectStatus_Connected);
-                state.m_connectComplete = true;
-            });
+        client->connect(ClientId.c_str(), KeepAlive, true, &willInfo);
 
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
 
