@@ -35,6 +35,7 @@ public:
     void test3();
     void test4();
     void test5();
+    void test6();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -49,6 +50,7 @@ private:
     typedef DataProcessor::WillmsgreqMsg WillmsgreqMsg;
     typedef DataProcessor::WillmsgMsg WillmsgMsg;
     typedef DataProcessor::PingreqMsg PingreqMsg;
+    typedef DataProcessor::PingrespMsg PingrespMsg;
 
     static const unsigned DefaultAdvertisePeriod = 5 * 60 * 1000;
     static const unsigned DefaultRetryTimeout = 5 * 1000;
@@ -64,7 +66,6 @@ private:
         unsigned m_nextElapsedTicks = 0;
         DataSeq m_nextOutput;
         bool m_broadcast;
-        MqttsnConnectionStatus m_connectionStatus = MqttsnConnectionStatus_Invalid;
     };
 
     template <typename TState>
@@ -93,7 +94,6 @@ private:
         ptr->setConnectionStatusReportCallback(
             [](MqttsnConnectionStatus val)
             {
-                // First connect is expected to be timed out
                 TS_TRACE("Connect status reported: " + std::to_string((int)val));
             });
 
@@ -113,13 +113,10 @@ private:
             ptr->setSendDataCallback(
                 [state](const std::uint8_t* buf, unsigned bufLen, bool broadcast)
                 {
+                    assert(state->m_nextOutput.empty());
+//                    TS_TRACE("Sending " + std::to_string(bufLen) + " bytes; broadcast=" + std::to_string(broadcast));
                     state->m_nextOutput.insert(state->m_nextOutput.end(), buf, buf + bufLen);
                     state->m_broadcast = broadcast;
-                });
-            ptr->setConnectionStatusReportCallback(
-                [state](MqttsnConnectionStatus status)
-                {
-                    state->m_connectionStatus = status;
                 });
 
         }
@@ -380,6 +377,7 @@ void ClientBasic::test2()
     dataProc.setSearchgwMsgReportCallback(
         [&state](const SearchgwMsg& msg)
         {
+            TS_TRACE("<-- SEARCHGW");
             auto& fields = msg.fields();
             auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
             TS_ASSERT_EQUALS(radiusField.value(), DefaultBroadcastRadius);
@@ -399,8 +397,10 @@ void ClientBasic::test2()
 
     client->start();
 
+    TS_TRACE("Started");
     checkSearchgwMessage();
     clearState(state);
+    TS_TRACE("Tick");
     client->tick(DefaultRetryTimeout);
     checkSearchgwMessage();
     clearState(state);
@@ -465,6 +465,7 @@ void ClientBasic::test3()
     struct Test3State : public TestBasicState
     {
         bool m_connectMsgSent = false;
+        MqttsnConnectionStatus m_connectionStatus = MqttsnConnectionStatus_Invalid;
     };
 
     Test3State state;
@@ -748,6 +749,7 @@ void ClientBasic::test5()
     struct Test5State : public TestBasicState
     {
         bool m_pingReqSent = false;
+        MqttsnConnectionStatus m_connectionStatus = MqttsnConnectionStatus_Invalid;
     };
 
     Test5State state;
@@ -758,6 +760,13 @@ void ClientBasic::test5()
     doGwInfo(*client, dataProc, state);
     clearState(state);
     doConnect(*client, dataProc, state);
+
+    client->setConnectionStatusReportCallback(
+        [&](MqttsnConnectionStatus val)
+        {
+            TS_TRACE("Connect status reported: " + std::to_string((int)val));
+            state.m_connectionStatus = val;
+        });
 
     auto nextTicks = state.m_nextRequestedTicks;
     TS_ASSERT_EQUALS(nextTicks, DefaultKeepAlive * 1000);
@@ -783,5 +792,60 @@ void ClientBasic::test5()
 
     client->tick(nextTicks);
     checkPingreqMessage();
-    // TODO: pings
+
+    nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    checkPingreqMessage();
+
+    nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    checkPingreqMessage();
+
+    TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnConnectionStatus_Invalid);
+    nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnConnectionStatus_Disconnected);
 }
+
+void ClientBasic::test6()
+{
+    // Connect with will
+    DataProcessor dataProc;
+    struct Test6State : public TestBasicState
+    {
+        bool m_pingRespSent = false;
+    };
+
+    Test6State state;
+
+    auto client = allocClient(&state, &dataProc);
+    client->start();
+
+    dataProc.setPingrespMsgReportCallback(
+        [&](const PingrespMsg& msg)
+        {
+            static_cast<void>(msg);
+            TS_TRACE("<-- PINGRESP");
+            state.m_pingRespSent = true;
+        });
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto pingreqMsg = dataProc.preaparePingreq();
+    sendData(*client, pingreqMsg, "PINGREQ");
+
+    TS_ASSERT(!state.m_nextOutput.empty());
+    TS_ASSERT(!state.m_broadcast);
+    dataProc.checkWrittenMsg(state.m_nextOutput);
+    TS_ASSERT(state.m_pingRespSent);
+}
+

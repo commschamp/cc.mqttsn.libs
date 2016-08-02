@@ -123,6 +123,10 @@ public:
     typedef mqttsn::protocol::message::Willtopic<Message, TProtOpts> WilltopicMsg;
     typedef mqttsn::protocol::message::Willmsgreq<Message> WillmsgreqMsg;
     typedef mqttsn::protocol::message::Willmsg<Message, TProtOpts> WillmsgMsg;
+
+    typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
+    typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
+
     Client() = default;
     virtual ~Client() = default;
 
@@ -442,6 +446,19 @@ public:
         sendMessage(outMsg);
     }
 
+    virtual void handle(PingreqMsg& msg) override
+    {
+        static_cast<void>(msg);
+        PingrespMsg outMsg;
+        sendMessage(outMsg);
+    }
+
+    virtual void handle(PingrespMsg& msg) override
+    {
+        static_cast<void>(msg);
+        m_pingCount = 0U;
+    }
+
 private:
 
     enum class Op
@@ -563,6 +580,10 @@ private:
         }
 
         auto pingTimestamp = m_lastMsgTimestamp + m_keepAlivePeriod;
+        if (0 < m_pingCount) {
+            pingTimestamp = m_lastPingTimestamp + m_retryPeriod;
+        }
+
         if (pingTimestamp <= m_timestamp) {
             return 1U;
         }
@@ -627,6 +648,35 @@ private:
         }
     }
 
+    void checkPing()
+    {
+        if (!m_connected) {
+            return;
+        }
+
+        if (m_pingCount == 0) {
+            // first ping;
+            if (m_timestamp < (m_lastMsgTimestamp + m_keepAlivePeriod)) {
+                return;
+            }
+
+            sendPing();
+            return;
+        }
+
+        GASSERT(0U < m_lastPingTimestamp);
+        if (m_timestamp < (m_lastPingTimestamp + m_retryPeriod)) {
+            return;
+        }
+
+        if (m_retryCount <= m_pingCount) {
+            reportDisconnected();
+            return;
+        }
+
+        sendPing();
+    }
+
     void checkOpTimeout()
     {
         if (m_currOp == Op::None) {
@@ -661,6 +711,7 @@ private:
 
         checkAvailableGateways();
         checkGwSearchReq();
+        checkPing();
         checkOpTimeout();
     }
 
@@ -757,12 +808,29 @@ private:
         return true;
     }
 
+    void sendPing()
+    {
+        ++m_pingCount;
+        m_lastPingTimestamp = m_timestamp;
+        PingreqMsg msg;
+        sendMessage(msg);
+    }
+
+    void reportDisconnected()
+    {
+        m_connected = false;
+        GASSERT(m_connectionStatusReportFn != nullptr);
+        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+    }
+
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;
     Timestamp m_timestamp = 0;
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
     Timestamp m_lastMsgTimestamp = 0;
+    Timestamp m_lastPingTimestamp = 0;
+    unsigned m_pingCount = 0;
     unsigned m_advertisePeriod = DefaultAdvertisePeriod;
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;

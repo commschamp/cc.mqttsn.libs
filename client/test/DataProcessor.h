@@ -72,6 +72,8 @@ public:
     typedef std::function<void (const PingreqMsg& msg)> PingreqMsgReportCallback;
     PingreqMsgReportCallback setPingreqMsgReportCallback(PingreqMsgReportCallback&& func);
 
+    typedef std::function<void (const PingrespMsg& msg)> PingrespMsgReportCallback;
+    PingrespMsgReportCallback setPingrespMsgReportCallback(PingrespMsgReportCallback&& func);
 
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
@@ -79,9 +81,11 @@ public:
     virtual void handle(WilltopicMsg& msg) override;
     virtual void handle(WillmsgMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
+    virtual void handle(PingrespMsg& msg) override;
 
 
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
+    void checkWrittenMsg(const DataBuf& data);
     DataBuf prepareInput(const TestMessage& msg);
 
     DataBuf prepareGwinfoMsg(std::uint8_t id);
@@ -89,6 +93,7 @@ public:
     DataBuf prepareConnack(mqttsn::protocol::field::ReturnCodeVal val);
     DataBuf preapareWilltopicreq();
     DataBuf preapareWillmsgreq();
+    DataBuf preaparePingreq();
     DataBuf preaparePingresp();
 
 private:
@@ -100,6 +105,7 @@ private:
     WilltopicMsgReportCallback m_willtopicMsgReportCallback;
     WillmsgMsgReportCallback m_willmsgMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
+    PingrespMsgReportCallback m_pingrespMsgReportCallback;
 };
 
 

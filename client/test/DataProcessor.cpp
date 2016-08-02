@@ -59,6 +59,14 @@ DataProcessor::PingreqMsgReportCallback DataProcessor::setPingreqMsgReportCallba
     return old;
 }
 
+DataProcessor::PingrespMsgReportCallback DataProcessor::setPingrespMsgReportCallback(
+    PingrespMsgReportCallback&& func)
+{
+    PingrespMsgReportCallback old = std::move(m_pingrespMsgReportCallback);
+    m_pingrespMsgReportCallback = std::move(func);
+    return old;
+}
+
 void DataProcessor::handle(SearchgwMsg& msg)
 {
     if (m_searchgwMsgReportCallback) {
@@ -94,6 +102,13 @@ void DataProcessor::handle(PingreqMsg& msg)
     }
 }
 
+void DataProcessor::handle(PingrespMsg& msg)
+{
+    if (m_pingrespMsgReportCallback) {
+        m_pingrespMsgReportCallback(msg);
+    }
+}
+
 void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
 {
     ProtStack::ReadIterator readIter = buf;
@@ -103,6 +118,11 @@ void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
     assert(es == comms::ErrorStatus::Success);
     assert(msg);
     msg->dispatch(*this);
+}
+
+void DataProcessor::checkWrittenMsg(const DataBuf& data)
+{
+    checkWrittenMsg(&data[0], data.size());
 }
 
 DataProcessor::DataBuf DataProcessor::prepareInput(const TestMessage& msg)
@@ -162,8 +182,12 @@ DataProcessor::DataBuf DataProcessor::preapareWillmsgreq()
     return prepareInput(WillmsgreqMsg());
 }
 
+DataProcessor::DataBuf DataProcessor::preaparePingreq()
+{
+    return prepareInput(PingreqMsg());
+}
+
 DataProcessor::DataBuf DataProcessor::preaparePingresp()
 {
     return prepareInput(PingrespMsg());
 }
-
