@@ -51,6 +51,9 @@ public:
     typedef mqttsn::protocol::message::Willmsgreq<TestMessage> WillmsgreqMsg;
     typedef mqttsn::protocol::message::Willmsg<TestMessage> WillmsgMsg;
 
+    typedef mqttsn::protocol::message::Pingreq<TestMessage> PingreqMsg;
+    typedef mqttsn::protocol::message::Pingresp<TestMessage> PingrespMsg;
+
 
     virtual ~DataProcessor();
 
@@ -66,11 +69,16 @@ public:
     typedef std::function<void (const WillmsgMsg& msg)> WillmsgMsgReportCallback;
     WillmsgMsgReportCallback setWillmsgMsgReportCallback(WillmsgMsgReportCallback&& func);
 
+    typedef std::function<void (const PingreqMsg& msg)> PingreqMsgReportCallback;
+    PingreqMsgReportCallback setPingreqMsgReportCallback(PingreqMsgReportCallback&& func);
+
+
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
     virtual void handle(ConnectMsg& msg) override;
     virtual void handle(WilltopicMsg& msg) override;
     virtual void handle(WillmsgMsg& msg) override;
+    virtual void handle(PingreqMsg& msg) override;
 
 
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
@@ -81,6 +89,7 @@ public:
     DataBuf prepareConnack(mqttsn::protocol::field::ReturnCodeVal val);
     DataBuf preapareWilltopicreq();
     DataBuf preapareWillmsgreq();
+    DataBuf preaparePingresp();
 
 private:
     typedef mqttsn::protocol::Stack<TestMessage, AllTestMessages> ProtStack;
@@ -90,6 +99,7 @@ private:
     ConnectMsgReportCallback m_connectMsgReportCallback;
     WilltopicMsgReportCallback m_willtopicMsgReportCallback;
     WillmsgMsgReportCallback m_willmsgMsgReportCallback;
+    PingreqMsgReportCallback m_pingreqMsgReportCallback;
 };
 
 

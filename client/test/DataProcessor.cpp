@@ -51,6 +51,13 @@ DataProcessor::WillmsgMsgReportCallback DataProcessor::setWillmsgMsgReportCallba
     return old;
 }
 
+DataProcessor::PingreqMsgReportCallback DataProcessor::setPingreqMsgReportCallback(
+    PingreqMsgReportCallback&& func)
+{
+    PingreqMsgReportCallback old = std::move(m_pingreqMsgReportCallback);
+    m_pingreqMsgReportCallback = std::move(func);
+    return old;
+}
 
 void DataProcessor::handle(SearchgwMsg& msg)
 {
@@ -80,6 +87,12 @@ void DataProcessor::handle(WillmsgMsg& msg)
     }
 }
 
+void DataProcessor::handle(PingreqMsg& msg)
+{
+    if (m_pingreqMsgReportCallback) {
+        m_pingreqMsgReportCallback(msg);
+    }
+}
 
 void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
 {
@@ -148,3 +161,9 @@ DataProcessor::DataBuf DataProcessor::preapareWillmsgreq()
 {
     return prepareInput(WillmsgreqMsg());
 }
+
+DataProcessor::DataBuf DataProcessor::preaparePingresp()
+{
+    return prepareInput(PingrespMsg());
+}
+
