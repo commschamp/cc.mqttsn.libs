@@ -57,7 +57,8 @@ enum MqttsnErrorCode
 {
     MqttsnErrorCode_Success,
     MqttsnErrorCode_InvalidOperation,
-    MqttsnErrorCode_Busy
+    MqttsnErrorCode_Busy,
+    MqttsnErrorCode_NotConnected,
 };
 
 enum MqttsnGwStatus

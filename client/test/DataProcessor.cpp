@@ -67,6 +67,14 @@ DataProcessor::PingrespMsgReportCallback DataProcessor::setPingrespMsgReportCall
     return old;
 }
 
+DataProcessor::DisconnectMsgReportCallback DataProcessor::setDisconnectMsgReportCallback(
+    DisconnectMsgReportCallback&& func)
+{
+    DisconnectMsgReportCallback old = std::move(m_disconnectMsgReportCallback);
+    m_disconnectMsgReportCallback = std::move(func);
+    return old;
+}
+
 void DataProcessor::handle(SearchgwMsg& msg)
 {
     if (m_searchgwMsgReportCallback) {
@@ -106,6 +114,13 @@ void DataProcessor::handle(PingrespMsg& msg)
 {
     if (m_pingrespMsgReportCallback) {
         m_pingrespMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(DisconnectMsg& msg)
+{
+    if (m_disconnectMsgReportCallback) {
+        m_disconnectMsgReportCallback(msg);
     }
 }
 

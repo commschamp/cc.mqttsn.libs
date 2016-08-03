@@ -41,6 +41,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_setRetryCountFunc = &mqttsn_client_set_retry_count;
     funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
     funcs.m_connectFunc = &mqttsn_client_connect;
+    funcs.m_disconnectFunc = &mqttsn_client_disconnect;
     return funcs;
 }
 
@@ -164,6 +165,12 @@ MqttsnErrorCode CommonTestClient::connect(
             keepAliveSeconds,
             cleanSession,
             willInfo);
+}
+
+MqttsnErrorCode CommonTestClient::disconnect()
+{
+    assert(m_libFuncs.m_disconnectFunc != nullptr);
+    return (m_libFuncs.m_disconnectFunc)(m_client);
 }
 
 MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)

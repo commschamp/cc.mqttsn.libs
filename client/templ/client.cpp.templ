@@ -188,3 +188,9 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
         cleanSession,
         willInfo);
 }
+
+MqttsnErrorCode mqttsn_##NAME##client_disconnect(ClientHandle client)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->disconnect();
+}

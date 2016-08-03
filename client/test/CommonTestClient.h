@@ -42,6 +42,7 @@ typedef decltype(&mqttsn_client_set_retry_period) SetRetryPeriodFunc;
 typedef decltype(&mqttsn_client_set_retry_count) SetRetryCountFunc;
 typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
 typedef decltype(&mqttsn_client_connect) ConnectFunc;
+typedef decltype(&mqttsn_client_disconnect) DisconnectFunc;
 
 
 struct ClientLibFuncs
@@ -61,6 +62,7 @@ struct ClientLibFuncs
     SetRetryCountFunc m_setRetryCountFunc = nullptr;
     SetBroadcastRadiusFunc m_setBroadcastRadius = nullptr;
     ConnectFunc m_connectFunc = nullptr;
+    DisconnectFunc m_disconnectFunc = nullptr;
 };
 
 class CommonTestClient
@@ -95,6 +97,8 @@ public:
         unsigned short keepAliveSeconds,
         bool cleanSession,
         const MqttsnWillInfo* willInfo);
+
+    MqttsnErrorCode disconnect();
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
 

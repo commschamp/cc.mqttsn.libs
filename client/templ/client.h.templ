@@ -61,6 +61,9 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     bool cleanSession,
     const MqttsnWillInfo* willInfo);
 
+MqttsnErrorCode mqttsn_##NAME##client_disconnect(ClientHandle client);
+
+
 #ifdef __cplusplus
 }
 #endif

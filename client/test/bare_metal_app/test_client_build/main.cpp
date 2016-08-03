@@ -38,7 +38,7 @@ unsigned cancelTick(void* data)
     return 0U;
 }
 
-void connectStatus(void* data, MqttsnConnectStatus status)
+void connectStatus(void* data, MqttsnConnectionStatus status)
 {
     static_cast<void>(data);
     static_cast<void>(status);
@@ -63,6 +63,7 @@ int main(int argc, const char** argv)
     mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
     mqttsn_test_bare_metal_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
     mqttsn_test_bare_metal_client_set_send_output_data_callback(client, &sendOutputData, nullptr);
+    mqttsn_test_bare_metal_client_set_connection_status_report_callback(client, &connectStatus, nullptr);
     if (mqttsn_test_bare_metal_client_start(client) == 0) {
         return -1;
     }
@@ -73,7 +74,8 @@ int main(int argc, const char** argv)
     const unsigned char* from = &Seq[0];
     mqttsn_test_bare_metal_client_process_data(client, from, SeqSize);
     mqttsn_test_bare_metal_client_tick(client, 10);
-    mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr, &connectStatus, nullptr);
+    mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr);
+    mqttsn_test_bare_metal_client_disconnect(client);
     mqttsn_test_bare_metal_client_free(client);
     while (true) {};
     return 0;

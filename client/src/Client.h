@@ -275,8 +275,7 @@ public:
         m_keepAlivePeriod = keepAlivePeriod * 1000;
         m_currOp = Op::Connect;
 
-        auto* connectOp = new (&m_opStorage) ConnectOp;
-        connectOp->m_lastMsgTimestamp = m_timestamp;
+        auto* connectOp = newOp<ConnectOp>();
         if (willInfo != nullptr) {
             connectOp->m_willInfo = *willInfo;
         }
@@ -296,6 +295,33 @@ public:
         clientIdField.value() = clientId;
 
         bool result = doConnect();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode disconnect()
+    {
+        if (!m_connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        m_currOp = Op::Disconnect;
+        auto* disconnectOp = newOp<DisconnectOp>();
+        static_cast<void>(disconnectOp);
+
+        bool result = doDisconnect();
         static_cast<void>(result);
         GASSERT(result);
 
@@ -463,9 +489,20 @@ public:
     virtual void handle(DisconnectMsg& msg) override
     {
         static_cast<void>(msg);
+
+        if (m_currOp == Op::Disconnect) {
+            finaliseOp<DisconnectOp>();
+            reportDisconnected();
+            return;
+        }
+
+        if (m_currOp == Op::None) {
+            reportDisconnected();
+        }
+
         // TODO: support asleep confirmation
 
-        reportDisconnected();
+        // TODO: Other operation in progress: abort
     }
 
 private:
@@ -474,25 +511,29 @@ private:
     {
         None,
         Connect,
+        Disconnect,
         NumOfValues // must be last
     };
 
     struct OpBase
     {
         Timestamp m_lastMsgTimestamp = 0;
+        unsigned m_attempt = 0;
     };
 
     struct ConnectOp : public OpBase
     {
         MqttsnWillInfo m_willInfo = MqttsnWillInfo();
         ConnectMsg m_connectMsg;
-        unsigned m_attempt = 0;
         bool m_willTopicSent = false;
         bool m_willMsgSent = false;
     };
 
+    typedef OpBase DisconnectOp;
+
     typedef typename comms::util::AlignedUnion<
-        ConnectOp
+        ConnectOp,
+        DisconnectOp
     >::Type OpStorageType;
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
@@ -502,6 +543,14 @@ private:
     TOp* opPtr()
     {
         return reinterpret_cast<TOp*>(&m_opStorage);
+    }
+
+    template <typename TOp>
+    TOp* newOp()
+    {
+        auto op = new (&m_opStorage) TOp();
+        op->m_lastMsgTimestamp = m_timestamp;
+        return op;
     }
 
     typename GwInfoStorage::iterator findGwInfo(GwIdValueType id)
@@ -700,7 +749,8 @@ private:
         typedef void (Client<THandler, TClientOpts, TProtOpts>::*TimeoutFunc)();
         static const TimeoutFunc OpTimeoutFuncMap[] =
         {
-            &Client::connectTimeout
+            &Client::connectTimeout,
+            &Client::disconnectTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -770,6 +820,20 @@ private:
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Timeout);
     }
 
+    void disconnectTimeout()
+    {
+        GASSERT(m_currOp == Op::Disconnect);
+
+        if (doDisconnect()) {
+            opPtr<DisconnectOp>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseOp<DisconnectOp>();
+        GASSERT(m_connectionStatusReportFn != nullptr);
+        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+    }
+
     void sendMessage(const Message& msg, bool broadcast = false)
     {
         if (m_sendOutputDataFn == nullptr) {
@@ -814,6 +878,22 @@ private:
 
         ++op->m_attempt;
         sendMessage(op->m_connectMsg);
+        return true;
+    }
+
+    bool doDisconnect()
+    {
+        GASSERT (m_currOp == Op::Disconnect);
+
+        auto* op = opPtr<DisconnectOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+
+        DisconnectMsg msg;
+        sendMessage(msg);
         return true;
     }
 

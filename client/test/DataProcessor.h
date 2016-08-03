@@ -76,6 +76,10 @@ public:
     typedef std::function<void (const PingrespMsg& msg)> PingrespMsgReportCallback;
     PingrespMsgReportCallback setPingrespMsgReportCallback(PingrespMsgReportCallback&& func);
 
+    typedef std::function<void (const DisconnectMsg& msg)> DisconnectMsgReportCallback;
+    DisconnectMsgReportCallback setDisconnectMsgReportCallback(DisconnectMsgReportCallback&& func);
+
+
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
     virtual void handle(ConnectMsg& msg) override;
@@ -83,6 +87,7 @@ public:
     virtual void handle(WillmsgMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
+    virtual void handle(DisconnectMsg& msg) override;
 
 
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
@@ -108,6 +113,7 @@ private:
     WillmsgMsgReportCallback m_willmsgMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
     PingrespMsgReportCallback m_pingrespMsgReportCallback;
+    DisconnectMsgReportCallback m_disconnectMsgReportCallback;
 };
 
 
