@@ -53,6 +53,7 @@ public:
 
     typedef mqttsn::protocol::message::Pingreq<TestMessage> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<TestMessage> PingrespMsg;
+    typedef mqttsn::protocol::message::Disconnect<TestMessage> DisconnectMsg;
 
 
     virtual ~DataProcessor();
@@ -90,11 +91,12 @@ public:
 
     DataBuf prepareGwinfoMsg(std::uint8_t id);
     DataBuf prepareAdvertiseMsg(std::uint8_t id, unsigned short duration);
-    DataBuf prepareConnack(mqttsn::protocol::field::ReturnCodeVal val);
-    DataBuf preapareWilltopicreq();
-    DataBuf preapareWillmsgreq();
-    DataBuf preaparePingreq();
-    DataBuf preaparePingresp();
+    DataBuf prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal val);
+    DataBuf prepareWilltopicreqMsg();
+    DataBuf prepareWillmsgreqMsg();
+    DataBuf preparePingreqMsg();
+    DataBuf preparePingrespMsg();
+    DataBuf prepareDisconnectMsg();
 
 private:
     typedef mqttsn::protocol::Stack<TestMessage, AllTestMessages> ProtStack;

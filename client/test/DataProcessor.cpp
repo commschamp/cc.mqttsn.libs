@@ -161,7 +161,7 @@ DataProcessor::DataBuf DataProcessor::prepareAdvertiseMsg(std::uint8_t id, unsig
     return buf;
 }
 
-DataProcessor::DataBuf DataProcessor::prepareConnack(mqttsn::protocol::field::ReturnCodeVal val)
+DataProcessor::DataBuf DataProcessor::prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal val)
 {
     ConnackMsg msg;
     auto& fields = msg.fields();
@@ -172,22 +172,28 @@ DataProcessor::DataBuf DataProcessor::prepareConnack(mqttsn::protocol::field::Re
     return buf;
 }
 
-DataProcessor::DataBuf DataProcessor::preapareWilltopicreq()
+DataProcessor::DataBuf DataProcessor::prepareWilltopicreqMsg()
 {
     return prepareInput(WilltopicreqMsg());
 }
 
-DataProcessor::DataBuf DataProcessor::preapareWillmsgreq()
+DataProcessor::DataBuf DataProcessor::prepareWillmsgreqMsg()
 {
     return prepareInput(WillmsgreqMsg());
 }
 
-DataProcessor::DataBuf DataProcessor::preaparePingreq()
+DataProcessor::DataBuf DataProcessor::preparePingreqMsg()
 {
     return prepareInput(PingreqMsg());
 }
 
-DataProcessor::DataBuf DataProcessor::preaparePingresp()
+DataProcessor::DataBuf DataProcessor::preparePingrespMsg()
 {
     return prepareInput(PingrespMsg());
 }
+
+DataProcessor::DataBuf DataProcessor::prepareDisconnectMsg()
+{
+    return prepareInput(DisconnectMsg());
+}
+

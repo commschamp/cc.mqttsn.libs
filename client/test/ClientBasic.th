@@ -319,7 +319,7 @@ private:
         clearState(state);
 
         if (hasWill) {
-            auto willTopicReq = dataProc.preapareWilltopicreq();
+            auto willTopicReq = dataProc.prepareWilltopicreqMsg();
             sendData(client, willTopicReq, "WILLTOPICREQ");
 
             TS_ASSERT(!state.m_nextOutput.empty());
@@ -331,7 +331,7 @@ private:
 
             clearState(state);
 
-            auto willMsgReq = dataProc.preapareWillmsgreq();
+            auto willMsgReq = dataProc.prepareWillmsgreqMsg();
             sendData(client, willMsgReq, "WILLMSGREQ");
 
             TS_ASSERT(!state.m_nextOutput.empty());
@@ -344,7 +344,7 @@ private:
             clearState(state);
         }
 
-        auto connackMsg = dataProc.prepareConnack(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
         sendData(client, connackMsg, "CONNACK");
         TS_ASSERT(connectComplete);
         TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
@@ -559,7 +559,7 @@ void ClientBasic::test3()
 
     checkConnectMessage();
     clearState(state);
-    auto connackMsg = dataProc.prepareConnack(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     sendData(*client, connackMsg, "CONNACK");
 
     TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnConnectionStatus_Connected);
@@ -682,13 +682,13 @@ void ClientBasic::test4()
 
     // Send ack message, check ignored
     state.m_nextElapsedTicks = 1000;
-    auto connackMsg = dataProc.prepareConnack(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     sendData(*client, connackMsg, "CONNACK");
     // Ack must be ignored
     TS_ASSERT(!state.m_connectComplete);
     TS_ASSERT(state.m_nextOutput.empty())
 
-    auto willTopicReq = dataProc.preapareWilltopicreq();
+    auto willTopicReq = dataProc.prepareWilltopicreqMsg();
     sendData(*client, willTopicReq, "WILLTOPICREQ");
 
     auto checkWilltopicMessage =
@@ -729,7 +729,7 @@ void ClientBasic::test4()
 
 
     state.m_nextElapsedTicks = 1000;
-    auto willMsgReq = dataProc.preapareWillmsgreq();
+    auto willMsgReq = dataProc.prepareWillmsgreqMsg();
     sendData(*client, willMsgReq, "WILLMSGREQ");
     checkWillmsgMessage();
 
@@ -793,6 +793,21 @@ void ClientBasic::test5()
     client->tick(nextTicks);
     checkPingreqMessage();
 
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto pingRespMsg = dataProc.preparePingrespMsg();
+    sendData(*client, pingRespMsg, "PINGRESP");
+
+    TS_ASSERT(state.m_nextOutput.empty());
+    TS_ASSERT(!state.m_broadcast);
+
+    nextTicks = state.m_nextRequestedTicks;
+    TS_ASSERT_EQUALS(nextTicks, DefaultKeepAlive * 1000);
+
+    clearState(state);
+    client->tick(nextTicks);
+    checkPingreqMessage();
+
     nextTicks = state.m_nextRequestedTicks;
     clearState(state);
     client->tick(nextTicks);
@@ -817,12 +832,20 @@ void ClientBasic::test6()
     struct Test6State : public TestBasicState
     {
         bool m_pingRespSent = false;
+        MqttsnConnectionStatus m_connectionStatus = MqttsnConnectionStatus_Invalid;
     };
 
     Test6State state;
 
     auto client = allocClient(&state, &dataProc);
     client->start();
+
+    client->setConnectionStatusReportCallback(
+        [&](MqttsnConnectionStatus val)
+        {
+            TS_TRACE("Connect status reported: " + std::to_string((int)val));
+            state.m_connectionStatus = val;
+        });
 
     dataProc.setPingrespMsgReportCallback(
         [&](const PingrespMsg& msg)
@@ -840,12 +863,18 @@ void ClientBasic::test6()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pingreqMsg = dataProc.preaparePingreq();
+    auto pingreqMsg = dataProc.preparePingreqMsg();
     sendData(*client, pingreqMsg, "PINGREQ");
 
     TS_ASSERT(!state.m_nextOutput.empty());
     TS_ASSERT(!state.m_broadcast);
     dataProc.checkWrittenMsg(state.m_nextOutput);
     TS_ASSERT(state.m_pingRespSent);
+
+    clearState(state);
+    TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnConnectionStatus_Invalid);
+    auto disconnectMsg = dataProc.prepareDisconnectMsg();
+    sendData(*client, disconnectMsg, "DISCONNECT");
+    TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnConnectionStatus_Disconnected);
 }
 

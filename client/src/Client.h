@@ -126,6 +126,7 @@ public:
 
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
+    typedef mqttsn::protocol::message::Disconnect<Message> DisconnectMsg;
 
     Client() = default;
     virtual ~Client() = default;
@@ -457,6 +458,14 @@ public:
     {
         static_cast<void>(msg);
         m_pingCount = 0U;
+    }
+
+    virtual void handle(DisconnectMsg& msg) override
+    {
+        static_cast<void>(msg);
+        // TODO: support asleep confirmation
+
+        reportDisconnected();
     }
 
 private:
