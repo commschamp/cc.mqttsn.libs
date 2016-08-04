@@ -40,6 +40,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_setRetryPeriodFunc = &mqttsn_client_set_retry_period;
     funcs.m_setRetryCountFunc = &mqttsn_client_set_retry_count;
     funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
+    funcs.m_cancelFunc = &mqttsn_client_cancel;
     funcs.m_connectFunc = &mqttsn_client_connect;
     funcs.m_disconnectFunc = &mqttsn_client_disconnect;
     return funcs;
@@ -165,6 +166,12 @@ MqttsnErrorCode CommonTestClient::connect(
             keepAliveSeconds,
             cleanSession,
             willInfo);
+}
+
+bool CommonTestClient::cancel()
+{
+    assert(m_libFuncs.m_cancelFunc != nullptr);
+    return (m_libFuncs.m_cancelFunc)(m_client);
 }
 
 MqttsnErrorCode CommonTestClient::disconnect()

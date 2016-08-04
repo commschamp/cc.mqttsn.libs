@@ -38,6 +38,8 @@ public:
     void test6();
     void test7();
     void test8();
+    void test9();
+    void test10();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -1006,3 +1008,123 @@ void ClientBasic::test8()
     TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnConnectionStatus_Disconnected);
 }
 
+void ClientBasic::test9()
+{
+    DataProcessor dataProc;
+    struct Test9State : public TestBasicState
+    {
+        bool m_connectMsgSent = false;
+        bool m_connectionStatusReported = false;
+    };
+
+    Test9State state;
+
+    auto client = allocClient(&state, &dataProc);
+    client->start();
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+
+    static const std::string ClientId = "bla";
+    static const unsigned short KeepAlive = 60;
+
+    dataProc.setConnectMsgReportCallback(
+        [&](const ConnectMsg& msg)
+        {
+            static_cast<void>(msg);
+            TS_TRACE("<-- CONNECT");
+            state.m_connectMsgSent = true;
+        });
+
+    client->setConnectionStatusReportCallback(
+        [&](MqttsnConnectionStatus val)
+        {
+            // First connect is expected to be timed out
+            TS_TRACE("Connect status reported: " + std::to_string((int)val));
+            TS_ASSERT_EQUALS(val, MqttsnConnectionStatus_ConnectAborted);
+            state.m_connectionStatusReported = true;
+        });
+
+    TS_TRACE("Connecting...");
+    state.m_nextElapsedTicks = 0;
+    auto result =
+        client->connect(ClientId.c_str(), KeepAlive, true, nullptr);
+
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+
+    auto checkConnectMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_connectMsgSent);
+            TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+        };
+
+    checkConnectMessage();
+
+    auto nextTick = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTick);
+    checkConnectMessage();
+
+    bool cancelResult = client->cancel();
+    TS_ASSERT(cancelResult);
+    TS_ASSERT(state.m_connectionStatusReported)
+}
+
+void ClientBasic::test10()
+{
+    DataProcessor dataProc;
+    struct Test10State : public TestBasicState
+    {
+        bool m_disconnectSent = false;
+        bool m_connectionStatusReported = false;
+    };
+
+    Test10State state;
+
+    auto client = allocClient(&state, &dataProc);
+    client->start();
+
+    client->setConnectionStatusReportCallback(
+        [&](MqttsnConnectionStatus val)
+        {
+            TS_TRACE("Connect status reported: " + std::to_string((int)val));
+            TS_ASSERT_EQUALS(val, MqttsnConnectionStatus_Disconnected);
+            state.m_connectionStatusReported = val;
+        });
+
+    dataProc.setDisconnectMsgReportCallback(
+        [&](const DisconnectMsg& msg)
+        {
+            static_cast<void>(msg);
+            TS_TRACE("<-- DISCONNECT");
+            state.m_disconnectSent = true;
+        });
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->disconnect();
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+
+    TS_ASSERT(!state.m_nextOutput.empty());
+    TS_ASSERT(!state.m_broadcast);
+    dataProc.checkWrittenMsg(state.m_nextOutput);
+    TS_ASSERT(state.m_disconnectSent);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    state.m_nextElapsedTicks = 1000;
+    bool cancelResult = client->cancel();
+    TS_ASSERT(cancelResult);
+    TS_ASSERT(state.m_connectionStatusReported);
+}

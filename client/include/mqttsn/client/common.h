@@ -50,6 +50,7 @@ enum MqttsnConnectionStatus
     MqttsnConnectionStatus_Timeout,
     MqttsnConnectionStatus_Disconnected,
     MqttsnConnectionStatus_DisconnectedAsleep,
+    MqttsnConnectionStatus_ConnectAborted,
     MqttsnConnectionStatus_NumOfValues
 };
 

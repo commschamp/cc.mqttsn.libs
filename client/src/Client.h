@@ -256,6 +256,31 @@ public:
         return consumed;
     }
 
+    bool cancel()
+    {
+        if (m_currOp == Op::None) {
+            return false;
+        }
+
+        typedef void (Client<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
+        static const CancelFunc OpCancelFuncMap[] =
+        {
+            &Client::connectCancel,
+            &Client::disconnectCancel
+        };
+        static const std::size_t OpCancelFuncMapSize =
+                            std::extent<decltype(OpCancelFuncMap)>::value;
+
+        static_assert(OpCancelFuncMapSize == (static_cast<std::size_t>(Op::NumOfValues) - 1U),
+            "Map above is incorrect");
+
+        auto opIdx = static_cast<unsigned>(m_currOp) - 1;
+        GASSERT(opIdx < OpCancelFuncMapSize);
+        auto fn = OpCancelFuncMap[opIdx];
+        (this->*(fn))();
+        return true;
+    }
+
     MqttsnErrorCode connect(
         const char* clientId,
         unsigned short keepAlivePeriod,
@@ -498,11 +523,13 @@ public:
 
         if (m_currOp == Op::None) {
             reportDisconnected();
+            return;
         }
 
         // TODO: support asleep confirmation
 
-        // TODO: Other operation in progress: abort
+        cancel();
+        reportDisconnected();
     }
 
 private:
@@ -820,6 +847,14 @@ private:
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Timeout);
     }
 
+    void connectCancel()
+    {
+        GASSERT(m_currOp == Op::Connect);
+        finaliseOp<ConnectOp>();
+        GASSERT(m_connectionStatusReportFn != nullptr);
+        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_ConnectAborted);
+    }
+
     void disconnectTimeout()
     {
         GASSERT(m_currOp == Op::Disconnect);
@@ -829,6 +864,14 @@ private:
             return;
         }
 
+        finaliseOp<DisconnectOp>();
+        GASSERT(m_connectionStatusReportFn != nullptr);
+        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+    }
+
+    void disconnectCancel()
+    {
+        GASSERT(m_currOp == Op::Disconnect);
         finaliseOp<DisconnectOp>();
         GASSERT(m_connectionStatusReportFn != nullptr);
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);

@@ -54,6 +54,8 @@ void mqttsn_##NAME##client_set_retry_period(ClientHandle client, unsigned value)
 void mqttsn_##NAME##client_set_retry_count(ClientHandle client, unsigned value);
 void mqttsn_##NAME##client_set_broadcast_radius(ClientHandle client, unsigned char value);
 
+bool mqttsn_##NAME##client_cancel(ClientHandle client);
+
 MqttsnErrorCode mqttsn_##NAME##client_connect(
     ClientHandle client,
     const char* clientId,
