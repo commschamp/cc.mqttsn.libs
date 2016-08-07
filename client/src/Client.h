@@ -123,6 +123,8 @@ public:
     typedef mqttsn::protocol::message::Willtopic<Message, TProtOpts> WilltopicMsg;
     typedef mqttsn::protocol::message::Willmsgreq<Message> WillmsgreqMsg;
     typedef mqttsn::protocol::message::Willmsg<Message, TProtOpts> WillmsgMsg;
+    typedef mqttsn::protocol::message::Register<Message, TProtOpts> RegisterMsg;
+    typedef mqttsn::protocol::message::Regack<Message> RegackMsg;
 
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
@@ -266,7 +268,8 @@ public:
         static const CancelFunc OpCancelFuncMap[] =
         {
             &Client::connectCancel,
-            &Client::disconnectCancel
+            &Client::disconnectCancel,
+            &Client::registerCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -349,6 +352,46 @@ public:
         bool result = doDisconnect();
         static_cast<void>(result);
         GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode registerTopic(
+        const char* topic,
+        TopicRegReportFn callback,
+        void* data)
+    {
+        if (!m_connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if ((topic == nullptr) ||
+            (callback == nullptr)) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        m_currOp = Op::Register;
+        auto* regOp = newOp<RegisterOp>();
+        regOp->m_topic = topic;
+        regOp->m_cb = callback;
+        regOp->m_cbData = data;
+
+        bool result = doRegister();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        // TODO: maintain list of registered topics
 
         if (timerWasActive) {
             programNextTimeout();
@@ -498,6 +541,44 @@ public:
         sendMessage(outMsg);
     }
 
+    virtual void handle(RegackMsg& msg) override
+    {
+        if (m_currOp != Op::Register) {
+            return;
+        }
+
+        auto* op = opPtr<RegisterOp>();
+
+        auto& fields = msg.fields();
+        auto& msgIdField = std::get<RegackMsg::FieldIdx_msgId>(fields);
+
+        if (msgIdField.value() != op->m_msgId) {
+            return;
+        }
+
+        auto& topicIdField = std::get<RegackMsg::FieldIdx_topicId>(fields);
+        auto& retCodeField = std::get<RegackMsg::FieldIdx_returnCode>(fields);
+
+        static const MqttsnTopicRegStatus Map[] = {
+            /* ReturnCodeVal_Accepted */ MqttsnTopicRegStatus_Accepted,
+            /* ReturnCodeVal_Conjestion */ MqttsnTopicRegStatus_Conjestion,
+            /* ReturnCodeVal_InvalidTopicId */ MqttsnTopicRegStatus_InvalidTopicId,
+            /* ReturnCodeVal_NotSupported */ MqttsnTopicRegStatus_NotSupported
+        };
+
+        static const std::size_t MapSize = std::extent<decltype(Map)>::value;
+
+        static_assert(MapSize == (unsigned)mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
+            "Map is incorrect");
+
+        MqttsnTopicRegStatus status = MqttsnTopicRegStatus_NotSupported;
+        if (static_cast<unsigned>(retCodeField.value()) < MapSize) {
+            status = Map[static_cast<unsigned>(retCodeField.value())];
+        }
+
+        finaliseRegisterOp(status, topicIdField.value());
+    }
+
     virtual void handle(PingreqMsg& msg) override
     {
         static_cast<void>(msg);
@@ -539,6 +620,7 @@ private:
         None,
         Connect,
         Disconnect,
+        Register,
         NumOfValues // must be last
     };
 
@@ -558,9 +640,18 @@ private:
 
     typedef OpBase DisconnectOp;
 
+    struct RegisterOp : public OpBase
+    {
+        const char* m_topic = nullptr;
+        TopicRegReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+        std::uint8_t m_msgId = 0;
+    };
+
     typedef typename comms::util::AlignedUnion<
         ConnectOp,
-        DisconnectOp
+        DisconnectOp,
+        RegisterOp
     >::Type OpStorageType;
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
@@ -777,7 +868,8 @@ private:
         static const TimeoutFunc OpTimeoutFuncMap[] =
         {
             &Client::connectTimeout,
-            &Client::disconnectTimeout
+            &Client::disconnectTimeout,
+            &Client::registerTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -877,6 +969,24 @@ private:
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
     }
 
+    void registerTimeout()
+    {
+        GASSERT(m_currOp == Op::Register);
+
+        if (doRegister()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseRegisterOp(MqttsnTopicRegStatus_NoResponse);
+    }
+
+    void registerCancel()
+    {
+        GASSERT(m_currOp == Op::Register);
+        finaliseRegisterOp(MqttsnTopicRegStatus_Aborted);
+    }
+
     void sendMessage(const Message& msg, bool broadcast = false)
     {
         if (m_sendOutputDataFn == nullptr) {
@@ -940,6 +1050,30 @@ private:
         return true;
     }
 
+    bool doRegister()
+    {
+        GASSERT (m_currOp == Op::Register);
+
+        auto* op = opPtr<RegisterOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+        op->m_msgId = allocMsgId();
+
+        RegisterMsg msg;
+        auto& fields = msg.fields();
+        auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
+        auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
+
+        msgIdField.value() = op->m_msgId;
+        topicNameField.value() = op->m_topic;
+
+        sendMessage(msg);
+        return true;
+    }
+
     void sendPing()
     {
         ++m_pingCount;
@@ -955,6 +1089,25 @@ private:
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
     }
 
+    std::uint16_t allocMsgId()
+    {
+        ++m_msgId;
+        return m_msgId;
+    }
+
+    void finaliseRegisterOp(MqttsnTopicRegStatus status, std::uint16_t topicId = 0U)
+    {
+        GASSERT(m_currOp == Op::Register);
+        auto* op = opPtr<RegisterOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<RegisterOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status, topicId);
+    }
+
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;
     Timestamp m_timestamp = 0;
@@ -967,6 +1120,7 @@ private:
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_keepAlivePeriod = 0;
+    std::uint16_t m_msgId = 0;
     std::uint8_t m_broadcastRadius = DefaultBroadcastRadius;
 
     bool m_timerActive = false;

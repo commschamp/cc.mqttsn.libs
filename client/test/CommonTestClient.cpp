@@ -43,6 +43,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_cancelFunc = &mqttsn_client_cancel;
     funcs.m_connectFunc = &mqttsn_client_connect;
     funcs.m_disconnectFunc = &mqttsn_client_disconnect;
+    funcs.m_registerFunc = &mqttsn_client_register;
     return funcs;
 }
 
@@ -93,6 +94,14 @@ CommonTestClient::ConnectionStatusReportCallback CommonTestClient::setConnection
 {
     ConnectionStatusReportCallback old(std::move(m_connectionStatusReportCallback));
     m_connectionStatusReportCallback = std::move(func);
+    return old;
+}
+
+CommonTestClient::TopicRegisterCallback CommonTestClient::setTopicRegisterCallback(
+    TopicRegisterCallback&& func)
+{
+    TopicRegisterCallback old(std::move(m_topicRegisterCallback));
+    m_topicRegisterCallback = std::move(func);
     return old;
 }
 
@@ -180,6 +189,13 @@ MqttsnErrorCode CommonTestClient::disconnect()
     return (m_libFuncs.m_disconnectFunc)(m_client);
 }
 
+MqttsnErrorCode CommonTestClient::registerTopic(const std::string& topic)
+{
+    assert(m_libFuncs.m_registerFunc != nullptr);
+    return (m_libFuncs.m_registerFunc)(m_client, topic.c_str(), &CommonTestClient::topicRegisterReportCallback, this);
+}
+
+
 MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
 {
     static_assert(
@@ -263,6 +279,14 @@ void CommonTestClient::reportConnectionStatus(MqttsnConnectionStatus status)
     }
 }
 
+void CommonTestClient::reportTopicRegResult(MqttsnTopicRegStatus status, MqttsnTopicId topicId)
+{
+    if (m_topicRegisterCallback) {
+        TopicRegisterCallback tmp(m_topicRegisterCallback);
+        tmp(status, topicId);
+    }
+}
+
 void CommonTestClient::nextTickProgramCallback(void* data, unsigned duration)
 {
     assert(data != nullptr);
@@ -298,4 +322,13 @@ void CommonTestClient::connectionStatusReportCallback(void* data, MqttsnConnecti
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportConnectionStatus(status);
+}
+
+void CommonTestClient::topicRegisterReportCallback(
+    void* data,
+    MqttsnTopicRegStatus status,
+    MqttsnTopicId topicId)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportTopicRegResult(status, topicId);
 }

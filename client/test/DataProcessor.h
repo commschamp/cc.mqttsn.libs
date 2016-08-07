@@ -50,6 +50,8 @@ public:
     typedef mqttsn::protocol::message::Willtopic<TestMessage> WilltopicMsg;
     typedef mqttsn::protocol::message::Willmsgreq<TestMessage> WillmsgreqMsg;
     typedef mqttsn::protocol::message::Willmsg<TestMessage> WillmsgMsg;
+    typedef mqttsn::protocol::message::Register<TestMessage> RegisterMsg;
+    typedef mqttsn::protocol::message::Regack<TestMessage> RegackMsg;
 
     typedef mqttsn::protocol::message::Pingreq<TestMessage> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<TestMessage> PingrespMsg;
@@ -70,6 +72,9 @@ public:
     typedef std::function<void (const WillmsgMsg& msg)> WillmsgMsgReportCallback;
     WillmsgMsgReportCallback setWillmsgMsgReportCallback(WillmsgMsgReportCallback&& func);
 
+    typedef std::function<void (const RegisterMsg& msg)> RegisterMsgReportCallback;
+    RegisterMsgReportCallback setRegisterMsgReportCallback(RegisterMsgReportCallback&& func);
+
     typedef std::function<void (const PingreqMsg& msg)> PingreqMsgReportCallback;
     PingreqMsgReportCallback setPingreqMsgReportCallback(PingreqMsgReportCallback&& func);
 
@@ -85,6 +90,7 @@ public:
     virtual void handle(ConnectMsg& msg) override;
     virtual void handle(WilltopicMsg& msg) override;
     virtual void handle(WillmsgMsg& msg) override;
+    virtual void handle(RegisterMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
@@ -99,6 +105,10 @@ public:
     DataBuf prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal val);
     DataBuf prepareWilltopicreqMsg();
     DataBuf prepareWillmsgreqMsg();
+    DataBuf prepareRegackMsg(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal retCode);
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
     DataBuf prepareDisconnectMsg();
@@ -111,6 +121,7 @@ private:
     ConnectMsgReportCallback m_connectMsgReportCallback;
     WilltopicMsgReportCallback m_willtopicMsgReportCallback;
     WillmsgMsgReportCallback m_willmsgMsgReportCallback;
+    RegisterMsgReportCallback m_registerMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
     PingrespMsgReportCallback m_pingrespMsgReportCallback;
     DisconnectMsgReportCallback m_disconnectMsgReportCallback;

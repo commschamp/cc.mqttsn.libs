@@ -51,6 +51,14 @@ DataProcessor::WillmsgMsgReportCallback DataProcessor::setWillmsgMsgReportCallba
     return old;
 }
 
+DataProcessor::RegisterMsgReportCallback DataProcessor::setRegisterMsgReportCallback(
+    RegisterMsgReportCallback&& func)
+{
+    RegisterMsgReportCallback old = std::move(m_registerMsgReportCallback);
+    m_registerMsgReportCallback = std::move(func);
+    return old;
+}
+
 DataProcessor::PingreqMsgReportCallback DataProcessor::setPingreqMsgReportCallback(
     PingreqMsgReportCallback&& func)
 {
@@ -100,6 +108,13 @@ void DataProcessor::handle(WillmsgMsg& msg)
 {
     if (m_willmsgMsgReportCallback) {
         m_willmsgMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(RegisterMsg& msg)
+{
+    if (m_registerMsgReportCallback) {
+        m_registerMsgReportCallback(msg);
     }
 }
 
@@ -196,6 +211,20 @@ DataProcessor::DataBuf DataProcessor::prepareWillmsgreqMsg()
 {
     return prepareInput(WillmsgreqMsg());
 }
+
+DataProcessor::DataBuf DataProcessor::prepareRegackMsg(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::ReturnCodeVal retCode)
+{
+    RegackMsg msg;
+    auto& fields = msg.fields();
+    std::get<RegackMsg::FieldIdx_topicId>(fields).value() = topicId;
+    std::get<RegackMsg::FieldIdx_msgId>(fields).value() = msgId;
+    std::get<RegackMsg::FieldIdx_returnCode>(fields).value() = retCode;
+    return prepareInput(msg);
+}
+
 
 DataProcessor::DataBuf DataProcessor::preparePingreqMsg()
 {

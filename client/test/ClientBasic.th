@@ -40,6 +40,7 @@ public:
     void test8();
     void test9();
     void test10();
+    void test11();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -53,6 +54,8 @@ private:
     typedef DataProcessor::WilltopicMsg WilltopicMsg;
     typedef DataProcessor::WillmsgreqMsg WillmsgreqMsg;
     typedef DataProcessor::WillmsgMsg WillmsgMsg;
+    typedef DataProcessor::RegisterMsg RegisterMsg;
+    typedef DataProcessor::RegackMsg RegackMsg;
     typedef DataProcessor::PingreqMsg PingreqMsg;
     typedef DataProcessor::PingrespMsg PingrespMsg;
     typedef DataProcessor::DisconnectMsg DisconnectMsg;
@@ -101,6 +104,13 @@ private:
             {
                 TS_TRACE("Connect status reported: " + std::to_string((int)val));
             });
+        ptr->setTopicRegisterCallback(
+            [](MqttsnTopicRegStatus status, MqttsnTopicId topicId)
+            {
+                TS_TRACE("Topic registration status reported: " + std::to_string((int)status));
+                TS_TRACE("Topic ID: " + std::to_string(topicId));
+            });
+
 
         if (state != nullptr) {
             ptr->setProgramNextTickCallback(
@@ -1128,3 +1138,112 @@ void ClientBasic::test10()
     TS_ASSERT(cancelResult);
     TS_ASSERT(state.m_connectionStatusReported);
 }
+
+void ClientBasic::test11()
+{
+    DataProcessor dataProc;
+    struct Test11State : public TestBasicState
+    {
+        bool m_registerSent = false;
+        bool m_regStatusReported = false;
+        MqttsnTopicRegStatus m_regStatus = MqttsnTopicRegStatus_Invalid;
+        MqttsnTopicId m_topicId = 0U;
+    };
+
+    Test11State state;
+
+    auto client = allocClient(&state, &dataProc);
+    client->start();
+
+    client->setTopicRegisterCallback(
+        [&](MqttsnTopicRegStatus status, MqttsnTopicId topicId)
+        {
+            TS_TRACE("Topic registration status reported: " + std::to_string((int)status));
+            TS_TRACE("Topic ID: " + std::to_string(topicId));
+
+            state.m_regStatusReported = true;
+            state.m_regStatus = status;
+            state.m_topicId = topicId;
+        });
+
+    static const std::string TopicName("/this/is/topic");
+    std::uint16_t msgId = 0;
+    dataProc.setRegisterMsgReportCallback(
+        [&](const RegisterMsg& msg)
+        {
+            TS_TRACE("<-- REGISTER");
+            state.m_registerSent = true;
+
+            auto& fields = msg.fields();
+            auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
+            auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
+
+            msgId = msgIdField.value();
+            TS_ASSERT_DIFFERS(msgId, 0U);
+
+            TS_ASSERT_EQUALS(topicNameField.value(), TopicName);
+        });
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->registerTopic(TopicName);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+
+    auto checkRegisterMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_registerSent);
+            TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+        };
+
+    checkRegisterMessage();
+
+    result = client->registerTopic(TopicName);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Busy);
+
+    auto nextTick = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTick);
+    checkRegisterMessage();
+
+    nextTick = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTick);
+    checkRegisterMessage();
+
+    nextTick = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTick);
+    TS_ASSERT(state.m_regStatusReported);
+    TS_ASSERT_EQUALS(state.m_regStatus, MqttsnTopicRegStatus_NoResponse);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->registerTopic(TopicName);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    checkRegisterMessage();
+
+    static const std::uint16_t TopicId = 0xabcd;
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    sendData(*client, regackMsg, "REGACK");
+    TS_ASSERT(!state.m_regStatusReported);
+
+    regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    sendData(*client, regackMsg, "REGACK");
+    TS_ASSERT(state.m_regStatusReported);
+    TS_ASSERT_EQUALS(state.m_regStatus, MqttsnTopicRegStatus_Accepted);
+    TS_ASSERT_EQUALS(state.m_topicId, TopicId);
+}
+

@@ -60,12 +60,24 @@ enum MqttsnErrorCode
     MqttsnErrorCode_InvalidOperation,
     MqttsnErrorCode_Busy,
     MqttsnErrorCode_NotConnected,
+    MqttsnErrorCode_BadParam,
 };
 
 enum MqttsnGwStatus
 {
     MqttsnGwStatus_TimedOut,
     MqttsnGwStatus_Available
+};
+
+enum MqttsnTopicRegStatus
+{
+    MqttsnTopicRegStatus_Invalid,
+    MqttsnTopicRegStatus_Accepted,
+    MqttsnTopicRegStatus_Conjestion,
+    MqttsnTopicRegStatus_InvalidTopicId,
+    MqttsnTopicRegStatus_NotSupported,
+    MqttsnTopicRegStatus_NoResponse,
+    MqttsnTopicRegStatus_Aborted,
 };
 
 struct MqttsnWillInfo
@@ -78,11 +90,14 @@ struct MqttsnWillInfo
 };
 
 typedef void* ClientHandle;
+typedef unsigned short MqttsnTopicId;
+
 typedef void (*NextTickProgramFn)(void* data, unsigned duration);
 typedef unsigned (*CancelNextTickWaitFn)(void* data);
 typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
 typedef void (*GwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
 typedef void (*ConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
+typedef void (*TopicRegReportFn)(void* data, MqttsnTopicRegStatus status, MqttsnTopicId id);
 
 #ifdef __cplusplus
 }
