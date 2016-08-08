@@ -18,6 +18,7 @@
 
 // This function is required by common startup code
 #include <type_traits>
+#include <cstdint>
 
 #include "test_bare_metal_client.h"
 
@@ -52,6 +53,13 @@ void sendOutputData(void* data, const unsigned char* buf, unsigned bufLen, bool 
     static_cast<void>(broadcast);
 }
 
+void topicRegCallback(void* data, MqttsnTopicRegStatus status, std::uint16_t topicId)
+{
+    static_cast<void>(data);
+    static_cast<void>(status);
+    static_cast<void>(topicId);
+}
+
 
 int main(int argc, const char** argv)
 {
@@ -75,6 +83,8 @@ int main(int argc, const char** argv)
     mqttsn_test_bare_metal_client_process_data(client, from, SeqSize);
     mqttsn_test_bare_metal_client_tick(client, 10);
     mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr);
+    static const char* Topic("/this/is/topic");
+    mqttsn_test_bare_metal_client_register(client, Topic, &topicRegCallback, nullptr);
     mqttsn_test_bare_metal_client_disconnect(client);
     mqttsn_test_bare_metal_client_free(client);
     while (true) {};

@@ -25,9 +25,11 @@
 #include <limits>
 
 #include "comms/comms.h"
+#include "comms/util/ScopeGuard.h"
 #include "mqttsn/client/common.h"
 #include "mqttsn/protocol/Stack.h"
 #include "details/WriteBufStorageType.h"
+#include "mqttsn/protocol/field.h"
 #include "Message.h"
 #include "AllMessages.h"
 
@@ -62,6 +64,28 @@ using GwInfoStorageTypeT =
     typename GwInfoStorageType<TInfo, TOpts, TOpts::HasTrackedGatewaysLimit>::Type;
 
 //-----------------------------------------------------------
+
+template <typename TInfo, typename TOpts, bool THasRegisteredTopicsLimit>
+struct RegInfoStorageType;
+
+template <typename TInfo, typename TOpts>
+struct RegInfoStorageType<TInfo, TOpts, true>
+{
+    typedef comms::util::StaticVector<TInfo, TOpts::RegisteredTopicsLimit> Type;
+};
+
+template <typename TInfo, typename TOpts>
+struct RegInfoStorageType<TInfo, TOpts, false>
+{
+    typedef std::vector<TInfo> Type;
+};
+
+template <typename TInfo, typename TOpts>
+using RegInfoStorageTypeT =
+    typename GwInfoStorageType<TInfo, TOpts, TOpts::HasRegisteredTopicsLimit>::Type;
+
+//-----------------------------------------------------------
+
 
 mqttsn::protocol::field::QosType translateQosValue(MqttsnQoS val)
 {
@@ -100,6 +124,8 @@ public:
     //typedef typename mqttsn::protocol::field::GwAdd<FieldBase, TProtOpts>::ValueType GwAddValueType;
     typedef typename mqttsn::protocol::field::WillTopic<FieldBase, TProtOpts>::ValueType WillTopicType;
     typedef typename mqttsn::protocol::field::WillMsg<FieldBase, TProtOpts>::ValueType WillMsgType;
+    typedef typename mqttsn::protocol::field::TopicName<FieldBase, TProtOpts>::ValueType TopicNameType;
+    typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
     typedef unsigned long long Timestamp;
 
     struct GwInfo
@@ -391,8 +417,6 @@ public:
         static_cast<void>(result);
         GASSERT(result);
 
-        // TODO: maintain list of registered topics
-
         if (timerWasActive) {
             programNextTimeout();
         }
@@ -562,7 +586,7 @@ public:
         static const MqttsnTopicRegStatus Map[] = {
             /* ReturnCodeVal_Accepted */ MqttsnTopicRegStatus_Accepted,
             /* ReturnCodeVal_Conjestion */ MqttsnTopicRegStatus_Conjestion,
-            /* ReturnCodeVal_InvalidTopicId */ MqttsnTopicRegStatus_InvalidTopicId,
+            /* ReturnCodeVal_InvalidTopicId */ MqttsnTopicRegStatus_NotSupported,
             /* ReturnCodeVal_NotSupported */ MqttsnTopicRegStatus_NotSupported
         };
 
@@ -576,7 +600,80 @@ public:
             status = Map[static_cast<unsigned>(retCodeField.value())];
         }
 
-        finaliseRegisterOp(status, topicIdField.value());
+        auto finaliseOpGuard =
+            comms::util::makeScopeGuard(
+                [this, status, &topicIdField]()
+                {
+                    finaliseRegisterOp(status, topicIdField.value());
+                });
+
+        if (status != MqttsnTopicRegStatus_Accepted) {
+            return;
+        }
+
+        auto iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [op](typename RegInfosList::const_reference elem) -> bool
+            {
+                return elem.m_allocated && (elem.m_topic == op->m_topic);
+            });
+
+        if (iter != m_regInfos.end()) {
+            iter->m_timestamp = m_timestamp;
+            iter->m_topicId = topicIdField.value();
+            return;
+        }
+
+        iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [](typename RegInfosList::const_reference elem) -> bool
+            {
+                return !elem.m_allocated;
+            });
+
+        if (iter != m_regInfos.end()) {
+            iter->m_timestamp = m_timestamp;
+            iter->m_topic = op->m_topic;
+            iter->m_topicId = topicIdField.value();
+            iter->m_locked = true;
+            iter->m_allocated = true;
+            return;
+        }
+
+        RegInfo info;
+        info.m_timestamp = m_timestamp;
+        info.m_topic = op->m_topic;
+        info.m_topicId = topicIdField.value();
+        info.m_locked = true;
+        info.m_allocated = true;
+
+        if (m_regInfos.size() < m_regInfos.max_size()) {
+            m_regInfos.push_back(std::move(info));
+            return;
+        }
+
+        iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [op](typename RegInfosList::const_reference elem) -> bool
+            {
+                return !elem.m_locked;
+            });
+
+        if (iter != m_regInfos.end()) {
+            *iter = info;
+            return;
+        }
+
+        iter = std::min_element(
+            m_regInfos.begin(), m_regInfos.end(),
+            [](typename RegInfosList::const_reference elem1,
+               typename RegInfosList::const_reference elem2) -> bool
+            {
+                return elem1.m_timestamp < elem2.m_timestamp;
+            });
+
+        GASSERT(iter != m_regInfos.end());
+        *iter = info;
     }
 
     virtual void handle(PingreqMsg& msg) override
@@ -656,6 +753,17 @@ private:
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
+
+    struct RegInfo
+    {
+        Timestamp m_timestamp = 0U;
+        TopicNameType m_topic;
+        TopicIdType m_topicId = 0U;
+        bool m_locked = false;
+        bool m_allocated = false;
+    };
+
+    typedef details::RegInfoStorageTypeT<RegInfo, TClientOpts> RegInfosList;
 
     template <typename TOp>
     TOp* opPtr()
@@ -1128,6 +1236,8 @@ private:
 
     Op m_currOp = Op::None;
     OpStorageType m_opStorage;
+
+    RegInfosList m_regInfos;
 
     NextTickProgramFn m_nextTickProgramFn = nullptr;
     void* m_nextTickProgramData = nullptr;

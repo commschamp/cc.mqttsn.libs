@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 namespace mqttsn
 {
 
@@ -35,6 +37,12 @@ struct ClientsAllocLimit
 
 template <std::size_t TLimit>
 struct TrackedGatewaysLimit
+{
+    static const std::size_t Value = TLimit;
+};
+
+template <std::size_t TLimit>
+struct RegisteredTopicsLimit
 {
     static const std::size_t Value = TLimit;
 };

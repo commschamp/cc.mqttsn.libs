@@ -74,7 +74,6 @@ enum MqttsnTopicRegStatus
     MqttsnTopicRegStatus_Invalid,
     MqttsnTopicRegStatus_Accepted,
     MqttsnTopicRegStatus_Conjestion,
-    MqttsnTopicRegStatus_InvalidTopicId,
     MqttsnTopicRegStatus_NotSupported,
     MqttsnTopicRegStatus_NoResponse,
     MqttsnTopicRegStatus_Aborted,

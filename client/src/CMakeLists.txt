@@ -63,6 +63,12 @@ mqttsn_append_option (
     "${MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT}"
 )
 
+mqttsn_append_option (
+    mqttsn_library_opts 
+    "mqttsn::client::option::RegisteredTopicsLimit"
+    "${MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT}"
+)
+
 gen_lib_mqttsn_client("${MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_protocol_opts}" "${mqttsn_library_opts}" TRUE)
 
 if (MQTTSN_CUSTOM_CLIENT_NO_STDLIB)

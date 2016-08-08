@@ -1,6 +1,6 @@
 set (BARE_METAL_PROTOCOL_OPTS "mqttsn::protocol::option::ClientIdStaticStorageSize<21>,mqttsn::protocol::option::GwAddStaticStorageSize<4>,mqttsn::protocol::option::TopicNameStaticStorageSize<128>,mqttsn::protocol::option::MessageDataStaticStorageSize<256>")
 
-set (BARE_METAL_CLIENT_OPTS "mqttsn::client::option::ClientsAllocLimit<1>,mqttsn::client::option::TrackedGatewaysLimit<1>")
+set (BARE_METAL_CLIENT_OPTS "mqttsn::client::option::ClientsAllocLimit<1>,mqttsn::client::option::TrackedGatewaysLimit<1>,mqttsn::client::option::RegisteredTopicsLimit<5>")
 
 set (TEST_BARE_METAL_CLIENT_NAME "test_bare_metal")
 set (MQTTSN_CLIENT_LIB_NAME "mqttsn_${TEST_BARE_METAL_CLIENT_NAME}_client")

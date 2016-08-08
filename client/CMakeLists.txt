@@ -64,7 +64,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst)
     
     add_library (${lib_name} STATIC ${src_output})
     target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")    
-    add_dependencies(${lib_name} ${header_tgt_name} ${src_output} ${header_output})    
+    add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})    
     
     if (inst)
         install (
