@@ -151,6 +151,11 @@ public:
     typedef mqttsn::protocol::message::Willmsg<Message, TProtOpts> WillmsgMsg;
     typedef mqttsn::protocol::message::Register<Message, TProtOpts> RegisterMsg;
     typedef mqttsn::protocol::message::Regack<Message> RegackMsg;
+    typedef mqttsn::protocol::message::Publish<Message, TProtOpts> PublishMsg;
+    typedef mqttsn::protocol::message::Puback<Message> PubackMsg;
+    typedef mqttsn::protocol::message::Pubrec<Message> PubrecMsg;
+    typedef mqttsn::protocol::message::Pubrel<Message> PubrelMsg;
+    typedef mqttsn::protocol::message::Pubcomp<Message> PubcompMsg;
 
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
@@ -295,7 +300,8 @@ public:
         {
             &Client::connectCancel,
             &Client::disconnectCancel,
-            &Client::registerCancel
+            &Client::registerCancel,
+            &Client::publishIdCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -416,6 +422,64 @@ public:
         bool result = doRegister();
         static_cast<void>(result);
         GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode publish(
+        MqttsnTopicId topicId,
+        const std::uint8_t* msg,
+        std::size_t msgLen,
+        MqttsnQoS qos,
+        bool retain,
+        PublishCompleteReportFn callback,
+        void* data)
+    {
+        if ((!m_connected) && (qos != MqttsnQoS_NoGwPublish)) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if ((qos < MqttsnQoS_NoGwPublish) ||
+            (MqttsnQoS_ExactlyOnceDelivery < qos)) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        if ((callback == nullptr) && (MqttsnQoS_AtLeastOnceDelivery <= qos)) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        if (MqttsnQoS_AtLeastOnceDelivery <= qos) {
+            m_currOp = Op::PublishId;
+            auto* pubOp = newOp<PublishIdOp>();
+            pubOp->m_topicId = topicId;
+            pubOp->m_msg = msg;
+            pubOp->m_msgLen = msgLen;
+            pubOp->m_qos = qos;
+            pubOp->m_retain = retain;
+            pubOp->m_cb = callback;
+            pubOp->m_cbData = data;
+
+            bool result = doPublishId();
+            static_cast<void>(result);
+            GASSERT(result);
+        }
+        else {
+            sendPublish(topicId, allocMsgId(), msg, msgLen, qos, retain, false);
+            if (callback != nullptr) {
+                callback(data, MqttsnAsyncOpStatus_Successful);
+            }
+        }
 
         if (timerWasActive) {
             programNextTimeout();
@@ -676,6 +740,38 @@ public:
         *iter = info;
     }
 
+    virtual void handle(PubackMsg& msg) override
+    {
+        if (m_currOp == Op::PublishId) {
+            handlePublishId(msg);
+            return;
+        }
+
+        // TODO: normal publish
+    }
+
+    virtual void handle(PubrecMsg& msg) override
+    {
+
+        if (m_currOp == Op::PublishId) {
+            handlePublishId(msg);
+            return;
+        }
+
+        // TODO: normal publish
+    }
+
+    virtual void handle(PubcompMsg& msg) override
+    {
+
+        if (m_currOp == Op::PublishId) {
+            handlePublishId(msg);
+            return;
+        }
+
+        // TODO: normal publish
+    }
+
     virtual void handle(PingreqMsg& msg) override
     {
         static_cast<void>(msg);
@@ -718,6 +814,7 @@ private:
         Connect,
         Disconnect,
         Register,
+        PublishId,
         NumOfValues // must be last
     };
 
@@ -745,10 +842,24 @@ private:
         std::uint8_t m_msgId = 0;
     };
 
+    struct PublishIdOp : public OpBase
+    {
+        MqttsnTopicId m_topicId = 0U;
+        std::uint16_t m_msgId = 0U;
+        const std::uint8_t* m_msg = nullptr;
+        std::size_t m_msgLen = 0;
+        MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
+        bool m_retain = false;
+        PublishCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+        bool m_ackReceived = false;
+    };
+
     typedef typename comms::util::AlignedUnion<
         ConnectOp,
         DisconnectOp,
-        RegisterOp
+        RegisterOp,
+        PublishIdOp
     >::Type OpStorageType;
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
@@ -977,7 +1088,8 @@ private:
         {
             &Client::connectTimeout,
             &Client::disconnectTimeout,
-            &Client::registerTimeout
+            &Client::registerTimeout,
+            &Client::publishIdTimeout,
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -1095,6 +1207,24 @@ private:
         finaliseRegisterOp(MqttsnTopicRegStatus_Aborted);
     }
 
+    void publishIdTimeout()
+    {
+        GASSERT(m_currOp == Op::PublishId);
+
+        if (doPublishId()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finalisePublishIdOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void publishIdCancel()
+    {
+        GASSERT(m_currOp == Op::PublishId);
+        finalisePublishIdOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
     void sendMessage(const Message& msg, bool broadcast = false)
     {
         if (m_sendOutputDataFn == nullptr) {
@@ -1182,11 +1312,71 @@ private:
         return true;
     }
 
+    bool doPublishId()
+    {
+        GASSERT (m_currOp == Op::PublishId);
+
+        auto* op = opPtr<PublishIdOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+        op->m_msgId = allocMsgId();
+        sendPublish(
+            op->m_topicId,
+            op->m_msgId,
+            op->m_msg,
+            op->m_msgLen,
+            op->m_qos,
+            op->m_retain,
+            op->m_attempt == 1U);
+        return true;
+    }
+
     void sendPing()
     {
         ++m_pingCount;
         m_lastPingTimestamp = m_timestamp;
         PingreqMsg msg;
+        sendMessage(msg);
+    }
+
+    void sendPublish(
+        MqttsnTopicId topicId,
+        std::uint16_t msgId,
+        const std::uint8_t* msg,
+        std::size_t msgLen,
+        MqttsnQoS qos,
+        bool retain,
+        bool duplicate)
+    {
+        PublishMsg pubMsg;
+        auto& fields = pubMsg.fields();
+        auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+        auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
+        auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
+        auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
+
+        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
+        qosField.value() = details::translateQosValue(qos);
+        dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, duplicate);
+        topicIdField.value() = topicId;
+        msgIdField.value() = msgId;
+        dataField.value().assign(msg, msg + msgLen);
+        sendMessage(pubMsg);
+    }
+
+    void sendPubrel(std::uint16_t msgId)
+    {
+        PubrelMsg msg;
+        auto& fields = msg.fields();
+        auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
+        msgIdField.value() = msgId;
         sendMessage(msg);
     }
 
@@ -1215,6 +1405,93 @@ private:
         GASSERT(cb != nullptr);
         cb(cbData, status, topicId);
     }
+
+    void finalisePublishIdOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::PublishId);
+        auto* op = opPtr<PublishIdOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<PublishIdOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
+    void handlePublishId(const PubackMsg& msg)
+    {
+        assert(m_currOp == Op::PublishId);
+        auto* op = opPtr<PublishIdOp>();
+
+        auto& fields = msg.fields();
+        auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
+        auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
+        auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
+
+        if ((topicIdField.value() != op->m_topicId) ||
+            (msgIdField.value() != op->m_msgId)) {
+            return;
+        }
+
+        if ((op->m_qos == MqttsnQoS_ExactlyOnceDelivery) &&
+            (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted)) {
+            // PUBREC is expected instead
+            return;
+        }
+
+        static const MqttsnAsyncOpStatus Map[] = {
+            /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
+            /* ReturnCodeVal_Conjestion */ MqttsnAsyncOpStatus_Conjestion,
+            /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
+            /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
+        };
+
+        static const std::size_t MapSize = std::extent<decltype(Map)>::value;
+
+        static_assert(MapSize == (unsigned)mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
+            "Map is incorrect");
+
+        MqttsnAsyncOpStatus status = MqttsnAsyncOpStatus_NotSupported;
+        if (static_cast<unsigned>(retCodeField.value()) < MapSize) {
+            status = Map[static_cast<unsigned>(retCodeField.value())];
+        }
+
+        finalisePublishIdOp(status);
+    }
+
+    void handlePublishId(const PubrecMsg& msg)
+    {
+        assert(m_currOp == Op::PublishId);
+        auto* op = opPtr<PublishIdOp>();
+
+        auto& fields = msg.fields();
+        auto& msgIdField = std::get<PubrecMsg::FieldIdx_msgId>(fields);
+
+        if (msgIdField.value() != op->m_msgId) {
+            return;
+        }
+
+        op->m_ackReceived = true;
+        sendPubrel(op->m_msgId);
+    }
+
+    void handlePublishId(const PubcompMsg& msg)
+    {
+        assert(m_currOp == Op::PublishId);
+        auto* op = opPtr<PublishIdOp>();
+
+        auto& fields = msg.fields();
+        auto& msgIdField = std::get<PubrecMsg::FieldIdx_msgId>(fields);
+
+        if ((msgIdField.value() != op->m_msgId) ||
+            (!op->m_ackReceived)) {
+            return;
+        }
+
+        finalisePublishIdOp(MqttsnAsyncOpStatus_Successful);
+    }
+
 
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;

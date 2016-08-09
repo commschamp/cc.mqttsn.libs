@@ -210,3 +210,18 @@ MqttsnErrorCode mqttsn_##NAME##client_register(
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     return clientObj->registerTopic(topic, callback, data);
 }
+
+MqttsnErrorCode mqttsn_##NAME##client_publish_id(
+    ClientHandle client,
+    MqttsnTopicId topicId,
+    const unsigned char* msg,
+    unsigned msgLen,
+    MqttsnQoS qos,
+    bool retain,
+    PublishCompleteReportFn callback,
+    void* data)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->publish(topicId, msg, msgLen, qos, retain, callback, data);
+}    
+

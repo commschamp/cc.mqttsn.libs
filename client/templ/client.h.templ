@@ -70,6 +70,17 @@ MqttsnErrorCode mqttsn_##NAME##client_register(
     const char* topic,
     TopicRegReportFn callback,
     void* data);
+    
+MqttsnErrorCode mqttsn_##NAME##client_publish_id(
+    ClientHandle client,
+    MqttsnTopicId topicId,
+    const unsigned char* msg,
+    unsigned msgLen,
+    MqttsnQoS qos,
+    bool retain,
+    PublishCompleteReportFn callback,
+    void* data
+);    
 
 #ifdef __cplusplus
 }
