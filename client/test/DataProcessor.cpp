@@ -59,6 +59,14 @@ DataProcessor::RegisterMsgReportCallback DataProcessor::setRegisterMsgReportCall
     return old;
 }
 
+DataProcessor::PublishMsgReportCallback DataProcessor::setPublishMsgReportCallback(
+    PublishMsgReportCallback&& func)
+{
+    PublishMsgReportCallback old = std::move(m_publishMsgReportCallback);
+    m_publishMsgReportCallback = std::move(func);
+    return old;
+}
+
 DataProcessor::PingreqMsgReportCallback DataProcessor::setPingreqMsgReportCallback(
     PingreqMsgReportCallback&& func)
 {
@@ -115,6 +123,13 @@ void DataProcessor::handle(RegisterMsg& msg)
 {
     if (m_registerMsgReportCallback) {
         m_registerMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(PublishMsg& msg)
+{
+    if (m_publishMsgReportCallback) {
+        m_publishMsgReportCallback(msg);
     }
 }
 

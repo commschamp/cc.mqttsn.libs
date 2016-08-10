@@ -44,7 +44,7 @@ typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
 typedef decltype(&mqttsn_client_cancel) CancelFunc;
 typedef decltype(&mqttsn_client_connect) ConnectFunc;
 typedef decltype(&mqttsn_client_disconnect) DisconnectFunc;
-typedef decltype(&mqttsn_client_register) RegisterFunc;
+typedef decltype(&mqttsn_client_publish_id) PublishIdFunc;
 
 
 struct ClientLibFuncs
@@ -66,7 +66,7 @@ struct ClientLibFuncs
     CancelFunc m_cancelFunc = nullptr;
     ConnectFunc m_connectFunc = nullptr;
     DisconnectFunc m_disconnectFunc = nullptr;
-    RegisterFunc m_registerFunc = nullptr;
+    PublishIdFunc m_publishIdFunc = nullptr;
 };
 
 class CommonTestClient
@@ -78,7 +78,7 @@ public:
     typedef std::function<void (const std::uint8_t* buf, unsigned bufLen, bool broadcast)> SendDataCallback;
     typedef std::function<void (unsigned short gwId, MqttsnGwStatus status)> GwStatusReportCallback;
     typedef std::function<void (MqttsnConnectionStatus status)> ConnectionStatusReportCallback;
-    typedef std::function<void (MqttsnTopicRegStatus status, MqttsnTopicId topicId)> TopicRegisterCallback;
+    typedef std::function<void (MqttsnAsyncOpStatus status)> PublishCompleteCallback;
 
     ~CommonTestClient();
 
@@ -87,7 +87,7 @@ public:
     SendDataCallback setSendDataCallback(SendDataCallback&& func);
     GwStatusReportCallback setGwStatusReportCallback(GwStatusReportCallback&& func);
     ConnectionStatusReportCallback setConnectionStatusReportCallback(ConnectionStatusReportCallback&& func);
-    TopicRegisterCallback setTopicRegisterCallback(TopicRegisterCallback&& func);
+    PublishCompleteCallback setPublishCompleteCallback(PublishCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
     bool start();
@@ -107,7 +107,12 @@ public:
 
     MqttsnErrorCode disconnect();
 
-    MqttsnErrorCode registerTopic(const std::string& topic);
+    MqttsnErrorCode publishId(
+        MqttsnTopicId topicId,
+        const std::uint8_t* msg,
+        std::size_t msgLen,
+        MqttsnQoS qos,
+        bool retain);
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
 
@@ -121,14 +126,14 @@ private:
     void sendOutputData(const unsigned char* buf, unsigned bufLen, bool broadcast);
     void reportGwStatus(unsigned short gwId, MqttsnGwStatus status);
     void reportConnectionStatus(MqttsnConnectionStatus status);
-    void reportTopicRegResult(MqttsnTopicRegStatus status, MqttsnTopicId topicId);
+    void reportPublishComplete(MqttsnAsyncOpStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
     static void sendOutputDataCallback(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void gwStatusReportCallback(void* data, unsigned short gwId, MqttsnGwStatus status);
     static void connectionStatusReportCallback(void* data, MqttsnConnectionStatus status);
-    static void topicRegisterReportCallback(void* data, MqttsnTopicRegStatus status, MqttsnTopicId topicId);
+    static void publishCompleteCallback(void* data, MqttsnAsyncOpStatus status);
 
     ClientLibFuncs m_libFuncs;
     ClientHandle m_client = nullptr;
@@ -139,7 +144,7 @@ private:
     SendDataCallback m_sendDataCallback;
     GwStatusReportCallback m_gwStatusReportCallback;
     ConnectionStatusReportCallback m_connectionStatusReportCallback;
-    TopicRegisterCallback m_topicRegisterCallback;
+    PublishCompleteCallback m_publishCompleteCallback;
 
     static const ClientLibFuncs DefaultFuncs;
 };

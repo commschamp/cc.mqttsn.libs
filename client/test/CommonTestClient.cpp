@@ -43,7 +43,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_cancelFunc = &mqttsn_client_cancel;
     funcs.m_connectFunc = &mqttsn_client_connect;
     funcs.m_disconnectFunc = &mqttsn_client_disconnect;
-    funcs.m_registerFunc = &mqttsn_client_register;
+    funcs.m_publishIdFunc = &mqttsn_client_publish_id;
     return funcs;
 }
 
@@ -97,11 +97,11 @@ CommonTestClient::ConnectionStatusReportCallback CommonTestClient::setConnection
     return old;
 }
 
-CommonTestClient::TopicRegisterCallback CommonTestClient::setTopicRegisterCallback(
-    TopicRegisterCallback&& func)
+CommonTestClient::PublishCompleteCallback CommonTestClient::setPublishCompleteCallback(
+    PublishCompleteCallback&& func)
 {
-    TopicRegisterCallback old(std::move(m_topicRegisterCallback));
-    m_topicRegisterCallback = std::move(func);
+    PublishCompleteCallback old(std::move(m_publishCompleteCallback));
+    m_publishCompleteCallback = std::move(func);
     return old;
 }
 
@@ -189,10 +189,23 @@ MqttsnErrorCode CommonTestClient::disconnect()
     return (m_libFuncs.m_disconnectFunc)(m_client);
 }
 
-MqttsnErrorCode CommonTestClient::registerTopic(const std::string& topic)
+MqttsnErrorCode CommonTestClient::publishId(
+    MqttsnTopicId topicId,
+    const std::uint8_t* msg,
+    std::size_t msgLen,
+    MqttsnQoS qos,
+    bool retain)
 {
-    assert(m_libFuncs.m_registerFunc != nullptr);
-    return (m_libFuncs.m_registerFunc)(m_client, topic.c_str(), &CommonTestClient::topicRegisterReportCallback, this);
+    assert(m_libFuncs.m_publishIdFunc != nullptr);
+    return (m_libFuncs.m_publishIdFunc)(
+        m_client,
+        topicId,
+        msg,
+        msgLen,
+        qos,
+        retain,
+        &CommonTestClient::publishCompleteCallback,
+        this);
 }
 
 
@@ -279,11 +292,11 @@ void CommonTestClient::reportConnectionStatus(MqttsnConnectionStatus status)
     }
 }
 
-void CommonTestClient::reportTopicRegResult(MqttsnTopicRegStatus status, MqttsnTopicId topicId)
+void CommonTestClient::reportPublishComplete(MqttsnAsyncOpStatus status)
 {
-    if (m_topicRegisterCallback) {
-        TopicRegisterCallback tmp(m_topicRegisterCallback);
-        tmp(status, topicId);
+    if (m_publishCompleteCallback) {
+        PublishCompleteCallback tmp(m_publishCompleteCallback);
+        tmp(status);
     }
 }
 
@@ -324,11 +337,9 @@ void CommonTestClient::connectionStatusReportCallback(void* data, MqttsnConnecti
     reinterpret_cast<CommonTestClient*>(data)->reportConnectionStatus(status);
 }
 
-void CommonTestClient::topicRegisterReportCallback(
-    void* data,
-    MqttsnTopicRegStatus status,
-    MqttsnTopicId topicId)
+void CommonTestClient::publishCompleteCallback(void* data, MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
-    reinterpret_cast<CommonTestClient*>(data)->reportTopicRegResult(status, topicId);
+    reinterpret_cast<CommonTestClient*>(data)->reportPublishComplete(status);
 }
+
