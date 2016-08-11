@@ -212,10 +212,6 @@ MqttsnErrorCode CommonTestClient::publishId(
 MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
 {
     static_assert(
-        (int)mqttsn::protocol::field::QosType::NoGwPublish == MqttsnQoS_NoGwPublish,
-        "Invalid mapping");
-
-    static_assert(
         (int)mqttsn::protocol::field::QosType::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
@@ -226,6 +222,10 @@ MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
     static_assert(
         (int)mqttsn::protocol::field::QosType::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
+
+    if (val == mqttsn::protocol::field::QosType::NoGwPublish) {
+        return MqttsnQoS_NoGwPublish;
+    }
 
     return static_cast<MqttsnQoS>(val);
 

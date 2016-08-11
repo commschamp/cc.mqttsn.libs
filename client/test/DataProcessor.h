@@ -24,6 +24,7 @@
 
 #include "comms/comms.h"
 #include "mqttsn/protocol/Stack.h"
+#include "mqttsn/client/common.h"
 
 class DataProcessor;
 
@@ -83,6 +84,9 @@ public:
     typedef std::function<void (const PublishMsg& msg)> PublishMsgReportCallback;
     PublishMsgReportCallback setPublishMsgReportCallback(PublishMsgReportCallback&& func);
 
+    typedef std::function<void (const PubrelMsg& msg)> PubrelMsgReportCallback;
+    PubrelMsgReportCallback setPubrelMsgReportCallback(PubrelMsgReportCallback&& func);
+
     typedef std::function<void (const PingreqMsg& msg)> PingreqMsgReportCallback;
     PingreqMsgReportCallback setPingreqMsgReportCallback(PingreqMsgReportCallback&& func);
 
@@ -100,9 +104,11 @@ public:
     virtual void handle(WillmsgMsg& msg) override;
     virtual void handle(RegisterMsg& msg) override;
     virtual void handle(PublishMsg& msg) override;
+    virtual void handle(PubrelMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
+    virtual void handle(TestMessage& msg) override;
 
 
     void checkWrittenMsg(const std::uint8_t* buf, std::size_t len);
@@ -118,6 +124,12 @@ public:
         std::uint16_t topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal retCode);
+    DataBuf preparePubackMsg(
+        MqttsnTopicId topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal retCode);
+    DataBuf preparePubrecMsg(std::uint16_t msgId);
+    DataBuf preparePubcompMsg(std::uint16_t msgId);
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
     DataBuf prepareDisconnectMsg();
@@ -132,6 +144,7 @@ private:
     WillmsgMsgReportCallback m_willmsgMsgReportCallback;
     RegisterMsgReportCallback m_registerMsgReportCallback;
     PublishMsgReportCallback m_publishMsgReportCallback;
+    PubrelMsgReportCallback m_pubrelMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
     PingrespMsgReportCallback m_pingrespMsgReportCallback;
     DisconnectMsgReportCallback m_disconnectMsgReportCallback;

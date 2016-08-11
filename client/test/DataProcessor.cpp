@@ -67,6 +67,14 @@ DataProcessor::PublishMsgReportCallback DataProcessor::setPublishMsgReportCallba
     return old;
 }
 
+DataProcessor::PubrelMsgReportCallback DataProcessor::setPubrelMsgReportCallback(
+    PubrelMsgReportCallback&& func)
+{
+    PubrelMsgReportCallback old = std::move(m_pubrelMsgReportCallback);
+    m_pubrelMsgReportCallback = std::move(func);
+    return old;
+}
+
 DataProcessor::PingreqMsgReportCallback DataProcessor::setPingreqMsgReportCallback(
     PingreqMsgReportCallback&& func)
 {
@@ -133,6 +141,13 @@ void DataProcessor::handle(PublishMsg& msg)
     }
 }
 
+void DataProcessor::handle(PubrelMsg& msg)
+{
+    if (m_pubrelMsgReportCallback) {
+        m_pubrelMsgReportCallback(msg);
+    }
+}
+
 void DataProcessor::handle(PingreqMsg& msg)
 {
     if (m_pingreqMsgReportCallback) {
@@ -152,6 +167,12 @@ void DataProcessor::handle(DisconnectMsg& msg)
     if (m_disconnectMsgReportCallback) {
         m_disconnectMsgReportCallback(msg);
     }
+}
+
+void DataProcessor::handle(TestMessage& msg)
+{
+    std::cout << "ERROR: unhandled message of type: " << (unsigned)msg.getId() << std::endl;
+    assert(!"Provide handling function");
 }
 
 void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
@@ -240,6 +261,34 @@ DataProcessor::DataBuf DataProcessor::prepareRegackMsg(
     return prepareInput(msg);
 }
 
+DataProcessor::DataBuf DataProcessor::preparePubackMsg(
+    MqttsnTopicId topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::ReturnCodeVal retCode)
+{
+    PubackMsg msg;
+    auto& fields = msg.fields();
+    std::get<PubackMsg::FieldIdx_topicId>(fields).value() = topicId;
+    std::get<PubackMsg::FieldIdx_msgId>(fields).value() = msgId;
+    std::get<PubackMsg::FieldIdx_returnCode>(fields).value() = retCode;
+    return prepareInput(msg);
+}
+
+DataProcessor::DataBuf DataProcessor::preparePubrecMsg(std::uint16_t msgId)
+{
+    PubrecMsg msg;
+    auto& fields = msg.fields();
+    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    return prepareInput(msg);
+}
+
+DataProcessor::DataBuf DataProcessor::preparePubcompMsg(std::uint16_t msgId)
+{
+    PubcompMsg msg;
+    auto& fields = msg.fields();
+    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    return prepareInput(msg);
+}
 
 DataProcessor::DataBuf DataProcessor::preparePingreqMsg()
 {

@@ -90,10 +90,6 @@ using RegInfoStorageTypeT =
 mqttsn::protocol::field::QosType translateQosValue(MqttsnQoS val)
 {
     static_assert(
-        (int)mqttsn::protocol::field::QosType::NoGwPublish == MqttsnQoS_NoGwPublish,
-        "Invalid mapping");
-
-    static_assert(
         (int)mqttsn::protocol::field::QosType::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
@@ -104,6 +100,10 @@ mqttsn::protocol::field::QosType translateQosValue(MqttsnQoS val)
     static_assert(
         (int)mqttsn::protocol::field::QosType::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
+
+    if (val == MqttsnQoS_NoGwPublish) {
+        return mqttsn::protocol::field::QosType::NoGwPublish;
+    }
 
     return static_cast<mqttsn::protocol::field::QosType>(val);
 }
@@ -1330,7 +1330,7 @@ private:
             op->m_msgLen,
             op->m_qos,
             op->m_retain,
-            op->m_attempt == 1U);
+            1U < op->m_attempt);
         return true;
     }
 
@@ -1368,6 +1368,7 @@ private:
         topicIdField.value() = topicId;
         msgIdField.value() = msgId;
         dataField.value().assign(msg, msg + msgLen);
+
         sendMessage(pubMsg);
     }
 
@@ -1472,6 +1473,7 @@ private:
             return;
         }
 
+        op->m_lastMsgTimestamp = m_timestamp;
         op->m_ackReceived = true;
         sendPubrel(op->m_msgId);
     }
