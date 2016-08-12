@@ -80,6 +80,17 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     bool retain,
     PublishCompleteReportFn callback,
     void* data
+);
+
+MqttsnErrorCode mqttsn_##NAME##client_publish(
+    ClientHandle client,
+    const char* topic,
+    const unsigned char* msg,
+    unsigned msgLen,
+    MqttsnQoS qos,
+    bool retain,
+    PublishCompleteReportFn callback,
+    void* data
 );    
 
 #ifdef __cplusplus
