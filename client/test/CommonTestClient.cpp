@@ -44,6 +44,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_connectFunc = &mqttsn_client_connect;
     funcs.m_disconnectFunc = &mqttsn_client_disconnect;
     funcs.m_publishIdFunc = &mqttsn_client_publish_id;
+    funcs.m_publishFunc = &mqttsn_client_publish;
     return funcs;
 }
 
@@ -208,6 +209,24 @@ MqttsnErrorCode CommonTestClient::publishId(
         this);
 }
 
+MqttsnErrorCode CommonTestClient::publish(
+    const std::string& topic,
+    const std::uint8_t* msg,
+    std::size_t msgLen,
+    MqttsnQoS qos,
+    bool retain)
+{
+    assert(m_libFuncs.m_publishFunc != nullptr);
+    return (m_libFuncs.m_publishFunc)(
+        m_client,
+        topic.c_str(),
+        msg,
+        msgLen,
+        qos,
+        retain,
+        &CommonTestClient::publishCompleteCallback,
+        this);
+}
 
 MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
 {

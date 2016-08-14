@@ -45,6 +45,7 @@ public:
     void test13();
     void test14();
     void test15();
+    void test16();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -1618,111 +1619,165 @@ void ClientBasic::test15()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 }
 
-//void ClientBasic::test11()
-//{
-//    DataProcessor dataProc;
-//    struct Test11State : public TestBasicState
-//    {
-//        bool m_registerSent = false;
-//        bool m_regStatusReported = false;
-//        MqttsnTopicRegStatus m_regStatus = MqttsnTopicRegStatus_Invalid;
-//        MqttsnTopicId m_topicId = 0U;
-//    };
+void ClientBasic::test16()
+{
+    DataProcessor dataProc;
+    struct Test16State : public TestBasicState
+    {
+        bool m_registerSent = false;
+        bool m_publishSent = false;
+        bool m_publishCompleteReported = false;
+    };
+
+    Test16State state;
+
+    auto client = allocClient(&state, &dataProc);
+    client->start();
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const std::string Topic("this/is/topic");
+    static const MqttsnQoS Qos = MqttsnQoS_AtMostOnceDelivery;
+    static const bool Retain = false;
+    static const std::vector<std::uint8_t> Data = {
+        0x01, 0x02, 0x03, 0x04, 0xab, 0xcd, 0xef
+    };
+
+    client->setPublishCompleteCallback(
+        [&](MqttsnAsyncOpStatus status)
+        {
+            TS_TRACE("Publish complete with status: " + std::to_string(status));
+            TS_ASSERT_EQUALS(status, MqttsnAsyncOpStatus_Successful);
+            state.m_publishCompleteReported = true;
+        });
+
+    MqttsnTopicId topicId = 0U;
+    std::uint16_t msgId = 0U;
+    dataProc.setRegisterMsgReportCallback(
+        [&](const RegisterMsg& msg)
+        {
+            TS_TRACE("<-- REGISTER");
+            state.m_registerSent = true;
+
+            auto& fields = msg.fields();
+            auto& topicIdField = std::get<RegisterMsg::FieldIdx_topicId>(fields);
+            auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
+            auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
+
+            topicId = topicIdField.value();
+            msgId = msgIdField.value();
+            TS_ASSERT_EQUALS(Topic, topicNameField.value());
+        });
+
+    bool mustBeDuplicate = false;
+    dataProc.setPublishMsgReportCallback(
+        [&](const PublishMsg& msg)
+        {
+            TS_TRACE("<-- PUBLISH");
+            state.m_publishSent = true;
+
+            auto& fields = msg.fields();
+            auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
+            auto& flagsMembers = flagsField.value();
+            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+            auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+            auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
+            auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
+            auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
+
+            TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), Retain);
+            TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), Qos);
+            TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
+            TS_ASSERT_EQUALS(topicIdField.value(), topicId);
+            TS_ASSERT_EQUALS(dataField.value(), Data);
+            msgId = msgIdField.value();
+        });
+
+    clearState(state);
+
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->publish(Topic, &Data[0], Data.size(), Qos, Retain);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+
+    auto checkRegisterMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_registerSent);
+            TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+        };
+
+    TS_ASSERT(!state.m_publishCompleteReported);
+    checkRegisterMessage();
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto regackMsg = dataProc.prepareRegackMsg(topicId, msgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    sendData(*client, regackMsg, "REGACK");
+    TS_ASSERT(!state.m_publishCompleteReported);
+    TS_ASSERT(state.m_nextOutput.empty());
+
+    auto checkPublishMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_publishSent);
+        };
+
+    regackMsg = dataProc.prepareRegackMsg(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    sendData(*client, regackMsg, "REGACK");
+    checkPublishMessage();
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+    TS_ASSERT(state.m_publishCompleteReported);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+
+    result = client->publish(Topic, &Data[0], Data.size(), Qos, Retain);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    checkPublishMessage();
+    TS_ASSERT(state.m_publishCompleteReported);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000 - state.m_nextElapsedTicks);
+}
+
 //
-//    Test11State state;
+//    state.m_nextElapsedTicks = 2000;
+//    auto pubrecMsg = dataProc.preparePubrecMsg(msgId);
+//    sendData(*client, pubrecMsg, "PUBREC");
 //
-//    auto client = allocClient(&state, &dataProc);
-//    client->start();
+//    TS_ASSERT(!state.m_publishCompleteReported);
+//    checkPubrelMessage();
 //
-//    client->setTopicRegisterCallback(
-//        [&](MqttsnTopicRegStatus status, MqttsnTopicId topicId)
-//        {
-//            TS_TRACE("Topic registration status reported: " + std::to_string((int)status));
-//            TS_TRACE("Topic ID: " + std::to_string(topicId));
-//
-//            state.m_regStatusReported = true;
-//            state.m_regStatus = status;
-//            state.m_topicId = topicId;
-//        });
-//
-//    static const std::string TopicName("/this/is/topic");
-//    std::uint16_t msgId = 0;
-//    dataProc.setRegisterMsgReportCallback(
-//        [&](const RegisterMsg& msg)
-//        {
-//            TS_TRACE("<-- REGISTER");
-//            state.m_registerSent = true;
-//
-//            auto& fields = msg.fields();
-//            auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
-//            auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
-//
-//            msgId = msgIdField.value();
-//            TS_ASSERT_DIFFERS(msgId, 0U);
-//
-//            TS_ASSERT_EQUALS(topicNameField.value(), TopicName);
-//        });
-//
-//    doGwInfo(*client, dataProc, state);
+//    auto nextTicks = state.m_nextRequestedTicks;
 //    clearState(state);
-//    doConnect(*client, dataProc, state);
+//
+//    client->tick(nextTicks);
+//    TS_ASSERT(!state.m_publishCompleteReported);
+//    mustBeDuplicate = true;
+//    checkPublishMessage();
+//
+//    clearState(state);
+//    state.m_nextElapsedTicks = 1000;
+//    pubrecMsg = dataProc.preparePubrecMsg(msgId);
+//    sendData(*client, pubrecMsg, "PUBREC");
+//
+//    TS_ASSERT(!state.m_publishCompleteReported);
+//    checkPubrelMessage();
+//
+//    clearState(state);
+//    auto pubcompMsg = dataProc.preparePubcompMsg(msgId);
+//    sendData(*client, pubcompMsg, "PUBCOMP");
+//    TS_ASSERT(state.m_publishCompleteReported);
 //
 //    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
-//
-//    clearState(state);
-//    state.m_nextElapsedTicks = 1000;
-//    auto result = client->registerTopic(TopicName);
-//    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-//
-//    auto checkRegisterMessage =
-//        [&]()
-//        {
-//            TS_ASSERT(!state.m_nextOutput.empty());
-//            TS_ASSERT(!state.m_broadcast);
-//            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
-//
-//            TS_ASSERT(state.m_registerSent);
-//            TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-//        };
-//
-//    checkRegisterMessage();
-//
-//    result = client->registerTopic(TopicName);
-//    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Busy);
-//
-//    auto nextTick = state.m_nextRequestedTicks;
-//    clearState(state);
-//    client->tick(nextTick);
-//    checkRegisterMessage();
-//
-//    nextTick = state.m_nextRequestedTicks;
-//    clearState(state);
-//    client->tick(nextTick);
-//    checkRegisterMessage();
-//
-//    nextTick = state.m_nextRequestedTicks;
-//    clearState(state);
-//    client->tick(nextTick);
-//    TS_ASSERT(state.m_regStatusReported);
-//    TS_ASSERT_EQUALS(state.m_regStatus, MqttsnTopicRegStatus_NoResponse);
-//
-//    clearState(state);
-//    state.m_nextElapsedTicks = 1000;
-//    result = client->registerTopic(TopicName);
-//    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-//    checkRegisterMessage();
-//
-//    static const std::uint16_t TopicId = 0xabcd;
-//    clearState(state);
-//    state.m_nextElapsedTicks = 1000;
-//    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
-//    sendData(*client, regackMsg, "REGACK");
-//    TS_ASSERT(!state.m_regStatusReported);
-//
-//    regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
-//    sendData(*client, regackMsg, "REGACK");
-//    TS_ASSERT(state.m_regStatusReported);
-//    TS_ASSERT_EQUALS(state.m_regStatus, MqttsnTopicRegStatus_Accepted);
-//    TS_ASSERT_EQUALS(state.m_topicId, TopicId);
-//}
-//

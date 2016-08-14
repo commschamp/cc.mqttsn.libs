@@ -45,6 +45,7 @@ typedef decltype(&mqttsn_client_cancel) CancelFunc;
 typedef decltype(&mqttsn_client_connect) ConnectFunc;
 typedef decltype(&mqttsn_client_disconnect) DisconnectFunc;
 typedef decltype(&mqttsn_client_publish_id) PublishIdFunc;
+typedef decltype(&mqttsn_client_publish) PublishFunc;
 
 
 struct ClientLibFuncs
@@ -67,6 +68,7 @@ struct ClientLibFuncs
     ConnectFunc m_connectFunc = nullptr;
     DisconnectFunc m_disconnectFunc = nullptr;
     PublishIdFunc m_publishIdFunc = nullptr;
+    PublishFunc m_publishFunc = nullptr;
 };
 
 class CommonTestClient
@@ -109,6 +111,13 @@ public:
 
     MqttsnErrorCode publishId(
         MqttsnTopicId topicId,
+        const std::uint8_t* msg,
+        std::size_t msgLen,
+        MqttsnQoS qos,
+        bool retain);
+
+    MqttsnErrorCode publish(
+        const std::string& topic,
         const std::uint8_t* msg,
         std::size_t msgLen,
         MqttsnQoS qos,

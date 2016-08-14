@@ -717,6 +717,7 @@ public:
             return;
         }
 
+        op->m_lastMsgTimestamp = m_timestamp;
         op->m_registered = true;
         op->m_topicId = topicIdField.value();
         op->m_attempt = 0;
@@ -1503,6 +1504,11 @@ private:
             op->m_qos,
             op->m_retain,
             1U < op->m_attempt);
+
+        if (op->m_qos <= MqttsnQoS_AtMostOnceDelivery) {
+            finalisePublishOp(MqttsnAsyncOpStatus_Successful);
+        }
+
         return true;
     }
 
