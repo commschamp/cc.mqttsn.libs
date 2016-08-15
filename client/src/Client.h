@@ -685,6 +685,10 @@ public:
 
         auto* op = opPtr<PublishOp>();
 
+        if (!op->m_didRegistration) {
+            return;
+        }
+
         auto& fields = msg.fields();
         auto& msgIdField = std::get<RegackMsg::FieldIdx_msgId>(fields);
 
@@ -805,6 +809,36 @@ public:
             // PUBREC is expected instead
             return;
         }
+
+        do {
+
+            if ((op->m_qos < MqttsnQoS_AtLeastOnceDelivery) ||
+                (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) ||
+                (m_currOp != Op::Publish) ||
+                (opPtr<PublishOp>()->m_didRegistration)) {
+                break;
+            }
+
+            auto iter = std::find_if(
+                m_regInfos.begin(), m_regInfos.end(),
+                [op](typename RegInfosList::const_reference elem) -> bool
+                {
+                    return elem.m_allocated && (elem.m_topicId == op->m_topicId);
+                });
+
+            if (iter == m_regInfos.end()) {
+                return;
+            }
+
+            iter->m_allocated = false;
+
+            op->m_lastMsgTimestamp = m_timestamp;
+            op->m_topicId = 0U;
+            op->m_attempt = 0;
+            opPtr<PublishOp>()->m_registered = false;
+            doPublish();
+            return;
+        } while (false);
 
         static const MqttsnAsyncOpStatus Map[] = {
             /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
@@ -957,6 +991,7 @@ private:
     {
         const char* m_topic = nullptr;
         bool m_registered = false;
+        bool m_didRegistration = false;
     };
 
     typedef typename comms::util::AlignedUnion<
@@ -1490,6 +1525,7 @@ private:
                 break;
             }
 
+            op->m_didRegistration = true;
             sendRegister(op->m_msgId, op->m_topic);
             return true;
         } while (false);
