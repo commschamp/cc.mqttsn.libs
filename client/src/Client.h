@@ -338,21 +338,11 @@ public:
         auto* connectOp = newOp<ConnectOp>();
         if (willInfo != nullptr) {
             connectOp->m_willInfo = *willInfo;
+            connectOp->m_hasWill = true;
         }
-
-        auto& fields = connectOp->m_connectMsg.fields();
-        auto& flagsField = std::get<ConnectMsg::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-        auto& durationField = std::get<ConnectMsg::FieldIdx_duration>(fields);
-        auto& clientIdField = std::get<ConnectMsg::FieldIdx_clientId>(fields);
-
-        bool hasWill = (willInfo != nullptr) && (willInfo->topic != nullptr) && (willInfo->topic[0] != '\0');
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession, cleanSession);
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
-
-        durationField.value() = keepAlivePeriod;
-        clientIdField.value() = clientId;
+        connectOp->m_clientId = clientId;
+        connectOp->m_keepAlivePeriod = keepAlivePeriod;
+        connectOp->m_cleanSession = cleanSession;
 
         bool result = doConnect();
         static_cast<void>(result);
@@ -549,7 +539,7 @@ public:
         }
 
         auto* op = opPtr<ConnectOp>();
-        bool hasWill = (op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0');
+        bool hasWill = op->m_hasWill && (op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0');
         bool willReported = (op->m_willTopicSent && op->m_willMsgSent);
         if (hasWill && (!willReported)) {
             return;
@@ -881,7 +871,10 @@ private:
     struct ConnectOp : public OpBase
     {
         MqttsnWillInfo m_willInfo = MqttsnWillInfo();
-        ConnectMsg m_connectMsg;
+        const char* m_clientId = nullptr;
+        std::uint16_t m_keepAlivePeriod = 0;
+        bool m_hasWill = false;
+        bool m_cleanSession = false;
         bool m_willTopicSent = false;
         bool m_willMsgSent = false;
     };
@@ -1378,7 +1371,7 @@ private:
         }
 
         ++op->m_attempt;
-        sendMessage(op->m_connectMsg);
+        sendConnect(op->m_clientId, op->m_keepAlivePeriod, op->m_cleanSession, op->m_hasWill);
         return true;
     }
 
@@ -1472,6 +1465,28 @@ private:
         }
 
         return true;
+    }
+
+    void sendConnect(
+        const char* clientId,
+        std::uint16_t keepAlivePeriod,
+        bool cleanSession,
+        bool hasWill)
+    {
+        ConnectMsg msg;
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+        auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
+        auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
+
+        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession, cleanSession);
+        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
+
+        durationField.value() = keepAlivePeriod;
+        clientIdField.value() = clientId;
+        sendMessage(msg);
     }
 
     void sendPing()
