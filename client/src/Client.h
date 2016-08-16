@@ -300,7 +300,6 @@ public:
         {
             &Client::connectCancel,
             &Client::disconnectCancel,
-            &Client::registerCancel,
             &Client::publishIdCancel,
             &Client::publishCancel
         };
@@ -383,44 +382,6 @@ public:
         static_cast<void>(disconnectOp);
 
         bool result = doDisconnect();
-        static_cast<void>(result);
-        GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
-
-        return MqttsnErrorCode_Success;
-    }
-
-    MqttsnErrorCode registerTopic(
-        const char* topic,
-        TopicRegReportFn callback,
-        void* data)
-    {
-        if (!m_connected) {
-            return MqttsnErrorCode_NotConnected;
-        }
-
-
-        if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
-        }
-
-        if ((topic == nullptr) ||
-            (callback == nullptr)) {
-            return MqttsnErrorCode_BadParam;
-        }
-
-        bool timerWasActive = updateTimestamp();
-
-        m_currOp = Op::Register;
-        auto* regOp = newOp<RegisterOp>();
-        regOp->m_topic = topic;
-        regOp->m_cb = callback;
-        regOp->m_cbData = data;
-
-        bool result = doRegister();
         static_cast<void>(result);
         GASSERT(result);
 
@@ -906,7 +867,6 @@ private:
         None,
         Connect,
         Disconnect,
-        Register,
         PublishId,
         Publish,
         NumOfValues // must be last
@@ -927,14 +887,6 @@ private:
     };
 
     typedef OpBase DisconnectOp;
-
-    struct RegisterOp : public OpBase
-    {
-        const char* m_topic = nullptr;
-        TopicRegReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
-        std::uint8_t m_msgId = 0;
-    };
 
     struct PublishOpBase : public OpBase
     {
@@ -963,7 +915,6 @@ private:
     typedef typename comms::util::AlignedUnion<
         ConnectOp,
         DisconnectOp,
-        RegisterOp,
         PublishIdOp,
         PublishOp
     >::Type OpStorageType;
@@ -1247,7 +1198,6 @@ private:
         {
             &Client::connectTimeout,
             &Client::disconnectTimeout,
-            &Client::registerTimeout,
             &Client::publishIdTimeout,
             &Client::publishTimeout,
         };
@@ -1349,24 +1299,6 @@ private:
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
     }
 
-    void registerTimeout()
-    {
-        GASSERT(m_currOp == Op::Register);
-
-        if (doRegister()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseRegisterOp(MqttsnTopicRegStatus_NoResponse);
-    }
-
-    void registerCancel()
-    {
-        GASSERT(m_currOp == Op::Register);
-        finaliseRegisterOp(MqttsnTopicRegStatus_Aborted);
-    }
-
     void publishIdTimeout()
     {
         GASSERT(m_currOp == Op::PublishId);
@@ -1462,30 +1394,6 @@ private:
         ++op->m_attempt;
 
         DisconnectMsg msg;
-        sendMessage(msg);
-        return true;
-    }
-
-    bool doRegister()
-    {
-        GASSERT (m_currOp == Op::Register);
-
-        auto* op = opPtr<RegisterOp>();
-        if (m_retryCount <= op->m_attempt) {
-            return false;
-        }
-
-        ++op->m_attempt;
-        op->m_msgId = allocMsgId();
-
-        RegisterMsg msg;
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
-        auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
-
-        msgIdField.value() = op->m_msgId;
-        topicNameField.value() = op->m_topic;
-
         sendMessage(msg);
         return true;
     }
@@ -1610,8 +1518,8 @@ private:
     {
         RegisterMsg msg;
         auto& fields = msg.fields();
-        auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
-        auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
+        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+        auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
 
         msgIdField.value() = msgId;
         topicNameField.value() = topic;
@@ -1622,7 +1530,7 @@ private:
     {
         PubrelMsg msg;
         auto& fields = msg.fields();
-        auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
+        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
         msgIdField.value() = msgId;
         sendMessage(msg);
     }
@@ -1638,19 +1546,6 @@ private:
     {
         ++m_msgId;
         return m_msgId;
-    }
-
-    void finaliseRegisterOp(MqttsnTopicRegStatus status, std::uint16_t topicId = 0U)
-    {
-        GASSERT(m_currOp == Op::Register);
-        auto* op = opPtr<RegisterOp>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        finaliseOp<RegisterOp>();
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status, topicId);
     }
 
     void finalisePublishOp(MqttsnAsyncOpStatus status)

@@ -69,16 +69,6 @@ enum MqttsnGwStatus
     MqttsnGwStatus_Available
 };
 
-enum MqttsnTopicRegStatus
-{
-    MqttsnTopicRegStatus_Invalid,
-    MqttsnTopicRegStatus_Accepted,
-    MqttsnTopicRegStatus_Conjestion,
-    MqttsnTopicRegStatus_NotSupported,
-    MqttsnTopicRegStatus_NoResponse,
-    MqttsnTopicRegStatus_Aborted,
-};
-
 enum MqttsnAsyncOpStatus
 {
     MqttsnAsyncOpStatus_Invalid,
@@ -89,7 +79,6 @@ enum MqttsnAsyncOpStatus
     MqttsnAsyncOpStatus_NoResponse,
     MqttsnAsyncOpStatus_Aborted,
 };
-
 
 struct MqttsnWillInfo
 {
@@ -108,7 +97,6 @@ typedef unsigned (*CancelNextTickWaitFn)(void* data);
 typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
 typedef void (*GwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
 typedef void (*ConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
-typedef void (*TopicRegReportFn)(void* data, MqttsnTopicRegStatus status, MqttsnTopicId id);
 typedef void (*PublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 
 #ifdef __cplusplus

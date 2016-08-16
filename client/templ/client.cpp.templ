@@ -201,16 +201,6 @@ MqttsnErrorCode mqttsn_##NAME##client_disconnect(ClientHandle client)
     return clientObj->disconnect();
 }
 
-MqttsnErrorCode mqttsn_##NAME##client_register(
-    ClientHandle client,
-    const char* topic,
-    TopicRegReportFn callback,
-    void* data)
-{
-    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    return clientObj->registerTopic(topic, callback, data);
-}
-
 MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     ClientHandle client,
     MqttsnTopicId topicId,

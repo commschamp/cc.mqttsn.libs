@@ -65,12 +65,6 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
 
 MqttsnErrorCode mqttsn_##NAME##client_disconnect(ClientHandle client);
 
-MqttsnErrorCode mqttsn_##NAME##client_register(
-    ClientHandle client,
-    const char* topic,
-    TopicRegReportFn callback,
-    void* data);
-    
 MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     ClientHandle client,
     MqttsnTopicId topicId,

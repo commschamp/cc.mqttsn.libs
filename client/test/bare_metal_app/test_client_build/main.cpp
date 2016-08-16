@@ -53,11 +53,10 @@ void sendOutputData(void* data, const unsigned char* buf, unsigned bufLen, bool 
     static_cast<void>(broadcast);
 }
 
-void topicRegCallback(void* data, MqttsnTopicRegStatus status, std::uint16_t topicId)
+void publishCallback(void* data, MqttsnAsyncOpStatus status)
 {
     static_cast<void>(data);
     static_cast<void>(status);
-    static_cast<void>(topicId);
 }
 
 
@@ -84,7 +83,30 @@ int main(int argc, const char** argv)
     mqttsn_test_bare_metal_client_tick(client, 10);
     mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr);
     static const char* Topic("/this/is/topic");
-    mqttsn_test_bare_metal_client_register(client, Topic, &topicRegCallback, nullptr);
+    static const std::uint8_t Data[] = {
+        0x00, 0x01, 0x02, 0x03
+    };
+    static const std::size_t DataSize = std::extent<decltype(Data)>::value;
+    mqttsn_test_bare_metal_client_publish(
+        client,
+        Topic,
+        &Data[0],
+        DataSize,
+        MqttsnQoS_ExactlyOnceDelivery,
+        false,
+        &publishCallback,
+        nullptr);
+
+    mqttsn_test_bare_metal_client_publish_id(
+        client,
+        0x1234,
+        &Data[0],
+        DataSize,
+        MqttsnQoS_ExactlyOnceDelivery,
+        false,
+        &publishCallback,
+        nullptr);
+
     mqttsn_test_bare_metal_client_disconnect(client);
     mqttsn_test_bare_metal_client_free(client);
     while (true) {};
