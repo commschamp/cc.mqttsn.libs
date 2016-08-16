@@ -59,6 +59,14 @@ DataProcessor::RegisterMsgReportCallback DataProcessor::setRegisterMsgReportCall
     return old;
 }
 
+DataProcessor::RegackMsgReportCallback DataProcessor::setRegackMsgReportCallback(
+    RegackMsgReportCallback&& func)
+{
+    RegackMsgReportCallback old = std::move(m_regackMsgReportCallback);
+    m_regackMsgReportCallback = std::move(func);
+    return old;
+}
+
 DataProcessor::PublishMsgReportCallback DataProcessor::setPublishMsgReportCallback(
     PublishMsgReportCallback&& func)
 {
@@ -131,6 +139,13 @@ void DataProcessor::handle(RegisterMsg& msg)
 {
     if (m_registerMsgReportCallback) {
         m_registerMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(RegackMsg& msg)
+{
+    if (m_regackMsgReportCallback) {
+        m_regackMsgReportCallback(msg);
     }
 }
 
@@ -246,6 +261,19 @@ DataProcessor::DataBuf DataProcessor::prepareWilltopicreqMsg()
 DataProcessor::DataBuf DataProcessor::prepareWillmsgreqMsg()
 {
     return prepareInput(WillmsgreqMsg());
+}
+
+DataProcessor::DataBuf DataProcessor::prepareRegisterMsg(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    const std::string& topicName)
+{
+    RegisterMsg msg;
+    auto& fields = msg.fields();
+    std::get<decltype(msg)::FieldIdx_topicId>(fields).value() = topicId;
+    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    std::get<decltype(msg)::FieldIdx_topicName>(fields).value() = topicName;
+    return prepareInput(msg);
 }
 
 DataProcessor::DataBuf DataProcessor::prepareRegackMsg(

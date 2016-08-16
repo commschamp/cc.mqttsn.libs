@@ -677,6 +677,26 @@ public:
         sendMessage(outMsg);
     }
 
+    virtual void handle(RegisterMsg& msg) override
+    {
+        auto& fields = msg.fields();
+        auto& topicIdField = std::get<RegisterMsg::FieldIdx_topicId>(fields);
+        auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
+        auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
+
+        updateRegInfo(topicNameField.value().c_str(), topicIdField.value());
+
+        RegackMsg ackMsg;
+        auto& ackFields = ackMsg.fields();
+        auto& ackTopicIdField = std::get<decltype(ackMsg)::FieldIdx_topicId>(ackFields);
+        auto& ackMsgIdField = std::get<decltype(ackMsg)::FieldIdx_msgId>(ackFields);
+        auto& ackRetCodeField = std::get<decltype(ackMsg)::FieldIdx_returnCode>(ackFields);
+        ackTopicIdField.value() = topicIdField.value();
+        ackMsgIdField.value() = msgIdField.value();
+        ackRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_Accepted;
+        sendMessage(ackMsg);
+    }
+
     virtual void handle(RegackMsg& msg) override
     {
         if (m_currOp != Op::Publish) {
@@ -726,64 +746,10 @@ public:
         op->m_topicId = topicIdField.value();
         op->m_attempt = 0;
 
-        auto startPublishOnReturn =
-            comms::util::makeScopeGuard(
-                [this]()
-                {
-                    bool result = doPublish();
-                    static_cast<void>(result);
-                    assert(result);
-                });
-
-        auto iter = std::find_if(
-            m_regInfos.begin(), m_regInfos.end(),
-            [op](typename RegInfosList::const_reference elem) -> bool
-            {
-                return elem.m_allocated && (elem.m_topic == op->m_topic);
-            });
-
-        if (iter != m_regInfos.end()) {
-            iter->m_timestamp = m_timestamp;
-            iter->m_topicId = topicIdField.value();
-            return;
-        }
-
-        iter = std::find_if(
-            m_regInfos.begin(), m_regInfos.end(),
-            [](typename RegInfosList::const_reference elem) -> bool
-            {
-                return !elem.m_allocated;
-            });
-
-        if (iter != m_regInfos.end()) {
-            iter->m_timestamp = m_timestamp;
-            iter->m_topic = op->m_topic;
-            iter->m_topicId = topicIdField.value();
-            iter->m_allocated = true;
-            return;
-        }
-
-        RegInfo info;
-        info.m_timestamp = m_timestamp;
-        info.m_topic = op->m_topic;
-        info.m_topicId = topicIdField.value();
-        info.m_allocated = true;
-
-        if (m_regInfos.size() < m_regInfos.max_size()) {
-            m_regInfos.push_back(std::move(info));
-            return;
-        }
-
-        iter = std::min_element(
-            m_regInfos.begin(), m_regInfos.end(),
-            [](typename RegInfosList::const_reference elem1,
-               typename RegInfosList::const_reference elem2) -> bool
-            {
-                return elem1.m_timestamp < elem2.m_timestamp;
-            });
-
-        GASSERT(iter != m_regInfos.end());
-        *iter = info;
+        updateRegInfo(op->m_topic, op->m_topicId);
+        bool result = doPublish();
+        static_cast<void>(result);
+        assert(result);
     }
 
     virtual void handle(PubackMsg& msg) override
@@ -1010,11 +976,63 @@ private:
         Timestamp m_timestamp = 0U;
         TopicNameType m_topic;
         TopicIdType m_topicId = 0U;
-        bool m_locked = false;
         bool m_allocated = false;
     };
 
     typedef details::RegInfoStorageTypeT<RegInfo, TClientOpts> RegInfosList;
+
+    void updateRegInfo(const char* topic, TopicIdType topicId)
+    {
+        auto iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [topic, topicId](typename RegInfosList::const_reference elem) -> bool
+            {
+                return elem.m_allocated && (elem.m_topic == topic);
+            });
+
+        if (iter != m_regInfos.end()) {
+            iter->m_timestamp = m_timestamp;
+            iter->m_topicId = topicId;
+            return;
+        }
+
+        iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [](typename RegInfosList::const_reference elem) -> bool
+            {
+                return !elem.m_allocated;
+            });
+
+        if (iter != m_regInfos.end()) {
+            iter->m_timestamp = m_timestamp;
+            iter->m_topic = topic;
+            iter->m_topicId = topicId;
+            iter->m_allocated = true;
+            return;
+        }
+
+        RegInfo info;
+        info.m_timestamp = m_timestamp;
+        info.m_topic = topic;
+        info.m_topicId = topicId;
+        info.m_allocated = true;
+
+        if (m_regInfos.size() < m_regInfos.max_size()) {
+            m_regInfos.push_back(std::move(info));
+            return;
+        }
+
+        iter = std::min_element(
+            m_regInfos.begin(), m_regInfos.end(),
+            [](typename RegInfosList::const_reference elem1,
+               typename RegInfosList::const_reference elem2) -> bool
+            {
+                return elem1.m_timestamp < elem2.m_timestamp;
+            });
+
+        GASSERT(iter != m_regInfos.end());
+        *iter = info;
+    }
 
     template <typename TOp>
     TOp* opPtr()

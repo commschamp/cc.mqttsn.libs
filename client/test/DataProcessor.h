@@ -81,6 +81,9 @@ public:
     typedef std::function<void (const RegisterMsg& msg)> RegisterMsgReportCallback;
     RegisterMsgReportCallback setRegisterMsgReportCallback(RegisterMsgReportCallback&& func);
 
+    typedef std::function<void (const RegackMsg& msg)> RegackMsgReportCallback;
+    RegackMsgReportCallback setRegackMsgReportCallback(RegackMsgReportCallback&& func);
+
     typedef std::function<void (const PublishMsg& msg)> PublishMsgReportCallback;
     PublishMsgReportCallback setPublishMsgReportCallback(PublishMsgReportCallback&& func);
 
@@ -103,6 +106,7 @@ public:
     virtual void handle(WilltopicMsg& msg) override;
     virtual void handle(WillmsgMsg& msg) override;
     virtual void handle(RegisterMsg& msg) override;
+    virtual void handle(RegackMsg& msg) override;
     virtual void handle(PublishMsg& msg) override;
     virtual void handle(PubrelMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
@@ -120,6 +124,10 @@ public:
     DataBuf prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal val);
     DataBuf prepareWilltopicreqMsg();
     DataBuf prepareWillmsgreqMsg();
+    DataBuf prepareRegisterMsg(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        const std::string& topicName);
     DataBuf prepareRegackMsg(
         std::uint16_t topicId,
         std::uint16_t msgId,
@@ -143,6 +151,7 @@ private:
     WilltopicMsgReportCallback m_willtopicMsgReportCallback;
     WillmsgMsgReportCallback m_willmsgMsgReportCallback;
     RegisterMsgReportCallback m_registerMsgReportCallback;
+    RegackMsgReportCallback m_regackMsgReportCallback;
     PublishMsgReportCallback m_publishMsgReportCallback;
     PubrelMsgReportCallback m_pubrelMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
