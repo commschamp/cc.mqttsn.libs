@@ -108,6 +108,16 @@ mqttsn::protocol::field::QosType translateQosValue(MqttsnQoS val)
     return static_cast<mqttsn::protocol::field::QosType>(val);
 }
 
+MqttsnQoS translateQosValue(mqttsn::protocol::field::QosType val)
+{
+
+    if (val == mqttsn::protocol::field::QosType::NoGwPublish) {
+        return MqttsnQoS_NoGwPublish;
+    }
+
+    return static_cast<MqttsnQoS>(val);
+}
+
 }  // namespace details
 
 template <
@@ -125,6 +135,7 @@ public:
     typedef typename mqttsn::protocol::field::WillTopic<FieldBase, TProtOpts>::ValueType WillTopicType;
     typedef typename mqttsn::protocol::field::WillMsg<FieldBase, TProtOpts>::ValueType WillMsgType;
     typedef typename mqttsn::protocol::field::TopicName<FieldBase, TProtOpts>::ValueType TopicNameType;
+    typedef typename mqttsn::protocol::field::Data<FieldBase, TProtOpts>::ValueType DataType;
     typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
     typedef unsigned long long Timestamp;
 
@@ -234,12 +245,19 @@ public:
         }
     }
 
+    void setMessageReportCallback(MessageReportFn cb, void* data)
+    {
+        m_msgReportFn = cb;
+        m_msgReportData = data;
+    }
+
     bool start()
     {
         if ((m_nextTickProgramFn == nullptr) ||
             (m_cancelNextTickWaitFn == nullptr) ||
             (m_sendOutputDataFn == nullptr) ||
-            (m_connectionStatusReportFn == nullptr)) {
+            (m_connectionStatusReportFn == nullptr) ||
+            (m_msgReportFn == nullptr)) {
             return false;
         }
 
@@ -487,6 +505,37 @@ public:
         return MqttsnErrorCode_Success;
     }
 
+    MqttsnErrorCode subscribe(
+        MqttsnTopicId topicId,
+        MqttsnQoS qos,
+        SubscribeCompleteReportFn callback,
+        void* data
+    )
+    {
+        static_cast<void>(topicId);
+        static_cast<void>(qos);
+        static_cast<void>(callback);
+        static_cast<void>(data);
+        GASSERT(!"NYI");
+        return MqttsnErrorCode_InvalidOperation;
+    }
+
+    MqttsnErrorCode subscribe(
+        const char* topic,
+        MqttsnQoS qos,
+        SubscribeCompleteReportFn callback,
+        void* data
+    )
+    {
+        static_cast<void>(topic);
+        static_cast<void>(qos);
+        static_cast<void>(callback);
+        static_cast<void>(data);
+        GASSERT(!"NYI");
+        return MqttsnErrorCode_InvalidOperation;
+    }
+
+
     using Base::handle;
     virtual void handle(AdvertiseMsg& msg) override
     {
@@ -703,6 +752,102 @@ public:
         assert(result);
     }
 
+    virtual void handle(PublishMsg& msg) override
+    {
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+        auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
+        auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
+        auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
+
+        auto reportMsgFunc =
+            [this, &topicIdField, &dataField, &qosField, &midFlagsField]()
+            {
+                auto iter = std::find_if(
+                    m_regInfos.begin(), m_regInfos.end(),
+                    [&topicIdField](typename RegInfosList::const_reference elem) -> bool
+                    {
+                        return elem.m_allocated && (elem.m_topicId == topicIdField.value());
+                    });
+
+                auto msgInfo = MqttsnMessageInfo();
+
+                if (iter != m_regInfos.end()) {
+                    msgInfo.topic = iter->m_topic.c_str();
+                }
+
+                msgInfo.topicId = topicIdField.value();
+                msgInfo.msg = &(*dataField.value().begin());
+                msgInfo.msgLen = dataField.value().size();
+                msgInfo.qos = details::translateQosValue(qosField.value());
+                msgInfo.retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+
+                assert(m_msgReportFn != nullptr);
+                m_msgReportFn(m_msgReportData, &msgInfo);
+            };
+
+        if ((qosField.value() < mqttsn::protocol::field::QosType::AtLeastOnceDelivery) ||
+            (mqttsn::protocol::field::QosType::ExactlyOnceDelivery < qosField.value())) {
+            if (m_lastInMsg.m_topicId != MqttsnTopicId()) {
+                m_lastInMsg = LastInMsgInfo();
+            }
+
+            reportMsgFunc();
+            return;
+        }
+
+        bool newMessage =
+            (!dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup)) ||
+            (topicIdField.value() != m_lastInMsg.m_topicId);
+            (msgIdField.value() != m_lastInMsg.m_msgId) ||
+            (!m_lastInMsg.m_reported);
+
+        if (newMessage) {
+            m_lastInMsg = LastInMsgInfo();
+
+            m_lastInMsg.m_topicId = topicIdField.value();
+            m_lastInMsg.m_msgId = msgIdField.value();
+            m_lastInMsg.m_qos = details::translateQosValue(qosField.value());
+            m_lastInMsg.m_retain =
+                midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+
+        }
+
+        if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
+            PubackMsg ackMsg;
+            auto& ackFields = ackMsg.fields();
+            auto& ackTopicIdField = std::get<decltype(ackMsg)::FieldIdx_topicId>(ackFields);
+            auto& ackMsgIdField = std::get<decltype(ackMsg)::FieldIdx_msgId>(ackFields);
+            auto& ackRetCodeField = std::get<decltype(ackMsg)::FieldIdx_returnCode>(ackFields);
+
+            ackTopicIdField.value() = topicIdField.value();
+            ackMsgIdField.value() = msgIdField.value();
+            ackRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_Accepted;
+            sendMessage(ackMsg);
+
+            if (!m_lastInMsg.m_reported) {
+                m_lastInMsg.m_reported = true;
+                reportMsgFunc();
+            }
+
+            return;
+        }
+
+        GASSERT(qosField.value() == mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
+        m_lastInMsg.m_msgData = dataField.value();
+
+        PubrecMsg recMsg;
+        auto& recFields = recMsg.fields();
+        auto& recMsgIdField = std::get<decltype(recMsg)::FieldIdx_msgId>(recFields);
+
+        recMsgIdField.value() = msgIdField.value();
+        sendMessage(recMsg);
+    }
+
     virtual void handle(PubackMsg& msg) override
     {
         if ((m_currOp != Op::Publish) && (m_currOp != Op::PublishId)) {
@@ -795,6 +940,50 @@ public:
         op->m_lastMsgTimestamp = m_timestamp;
         op->m_ackReceived = true;
         sendPubrel(op->m_msgId);
+    }
+
+    virtual void handle(PubrelMsg& msg) override
+    {
+        auto& fields = msg.fields();
+        auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
+
+        if ((m_lastInMsg.m_msgId != msgIdField.value()) ||
+            (m_lastInMsg.m_qos != MqttsnQoS_ExactlyOnceDelivery)) {
+            m_lastInMsg = LastInMsgInfo();
+            return;
+        }
+
+        PubcompMsg compMsg;
+        auto& compFields = compMsg.fields();
+        auto& compMsgIdField = std::get<decltype(compMsg)::FieldIdx_msgId>(compFields);
+        compMsgIdField.value() = msgIdField.value();
+        sendMessage(compMsg);
+
+        if (!m_lastInMsg.m_reported) {
+            auto iter = std::find_if(
+                m_regInfos.begin(), m_regInfos.end(),
+                [this](typename RegInfosList::const_reference elem) -> bool
+                {
+                    return elem.m_allocated && (elem.m_topicId == m_lastInMsg.m_topicId);
+                });
+
+            auto msgInfo = MqttsnMessageInfo();
+
+            if (iter != m_regInfos.end()) {
+                msgInfo.topic = iter->m_topic.c_str();
+            }
+
+            msgInfo.topicId = m_lastInMsg.m_topicId;
+            msgInfo.msg = &(*m_lastInMsg.m_msgData.begin());
+            msgInfo.msgLen = m_lastInMsg.m_msgData.size();
+            msgInfo.qos = m_lastInMsg.m_qos;
+            msgInfo.retain = m_lastInMsg.m_retain;
+
+            m_lastInMsg.m_reported = true;
+
+            assert(m_msgReportFn != nullptr);
+            m_msgReportFn(m_msgReportData, &msgInfo);
+        }
     }
 
     virtual void handle(PubcompMsg& msg) override
@@ -921,11 +1110,22 @@ private:
         TopicNameType m_topic;
         TopicIdType m_topicId = 0U;
         bool m_allocated = false;
+        bool m_subscribed = false;
     };
 
     typedef details::RegInfoStorageTypeT<RegInfo, TClientOpts> RegInfosList;
 
-    void updateRegInfo(const char* topic, TopicIdType topicId)
+    struct LastInMsgInfo
+    {
+        DataType m_msgData;
+        MqttsnTopicId m_topicId = 0;
+        std::uint16_t m_msgId = 0;
+        MqttsnQoS m_qos = MqttsnQoS_NoGwPublish;
+        bool m_retain = false;
+        bool m_reported = false;
+    };
+
+    void updateRegInfo(const char* topic, TopicIdType topicId, bool subscribed = false)
     {
         auto iter = std::find_if(
             m_regInfos.begin(), m_regInfos.end(),
@@ -937,6 +1137,7 @@ private:
         if (iter != m_regInfos.end()) {
             iter->m_timestamp = m_timestamp;
             iter->m_topicId = topicId;
+            iter->m_subscribed = (iter->m_subscribed || subscribed);
             return;
         }
 
@@ -952,6 +1153,7 @@ private:
             iter->m_topic = topic;
             iter->m_topicId = topicId;
             iter->m_allocated = true;
+            iter->m_subscribed = subscribed;
             return;
         }
 
@@ -960,6 +1162,7 @@ private:
         info.m_topic = topic;
         info.m_topicId = topicId;
         info.m_allocated = true;
+        info.m_subscribed = subscribed;
 
         if (m_regInfos.size() < m_regInfos.max_size()) {
             m_regInfos.push_back(std::move(info));
@@ -971,7 +1174,15 @@ private:
             [](typename RegInfosList::const_reference elem1,
                typename RegInfosList::const_reference elem2) -> bool
             {
-                return elem1.m_timestamp < elem2.m_timestamp;
+                if (elem1.m_subscribed == elem2.m_subscribed) {
+                    return (elem1.m_timestamp < elem2.m_timestamp);
+                }
+
+                if (elem1.m_subscribed) {
+                    return false;
+                }
+
+                return true;
             });
 
         GASSERT(iter != m_regInfos.end());
@@ -1400,8 +1611,13 @@ private:
             return false;
         }
 
+        bool firstAttempt = (op->m_attempt == 0U);
         ++op->m_attempt;
-        op->m_msgId = allocMsgId();
+
+        if (firstAttempt) {
+            op->m_msgId = allocMsgId();
+        }
+
         sendPublish(
             op->m_topicId,
             op->m_msgId,
@@ -1409,7 +1625,7 @@ private:
             op->m_msgLen,
             op->m_qos,
             op->m_retain,
-            1U < op->m_attempt);
+            !firstAttempt);
         return true;
     }
 
@@ -1422,8 +1638,8 @@ private:
             return false;
         }
 
+        bool firstAttempt = (op->m_attempt == 0U);
         ++op->m_attempt;
-        op->m_msgId = allocMsgId();
 
         do {
             if (op->m_registered) {
@@ -1445,10 +1661,14 @@ private:
             }
 
             op->m_didRegistration = true;
+            op->m_msgId = allocMsgId();
             sendRegister(op->m_msgId, op->m_topic);
             return true;
         } while (false);
 
+        if (firstAttempt) {
+            op->m_msgId = allocMsgId();
+        }
 
         assert(op->m_registered);
         sendPublish(
@@ -1458,7 +1678,7 @@ private:
             op->m_msgLen,
             op->m_qos,
             op->m_retain,
-            1U < op->m_attempt);
+            !firstAttempt);
 
         if (op->m_qos <= MqttsnQoS_AtMostOnceDelivery) {
             finalisePublishOp(MqttsnAsyncOpStatus_Successful);
@@ -1605,6 +1825,8 @@ private:
 
     RegInfosList m_regInfos;
 
+    LastInMsgInfo m_lastInMsg;
+
     NextTickProgramFn m_nextTickProgramFn = nullptr;
     void* m_nextTickProgramData = nullptr;
 
@@ -1619,6 +1841,9 @@ private:
 
     ConnectionStatusReportFn m_connectionStatusReportFn = nullptr;
     void* m_connectionStatusReportData = nullptr;
+
+    MessageReportFn m_msgReportFn = nullptr;
+    void* m_msgReportData = nullptr;
 
     static const unsigned DefaultAdvertisePeriod = 30 * 60 * 1000;
     static const unsigned DefaultRetryPeriod = 15 * 1000;

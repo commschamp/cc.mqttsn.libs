@@ -126,6 +126,11 @@ private:
             {
                 TS_TRACE("Publish complete with status: " + std::to_string((int)val));
             });
+        ptr->setMessageReportCallback(
+            [](const MqttsnMessageInfo& msgInfo)
+            {
+                TS_TRACE(std::string("Received message with topic ") + msgInfo.topic);
+            });
 
 
         if (state != nullptr) {
@@ -406,6 +411,12 @@ private:
         dataProc.setWillmsgMsgReportCallback(std::move(oldWillMsgReportCb));
         client.setConnectionStatusReportCallback(std::move(oldConnectStatusReportCb));
     }
+
+    void startClient(CommonTestClient& client)
+    {
+        bool result = client.start();
+        TS_ASSERT(result);
+    }
 };
 
 void ClientBasic::test1()
@@ -447,7 +458,7 @@ void ClientBasic::test2()
             TS_ASSERT(state.m_searchgwSent);
         };
 
-    client->start();
+    startClient(*client);
 
     TS_TRACE("Started");
     checkSearchgwMessage();
@@ -523,7 +534,7 @@ void ClientBasic::test3()
     Test3State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -633,7 +644,7 @@ void ClientBasic::test4()
     Test4State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -806,7 +817,7 @@ void ClientBasic::test5()
     Test5State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -888,7 +899,7 @@ void ClientBasic::test6()
     Test6State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     client->setConnectionStatusReportCallback(
         [&](MqttsnConnectionStatus val)
@@ -940,7 +951,7 @@ void ClientBasic::test7()
     Test7State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     client->setConnectionStatusReportCallback(
         [&](MqttsnConnectionStatus val)
@@ -995,7 +1006,7 @@ void ClientBasic::test8()
     Test8State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     client->setConnectionStatusReportCallback(
         [&](MqttsnConnectionStatus val)
@@ -1067,7 +1078,7 @@ void ClientBasic::test9()
     Test9State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1134,7 +1145,7 @@ void ClientBasic::test10()
     Test10State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     client->setConnectionStatusReportCallback(
         [&](MqttsnConnectionStatus val)
@@ -1188,7 +1199,7 @@ void ClientBasic::test11()
     Test11State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1258,7 +1269,7 @@ void ClientBasic::test12()
     Test12State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
 
@@ -1328,7 +1339,7 @@ void ClientBasic::test13()
     Test13State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1373,6 +1384,11 @@ void ClientBasic::test13()
             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
             TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
             TS_ASSERT_EQUALS(dataField.value(), Data);
+
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             msgId = msgIdField.value();
         });
 
@@ -1429,7 +1445,7 @@ void ClientBasic::test14()
     Test14State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1517,7 +1533,7 @@ void ClientBasic::test15()
     Test15State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1562,6 +1578,10 @@ void ClientBasic::test15()
             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
             TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
             TS_ASSERT_EQUALS(dataField.value(), Data);
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             msgId = msgIdField.value();
         });
 
@@ -1653,7 +1673,7 @@ void ClientBasic::test16()
     Test16State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1716,6 +1736,11 @@ void ClientBasic::test16()
             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
             TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
             TS_ASSERT_EQUALS(dataField.value(), Data);
+
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             msgId = msgIdField.value();
         });
 
@@ -1784,7 +1809,7 @@ void ClientBasic::test17()
     Test17State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1876,7 +1901,7 @@ void ClientBasic::test18()
     Test18State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -1939,6 +1964,11 @@ void ClientBasic::test18()
             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
             TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
             TS_ASSERT_EQUALS(dataField.value(), Data);
+
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             msgId = msgIdField.value();
         });
 
@@ -2025,7 +2055,7 @@ void ClientBasic::test19()
     Test19State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -2088,6 +2118,11 @@ void ClientBasic::test19()
             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
             TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
             TS_ASSERT_EQUALS(dataField.value(), Data);
+
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             msgId = msgIdField.value();
         });
 
@@ -2184,7 +2219,7 @@ void ClientBasic::test20()
     Test20State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -2247,6 +2282,11 @@ void ClientBasic::test20()
             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
             TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
             TS_ASSERT_EQUALS(dataField.value(), Data);
+
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             msgId = msgIdField.value();
         });
 
@@ -2312,7 +2352,7 @@ void ClientBasic::test21()
     Test21State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -2376,6 +2416,11 @@ void ClientBasic::test21()
             TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
             TS_ASSERT_EQUALS(dataField.value(), Data);
             msgId = msgIdField.value();
+
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             TS_TRACE("msgId=" + std::to_string(msgId));
         });
 
@@ -2497,7 +2542,7 @@ void ClientBasic::test22()
     Test22State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -2530,7 +2575,6 @@ void ClientBasic::test22()
             TS_ASSERT_EQUALS(retCodeField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
         });
 
-     bool mustBeDuplicate = false;
      dataProc.setPublishMsgReportCallback(
          [&](const PublishMsg& msg)
          {
@@ -2549,9 +2593,10 @@ void ClientBasic::test22()
 
              TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), Retain);
              TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), Qos);
-             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), mustBeDuplicate);
+             TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), false);
              TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
              TS_ASSERT_EQUALS(dataField.value(), Data);
+
              TS_TRACE("msgId=" + std::to_string(msgIdField.value()));
          });
 
@@ -2616,7 +2661,7 @@ void ClientBasic::test23()
     Test23State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->start();
+    startClient(*client);
 
     doGwInfo(*client, dataProc, state);
     clearState(state);
@@ -2702,6 +2747,11 @@ void ClientBasic::test23()
             TS_ASSERT_EQUALS(topicIdField.value(), pubTopic);
             TS_ASSERT_EQUALS(dataField.value(), Data);
             msgId = msgIdField.value();
+
+            if (mustBeDuplicate) {
+                TS_ASSERT_EQUALS(msgId, msgIdField.value());
+            }
+
             TS_TRACE("msgId=" + std::to_string(msgId));
         });
 

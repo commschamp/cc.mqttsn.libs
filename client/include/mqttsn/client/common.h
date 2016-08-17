@@ -80,6 +80,9 @@ enum MqttsnAsyncOpStatus
     MqttsnAsyncOpStatus_Aborted,
 };
 
+typedef void* ClientHandle;
+typedef unsigned short MqttsnTopicId;
+
 struct MqttsnWillInfo
 {
     const char* topic;
@@ -89,8 +92,15 @@ struct MqttsnWillInfo
     bool retain;
 };
 
-typedef void* ClientHandle;
-typedef unsigned short MqttsnTopicId;
+struct MqttsnMessageInfo
+{
+    const char* topic;
+    MqttsnTopicId topicId;
+    const unsigned char* msg;
+    unsigned msgLen;
+    MqttsnQoS qos;
+    bool retain;
+};
 
 typedef void (*NextTickProgramFn)(void* data, unsigned duration);
 typedef unsigned (*CancelNextTickWaitFn)(void* data);
@@ -98,6 +108,8 @@ typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned 
 typedef void (*GwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
 typedef void (*ConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
 typedef void (*PublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*SubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
 
 #ifdef __cplusplus
 }

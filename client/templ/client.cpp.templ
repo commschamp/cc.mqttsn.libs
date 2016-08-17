@@ -128,6 +128,14 @@ void mqttsn_##NAME##client_set_connection_status_report_callback(
     clientObj->setConnectionStatusReportCallback(fn, data);
 }
 
+void mqttsn_##NAME##client_set_message_report_callback(
+    ClientHandle client,
+    MessageReportFn fn,
+    void* data)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->setMessageReportCallback(fn, data);
+}
 
 bool mqttsn_##NAME##client_start(ClientHandle client)
 {
@@ -228,3 +236,28 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     return clientObj->publish(topic, msg, msgLen, qos, retain, callback, data);
 }    
+
+MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
+    ClientHandle client,
+    MqttsnTopicId topicId,
+    MqttsnQoS qos,
+    SubscribeCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->subscribe(topicId, qos, callback, data);
+}
+
+MqttsnErrorCode mqttsn_##NAME##client_subscribe(
+    ClientHandle client,
+    const char* topic,
+    MqttsnQoS qos,
+    SubscribeCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->subscribe(topic, qos, callback, data);
+}
+

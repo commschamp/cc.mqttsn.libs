@@ -46,6 +46,12 @@ void mqttsn_##NAME##client_set_connection_status_report_callback(
     ClientHandle client,
     ConnectionStatusReportFn fn,
     void* data);
+
+void mqttsn_##NAME##client_set_message_report_callback(
+    ClientHandle client,
+    MessageReportFn fn,
+    void* data);
+    
 bool mqttsn_##NAME##client_start(ClientHandle client);
 unsigned mqttsn_##NAME##client_process_data(ClientHandle client, const unsigned char* from, unsigned len);
 void mqttsn_##NAME##client_tick(ClientHandle client, unsigned ms);
@@ -85,7 +91,24 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
     bool retain,
     PublishCompleteReportFn callback,
     void* data
-);    
+);
+
+MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
+    ClientHandle client,
+    MqttsnTopicId topicId,
+    MqttsnQoS qos,
+    SubscribeCompleteReportFn callback,
+    void* data
+);
+
+MqttsnErrorCode mqttsn_##NAME##client_subscribe(
+    ClientHandle client,
+    const char* topic,
+    MqttsnQoS qos,
+    SubscribeCompleteReportFn callback,
+    void* data
+);
+    
 
 #ifdef __cplusplus
 }
