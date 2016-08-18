@@ -65,8 +65,9 @@ enum MqttsnErrorCode
 
 enum MqttsnGwStatus
 {
-    MqttsnGwStatus_TimedOut,
-    MqttsnGwStatus_Available
+    MqttsnGwStatus_Invalid,
+    MqttsnGwStatus_Available,
+    MqttsnGwStatus_TimedOut
 };
 
 enum MqttsnAsyncOpStatus
