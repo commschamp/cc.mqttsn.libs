@@ -75,11 +75,35 @@ DataProcessor::PublishMsgReportCallback DataProcessor::setPublishMsgReportCallba
     return old;
 }
 
+DataProcessor::PubackMsgReportCallback DataProcessor::setPubackMsgReportCallback(
+    PubackMsgReportCallback&& func)
+{
+    PubackMsgReportCallback old = std::move(m_pubackMsgReportCallback);
+    m_pubackMsgReportCallback = std::move(func);
+    return old;
+}
+
+DataProcessor::PubrecMsgReportCallback DataProcessor::setPubrecMsgReportCallback(
+    PubrecMsgReportCallback&& func)
+{
+    PubrecMsgReportCallback old = std::move(m_pubrecMsgReportCallback);
+    m_pubrecMsgReportCallback = std::move(func);
+    return old;
+}
+
 DataProcessor::PubrelMsgReportCallback DataProcessor::setPubrelMsgReportCallback(
     PubrelMsgReportCallback&& func)
 {
     PubrelMsgReportCallback old = std::move(m_pubrelMsgReportCallback);
     m_pubrelMsgReportCallback = std::move(func);
+    return old;
+}
+
+DataProcessor::PubcompMsgReportCallback DataProcessor::setPubcompMsgReportCallback(
+    PubcompMsgReportCallback&& func)
+{
+    PubcompMsgReportCallback old = std::move(m_pubcompMsgReportCallback);
+    m_pubcompMsgReportCallback = std::move(func);
     return old;
 }
 
@@ -156,10 +180,31 @@ void DataProcessor::handle(PublishMsg& msg)
     }
 }
 
+void DataProcessor::handle(PubackMsg& msg)
+{
+    if (m_pubackMsgReportCallback) {
+        m_pubackMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(PubrecMsg& msg)
+{
+    if (m_pubrecMsgReportCallback) {
+        m_pubrecMsgReportCallback(msg);
+    }
+}
+
 void DataProcessor::handle(PubrelMsg& msg)
 {
     if (m_pubrelMsgReportCallback) {
         m_pubrelMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(PubcompMsg& msg)
+{
+    if (m_pubcompMsgReportCallback) {
+        m_pubcompMsgReportCallback(msg);
     }
 }
 
@@ -289,6 +334,35 @@ DataProcessor::DataBuf DataProcessor::prepareRegackMsg(
     return prepareInput(msg);
 }
 
+DataProcessor::DataBuf DataProcessor::preparePublishMsg(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    const std::vector<std::uint8_t>& data,
+    mqttsn::protocol::field::QosType qos,
+    bool retain,
+    bool duplicate)
+{
+    PublishMsg msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+    auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
+    auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
+    auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
+
+    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
+    qosField.value() = qos;
+    dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, duplicate);
+    topicIdField.value() = topicId;
+    msgIdField.value() = msgId;
+    dataField.value().assign(data.begin(), data.end());
+
+    return prepareInput(msg);
+}
+
 DataProcessor::DataBuf DataProcessor::preparePubackMsg(
     MqttsnTopicId topicId,
     std::uint16_t msgId,
@@ -305,6 +379,14 @@ DataProcessor::DataBuf DataProcessor::preparePubackMsg(
 DataProcessor::DataBuf DataProcessor::preparePubrecMsg(std::uint16_t msgId)
 {
     PubrecMsg msg;
+    auto& fields = msg.fields();
+    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    return prepareInput(msg);
+}
+
+DataProcessor::DataBuf DataProcessor::preparePubrelMsg(std::uint16_t msgId)
+{
+    PubrelMsg msg;
     auto& fields = msg.fields();
     std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
     return prepareInput(msg);

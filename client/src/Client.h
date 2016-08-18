@@ -801,10 +801,10 @@ public:
         }
 
         bool newMessage =
-            (!dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup)) ||
-            (topicIdField.value() != m_lastInMsg.m_topicId);
-            (msgIdField.value() != m_lastInMsg.m_msgId) ||
-            (!m_lastInMsg.m_reported);
+            ((!dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup)) ||
+             (topicIdField.value() != m_lastInMsg.m_topicId) ||
+             (msgIdField.value() != m_lastInMsg.m_msgId) ||
+             (!m_lastInMsg.m_reported));
 
         if (newMessage) {
             m_lastInMsg = LastInMsgInfo();

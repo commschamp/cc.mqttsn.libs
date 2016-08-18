@@ -53,6 +53,9 @@ public:
     void test21();
     void test22();
     void test23();
+    void test24();
+    void test25();
+    void test26();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -208,6 +211,34 @@ private:
                     TS_TRACE("<-- PUBLISH");
                 });
 
+            dataProc->setPubackMsgReportCallback(
+                [](const PubackMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("<-- PUBACK");
+                });
+
+            dataProc->setPubrecMsgReportCallback(
+                [](const PubrecMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("<-- PUBREC");
+                });
+
+            dataProc->setPubrelMsgReportCallback(
+                [](const PubrelMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("<-- PUBREL");
+                });
+
+            dataProc->setPubcompMsgReportCallback(
+                [](const PubcompMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("<-- PUBCOMP");
+                });
+
             dataProc->setPingreqMsgReportCallback(
                 [](const PingreqMsg& msg)
                 {
@@ -215,6 +246,12 @@ private:
                     TS_TRACE("<-- PINGREQ");
                 });
 
+            dataProc->setPingrespMsgReportCallback(
+                [](const PingrespMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("<-- PINGRESP");
+                });
 
         }
 
@@ -416,6 +453,46 @@ private:
     {
         bool result = client.start();
         TS_ASSERT(result);
+    }
+
+    void doTopicRegister(
+        CommonTestClient& client,
+        DataProcessor& dataProc,
+        TestBasicState& state,
+        const std::string& topic,
+        MqttsnTopicId topicId,
+        std::uint16_t msgId)
+    {
+        bool regackSent = false;
+        auto oldCb = dataProc.setRegackMsgReportCallback(
+            [&](const RegackMsg& msg)
+            {
+                regackSent = true;
+                TS_TRACE("<-- REGACK");
+
+                auto& fields = msg.fields();
+                auto& topicIdField = std::get<RegackMsg::FieldIdx_topicId>(fields);
+                auto& msgIdField = std::get<RegackMsg::FieldIdx_msgId>(fields);
+                auto& retCodeField = std::get<RegackMsg::FieldIdx_returnCode>(fields);
+
+                TS_ASSERT_EQUALS(topicIdField.value(), topicId);
+                TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                TS_ASSERT_EQUALS(retCodeField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
+            });
+
+
+        clearState(state);
+        auto registerMsg = dataProc.prepareRegisterMsg(topicId, msgId, topic);
+        state.m_nextElapsedTicks = 1000;
+        sendData(client, registerMsg, "REGISTER");
+
+        TS_ASSERT(!state.m_nextOutput.empty());
+        TS_ASSERT(!state.m_broadcast);
+        dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+        TS_ASSERT(regackSent);
+
+        dataProc.setRegackMsgReportCallback(std::move(oldCb));
     }
 };
 
@@ -2645,7 +2722,6 @@ void ClientBasic::test22()
     TS_ASSERT(state.m_publishCompleteReported);
 }
 
-
 void ClientBasic::test23()
 {
     DataProcessor dataProc;
@@ -2810,21 +2886,7 @@ void ClientBasic::test23()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto registerMsg = dataProc.prepareRegisterMsg(Topic2Id, RegMsgId, Topic2);
-    state.m_nextElapsedTicks = 1000;
-    sendData(*client, registerMsg, "REGISTER");
-
-    auto checkRegackMessage =
-        [&]()
-        {
-            TS_ASSERT(!state.m_nextOutput.empty());
-            TS_ASSERT(!state.m_broadcast);
-            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
-
-            TS_ASSERT(state.m_regackSent);
-        };
-
-    checkRegackMessage();
+    doTopicRegister(*client, dataProc, state, Topic2, Topic2Id, RegMsgId);
 
     auto checkPubrelMessage =
         [&]()
@@ -2867,3 +2929,317 @@ void ClientBasic::test23()
     sendData(*client, pubackMsg, "PUBACK");
     TS_ASSERT_EQUALS(state.m_publishCompleteStatus, MqttsnAsyncOpStatus_Successful);
 }
+
+void ClientBasic::test24()
+{
+    DataProcessor dataProc;
+    struct Test24State : public TestBasicState
+    {
+        bool m_messageReported = false;
+    };
+
+    Test24State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const MqttsnTopicId TopicId = 0x1234;
+    static const std::uint16_t MsgId = 0x5555;
+    static const auto Qos = mqttsn::protocol::field::QosType::AtMostOnceDelivery;
+    static const bool Retain = false;
+    static const std::vector<std::uint8_t> Data = {
+        0x01, 0x02, 0x03, 0x04, 0xab, 0xcd, 0xef
+    };
+
+    const char* expectedTopic = nullptr;
+    client->setMessageReportCallback(
+        [&](const MqttsnMessageInfo& info)
+        {
+            state.m_messageReported = true;
+
+            if (expectedTopic == nullptr) {
+                TS_TRACE("Message reported with topic ID " + std::to_string(info.topicId));
+                TS_ASSERT_EQUALS(info.topic, expectedTopic);
+            }
+            else {
+                TS_TRACE("Message reported with topic " + std::string(info.topic));
+                TS_ASSERT_EQUALS(std::string(info.topic), std::string(expectedTopic));
+            }
+
+            TS_ASSERT_EQUALS(info.topicId, TopicId);
+            TS_ASSERT_EQUALS(info.qos, CommonTestClient::transformQos(Qos));
+            TS_ASSERT_EQUALS(info.retain, Retain);
+            TS_ASSERT_EQUALS(info.msgLen, Data.size());
+            TS_ASSERT(std::equal(Data.begin(), Data.end(), info.msg));
+        });
+
+
+    clearState(state);
+
+    state.m_nextElapsedTicks = 1000;
+    auto publishMsg = dataProc.preparePublishMsg(TopicId, MsgId, Data, Qos, Retain, false);
+    sendData(*client, publishMsg, "PUBLISH");
+    TS_ASSERT(state.m_messageReported);
+    TS_ASSERT(state.m_nextOutput.empty());
+
+    static const char* Topic = "/this/is/topic";
+    static const std::uint16_t RegMsgId = 0x1222;
+    doTopicRegister(*client, dataProc, state, Topic, TopicId, RegMsgId);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    publishMsg = dataProc.preparePublishMsg(TopicId, MsgId + 1, Data, Qos, Retain, false);
+    expectedTopic = Topic;
+    TS_ASSERT(!state.m_messageReported);
+    sendData(*client, publishMsg, "PUBLISH");
+    TS_ASSERT(state.m_messageReported);
+    TS_ASSERT(state.m_nextOutput.empty());
+}
+
+void ClientBasic::test25()
+{
+    DataProcessor dataProc;
+    struct Test25State : public TestBasicState
+    {
+        bool m_messageReported = false;
+        bool m_pubackSent = false;
+    };
+
+    Test25State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const std::string Topic = "/this/is/topic";
+    static const std::uint16_t RegMsgId = 0x1222;
+    static const MqttsnTopicId TopicId = 0x1234;
+
+    clearState(state);
+    doTopicRegister(*client, dataProc, state, Topic, TopicId, RegMsgId);
+
+    static const std::uint16_t MsgId = 0x5555;
+    static const auto Qos = mqttsn::protocol::field::QosType::AtLeastOnceDelivery;
+    static const bool Retain = false;
+    static const std::vector<std::uint8_t> Data = {
+        0x01, 0x02, 0x03, 0x04, 0xab, 0xcd, 0xef
+    };
+
+    client->setMessageReportCallback(
+        [&](const MqttsnMessageInfo& info)
+        {
+            state.m_messageReported = true;
+            TS_TRACE("Message reported with topic " + std::string(info.topic));
+            TS_ASSERT_EQUALS(std::string(info.topic), Topic);
+
+            TS_ASSERT_EQUALS(info.topicId, TopicId);
+            TS_ASSERT_EQUALS(info.qos, CommonTestClient::transformQos(Qos));
+            TS_ASSERT_EQUALS(info.retain, Retain);
+            TS_ASSERT_EQUALS(info.msgLen, Data.size());
+            TS_ASSERT(std::equal(Data.begin(), Data.end(), info.msg));
+        });
+
+    std::uint16_t expectedMsgId = 0;
+    dataProc.setPubackMsgReportCallback(
+        [&](const PubackMsg& msg)
+        {
+            TS_TRACE("<-- PUBACK");
+            state.m_pubackSent = true;
+
+            auto& fields = msg.fields();
+            auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
+            auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
+            auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
+
+            TS_ASSERT_EQUALS(topicIdField.value(), TopicId);
+            TS_ASSERT_EQUALS(msgIdField.value(), expectedMsgId);
+            TS_ASSERT_EQUALS(retCodeField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        });
+
+
+    auto checkPubackMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_pubackSent);
+        };
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    expectedMsgId = MsgId;
+    auto publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, false);
+    sendData(*client, publishMsg, "PUBLISH");
+    checkPubackMessage();
+    TS_ASSERT(state.m_messageReported);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    sendData(*client, publishMsg, "PUBLISH");
+    checkPubackMessage();
+    TS_ASSERT(!state.m_messageReported); // Duplicated mustn't be reported
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    expectedMsgId = MsgId + 1;
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    sendData(*client, publishMsg, "PUBLISH");
+    checkPubackMessage();
+    TS_ASSERT(state.m_messageReported);
+}
+
+void ClientBasic::test26()
+{
+    DataProcessor dataProc;
+    struct Test26State : public TestBasicState
+    {
+        bool m_messageReported = false;
+        bool m_pubrecSent = false;
+        bool m_pubcompSent = false;
+    };
+
+    Test26State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const std::string Topic = "/this/is/topic";
+    static const std::uint16_t RegMsgId = 0x1222;
+    static const MqttsnTopicId TopicId = 0x1234;
+
+    clearState(state);
+    doTopicRegister(*client, dataProc, state, Topic, TopicId, RegMsgId);
+
+    static const std::uint16_t MsgId = 0x5555;
+    static const auto Qos = mqttsn::protocol::field::QosType::ExactlyOnceDelivery;
+    static const bool Retain = false;
+    static const std::vector<std::uint8_t> Data = {
+        0x01, 0x02, 0x03, 0x04, 0xab, 0xcd, 0xef
+    };
+
+    client->setMessageReportCallback(
+        [&](const MqttsnMessageInfo& info)
+        {
+            state.m_messageReported = true;
+            TS_TRACE("Message reported with topic " + std::string(info.topic));
+            TS_ASSERT_EQUALS(std::string(info.topic), Topic);
+
+            TS_ASSERT_EQUALS(info.topicId, TopicId);
+            TS_ASSERT_EQUALS(info.qos, CommonTestClient::transformQos(Qos));
+            TS_ASSERT_EQUALS(info.retain, Retain);
+            TS_ASSERT_EQUALS(info.msgLen, Data.size());
+            TS_ASSERT(std::equal(Data.begin(), Data.end(), info.msg));
+        });
+
+    std::uint16_t expectedMsgId = 0;
+    dataProc.setPubrecMsgReportCallback(
+        [&](const PubrecMsg& msg)
+        {
+            TS_TRACE("<-- PUBREC");
+            state.m_pubrecSent = true;
+
+            auto& fields = msg.fields();
+            auto& msgIdField = std::get<PubrecMsg::FieldIdx_msgId>(fields);
+
+            TS_ASSERT_EQUALS(msgIdField.value(), expectedMsgId);
+        });
+
+    dataProc.setPubcompMsgReportCallback(
+        [&](const PubcompMsg& msg)
+        {
+            TS_TRACE("<-- PUBCOMP");
+            state.m_pubcompSent = true;
+
+            auto& fields = msg.fields();
+            auto& msgIdField = std::get<PubcompMsg::FieldIdx_msgId>(fields);
+
+            TS_ASSERT_EQUALS(msgIdField.value(), expectedMsgId);
+        });
+
+
+    auto checkPubrecMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_pubrecSent);
+        };
+
+    auto checkPubcompMessage =
+        [&]()
+        {
+            TS_ASSERT(!state.m_nextOutput.empty());
+            TS_ASSERT(!state.m_broadcast);
+            dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
+
+            TS_ASSERT(state.m_pubcompSent);
+        };
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    expectedMsgId = MsgId;
+    auto publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, false);
+    sendData(*client, publishMsg, "PUBLISH");
+    checkPubrecMessage();
+    TS_ASSERT(!state.m_messageReported);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto pubrelMsg = dataProc.preparePubrelMsg(expectedMsgId);
+    sendData(*client, pubrelMsg, "PUBREL");
+    checkPubcompMessage();
+    TS_ASSERT(state.m_messageReported);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    sendData(*client, publishMsg, "PUBLISH");
+    checkPubrecMessage();
+    TS_ASSERT(!state.m_messageReported);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    pubrelMsg = dataProc.preparePubrelMsg(expectedMsgId);
+    sendData(*client, pubrelMsg, "PUBREL");
+    checkPubcompMessage();
+    TS_ASSERT(!state.m_messageReported); // Duplicate not reported
+
+    clearState(state);
+    ++expectedMsgId;
+    state.m_nextElapsedTicks = 1000;
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    sendData(*client, publishMsg, "PUBLISH");
+    checkPubrecMessage();
+    TS_ASSERT(!state.m_messageReported);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    pubrelMsg = dataProc.preparePubrelMsg(expectedMsgId);
+    sendData(*client, pubrelMsg, "PUBREL");
+    checkPubcompMessage();
+    TS_ASSERT(state.m_messageReported);
+}
+
+

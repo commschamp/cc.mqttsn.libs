@@ -87,8 +87,17 @@ public:
     typedef std::function<void (const PublishMsg& msg)> PublishMsgReportCallback;
     PublishMsgReportCallback setPublishMsgReportCallback(PublishMsgReportCallback&& func);
 
+    typedef std::function<void (const PubackMsg& msg)> PubackMsgReportCallback;
+    PubackMsgReportCallback setPubackMsgReportCallback(PubackMsgReportCallback&& func);
+
+    typedef std::function<void (const PubrecMsg& msg)> PubrecMsgReportCallback;
+    PubrecMsgReportCallback setPubrecMsgReportCallback(PubrecMsgReportCallback&& func);
+
     typedef std::function<void (const PubrelMsg& msg)> PubrelMsgReportCallback;
     PubrelMsgReportCallback setPubrelMsgReportCallback(PubrelMsgReportCallback&& func);
+
+    typedef std::function<void (const PubcompMsg& msg)> PubcompMsgReportCallback;
+    PubcompMsgReportCallback setPubcompMsgReportCallback(PubcompMsgReportCallback&& func);
 
     typedef std::function<void (const PingreqMsg& msg)> PingreqMsgReportCallback;
     PingreqMsgReportCallback setPingreqMsgReportCallback(PingreqMsgReportCallback&& func);
@@ -108,7 +117,10 @@ public:
     virtual void handle(RegisterMsg& msg) override;
     virtual void handle(RegackMsg& msg) override;
     virtual void handle(PublishMsg& msg) override;
+    virtual void handle(PubackMsg& msg) override;
+    virtual void handle(PubrecMsg& msg) override;
     virtual void handle(PubrelMsg& msg) override;
+    virtual void handle(PubcompMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
@@ -132,11 +144,19 @@ public:
         std::uint16_t topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal retCode);
+    DataBuf preparePublishMsg(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        const std::vector<std::uint8_t>& data,
+        mqttsn::protocol::field::QosType qos,
+        bool retain,
+        bool duplicate);
     DataBuf preparePubackMsg(
         MqttsnTopicId topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal retCode);
     DataBuf preparePubrecMsg(std::uint16_t msgId);
+    DataBuf preparePubrelMsg(std::uint16_t msgId);
     DataBuf preparePubcompMsg(std::uint16_t msgId);
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
@@ -153,7 +173,10 @@ private:
     RegisterMsgReportCallback m_registerMsgReportCallback;
     RegackMsgReportCallback m_regackMsgReportCallback;
     PublishMsgReportCallback m_publishMsgReportCallback;
+    PubackMsgReportCallback m_pubackMsgReportCallback;
+    PubrecMsgReportCallback m_pubrecMsgReportCallback;
     PubrelMsgReportCallback m_pubrelMsgReportCallback;
+    PubcompMsgReportCallback m_pubcompMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
     PingrespMsgReportCallback m_pingrespMsgReportCallback;
     DisconnectMsgReportCallback m_disconnectMsgReportCallback;
