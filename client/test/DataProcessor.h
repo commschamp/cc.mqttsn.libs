@@ -148,6 +148,7 @@ public:
         std::uint16_t topicId,
         std::uint16_t msgId,
         const std::vector<std::uint8_t>& data,
+        mqttsn::protocol::field::TopicIdTypeVal topicIdType,
         mqttsn::protocol::field::QosType qos,
         bool retain,
         bool duplicate);

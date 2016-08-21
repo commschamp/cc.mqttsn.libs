@@ -80,6 +80,8 @@ private:
     typedef DataProcessor::PingrespMsg PingrespMsg;
     typedef DataProcessor::DisconnectMsg DisconnectMsg;
 
+    typedef mqttsn::protocol::field::TopicIdTypeVal TopicIdTypeVal;
+
     static const unsigned DefaultAdvertisePeriod = 5 * 60 * 1000;
     static const unsigned DefaultRetryTimeout = 5 * 1000;
     static const unsigned DefaultRetryCount = 3;
@@ -2006,6 +2008,7 @@ void ClientBasic::test24()
 
     static const MqttsnTopicId TopicId = 0x1234;
     static const std::uint16_t MsgId = 0x5555;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const auto Qos = mqttsn::protocol::field::QosType::AtMostOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -2014,7 +2017,7 @@ void ClientBasic::test24()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto publishMsg = dataProc.preparePublishMsg(TopicId, MsgId, Data, Qos, Retain, false);
+    auto publishMsg = dataProc.preparePublishMsg(TopicId, MsgId, Data, TopicIdType, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifyCb_ReportedMessage(state, std::string(), TopicId, Data, transformQos(Qos), Retain);
     TS_ASSERT(state.m_nextOutput.empty());
@@ -2025,7 +2028,7 @@ void ClientBasic::test24()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    publishMsg = dataProc.preparePublishMsg(TopicId, MsgId + 1, Data, Qos, Retain, false);
+    publishMsg = dataProc.preparePublishMsg(TopicId, MsgId + 1, Data, TopicIdType, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
     TS_ASSERT(state.m_nextOutput.empty());
@@ -2055,6 +2058,7 @@ void ClientBasic::test25()
     doTopicRegister(*client, dataProc, state, Topic, TopicId, RegMsgId);
 
     static const std::uint16_t MsgId = 0x5555;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const auto Qos = mqttsn::protocol::field::QosType::AtLeastOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -2064,14 +2068,14 @@ void ClientBasic::test25()
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     auto expectedMsgId = MsgId;
-    auto publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, false);
+    auto publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);
     verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);
     TS_ASSERT(state.m_reportedMsgs.empty()); // Duplicated mustn't be reported
@@ -2079,7 +2083,7 @@ void ClientBasic::test25()
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     expectedMsgId = MsgId + 1;
-    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);
     verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
@@ -2109,6 +2113,7 @@ void ClientBasic::test26()
     doTopicRegister(*client, dataProc, state, Topic, TopicId, RegMsgId);
 
     static const std::uint16_t MsgId = 0x5555;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const auto Qos = mqttsn::protocol::field::QosType::ExactlyOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -2118,7 +2123,7 @@ void ClientBasic::test26()
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     auto expectedMsgId = MsgId;
-    auto publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, false);
+    auto publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubrecMsg(state, dataProc, expectedMsgId);
     TS_ASSERT(state.m_reportedMsgs.empty());
@@ -2132,7 +2137,7 @@ void ClientBasic::test26()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubrecMsg(state, dataProc, expectedMsgId);
     TS_ASSERT(state.m_reportedMsgs.empty());
@@ -2147,7 +2152,7 @@ void ClientBasic::test26()
     clearState(state);
     ++expectedMsgId;
     state.m_nextElapsedTicks = 1000;
-    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, Qos, Retain, true);
+    publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubrecMsg(state, dataProc, expectedMsgId);
     TS_ASSERT(state.m_reportedMsgs.empty());

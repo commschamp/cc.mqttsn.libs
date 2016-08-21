@@ -338,6 +338,7 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
     std::uint16_t topicId,
     std::uint16_t msgId,
     const std::vector<std::uint8_t>& data,
+    mqttsn::protocol::field::TopicIdTypeVal topicIdType,
     mqttsn::protocol::field::QosType qos,
     bool retain,
     bool duplicate)
@@ -346,6 +347,7 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
     auto& fields = msg.fields();
     auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
     auto& flagsMembers = flagsField.value();
+    auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
     auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
     auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
     auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
@@ -353,6 +355,7 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
     auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
     auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
 
+    topicIdTypeField.value() = topicIdType;
     midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
     qosField.value() = qos;
     dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, duplicate);

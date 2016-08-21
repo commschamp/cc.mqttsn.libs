@@ -684,7 +684,7 @@ public:
         auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
         auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
 
-        updateRegInfo(topicNameField.value().c_str(), topicIdField.value());
+        updateRegInfo(topicNameField.value().c_str(), topicIdField.value(), true);
 
         RegackMsg ackMsg;
         auto& ackFields = ackMsg.fields();
@@ -757,6 +757,7 @@ public:
         auto& fields = msg.fields();
         auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
         auto& flagsMembers = flagsField.value();
+        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
         auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
         auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
         auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
@@ -765,21 +766,11 @@ public:
         auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
 
         auto reportMsgFunc =
-            [this, &topicIdField, &dataField, &qosField, &midFlagsField]()
+            [this, &topicIdField, &dataField, &qosField, &midFlagsField](const char* topicName)
             {
-                auto iter = std::find_if(
-                    m_regInfos.begin(), m_regInfos.end(),
-                    [&topicIdField](typename RegInfosList::const_reference elem) -> bool
-                    {
-                        return elem.m_allocated && (elem.m_topicId == topicIdField.value());
-                    });
-
                 auto msgInfo = MqttsnMessageInfo();
 
-                if (iter != m_regInfos.end()) {
-                    msgInfo.topic = iter->m_topic.c_str();
-                }
-
+                msgInfo.topic = topicName;
                 msgInfo.topicId = topicIdField.value();
                 msgInfo.msg = &(*dataField.value().begin());
                 msgInfo.msgLen = dataField.value().size();
@@ -790,13 +781,38 @@ public:
                 m_msgReportFn(m_msgReportData, &msgInfo);
             };
 
+        auto iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [&topicIdField](typename RegInfosList::const_reference elem) -> bool
+            {
+                return elem.m_allocated && (elem.m_topicId == topicIdField.value());
+            });
+
+        const char* topicName = nullptr;
+        if (iter != m_regInfos.end()) {
+            topicName = iter->m_topic.c_str();
+        }
+
         if ((qosField.value() < mqttsn::protocol::field::QosType::AtLeastOnceDelivery) ||
             (mqttsn::protocol::field::QosType::ExactlyOnceDelivery < qosField.value())) {
+
+            if ((iter == m_regInfos.end()) &&
+                (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
+                return;
+            }
+
             if (m_lastInMsg.m_topicId != MqttsnTopicId()) {
                 m_lastInMsg = LastInMsgInfo();
             }
 
-            reportMsgFunc();
+            reportMsgFunc(topicName);
+            return;
+        }
+
+        if ((iter == m_regInfos.end()) &&
+            (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
+            m_lastInMsg = LastInMsgInfo();
+            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
             return;
         }
 
@@ -814,24 +830,14 @@ public:
             m_lastInMsg.m_qos = details::translateQosValue(qosField.value());
             m_lastInMsg.m_retain =
                 midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
-
         }
 
         if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
-            PubackMsg ackMsg;
-            auto& ackFields = ackMsg.fields();
-            auto& ackTopicIdField = std::get<decltype(ackMsg)::FieldIdx_topicId>(ackFields);
-            auto& ackMsgIdField = std::get<decltype(ackMsg)::FieldIdx_msgId>(ackFields);
-            auto& ackRetCodeField = std::get<decltype(ackMsg)::FieldIdx_returnCode>(ackFields);
-
-            ackTopicIdField.value() = topicIdField.value();
-            ackMsgIdField.value() = msgIdField.value();
-            ackRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_Accepted;
-            sendMessage(ackMsg);
+            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
 
             if (!m_lastInMsg.m_reported) {
                 m_lastInMsg.m_reported = true;
-                reportMsgFunc();
+                reportMsgFunc(topicName);
             }
 
             return;
@@ -1110,7 +1116,7 @@ private:
         TopicNameType m_topic;
         TopicIdType m_topicId = 0U;
         bool m_allocated = false;
-        bool m_subscribed = false;
+        bool m_locked = false;
     };
 
     typedef details::RegInfoStorageTypeT<RegInfo, TClientOpts> RegInfosList;
@@ -1125,7 +1131,7 @@ private:
         bool m_reported = false;
     };
 
-    void updateRegInfo(const char* topic, TopicIdType topicId, bool subscribed = false)
+    void updateRegInfo(const char* topic, TopicIdType topicId, bool locked = false)
     {
         auto iter = std::find_if(
             m_regInfos.begin(), m_regInfos.end(),
@@ -1137,7 +1143,7 @@ private:
         if (iter != m_regInfos.end()) {
             iter->m_timestamp = m_timestamp;
             iter->m_topicId = topicId;
-            iter->m_subscribed = (iter->m_subscribed || subscribed);
+            iter->m_locked = (iter->m_locked || locked);
             return;
         }
 
@@ -1153,7 +1159,7 @@ private:
             iter->m_topic = topic;
             iter->m_topicId = topicId;
             iter->m_allocated = true;
-            iter->m_subscribed = subscribed;
+            iter->m_locked = locked;
             return;
         }
 
@@ -1162,7 +1168,7 @@ private:
         info.m_topic = topic;
         info.m_topicId = topicId;
         info.m_allocated = true;
-        info.m_subscribed = subscribed;
+        info.m_locked = locked;
 
         if (m_regInfos.size() < m_regInfos.max_size()) {
             m_regInfos.push_back(std::move(info));
@@ -1174,11 +1180,11 @@ private:
             [](typename RegInfosList::const_reference elem1,
                typename RegInfosList::const_reference elem2) -> bool
             {
-                if (elem1.m_subscribed == elem2.m_subscribed) {
+                if (elem1.m_locked == elem2.m_locked) {
                     return (elem1.m_timestamp < elem2.m_timestamp);
                 }
 
-                if (elem1.m_subscribed) {
+                if (elem1.m_locked) {
                     return false;
                 }
 
@@ -1745,6 +1751,23 @@ private:
         dataField.value().assign(msg, msg + msgLen);
 
         sendMessage(pubMsg);
+    }
+
+    void sentPuback(
+        MqttsnTopicId topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal retCode)
+    {
+        PubackMsg ackMsg;
+        auto& ackFields = ackMsg.fields();
+        auto& ackTopicIdField = std::get<decltype(ackMsg)::FieldIdx_topicId>(ackFields);
+        auto& ackMsgIdField = std::get<decltype(ackMsg)::FieldIdx_msgId>(ackFields);
+        auto& ackRetCodeField = std::get<decltype(ackMsg)::FieldIdx_returnCode>(ackFields);
+
+        ackTopicIdField.value() = topicId;
+        ackMsgIdField.value() = msgId;
+        ackRetCodeField.value() = retCode;
+        sendMessage(ackMsg);
     }
 
     void sendRegister(
