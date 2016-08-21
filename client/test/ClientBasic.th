@@ -597,6 +597,7 @@ private:
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
         const DataSeq& data,
+        TopicIdTypeVal topicIdType,
         MqttsnQoS qos,
         bool retain,
         bool duplicate)
@@ -604,7 +605,7 @@ private:
         std::uint16_t msgId = 0;
         bool sent = false;
         auto oldCb = dataProc.setPublishMsgReportCallback(
-            [&msgId, &sent, &data, topicId, qos, retain, duplicate](const PublishMsg& msg)
+            [&msgId, &sent, &data, topicId, topicIdType, qos, retain, duplicate](const PublishMsg& msg)
             {
                 sent = true;
 
@@ -612,6 +613,7 @@ private:
                 auto& fields = msg.fields();
                 auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
                 auto& flagsMembers = flagsField.value();
+                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
                 auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
                 auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
                 auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
@@ -619,6 +621,7 @@ private:
                 auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
                 auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
 
+                TS_ASSERT_EQUALS(topicIdTypeField.value(), topicIdType);
                 TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
                 TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), qos);
                 TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), duplicate);
@@ -1310,6 +1313,7 @@ void ClientBasic::test11()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const MqttsnTopicId TopicId = 0x0123;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const MqttsnQoS Qos = MqttsnQoS_AtMostOnceDelivery;
     static const bool Retain = true;
     static const std::vector<std::uint8_t> Data = {
@@ -1320,7 +1324,7 @@ void ClientBasic::test11()
     state.m_nextElapsedTicks = 1000;
     auto result = client->publishId(TopicId, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
 }
 
@@ -1336,6 +1340,7 @@ void ClientBasic::test12()
     doGwInfo(*client, dataProc, state);
 
     static const MqttsnTopicId TopicId = 0x0123;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const MqttsnQoS Qos = MqttsnQoS_NoGwPublish;
     static const bool Retain = true;
     static const std::vector<std::uint8_t> Data = {
@@ -1351,7 +1356,7 @@ void ClientBasic::test12()
 
     result = client->publishId(TopicId, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
 }
 
@@ -1371,6 +1376,7 @@ void ClientBasic::test13()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const MqttsnTopicId TopicId = 0x0123;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = true;
     static const std::vector<std::uint8_t> Data = {
@@ -1381,14 +1387,14 @@ void ClientBasic::test13()
     state.m_nextElapsedTicks = 1000;
     auto result = client->publishId(TopicId, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdTypeVal::PreDefined, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
 
     auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
     client->tick(nextTicks);
-    auto msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, true);
+    auto msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
 
@@ -1421,6 +1427,7 @@ void ClientBasic::test14()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const MqttsnTopicId TopicId = 0xabcd;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const MqttsnQoS Qos = MqttsnQoS_ExactlyOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -1431,7 +1438,7 @@ void ClientBasic::test14()
     state.m_nextElapsedTicks = 1000;
     auto result = client->publishId(TopicId, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    auto msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    auto msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
 
@@ -1458,6 +1465,7 @@ void ClientBasic::test15()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const MqttsnTopicId TopicId = 0xabcd;
+    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
     static const MqttsnQoS Qos = MqttsnQoS_ExactlyOnceDelivery;
     static const bool Retain = true;
     static const std::vector<std::uint8_t> Data = {
@@ -1469,7 +1477,7 @@ void ClientBasic::test15()
     auto result = client->publishId(TopicId, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
 
-    auto msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    auto msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
     clearState(state);
@@ -1484,7 +1492,7 @@ void ClientBasic::test15()
     auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
     client->tick(nextTicks);
-    auto msgId2 = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, true);
+    auto msgId2 = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT_EQUALS(msgId, msgId2);
     TS_ASSERT(state.m_reportedPublishes.empty());
@@ -1520,6 +1528,7 @@ void ClientBasic::test16()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const std::string Topic("this/is/topic");
+    static const auto TopicIdType = TopicIdTypeVal::Normal;
     static const MqttsnQoS Qos = MqttsnQoS_AtMostOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -1545,7 +1554,7 @@ void ClientBasic::test16()
 
     regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
 
@@ -1554,7 +1563,7 @@ void ClientBasic::test16()
 
     result = client->publish(Topic, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000 - state.m_nextElapsedTicks);
 }
@@ -1626,6 +1635,7 @@ void ClientBasic::test18()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const std::string Topic("this/is/topic");
+    static const auto TopicIdType = TopicIdTypeVal::Normal;
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -1660,7 +1670,7 @@ void ClientBasic::test18()
     auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
-    verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
 
@@ -1668,7 +1678,7 @@ void ClientBasic::test18()
     clearState(state);
     client->tick(nextTicks);
     TS_ASSERT(state.m_reportedPublishes.empty());
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, true);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
@@ -1695,6 +1705,7 @@ void ClientBasic::test19()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const std::string Topic("this/is/topic");
+    static const auto TopicIdType = TopicIdTypeVal::Normal;
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -1715,7 +1726,7 @@ void ClientBasic::test19()
     auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
@@ -1728,7 +1739,7 @@ void ClientBasic::test19()
     clearState(state);
     result = client->publish(Topic, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
 
@@ -1745,7 +1756,7 @@ void ClientBasic::test19()
     regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
@@ -1772,6 +1783,7 @@ void ClientBasic::test20()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const std::string Topic("this/is/topic");
+    static const auto TopicIdType = TopicIdTypeVal::Normal;
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -1792,7 +1804,7 @@ void ClientBasic::test20()
     auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
@@ -1819,6 +1831,7 @@ void ClientBasic::test21()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const std::string Topic("this/is/topic");
+    static const auto TopicIdType = TopicIdTypeVal::Normal;
     static const MqttsnQoS Qos = MqttsnQoS_ExactlyOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -1847,7 +1860,7 @@ void ClientBasic::test21()
     state.m_nextElapsedTicks = 1000;
     auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
@@ -1864,7 +1877,7 @@ void ClientBasic::test21()
     clearState(state);
     result = client->publish(Topic, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
@@ -1899,6 +1912,7 @@ void ClientBasic::test22()
     static const std::string Topic("this/is/topic");
     static const std::uint16_t RegMsgId = 0x1234;
     static const MqttsnTopicId TopicId = 0x2222;
+    static const auto TopicIdType = TopicIdTypeVal::Normal;
     static const MqttsnQoS Qos = MqttsnQoS_AtMostOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -1915,7 +1929,7 @@ void ClientBasic::test22()
     state.m_nextElapsedTicks = 1000;
     auto result = client->publish(Topic, &Data[0], Data.size(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    verifySent_PublishMsg(state, dataProc, TopicId, Data, Qos, Retain, false);
+    verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
 }
 
@@ -1956,7 +1970,7 @@ void ClientBasic::test23()
     state.m_nextElapsedTicks = 1000;
     auto regackMsg = dataProc.prepareRegackMsg(Topic1Id, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
-    msgId = verifySent_PublishMsg(state, dataProc, Topic1Id, Data, Qos1, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, Topic1Id, Data, TopicIdTypeVal::Normal, Qos1, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
@@ -1981,7 +1995,7 @@ void ClientBasic::test23()
     result = client->publish(Topic2, &Data[0], Data.size(), Qos2, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
 
-    msgId = verifySent_PublishMsg(state, dataProc, Topic2Id, Data, Qos2, Retain, false);
+    msgId = verifySent_PublishMsg(state, dataProc, Topic2Id, Data, TopicIdTypeVal::Normal, Qos2, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);

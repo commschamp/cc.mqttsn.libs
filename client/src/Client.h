@@ -445,7 +445,15 @@ public:
             GASSERT(result);
         }
         else {
-            sendPublish(topicId, allocMsgId(), msg, msgLen, qos, retain, false);
+            sendPublish(
+                topicId,
+                allocMsgId(),
+                msg,
+                msgLen,
+                mqttsn::protocol::field::TopicIdTypeVal::PreDefined,
+                details::translateQosValue(qos),
+                retain,
+                false);
             if (callback != nullptr) {
                 callback(data, MqttsnAsyncOpStatus_Successful);
             }
@@ -1629,7 +1637,8 @@ private:
             op->m_msgId,
             op->m_msg,
             op->m_msgLen,
-            op->m_qos,
+            mqttsn::protocol::field::TopicIdTypeVal::PreDefined,
+            details::translateQosValue(op->m_qos),
             op->m_retain,
             !firstAttempt);
         return true;
@@ -1682,7 +1691,8 @@ private:
             op->m_msgId,
             op->m_msg,
             op->m_msgLen,
-            op->m_qos,
+            mqttsn::protocol::field::TopicIdTypeVal::Normal,
+            details::translateQosValue(op->m_qos),
             op->m_retain,
             !firstAttempt);
 
@@ -1728,7 +1738,8 @@ private:
         std::uint16_t msgId,
         const std::uint8_t* msg,
         std::size_t msgLen,
-        MqttsnQoS qos,
+        mqttsn::protocol::field::TopicIdTypeVal topicIdType,
+        mqttsn::protocol::field::QosType qos,
         bool retain,
         bool duplicate)
     {
@@ -1736,6 +1747,7 @@ private:
         auto& fields = pubMsg.fields();
         auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
         auto& flagsMembers = flagsField.value();
+        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
         auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
         auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
         auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
@@ -1743,8 +1755,9 @@ private:
         auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
         auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
 
+        topicIdTypeField.value() = topicIdType;
         midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
-        qosField.value() = details::translateQosValue(qos);
+        qosField.value() = qos;
         dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, duplicate);
         topicIdField.value() = topicId;
         msgIdField.value() = msgId;
