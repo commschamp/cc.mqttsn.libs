@@ -107,6 +107,14 @@ DataProcessor::PubcompMsgReportCallback DataProcessor::setPubcompMsgReportCallba
     return old;
 }
 
+DataProcessor::SubscribeMsgReportCallback DataProcessor::setSubscribeMsgReportCallback(
+    SubscribeMsgReportCallback&& func)
+{
+    SubscribeMsgReportCallback old = std::move(m_subscribeMsgReportCallback);
+    m_subscribeMsgReportCallback = std::move(func);
+    return old;
+}
+
 DataProcessor::PingreqMsgReportCallback DataProcessor::setPingreqMsgReportCallback(
     PingreqMsgReportCallback&& func)
 {
@@ -205,6 +213,13 @@ void DataProcessor::handle(PubcompMsg& msg)
 {
     if (m_pubcompMsgReportCallback) {
         m_pubcompMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(SubscribeMsg& msg)
+{
+    if (m_subscribeMsgReportCallback) {
+        m_subscribeMsgReportCallback(msg);
     }
 }
 
@@ -400,6 +415,28 @@ DataProcessor::DataBuf DataProcessor::preparePubcompMsg(std::uint16_t msgId)
     PubcompMsg msg;
     auto& fields = msg.fields();
     std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    return prepareInput(msg);
+}
+
+DataProcessor::DataBuf DataProcessor::prepareSubackMsg(
+    mqttsn::protocol::field::QosType qos,
+    MqttsnTopicId topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::ReturnCodeVal retCode)
+{
+    SubackMsg msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
+
+    qosField.value() = qos;
+    topicIdField.value() = topicId;
+    msgIdField.value() = msgId;
+    retCodeField.value() = retCode;
     return prepareInput(msg);
 }
 

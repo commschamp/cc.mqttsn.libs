@@ -58,7 +58,8 @@ public:
     typedef mqttsn::protocol::message::Pubrec<TestMessage> PubrecMsg;
     typedef mqttsn::protocol::message::Pubrel<TestMessage> PubrelMsg;
     typedef mqttsn::protocol::message::Pubcomp<TestMessage> PubcompMsg;
-
+    typedef mqttsn::protocol::message::Subscribe<TestMessage> SubscribeMsg;
+    typedef mqttsn::protocol::message::Suback<TestMessage> SubackMsg;
     typedef mqttsn::protocol::message::Pingreq<TestMessage> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<TestMessage> PingrespMsg;
     typedef mqttsn::protocol::message::Disconnect<TestMessage> DisconnectMsg;
@@ -99,6 +100,9 @@ public:
     typedef std::function<void (const PubcompMsg& msg)> PubcompMsgReportCallback;
     PubcompMsgReportCallback setPubcompMsgReportCallback(PubcompMsgReportCallback&& func);
 
+    typedef std::function<void (const SubscribeMsg& msg)> SubscribeMsgReportCallback;
+    SubscribeMsgReportCallback setSubscribeMsgReportCallback(SubscribeMsgReportCallback&& func);
+
     typedef std::function<void (const PingreqMsg& msg)> PingreqMsgReportCallback;
     PingreqMsgReportCallback setPingreqMsgReportCallback(PingreqMsgReportCallback&& func);
 
@@ -121,6 +125,7 @@ public:
     virtual void handle(PubrecMsg& msg) override;
     virtual void handle(PubrelMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
+    virtual void handle(SubscribeMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
@@ -159,6 +164,11 @@ public:
     DataBuf preparePubrecMsg(std::uint16_t msgId);
     DataBuf preparePubrelMsg(std::uint16_t msgId);
     DataBuf preparePubcompMsg(std::uint16_t msgId);
+    DataBuf prepareSubackMsg(
+        mqttsn::protocol::field::QosType qos,
+        MqttsnTopicId topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal retCode);
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
     DataBuf prepareDisconnectMsg();
@@ -178,6 +188,7 @@ private:
     PubrecMsgReportCallback m_pubrecMsgReportCallback;
     PubrelMsgReportCallback m_pubrelMsgReportCallback;
     PubcompMsgReportCallback m_pubcompMsgReportCallback;
+    SubscribeMsgReportCallback m_subscribeMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
     PingrespMsgReportCallback m_pingrespMsgReportCallback;
     DisconnectMsgReportCallback m_disconnectMsgReportCallback;

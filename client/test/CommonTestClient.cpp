@@ -292,7 +292,16 @@ MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
     }
 
     return static_cast<MqttsnQoS>(val);
+}
 
+mqttsn::protocol::field::QosType CommonTestClient::transformQos(MqttsnQoS val)
+{
+
+    if (val == MqttsnQoS_NoGwPublish) {
+        return mqttsn::protocol::field::QosType::NoGwPublish;
+    }
+
+    return static_cast<mqttsn::protocol::field::QosType>(val);
 }
 
 CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)

@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <list>
+#include <utility>
 
 #include "comms/comms.h"
 #include "mqttsn/client/common.h"
@@ -56,6 +58,7 @@ public:
     void test24();
     void test25();
     void test26();
+    void test27();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -76,6 +79,7 @@ private:
     typedef DataProcessor::PubrecMsg PubrecMsg;
     typedef DataProcessor::PubrelMsg PubrelMsg;
     typedef DataProcessor::PubcompMsg PubcompMsg;
+    typedef DataProcessor::SubscribeMsg SubscribeMsg;
     typedef DataProcessor::PingreqMsg PingreqMsg;
     typedef DataProcessor::PingrespMsg PingrespMsg;
     typedef DataProcessor::DisconnectMsg DisconnectMsg;
@@ -130,6 +134,7 @@ private:
         std::list<ReportedGwInfo> m_reportedGws;
         std::list<MqttsnConnectionStatus> m_reportedConnStatuses;
         std::list<MqttsnAsyncOpStatus> m_reportedPublishes;
+        std::list<std::pair<MqttsnAsyncOpStatus, MqttsnQoS> > m_reportedSubsribes;
     };
 
     template <typename TState>
@@ -171,6 +176,16 @@ private:
                     state->m_reportedPublishes.push_back(val);
                 }
             });
+
+        ptr->setSubsribeCompleteCallback(
+            [state](MqttsnAsyncOpStatus val, MqttsnQoS qos)
+            {
+                TS_TRACE("Subscribe complete with status: " + std::to_string((int)val));
+                if (state != nullptr) {
+                    state->m_reportedSubsribes.push_back(std::make_pair(val, qos));
+                }
+            });
+
         ptr->setMessageReportCallback(
             [state](const MqttsnMessageInfo& msgInfo)
             {
@@ -295,6 +310,13 @@ private:
                 {
                     static_cast<void>(msg);
                     TS_TRACE("<-- PUBCOMP");
+                });
+
+            dataProc->setSubscribeMsgReportCallback(
+                [](const SubscribeMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("<-- SUBSCRIBE");
                 });
 
             dataProc->setPingreqMsgReportCallback(
@@ -737,6 +759,88 @@ private:
         dataProc.setPubcompMsgReportCallback(std::move(oldCb));
     }
 
+    std::uint16_t verifySent_SubsribeMsg(
+        const TestBasicState& state,
+        DataProcessor& dataProc,
+        const std::string& topic,
+        MqttsnQoS qos,
+        bool duplicate)
+    {
+        bool sent = false;
+        std::uint16_t msgId = 0U;
+        auto oldCb = dataProc.setSubscribeMsgReportCallback(
+            [&sent, &msgId, &topic, qos, duplicate](const SubscribeMsg& msg)
+            {
+                sent = true;
+                TS_TRACE("<-- SUBSRIBE");
+
+                auto& fields = msg.fields();
+                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
+                auto& flagsMembers = flagsField.value();
+                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+                auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+                auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
+                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
+                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
+
+                TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
+                TS_ASSERT_EQUALS(transformQos(qosField.value()), qos);
+                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), duplicate);
+                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Missing);
+                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Exists);
+                TS_ASSERT_EQUALS(topicNameField.field().value(), topic);
+
+                msgId = msgIdField.value();
+            });
+
+        processOutput(state, dataProc);
+        TS_ASSERT(sent);
+        dataProc.setSubscribeMsgReportCallback(std::move(oldCb));
+        return msgId;
+    }
+
+    std::uint16_t verifySent_SubsribeMsg(
+        const TestBasicState& state,
+        DataProcessor& dataProc,
+        MqttsnTopicId topicId,
+        MqttsnQoS qos,
+        bool duplicate)
+    {
+        bool sent = false;
+        std::uint16_t msgId = 0U;
+        auto oldCb = dataProc.setSubscribeMsgReportCallback(
+            [&sent, &msgId, topicId, qos, duplicate](const SubscribeMsg& msg)
+            {
+                sent = true;
+                TS_TRACE("<-- SUBSCRIBE");
+
+                auto& fields = msg.fields();
+                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
+                auto& flagsMembers = flagsField.value();
+                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+                auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+                auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
+                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
+                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
+
+                TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
+                TS_ASSERT_EQUALS(transformQos(qosField.value()), qos);
+                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), duplicate);
+                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Exists);
+                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Missing);
+                TS_ASSERT_EQUALS(topicIdField.field().value(), topicId);
+
+                msgId = msgIdField.value();
+            });
+
+        processOutput(state, dataProc);
+        TS_ASSERT(sent);
+        dataProc.setSubscribeMsgReportCallback(std::move(oldCb));
+        return msgId;
+    }
+
     void verifySent_PingreqMsg(
         const TestBasicState& state,
         DataProcessor& dataProc)
@@ -855,7 +959,29 @@ private:
         state.m_reportedPublishes.pop_front();
     }
 
-    MqttsnQoS transformQos(mqttsn::protocol::field::QosType val)
+    void verifyCb_ReportedSubsribe(
+        TestBasicState& state,
+        MqttsnAsyncOpStatus status,
+        MqttsnQoS qos)
+    {
+        TS_ASSERT(!state.m_reportedSubsribes.empty());
+        if (state.m_reportedSubsribes.empty()) {
+            return;
+        }
+
+        auto& elem = state.m_reportedSubsribes.front();
+
+        TS_ASSERT_EQUALS(elem.first, status);
+        TS_ASSERT_EQUALS(elem.second, qos);
+        state.m_reportedSubsribes.pop_front();
+    }
+
+    static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val)
+    {
+        return CommonTestClient::transformQos(val);
+    }
+
+    static mqttsn::protocol::field::QosType transformQos(MqttsnQoS val)
     {
         return CommonTestClient::transformQos(val);
     }
@@ -2179,4 +2305,47 @@ void ClientBasic::test26()
     verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
 }
 
+void ClientBasic::test27()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test27State;
+
+    Test27State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const MqttsnTopicId TopicId = 0x1234;
+    static const auto Qos = MqttsnQoS_AtLeastOnceDelivery;
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->subscribe(TopicId, Qos);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    auto msgId = verifySent_SubsribeMsg(state, dataProc, TopicId, Qos, false);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, subackMsg, "SUBACK");
+    TS_ASSERT(state.m_reportedSubsribes.empty());
+
+    auto nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    auto msgId2 = verifySent_SubsribeMsg(state, dataProc, TopicId, Qos, true);
+    TS_ASSERT_EQUALS(msgId, msgId2);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, subackMsg, "SUBACK");
+    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos);
+}
 

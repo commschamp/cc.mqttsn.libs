@@ -1393,7 +1393,6 @@ private:
             return;
         }
 
-        // TODO: other delays
         GASSERT(m_nextTickProgramFn != nullptr);
         m_nextTickProgramFn(m_nextTickProgramData, delay);
         m_nextTimeoutTimestamp = m_timestamp + delay;

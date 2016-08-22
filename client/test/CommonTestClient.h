@@ -143,6 +143,7 @@ public:
         MqttsnQoS qos);
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
+    static mqttsn::protocol::field::QosType transformQos(MqttsnQoS val);
 
 private:
     typedef std::vector<std::uint8_t> InputData;
