@@ -59,6 +59,8 @@ public:
     void test25();
     void test26();
     void test27();
+    void test28();
+    void test29();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -138,12 +140,12 @@ private:
     };
 
     template <typename TState>
-    void clearState(TState& state)
+    static void clearState(TState& state)
     {
         state = TState();
     }
 
-    void dataFromGw(CommonTestClient& client, const DataBuf& buf, const std::string& msg)
+    static void dataFromGw(CommonTestClient& client, const DataBuf& buf, const std::string& msg)
     {
         if (!msg.empty()) {
             TS_TRACE("--> " + msg);
@@ -152,7 +154,7 @@ private:
     }
 
     typedef CommonTestClient::Ptr ClientPtr;
-    ClientPtr allocClient(TestBasicState* state = nullptr, DataProcessor* dataProc = nullptr)
+    static ClientPtr allocClient(TestBasicState* state = nullptr, DataProcessor* dataProc = nullptr)
     {
         auto ptr = CommonTestClient::alloc();
         assert(ptr);
@@ -223,9 +225,15 @@ private:
                 });
 
             ptr->setSendDataCallback(
-                [state](const std::uint8_t* buf, unsigned bufLen, bool broadcast)
+                [state, dataProc](const std::uint8_t* buf, unsigned bufLen, bool broadcast)
                 {
-                    assert(state->m_nextOutput.empty());
+                    if (!state->m_nextOutput.empty()) {
+                        TS_TRACE("ERROR: unconsumed message!!!");
+                        if (dataProc != nullptr) {
+                            processOutput(*state, *dataProc, state->m_broadcast);
+                        }
+                    }
+                     assert(state->m_nextOutput.empty());
 //                    TS_TRACE("Sending " + std::to_string(bufLen) + " bytes; broadcast=" + std::to_string(broadcast));
                     state->m_nextOutput.insert(state->m_nextOutput.end(), buf, buf + bufLen);
                     state->m_broadcast = broadcast;
@@ -338,7 +346,7 @@ private:
         return std::move(ptr);
     }
 
-    void doGwInfo(CommonTestClient& client, DataProcessor& dataProc, TestBasicState& state)
+    static void doGwInfo(CommonTestClient& client, DataProcessor& dataProc, TestBasicState& state)
     {
         verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
 
@@ -352,7 +360,7 @@ private:
         verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_Available);
     }
 
-    void doConnect(
+    static void doConnect(
         CommonTestClient& client,
         DataProcessor& dataProc,
         TestBasicState& state,
@@ -416,13 +424,13 @@ private:
         TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
     }
 
-    void startClient(CommonTestClient& client)
+    static void startClient(CommonTestClient& client)
     {
         bool result = client.start();
         TS_ASSERT(result);
     }
 
-    void doTopicRegister(
+    static void doTopicRegister(
         CommonTestClient& client,
         DataProcessor& dataProc,
         TestBasicState& state,
@@ -437,7 +445,7 @@ private:
         verifySent_RegackMsg(state, dataProc, topicId, msgId);
     }
 
-    void processOutput(
+    static void processOutput(
         const TestBasicState& state,
         DataProcessor& dataProc,
         bool broadcast = false)
@@ -447,7 +455,7 @@ private:
         dataProc.checkWrittenMsg(&state.m_nextOutput[0], state.m_nextOutput.size());
     }
 
-    void verifySent_SearchgwMsg(
+    static void verifySent_SearchgwMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         unsigned short radius)
@@ -469,7 +477,7 @@ private:
         dataProc.setSearchgwMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_ConnectMsg(
+    static void verifySent_ConnectMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         const std::string& clientId,
@@ -504,7 +512,7 @@ private:
         dataProc.setConnectMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_WilltopicMsg(
+    static void verifySent_WilltopicMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         const std::string& topic,
@@ -534,7 +542,7 @@ private:
         dataProc.setWilltopicMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_WillmsgMsg(
+    static void verifySent_WillmsgMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         const std::vector<std::uint8_t>& data)
@@ -556,7 +564,7 @@ private:
         dataProc.setWillmsgMsgReportCallback(std::move(oldCb));
     }
 
-    std::uint16_t verifySent_RegisterMsg(
+    static std::uint16_t verifySent_RegisterMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         const std::string& topic)
@@ -585,7 +593,7 @@ private:
 
     }
 
-    void verifySent_RegackMsg(
+    static void verifySent_RegackMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
@@ -614,7 +622,7 @@ private:
         dataProc.setRegackMsgReportCallback(std::move(oldCb));
     }
 
-    std::uint16_t verifySent_PublishMsg(
+    static std::uint16_t verifySent_PublishMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
@@ -660,7 +668,7 @@ private:
         return msgId;
     }
 
-    void verifySent_PubackMsg(
+    static void verifySent_PubackMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
@@ -689,7 +697,7 @@ private:
         dataProc.setPubackMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_PubrecMsg(
+    static void verifySent_PubrecMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         std::uint16_t msgId)
@@ -712,7 +720,7 @@ private:
         dataProc.setPubrecMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_PubrelMsg(
+    static void verifySent_PubrelMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         std::uint16_t msgId)
@@ -736,7 +744,7 @@ private:
         dataProc.setPubrelMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_PubcompMsg(
+    static void verifySent_PubcompMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         std::uint16_t msgId)
@@ -759,7 +767,7 @@ private:
         dataProc.setPubcompMsgReportCallback(std::move(oldCb));
     }
 
-    std::uint16_t verifySent_SubsribeMsg(
+    static std::uint16_t verifySent_SubsribeMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         const std::string& topic,
@@ -800,7 +808,7 @@ private:
         return msgId;
     }
 
-    std::uint16_t verifySent_SubsribeMsg(
+    static std::uint16_t verifySent_SubsribeMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
@@ -841,7 +849,7 @@ private:
         return msgId;
     }
 
-    void verifySent_PingreqMsg(
+    static void verifySent_PingreqMsg(
         const TestBasicState& state,
         DataProcessor& dataProc)
     {
@@ -859,7 +867,7 @@ private:
         dataProc.setPingreqMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_PingrespMsg(
+    static void verifySent_PingrespMsg(
         const TestBasicState& state,
         DataProcessor& dataProc)
     {
@@ -877,7 +885,7 @@ private:
         dataProc.setPingrespMsgReportCallback(std::move(oldCb));
     }
 
-    void verifySent_DisconnectMsg(
+    static void verifySent_DisconnectMsg(
         const TestBasicState& state,
         DataProcessor& dataProc)
     {
@@ -895,7 +903,7 @@ private:
         dataProc.setDisconnectMsgReportCallback(std::move(oldCb));
     }
 
-    void verifyCb_ReportedGw(
+    static void verifyCb_ReportedGw(
         TestBasicState& state,
         std::uint16_t gwId,
         MqttsnGwStatus status)
@@ -911,7 +919,7 @@ private:
         state.m_reportedGws.pop_front();
     }
 
-    void verifyCb_ReportedMessage(
+    static void verifyCb_ReportedMessage(
         TestBasicState& state,
         const std::string& topic,
         MqttsnTopicId topicId,
@@ -933,7 +941,7 @@ private:
         state.m_reportedMsgs.pop_front();
     }
 
-    void verifyCb_ReportedConnStatus(
+    static void verifyCb_ReportedConnStatus(
         TestBasicState& state,
         MqttsnConnectionStatus status)
     {
@@ -946,7 +954,7 @@ private:
         state.m_reportedConnStatuses.pop_front();
     }
 
-    void verifyCb_ReportedPublish(
+    static void verifyCb_ReportedPublish(
         TestBasicState& state,
         MqttsnAsyncOpStatus status)
     {
@@ -959,7 +967,7 @@ private:
         state.m_reportedPublishes.pop_front();
     }
 
-    void verifyCb_ReportedSubsribe(
+    static void verifyCb_ReportedSubsribe(
         TestBasicState& state,
         MqttsnAsyncOpStatus status,
         MqttsnQoS qos)
@@ -2349,3 +2357,143 @@ void ClientBasic::test27()
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos);
 }
 
+void ClientBasic::test28()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test28State;
+    Test28State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+
+    static const std::string Topic("/this/is/topic");
+    static const auto Qos1 = MqttsnQoS_ExactlyOnceDelivery;
+    static const auto Qos2 = MqttsnQoS_AtLeastOnceDelivery;
+
+    auto result = client->subscribe(Topic, Qos1);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_NotConnected);
+
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->subscribe(Topic, Qos1);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    auto msgId = verifySent_SubsribeMsg(state, dataProc, Topic, Qos1, false);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->subscribe(Topic, Qos2);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Busy);
+
+    static const MqttsnTopicId TopicId = 0x1111;
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+    dataFromGw(*client, subackMsg, "SUBACK");
+    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Conjestion, Qos2);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->subscribe(Topic, Qos1);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    msgId = verifySent_SubsribeMsg(state, dataProc, Topic, Qos1, false);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, subackMsg, "SUBACK");
+    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos2);
+
+    static const DataSeq Data = {
+        0x0, 0x1, 0x2, 0xa, 0xb, 0xc
+    };
+    static const bool Retain = true;
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->publish(Topic, &Data[0], Data.size(), Qos2, Retain);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdTypeVal::Normal, Qos2, Retain, false);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, pubackMsg, "PUBACK");
+    verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
+}
+
+void ClientBasic::test29()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test29State;
+    Test29State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const std::string Topic("/this/is/topic");
+    static const auto Qos = MqttsnQoS_ExactlyOnceDelivery;
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->subscribe(Topic, Qos);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_SubsribeMsg(state, dataProc, Topic, Qos, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 5000;
+    client->cancel();
+    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Aborted, Qos);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->subscribe(Topic, Qos);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_SubsribeMsg(state, dataProc, Topic, Qos, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    auto nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    verifySent_SubsribeMsg(state, dataProc, Topic, Qos, true);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    verifySent_SubsribeMsg(state, dataProc, Topic, Qos, true);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_NoResponse, Qos);
+
+    static const MqttsnTopicId TopicId = 0x1233;
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->subscribe(TopicId, Qos);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    auto msgId = verifySent_SubsribeMsg(state, dataProc, TopicId, Qos, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), 0, msgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    dataFromGw(*client, subackMsg, "SUBACK");
+    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_InvalidId, Qos);
+}

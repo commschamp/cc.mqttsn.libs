@@ -59,6 +59,12 @@ void publishCallback(void* data, MqttsnAsyncOpStatus status)
     static_cast<void>(status);
 }
 
+void subscribeCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+{
+    static_cast<void>(data);
+    static_cast<void>(status);
+    static_cast<void>(qos);
+}
 
 int main(int argc, const char** argv)
 {
@@ -106,6 +112,22 @@ int main(int argc, const char** argv)
         false,
         &publishCallback,
         nullptr);
+
+    mqttsn_test_bare_metal_client_subscribe(
+        client,
+        Topic,
+        MqttsnQoS_ExactlyOnceDelivery,
+        &subscribeCallback,
+        nullptr);
+
+    mqttsn_test_bare_metal_client_subscribe_id(
+        client,
+        0x1111,
+        MqttsnQoS_ExactlyOnceDelivery,
+        &subscribeCallback,
+        nullptr);
+
+    mqttsn_test_bare_metal_client_cancel(client);
 
     mqttsn_test_bare_metal_client_disconnect(client);
     mqttsn_test_bare_metal_client_free(client);

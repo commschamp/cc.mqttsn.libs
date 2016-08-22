@@ -567,14 +567,40 @@ public:
         void* data
     )
     {
-        static_cast<void>(topic);
-        static_cast<void>(qos);
-        static_cast<void>(callback);
-        static_cast<void>(data);
-        GASSERT(!"NYI");
-        return MqttsnErrorCode_InvalidOperation;
-    }
+        if (!m_connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
 
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if ((qos < MqttsnQoS_AtMostOnceDelivery) ||
+            (MqttsnQoS_ExactlyOnceDelivery < qos) ||
+            (callback == nullptr)) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        m_currOp = Op::Subscribe;
+        auto* op = newOp<SubscribeOp>();
+        op->m_topic = topic;
+        op->m_qos = qos;
+        op->m_cb = callback;
+        op->m_cbData = data;
+        op->m_msgId = allocMsgId();
+
+        bool result = doSubscribe();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
+    }
 
     using Base::handle;
     virtual void handle(AdvertiseMsg& msg) override
@@ -1037,6 +1063,11 @@ public:
             return;
         }
 
+        if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+            finaliseSubscribeOp(retCodeToStatus(retCodeField.value()), details::translateQosValue(qosField.value()));
+            return;
+        }
+
         if ((m_currOp == Op::SubscribeId) &&
             (opPtr<SubscribeIdOp>()->m_topicId != topicIdField.value())) {
             if (!doSubscribeId()) {
@@ -1045,23 +1076,11 @@ public:
             return;
         }
 
-        do {
+        if ((m_currOp == Op::Subscribe) && (topicIdField.value() != 0U)) {
+            updateRegInfo(opPtr<SubscribeOp>()->m_topic, topicIdField.value(), true);
+        }
 
-            if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-                break;
-            }
-
-            if (m_currOp == Op::SubscribeId) {
-                break;
-            }
-
-            if (topicIdField.value() != 0U) {
-                updateRegInfo(opPtr<SubscribeOp>()->m_topic, topicIdField.value(), true);
-            }
-
-        } while (false);
-
-        finaliseSubscribeOp(retCodeToStatus(retCodeField.value()), details::translateQosValue(qosField.value()));
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_Successful, details::translateQosValue(qosField.value()));
     }
 
     virtual void handle(PingreqMsg& msg) override
@@ -1862,7 +1881,7 @@ private:
         auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
         auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
 
-        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
         qosField.value() = details::translateQosValue(op->m_qos);
         dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
         msgIdField.value() = op->m_msgId;
@@ -2009,7 +2028,7 @@ private:
 
     void finaliseSubscribeOp(MqttsnAsyncOpStatus status, MqttsnQoS qos)
     {
-        GASSERT((m_currOp == Op::SubscribeId) || (m_currOp == Op::SubscribeId));
+        GASSERT((m_currOp == Op::Subscribe) || (m_currOp == Op::SubscribeId));
         auto* op = opPtr<SubscribeOpBase>();
         auto* cb = op->m_cb;
         auto* cbData = op->m_cbData;
