@@ -109,7 +109,7 @@ typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned 
 typedef void (*GwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
 typedef void (*ConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
 typedef void (*PublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-typedef void (*SubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*SubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
 typedef void (*MessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
 
 #ifdef __cplusplus

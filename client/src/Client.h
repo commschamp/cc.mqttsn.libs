@@ -167,6 +167,8 @@ public:
     typedef mqttsn::protocol::message::Pubrec<Message> PubrecMsg;
     typedef mqttsn::protocol::message::Pubrel<Message> PubrelMsg;
     typedef mqttsn::protocol::message::Pubcomp<Message> PubcompMsg;
+    typedef mqttsn::protocol::message::Subscribe<Message, TProtOpts> SubscribeMsg;
+    typedef mqttsn::protocol::message::Suback<Message> SubackMsg;
 
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
@@ -319,7 +321,9 @@ public:
             &Client::connectCancel,
             &Client::disconnectCancel,
             &Client::publishIdCancel,
-            &Client::publishCancel
+            &Client::publishCancel,
+            &Client::subscribeIdCancel,
+            &Client::subscribeCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -520,12 +524,40 @@ public:
         void* data
     )
     {
-        static_cast<void>(topicId);
-        static_cast<void>(qos);
-        static_cast<void>(callback);
-        static_cast<void>(data);
-        GASSERT(!"NYI");
-        return MqttsnErrorCode_InvalidOperation;
+        if (!m_connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if ((qos < MqttsnQoS_AtMostOnceDelivery) ||
+            (MqttsnQoS_ExactlyOnceDelivery < qos) ||
+            (callback == nullptr)) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        m_currOp = Op::SubscribeId;
+        auto* op = newOp<SubscribeIdOp>();
+        op->m_topicId = topicId;
+        op->m_qos = qos;
+        op->m_cb = callback;
+        op->m_cbData = data;
+        op->m_msgId = allocMsgId();
+
+        bool result = doSubscribeId();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
     }
 
     MqttsnErrorCode subscribe(
@@ -728,24 +760,7 @@ public:
         auto& retCodeField = std::get<RegackMsg::FieldIdx_returnCode>(fields);
 
         if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-            static const MqttsnAsyncOpStatus Map[] = {
-                /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Invalid,
-                /* ReturnCodeVal_Conjestion */ MqttsnAsyncOpStatus_Conjestion,
-                /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
-                /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
-            };
-
-            static const std::size_t MapSize = std::extent<decltype(Map)>::value;
-
-            static_assert(MapSize == (unsigned)mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
-                "Map is incorrect");
-
-            MqttsnAsyncOpStatus status = MqttsnAsyncOpStatus_NotSupported;
-            if (static_cast<unsigned>(retCodeField.value()) < MapSize) {
-                status = Map[static_cast<unsigned>(retCodeField.value())];
-            }
-
-            finalisePublishOp(status);
+            finalisePublishOp(retCodeToStatus(retCodeField.value()));
             return;
         }
 
@@ -916,24 +931,7 @@ public:
             return;
         } while (false);
 
-        static const MqttsnAsyncOpStatus Map[] = {
-            /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
-            /* ReturnCodeVal_Conjestion */ MqttsnAsyncOpStatus_Conjestion,
-            /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
-            /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
-        };
-
-        static const std::size_t MapSize = std::extent<decltype(Map)>::value;
-
-        static_assert(MapSize == (unsigned)mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
-            "Map is incorrect");
-
-        MqttsnAsyncOpStatus status = MqttsnAsyncOpStatus_NotSupported;
-        if (static_cast<unsigned>(retCodeField.value()) < MapSize) {
-            status = Map[static_cast<unsigned>(retCodeField.value())];
-        }
-
-        finalisePublishOp(status);
+        finalisePublishOp(retCodeToStatus(retCodeField.value()));
     }
 
     virtual void handle(PubrecMsg& msg) override
@@ -1019,6 +1017,53 @@ public:
         finalisePublishOp(MqttsnAsyncOpStatus_Successful);
     }
 
+    virtual void handle(SubackMsg& msg) override
+    {
+        if ((m_currOp != Op::Subscribe) && (m_currOp != Op::SubscribeId)) {
+            return;
+        }
+
+        auto* op = opPtr<SubscribeOpBase>();
+
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<SubackMsg::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+        auto& topicIdField = std::get<SubackMsg::FieldIdx_topicId>(fields);
+        auto& msgIdField = std::get<SubackMsg::FieldIdx_msgId>(fields);
+        auto& retCodeField = std::get<SubackMsg::FieldIdx_returnCode>(fields);
+
+        if (msgIdField.value() != op->m_msgId) {
+            return;
+        }
+
+        if ((m_currOp == Op::SubscribeId) &&
+            (opPtr<SubscribeIdOp>()->m_topicId != topicIdField.value())) {
+            if (!doSubscribeId()) {
+                finaliseSubscribeOp(MqttsnAsyncOpStatus_InvalidId, op->m_qos);
+            }
+            return;
+        }
+
+        do {
+
+            if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+                break;
+            }
+
+            if (m_currOp == Op::SubscribeId) {
+                break;
+            }
+
+            if (topicIdField.value() != 0U) {
+                updateRegInfo(opPtr<SubscribeOp>()->m_topic, topicIdField.value(), true);
+            }
+
+        } while (false);
+
+        finaliseSubscribeOp(retCodeToStatus(retCodeField.value()), details::translateQosValue(qosField.value()));
+    }
+
     virtual void handle(PingreqMsg& msg) override
     {
         static_cast<void>(msg);
@@ -1062,6 +1107,8 @@ private:
         Disconnect,
         PublishId,
         Publish,
+        SubscribeId,
+        Subscribe,
         NumOfValues // must be last
     };
 
@@ -1108,11 +1155,31 @@ private:
         bool m_didRegistration = false;
     };
 
+    struct SubscribeOpBase : public OpBase
+    {
+        MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
+        SubscribeCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+        std::uint16_t m_msgId = 0U;
+    };
+
+    struct SubscribeIdOp : public SubscribeOpBase
+    {
+        MqttsnTopicId m_topicId = 0U;
+    };
+
+    struct SubscribeOp : public SubscribeOpBase
+    {
+        const char* m_topic = nullptr;
+    };
+
     typedef typename comms::util::AlignedUnion<
         ConnectOp,
         DisconnectOp,
         PublishIdOp,
-        PublishOp
+        PublishOp,
+        SubscribeIdOp,
+        SubscribeOp
     >::Type OpStorageType;
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
@@ -1418,6 +1485,8 @@ private:
             &Client::disconnectTimeout,
             &Client::publishIdTimeout,
             &Client::publishTimeout,
+            &Client::subscribeIdTimeout,
+            &Client::subscribeTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -1551,6 +1620,42 @@ private:
     {
         GASSERT(m_currOp == Op::Publish);
         finalisePublishOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
+    void subscribeIdTimeout()
+    {
+        GASSERT(m_currOp == Op::SubscribeId);
+
+        if (doSubscribeId()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse, opPtr<SubscribeIdOp>()->m_qos);
+    }
+
+    void subscribeIdCancel()
+    {
+        GASSERT(m_currOp == Op::SubscribeId);
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_Aborted, opPtr<SubscribeIdOp>()->m_qos);
+    }
+
+    void subscribeTimeout()
+    {
+        GASSERT(m_currOp == Op::Subscribe);
+
+        if (doSubscribe()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse, opPtr<SubscribeOp>()->m_qos);
+    }
+
+    void subscribeCancel()
+    {
+        GASSERT(m_currOp == Op::Subscribe);
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_Aborted, opPtr<SubscribeOp>()->m_qos);
     }
 
     void sendMessage(const Message& msg, bool broadcast = false)
@@ -1703,6 +1808,72 @@ private:
         return true;
     }
 
+    bool doSubscribeId()
+    {
+        GASSERT (m_currOp == Op::SubscribeId);
+
+        auto* op = opPtr<SubscribeIdOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        bool firstAttempt = (op->m_attempt == 0U);
+        ++op->m_attempt;
+
+        SubscribeMsg msg;
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+
+        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        qosField.value() = details::translateQosValue(op->m_qos);
+        dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
+        msgIdField.value() = op->m_msgId;
+        topicIdField.field().value() = op->m_topicId;
+        msg.refresh();
+        GASSERT(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+        sendMessage(msg);
+        return true;
+    }
+
+    bool doSubscribe()
+    {
+        GASSERT (m_currOp == Op::Subscribe);
+
+        auto* op = opPtr<SubscribeOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        bool firstAttempt = (op->m_attempt == 0U);
+        ++op->m_attempt;
+
+        SubscribeMsg msg;
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+        auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
+
+        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        qosField.value() = details::translateQosValue(op->m_qos);
+        dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
+        msgIdField.value() = op->m_msgId;
+        topicNameField.field().value() = op->m_topic;
+        msg.refresh();
+        GASSERT(topicNameField.getMode() == comms::field::OptionalMode::Exists);
+        sendMessage(msg);
+        return true;
+    }
+
     void sendConnect(
         const char* clientId,
         std::uint16_t keepAlivePeriod,
@@ -1835,6 +2006,46 @@ private:
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
         cb(cbData, status);
+    }
+
+    void finaliseSubscribeOp(MqttsnAsyncOpStatus status, MqttsnQoS qos)
+    {
+        GASSERT((m_currOp == Op::SubscribeId) || (m_currOp == Op::SubscribeId));
+        auto* op = opPtr<SubscribeOpBase>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        if (m_currOp == Op::Subscribe) {
+            finaliseOp<PublishOp>();
+        }
+        else {
+            finaliseOp<SubscribeIdOp>();
+        }
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status, qos);
+    }
+
+    MqttsnAsyncOpStatus retCodeToStatus(mqttsn::protocol::field::ReturnCodeVal val)
+    {
+        static const MqttsnAsyncOpStatus Map[] = {
+            /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
+            /* ReturnCodeVal_Conjestion */ MqttsnAsyncOpStatus_Conjestion,
+            /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
+            /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
+        };
+
+        static const std::size_t MapSize = std::extent<decltype(Map)>::value;
+
+        static_assert(MapSize == (unsigned)mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
+            "Map is incorrect");
+
+        MqttsnAsyncOpStatus status = MqttsnAsyncOpStatus_NotSupported;
+        if (static_cast<unsigned>(val) < MapSize) {
+            status = Map[static_cast<unsigned>(val)];
+        }
+
+        return status;
     }
 
 

@@ -46,6 +46,8 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_disconnectFunc = &mqttsn_client_disconnect;
     funcs.m_publishIdFunc = &mqttsn_client_publish_id;
     funcs.m_publishFunc = &mqttsn_client_publish;
+    funcs.m_subscribeIdFunc = &mqttsn_client_subscribe_id;
+    funcs.m_subscribeFunc = &mqttsn_client_subscribe;
     return funcs;
 }
 
@@ -112,6 +114,14 @@ CommonTestClient::PublishCompleteCallback CommonTestClient::setPublishCompleteCa
 {
     PublishCompleteCallback old(std::move(m_publishCompleteCallback));
     m_publishCompleteCallback = std::move(func);
+    return old;
+}
+
+CommonTestClient::SubscribeCompleteCallback CommonTestClient::setSubsribeCompleteCallback(
+    SubscribeCompleteCallback&& func)
+{
+    SubscribeCompleteCallback old(std::move(m_subscribeCompleteCallback));
+    m_subscribeCompleteCallback = std::move(func);
     return old;
 }
 
@@ -237,6 +247,32 @@ MqttsnErrorCode CommonTestClient::publish(
         this);
 }
 
+MqttsnErrorCode CommonTestClient::subscribe(
+    const std::string& topic,
+    MqttsnQoS qos)
+{
+    assert(m_libFuncs.m_subscribeFunc != nullptr);
+    return (m_libFuncs.m_subscribeFunc)(
+        m_client,
+        topic.c_str(),
+        qos,
+        &CommonTestClient::subsribeCompleteCallback,
+        this);
+}
+
+MqttsnErrorCode CommonTestClient::subscribe(
+    MqttsnTopicId topicId,
+    MqttsnQoS qos)
+{
+    assert(m_libFuncs.m_subscribeIdFunc != nullptr);
+    return (m_libFuncs.m_subscribeIdFunc)(
+        m_client,
+        topicId,
+        qos,
+        &CommonTestClient::subsribeCompleteCallback,
+        this);
+}
+
 MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
 {
     static_assert(
@@ -339,6 +375,14 @@ void CommonTestClient::reportPublishComplete(MqttsnAsyncOpStatus status)
     }
 }
 
+void CommonTestClient::reportSubsribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos)
+{
+    if (m_subscribeCompleteCallback) {
+        SubscribeCompleteCallback tmp(m_subscribeCompleteCallback);
+        tmp(status, qos);
+    }
+}
+
 void CommonTestClient::nextTickProgramCallback(void* data, unsigned duration)
 {
     assert(data != nullptr);
@@ -386,5 +430,11 @@ void CommonTestClient::publishCompleteCallback(void* data, MqttsnAsyncOpStatus s
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportPublishComplete(status);
+}
+
+void CommonTestClient::subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportSubsribeComplete(status, qos);
 }
 
