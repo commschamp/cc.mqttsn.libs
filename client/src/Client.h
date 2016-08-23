@@ -947,7 +947,7 @@ public:
                 return;
             }
 
-            iter->m_allocated = false;
+            dropRegInfo(iter);
 
             op->m_lastMsgTimestamp = m_timestamp;
             op->m_topicId = 0U;
@@ -1060,6 +1060,28 @@ public:
         auto& retCodeField = std::get<SubackMsg::FieldIdx_returnCode>(fields);
 
         if (msgIdField.value() != op->m_msgId) {
+            return;
+        }
+
+        if ((retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) &&
+            (m_currOp == Op::Subscribe) &&
+            (opPtr<SubscribeOp>()->m_topicId != 0U)) {
+
+            auto iter = std::find_if(
+                m_regInfos.begin(), m_regInfos.end(),
+                [this](typename RegInfosList::const_reference elem) -> bool
+                {
+                    return elem.m_allocated && (elem.m_topicId == opPtr<SubscribeOp>()->m_topicId);
+                });
+
+            if (iter != m_regInfos.end()) {
+                dropRegInfo(iter);
+            }
+
+            op->m_attempt = 0;
+            bool result = doSubscribe();
+            static_cast<void>(result);
+            GASSERT(result);
             return;
         }
 
@@ -1190,6 +1212,7 @@ private:
     struct SubscribeOp : public SubscribeOpBase
     {
         const char* m_topic = nullptr;
+        MqttsnTopicId m_topicId = 0U;
     };
 
     typedef typename comms::util::AlignedUnion<
@@ -1287,6 +1310,11 @@ private:
 
         GASSERT(iter != m_regInfos.end());
         *iter = info;
+    }
+
+    void dropRegInfo(typename RegInfosList::iterator iter)
+    {
+        *iter = RegInfo();
     }
 
     template <typename TOp>
@@ -1871,6 +1899,20 @@ private:
         bool firstAttempt = (op->m_attempt == 0U);
         ++op->m_attempt;
 
+        auto iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [op](typename RegInfosList::const_reference elem) -> bool
+            {
+                return elem.m_allocated && (elem.m_topic == op->m_topic);
+            });
+
+        if (iter != m_regInfos.end()) {
+            op->m_topicId = iter->m_topicId;
+        }
+        else {
+            op->m_topicId = 0U;
+        }
+
         SubscribeMsg msg;
         auto& fields = msg.fields();
         auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
@@ -1879,15 +1921,27 @@ private:
         auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
         auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
         auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
         auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
 
-        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+        if (op->m_topicId != 0U) {
+            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+            topicIdField.field().value() = iter->m_topicId;
+        }
+        else {
+            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            topicNameField.field().value() = op->m_topic;
+        }
+
         qosField.value() = details::translateQosValue(op->m_qos);
         dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
         msgIdField.value() = op->m_msgId;
-        topicNameField.field().value() = op->m_topic;
         msg.refresh();
-        GASSERT(topicNameField.getMode() == comms::field::OptionalMode::Exists);
+        GASSERT((op->m_topicId != 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Exists));
+        GASSERT((op->m_topicId != 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Missing));
+        GASSERT((op->m_topicId == 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Missing));
+        GASSERT((op->m_topicId == 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Exists));
+
         sendMessage(msg);
         return true;
     }
