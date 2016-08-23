@@ -169,7 +169,8 @@ public:
     typedef mqttsn::protocol::message::Pubcomp<Message> PubcompMsg;
     typedef mqttsn::protocol::message::Subscribe<Message, TProtOpts> SubscribeMsg;
     typedef mqttsn::protocol::message::Suback<Message> SubackMsg;
-
+    typedef mqttsn::protocol::message::Unsubscribe<Message, TProtOpts> UnsubscribeMsg;
+    typedef mqttsn::protocol::message::Unsuback<Message> UnsubackMsg;
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
     typedef mqttsn::protocol::message::Disconnect<Message> DisconnectMsg;
@@ -323,7 +324,9 @@ public:
             &Client::publishIdCancel,
             &Client::publishCancel,
             &Client::subscribeIdCancel,
-            &Client::subscribeCancel
+            &Client::subscribeCancel,
+            &Client::unsubscribeIdCancel,
+            &Client::unsubscribeCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -602,6 +605,84 @@ public:
         return MqttsnErrorCode_Success;
     }
 
+    MqttsnErrorCode unsubscribe(
+        MqttsnTopicId topicId,
+        UnsubscribeCompleteReportFn callback,
+        void* data
+    )
+    {
+        if (!m_connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        m_currOp = Op::UnsubscribeId;
+        auto* op = newOp<UnsubscribeIdOp>();
+        op->m_topicId = topicId;
+        op->m_cb = callback;
+        op->m_cbData = data;
+        op->m_msgId = allocMsgId();
+
+        bool result = doUnsubscribeId();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode unsubscribe(
+        const char* topic,
+        UnsubscribeCompleteReportFn callback,
+        void* data
+    )
+    {
+        if (!m_connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        m_currOp = Op::Unsubscribe;
+        auto* op = newOp<UnsubscribeOp>();
+        op->m_topic = topic;
+        op->m_cb = callback;
+        op->m_cbData = data;
+        op->m_msgId = allocMsgId();
+
+        bool result = doUnsubscribe();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
+    }
+
+
     using Base::handle;
     virtual void handle(AdvertiseMsg& msg) override
     {
@@ -820,7 +901,9 @@ public:
                 auto msgInfo = MqttsnMessageInfo();
 
                 msgInfo.topic = topicName;
-                msgInfo.topicId = topicIdField.value();
+                if (topicName == nullptr) {
+                    msgInfo.topicId = topicIdField.value();
+                }
                 msgInfo.msg = &(*dataField.value().begin());
                 msgInfo.msgLen = dataField.value().size();
                 msgInfo.qos = details::translateQosValue(qosField.value());
@@ -830,12 +913,15 @@ public:
                 m_msgReportFn(m_msgReportData, &msgInfo);
             };
 
-        auto iter = std::find_if(
-            m_regInfos.begin(), m_regInfos.end(),
-            [&topicIdField](typename RegInfosList::const_reference elem) -> bool
-            {
-                return elem.m_allocated && (elem.m_topicId == topicIdField.value());
-            });
+        auto iter = m_regInfos.end();
+        if (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined) {
+            iter = std::find_if(
+                m_regInfos.begin(), m_regInfos.end(),
+                [&topicIdField](typename RegInfosList::const_reference elem) -> bool
+                {
+                    return elem.m_allocated && (elem.m_topicId == topicIdField.value());
+                });
+        }
 
         const char* topicName = nullptr;
         if (iter != m_regInfos.end()) {
@@ -1150,6 +1236,8 @@ private:
         Publish,
         SubscribeId,
         Subscribe,
+        UnsubscribeId,
+        Unsubscribe,
         NumOfValues // must be last
     };
 
@@ -1215,13 +1303,34 @@ private:
         MqttsnTopicId m_topicId = 0U;
     };
 
+    struct UnsubscribeOpBase : public OpBase
+    {
+        UnsubscribeCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+        std::uint16_t m_msgId = 0U;
+    };
+
+    struct UnsubscribeIdOp : public UnsubscribeOpBase
+    {
+        MqttsnTopicId m_topicId = 0U;
+    };
+
+    struct UnsubscribeOp : public UnsubscribeOpBase
+    {
+        const char* m_topic = nullptr;
+        MqttsnTopicId m_topicId = 0U;
+    };
+
+
     typedef typename comms::util::AlignedUnion<
         ConnectOp,
         DisconnectOp,
         PublishIdOp,
         PublishOp,
         SubscribeIdOp,
-        SubscribeOp
+        SubscribeOp,
+        UnsubscribeIdOp,
+        UnsubscribeOp
     >::Type OpStorageType;
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
@@ -1532,7 +1641,9 @@ private:
             &Client::publishIdTimeout,
             &Client::publishTimeout,
             &Client::subscribeIdTimeout,
-            &Client::subscribeTimeout
+            &Client::subscribeTimeout,
+            &Client::unsubscribeIdTimeout,
+            &Client::unsubscribeTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -1703,6 +1814,43 @@ private:
         GASSERT(m_currOp == Op::Subscribe);
         finaliseSubscribeOp(MqttsnAsyncOpStatus_Aborted, opPtr<SubscribeOp>()->m_qos);
     }
+
+    void unsubscribeIdTimeout()
+    {
+        GASSERT(m_currOp == Op::UnsubscribeId);
+
+        if (doUnsubscribeId()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void unsubscribeIdCancel()
+    {
+        GASSERT(m_currOp == Op::UnsubscribeId);
+        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
+    void unsubscribeTimeout()
+    {
+        GASSERT(m_currOp == Op::Unsubscribe);
+
+        if (doUnsubscribe()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void unsubscribeCancel()
+    {
+        GASSERT(m_currOp == Op::Unsubscribe);
+        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
 
     void sendMessage(const Message& msg, bool broadcast = false)
     {
@@ -1946,6 +2094,88 @@ private:
         return true;
     }
 
+    bool doUnsubscribeId()
+    {
+        GASSERT (m_currOp == Op::UnsubscribeId);
+
+        auto* op = opPtr<UnsubscribeIdOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+
+        UnsubscribeMsg msg;
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+
+        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        msgIdField.value() = op->m_msgId;
+        topicIdField.field().value() = op->m_topicId;
+        msg.refresh();
+        GASSERT(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+        sendMessage(msg);
+        return true;
+    }
+
+    bool doUnsubscribe()
+    {
+        GASSERT (m_currOp == Op::Unsubscribe);
+
+        auto* op = opPtr<UnsubscribeOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+
+        auto iter = std::find_if(
+            m_regInfos.begin(), m_regInfos.end(),
+            [op](typename RegInfosList::const_reference elem) -> bool
+            {
+                return elem.m_allocated && (elem.m_topic == op->m_topic);
+            });
+
+        if (iter != m_regInfos.end()) {
+            op->m_topicId = iter->m_topicId;
+        }
+        else {
+            op->m_topicId = 0U;
+        }
+
+        UnsubscribeMsg msg;
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+        auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
+
+        if (op->m_topicId != 0U) {
+            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+            topicIdField.field().value() = iter->m_topicId;
+        }
+        else {
+            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            topicNameField.field().value() = op->m_topic;
+        }
+
+        msgIdField.value() = op->m_msgId;
+        msg.refresh();
+        GASSERT((op->m_topicId != 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Exists));
+        GASSERT((op->m_topicId != 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Missing));
+        GASSERT((op->m_topicId == 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Missing));
+        GASSERT((op->m_topicId == 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Exists));
+
+        sendMessage(msg);
+        return true;
+    }
+
     void sendConnect(
         const char* clientId,
         std::uint16_t keepAlivePeriod,
@@ -2088,7 +2318,7 @@ private:
         auto* cbData = op->m_cbData;
 
         if (m_currOp == Op::Subscribe) {
-            finaliseOp<PublishOp>();
+            finaliseOp<SubscribeOp>();
         }
         else {
             finaliseOp<SubscribeIdOp>();
@@ -2096,6 +2326,24 @@ private:
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
         cb(cbData, status, qos);
+    }
+
+    void finaliseUnsubscribeOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT((m_currOp == Op::Unsubscribe) || (m_currOp == Op::UnsubscribeId));
+        auto* op = opPtr<UnsubscribeOpBase>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        if (m_currOp == Op::Unsubscribe) {
+            finaliseOp<UnsubscribeOp>();
+        }
+        else {
+            finaliseOp<UnsubscribeIdOp>();
+        }
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
     }
 
     MqttsnAsyncOpStatus retCodeToStatus(mqttsn::protocol::field::ReturnCodeVal val)

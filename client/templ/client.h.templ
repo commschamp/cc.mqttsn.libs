@@ -108,7 +108,21 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe(
     SubscribeCompleteReportFn callback,
     void* data
 );
-    
+
+MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
+    ClientHandle client,
+    MqttsnTopicId topicId,
+    UnsubscribeCompleteReportFn callback,
+    void* data
+);
+
+MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
+    ClientHandle client,
+    const char* topic,
+    UnsubscribeCompleteReportFn callback,
+    void* data
+);
+
 
 #ifdef __cplusplus
 }

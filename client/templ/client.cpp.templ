@@ -261,3 +261,26 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe(
     return clientObj->subscribe(topic, qos, callback, data);
 }
 
+MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
+    ClientHandle client,
+    MqttsnTopicId topicId,
+    UnsubscribeCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->unsubscribe(topicId, callback, data);
+}
+
+
+MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
+    ClientHandle client,
+    const char* topic,
+    UnsubscribeCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->unsubscribe(topic, callback, data);
+}
+

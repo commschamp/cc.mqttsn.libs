@@ -2183,9 +2183,9 @@ void ClientBasic::test24()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    publishMsg = dataProc.preparePublishMsg(TopicId, MsgId + 1, Data, TopicIdType, Qos, Retain, false);
+    publishMsg = dataProc.preparePublishMsg(TopicId, MsgId + 1, Data, TopicIdTypeVal::Normal, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
-    verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
+    verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain);
     TS_ASSERT(state.m_nextOutput.empty());
 }
 
@@ -2213,7 +2213,7 @@ void ClientBasic::test25()
     doTopicRegister(*client, dataProc, state, Topic, TopicId, RegMsgId);
 
     static const std::uint16_t MsgId = 0x5555;
-    static const auto TopicIdType = TopicIdTypeVal::PreDefined;
+    static const auto TopicIdType = TopicIdTypeVal::Normal;
     static const auto Qos = mqttsn::protocol::field::QosType::AtLeastOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
@@ -2226,7 +2226,7 @@ void ClientBasic::test25()
     auto publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);
-    verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
+    verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
@@ -2241,7 +2241,7 @@ void ClientBasic::test25()
     publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);
-    verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
+    verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain);
 }
 
 void ClientBasic::test26()
