@@ -1191,6 +1191,49 @@ public:
         finaliseSubscribeOp(MqttsnAsyncOpStatus_Successful, details::translateQosValue(qosField.value()));
     }
 
+    virtual void handle(UnsubackMsg& msg) override
+    {
+        if ((m_currOp != Op::Unsubscribe) && (m_currOp != Op::UnsubscribeId)) {
+            return;
+        }
+
+        auto* op = opPtr<UnsubscribeOpBase>();
+
+        auto& fields = msg.fields();
+        auto& msgIdField = std::get<UnsubackMsg::FieldIdx_msgId>(fields);
+
+        if (msgIdField.value() != op->m_msgId) {
+            return;
+        }
+
+        do {
+            if (m_currOp != Op::Unsubscribe) {
+                break;
+            }
+
+            auto* downcastedOp = opPtr<UnsubscribeOp>();
+
+            if (downcastedOp->m_topicId == 0U) {
+                break;
+            }
+
+            auto iter = std::find_if(
+                m_regInfos.begin(), m_regInfos.end(),
+                [downcastedOp](typename RegInfosList::const_reference elem) -> bool
+                {
+                    return elem.m_allocated && (elem.m_topicId == downcastedOp->m_topicId);
+                });
+
+            if (iter == m_regInfos.end()) {
+                break;
+            }
+
+            iter->m_locked = false;
+        } while (false);
+
+        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Successful);
+    }
+
     virtual void handle(PingreqMsg& msg) override
     {
         static_cast<void>(msg);

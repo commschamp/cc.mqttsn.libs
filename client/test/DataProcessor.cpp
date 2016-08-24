@@ -115,6 +115,14 @@ DataProcessor::SubscribeMsgReportCallback DataProcessor::setSubscribeMsgReportCa
     return old;
 }
 
+DataProcessor::UnsubscribeMsgReportCallback DataProcessor::setUnsubscribeMsgReportCallback(
+    UnsubscribeMsgReportCallback&& func)
+{
+    UnsubscribeMsgReportCallback old = std::move(m_unsubscribeMsgReportCallback);
+    m_unsubscribeMsgReportCallback = std::move(func);
+    return old;
+}
+
 DataProcessor::PingreqMsgReportCallback DataProcessor::setPingreqMsgReportCallback(
     PingreqMsgReportCallback&& func)
 {
@@ -220,6 +228,13 @@ void DataProcessor::handle(SubscribeMsg& msg)
 {
     if (m_subscribeMsgReportCallback) {
         m_subscribeMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(UnsubscribeMsg& msg)
+{
+    if (m_unsubscribeMsgReportCallback) {
+        m_unsubscribeMsgReportCallback(msg);
     }
 }
 
@@ -437,6 +452,17 @@ DataProcessor::DataBuf DataProcessor::prepareSubackMsg(
     topicIdField.value() = topicId;
     msgIdField.value() = msgId;
     retCodeField.value() = retCode;
+    return prepareInput(msg);
+}
+
+DataProcessor::DataBuf DataProcessor::prepareUnsubackMsg(
+    std::uint16_t msgId)
+{
+    UnsubackMsg msg;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+
+    msgIdField.value() = msgId;
     return prepareInput(msg);
 }
 

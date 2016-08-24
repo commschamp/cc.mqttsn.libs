@@ -62,6 +62,9 @@ public:
     void test28();
     void test29();
     void test30();
+    void test31();
+    void test32();
+    void test33();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -83,6 +86,7 @@ private:
     typedef DataProcessor::PubrelMsg PubrelMsg;
     typedef DataProcessor::PubcompMsg PubcompMsg;
     typedef DataProcessor::SubscribeMsg SubscribeMsg;
+    typedef DataProcessor::UnsubscribeMsg UnsubscribeMsg;
     typedef DataProcessor::PingreqMsg PingreqMsg;
     typedef DataProcessor::PingrespMsg PingrespMsg;
     typedef DataProcessor::DisconnectMsg DisconnectMsg;
@@ -137,7 +141,8 @@ private:
         std::list<ReportedGwInfo> m_reportedGws;
         std::list<MqttsnConnectionStatus> m_reportedConnStatuses;
         std::list<MqttsnAsyncOpStatus> m_reportedPublishes;
-        std::list<std::pair<MqttsnAsyncOpStatus, MqttsnQoS> > m_reportedSubsribes;
+        std::list<std::pair<MqttsnAsyncOpStatus, MqttsnQoS> > m_reportedSubscribes;
+        std::list<MqttsnAsyncOpStatus> m_reportedUnsubscribes;
     };
 
     template <typename TState>
@@ -185,7 +190,16 @@ private:
             {
                 TS_TRACE("Subscribe complete with status: " + std::to_string((int)val));
                 if (state != nullptr) {
-                    state->m_reportedSubsribes.push_back(std::make_pair(val, qos));
+                    state->m_reportedSubscribes.push_back(std::make_pair(val, qos));
+                }
+            });
+
+        ptr->setUnsubsribeCompleteCallback(
+            [state](MqttsnAsyncOpStatus val)
+            {
+                TS_TRACE("Unsubscribe complete with status: " + std::to_string((int)val));
+                if (state != nullptr) {
+                    state->m_reportedUnsubscribes.push_back(val);
                 }
             });
 
@@ -326,6 +340,13 @@ private:
                 {
                     static_cast<void>(msg);
                     TS_TRACE("<-- SUBSCRIBE");
+                });
+
+            dataProc->setUnsubscribeMsgReportCallback(
+                [](const UnsubscribeMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    TS_TRACE("<-- UNSUBSCRIBE");
                 });
 
             dataProc->setPingreqMsgReportCallback(
@@ -856,6 +877,82 @@ private:
         return msgId;
     }
 
+    static std::uint16_t verifySent_UnsubsribeMsg(
+        const TestBasicState& state,
+        DataProcessor& dataProc,
+        const std::string& topic)
+    {
+        bool sent = false;
+        std::uint16_t msgId = 0U;
+        auto oldCb = dataProc.setUnsubscribeMsgReportCallback(
+            [&sent, &msgId, &topic](const UnsubscribeMsg& msg)
+            {
+                sent = true;
+                TS_TRACE("<-- UNSUBSRIBE");
+
+                auto& fields = msg.fields();
+                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
+                auto& flagsMembers = flagsField.value();
+                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
+                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
+                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
+
+                TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
+                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Missing);
+                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Exists);
+                TS_ASSERT_EQUALS(topicNameField.field().value(), topic);
+
+                msgId = msgIdField.value();
+            });
+
+        processOutput(state, dataProc);
+        TS_ASSERT(sent);
+        dataProc.setUnsubscribeMsgReportCallback(std::move(oldCb));
+        return msgId;
+    }
+
+    static std::uint16_t verifySent_UnsubsribeMsg(
+        const TestBasicState& state,
+        DataProcessor& dataProc,
+        MqttsnTopicId topicId,
+        bool predefined = true)
+    {
+        bool sent = false;
+        std::uint16_t msgId = 0U;
+        auto oldCb = dataProc.setUnsubscribeMsgReportCallback(
+            [&sent, &msgId, topicId, predefined](const UnsubscribeMsg& msg)
+            {
+                sent = true;
+                TS_TRACE("<-- UNSUBSCRIBE");
+
+                auto& fields = msg.fields();
+                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
+                auto& flagsMembers = flagsField.value();
+                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
+                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
+                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
+
+                if (predefined) {
+                    TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
+                }
+                else {
+                    TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
+                }
+                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Exists);
+                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Missing);
+                TS_ASSERT_EQUALS(topicIdField.field().value(), topicId);
+
+                msgId = msgIdField.value();
+            });
+
+        processOutput(state, dataProc);
+        TS_ASSERT(sent);
+        dataProc.setUnsubscribeMsgReportCallback(std::move(oldCb));
+        return msgId;
+    }
+
     static void verifySent_PingreqMsg(
         const TestBasicState& state,
         DataProcessor& dataProc)
@@ -979,16 +1076,31 @@ private:
         MqttsnAsyncOpStatus status,
         MqttsnQoS qos)
     {
-        TS_ASSERT(!state.m_reportedSubsribes.empty());
-        if (state.m_reportedSubsribes.empty()) {
+        TS_ASSERT(!state.m_reportedSubscribes.empty());
+        if (state.m_reportedSubscribes.empty()) {
             return;
         }
 
-        auto& elem = state.m_reportedSubsribes.front();
+        auto& elem = state.m_reportedSubscribes.front();
 
         TS_ASSERT_EQUALS(elem.first, status);
         TS_ASSERT_EQUALS(elem.second, qos);
-        state.m_reportedSubsribes.pop_front();
+        state.m_reportedSubscribes.pop_front();
+    }
+
+    static void verifyCb_ReportedUnsubsribe(
+        TestBasicState& state,
+        MqttsnAsyncOpStatus status)
+    {
+        TS_ASSERT(!state.m_reportedUnsubscribes.empty());
+        if (state.m_reportedUnsubscribes.empty()) {
+            return;
+        }
+
+        auto& elem = state.m_reportedUnsubscribes.front();
+
+        TS_ASSERT_EQUALS(elem, status);
+        state.m_reportedUnsubscribes.pop_front();
     }
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val)
@@ -2349,7 +2461,7 @@ void ClientBasic::test27()
     state.m_nextElapsedTicks = 1000;
     auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
-    TS_ASSERT(state.m_reportedSubsribes.empty());
+    TS_ASSERT(state.m_reportedSubscribes.empty());
 
     auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
@@ -2581,4 +2693,148 @@ void ClientBasic::test30()
     pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
+}
+
+void ClientBasic::test31()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test31State;
+    Test31State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+
+    static const std::string Topic("/this/is/topic");
+
+    auto result = client->unsubscribe(Topic);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_NotConnected);
+
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->unsubscribe(Topic);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    auto msgId = verifySent_UnsubsribeMsg(state, dataProc, Topic);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->unsubscribe(Topic);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Busy);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto unsubackMsg = dataProc.prepareUnsubackMsg(msgId);
+    dataFromGw(*client, unsubackMsg, "UNSUBACK");
+    verifyCb_ReportedUnsubsribe(state, MqttsnAsyncOpStatus_Successful);
+}
+
+void ClientBasic::test32()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test31State;
+    Test31State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+
+    static const MqttsnTopicId TopicId = 1111;
+
+    auto result = client->unsubscribe(TopicId);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_NotConnected);
+
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->unsubscribe(TopicId);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_UnsubsribeMsg(state, dataProc, TopicId);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->unsubscribe(TopicId);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Busy);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    client->cancel();
+    verifyCb_ReportedUnsubsribe(state, MqttsnAsyncOpStatus_Aborted);
+
+    result = client->unsubscribe(TopicId);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_UnsubsribeMsg(state, dataProc, TopicId);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    auto nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    verifySent_UnsubsribeMsg(state, dataProc, TopicId);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    verifySent_UnsubsribeMsg(state, dataProc, TopicId);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    nextTicks = state.m_nextRequestedTicks;
+    clearState(state);
+    client->tick(nextTicks);
+    verifyCb_ReportedUnsubsribe(state, MqttsnAsyncOpStatus_NoResponse);
+
+    result = client->unsubscribe(TopicId);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    auto msgId = verifySent_UnsubsribeMsg(state, dataProc, TopicId);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    auto unsubackMsg = dataProc.prepareUnsubackMsg(msgId);
+    dataFromGw(*client, unsubackMsg, "UNSUBACK");
+    verifyCb_ReportedUnsubsribe(state, MqttsnAsyncOpStatus_Successful);
+}
+
+void ClientBasic::test33()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test31State;
+    Test31State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const std::string Topic("/bla/bla/bla");
+    static const MqttsnTopicId TopicId = 1111;
+    static const std::uint16_t RegMsgId = 5555;
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    doTopicRegister(*client, dataProc, state, Topic, TopicId, RegMsgId);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->unsubscribe(Topic);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    auto msgId = verifySent_UnsubsribeMsg(state, dataProc, TopicId, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    auto unsubackMsg = dataProc.prepareUnsubackMsg(msgId);
+    dataFromGw(*client, unsubackMsg, "UNSUBACK");
+    verifyCb_ReportedUnsubsribe(state, MqttsnAsyncOpStatus_Successful);
 }

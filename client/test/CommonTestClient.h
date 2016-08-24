@@ -49,6 +49,8 @@ typedef decltype(&mqttsn_client_publish_id) PublishIdFunc;
 typedef decltype(&mqttsn_client_publish) PublishFunc;
 typedef decltype(&mqttsn_client_subscribe_id) SubscribeIdFunc;
 typedef decltype(&mqttsn_client_subscribe) SubscribeFunc;
+typedef decltype(&mqttsn_client_unsubscribe_id) UnsubscribeIdFunc;
+typedef decltype(&mqttsn_client_unsubscribe) UnsubscribeFunc;
 
 
 
@@ -76,6 +78,8 @@ struct ClientLibFuncs
     PublishFunc m_publishFunc = nullptr;
     SubscribeIdFunc m_subscribeIdFunc = nullptr;
     SubscribeFunc m_subscribeFunc = nullptr;
+    UnsubscribeIdFunc m_unsubscribeIdFunc = nullptr;
+    UnsubscribeFunc m_unsubscribeFunc = nullptr;
 };
 
 class CommonTestClient
@@ -90,6 +94,7 @@ public:
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> PublishCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
+    typedef std::function<void (MqttsnAsyncOpStatus status)> UnsubscribeCompleteCallback;
 
     ~CommonTestClient();
 
@@ -101,6 +106,7 @@ public:
     MessageReportCallback setMessageReportCallback(MessageReportCallback&& func);
     PublishCompleteCallback setPublishCompleteCallback(PublishCompleteCallback&& func);
     SubscribeCompleteCallback setSubsribeCompleteCallback(SubscribeCompleteCallback&& func);
+    UnsubscribeCompleteCallback setUnsubsribeCompleteCallback(UnsubscribeCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
     bool start();
@@ -142,6 +148,10 @@ public:
         MqttsnTopicId topicId,
         MqttsnQoS qos);
 
+    MqttsnErrorCode unsubscribe(const std::string& topic);
+
+    MqttsnErrorCode unsubscribe(MqttsnTopicId topicId);
+
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
     static mqttsn::protocol::field::QosType transformQos(MqttsnQoS val);
 
@@ -158,6 +168,7 @@ private:
     void reportMessage(const MqttsnMessageInfo* msgInfo);
     void reportPublishComplete(MqttsnAsyncOpStatus status);
     void reportSubsribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos);
+    void reportUnsubsribeComplete(MqttsnAsyncOpStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
@@ -167,6 +178,7 @@ private:
     static void msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo);
     static void publishCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
+    static void unsubsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status);
 
     ClientLibFuncs m_libFuncs;
     ClientHandle m_client = nullptr;
@@ -180,6 +192,7 @@ private:
     MessageReportCallback m_msgReportCallback;
     PublishCompleteCallback m_publishCompleteCallback;
     SubscribeCompleteCallback m_subscribeCompleteCallback;
+    UnsubscribeCompleteCallback m_unsubscribeCompleteCallback;
 
     static const ClientLibFuncs DefaultFuncs;
 };

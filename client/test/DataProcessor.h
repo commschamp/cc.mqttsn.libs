@@ -60,6 +60,8 @@ public:
     typedef mqttsn::protocol::message::Pubcomp<TestMessage> PubcompMsg;
     typedef mqttsn::protocol::message::Subscribe<TestMessage> SubscribeMsg;
     typedef mqttsn::protocol::message::Suback<TestMessage> SubackMsg;
+    typedef mqttsn::protocol::message::Unsubscribe<TestMessage> UnsubscribeMsg;
+    typedef mqttsn::protocol::message::Unsuback<TestMessage> UnsubackMsg;
     typedef mqttsn::protocol::message::Pingreq<TestMessage> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<TestMessage> PingrespMsg;
     typedef mqttsn::protocol::message::Disconnect<TestMessage> DisconnectMsg;
@@ -103,6 +105,9 @@ public:
     typedef std::function<void (const SubscribeMsg& msg)> SubscribeMsgReportCallback;
     SubscribeMsgReportCallback setSubscribeMsgReportCallback(SubscribeMsgReportCallback&& func);
 
+    typedef std::function<void (const UnsubscribeMsg& msg)> UnsubscribeMsgReportCallback;
+    UnsubscribeMsgReportCallback setUnsubscribeMsgReportCallback(UnsubscribeMsgReportCallback&& func);
+
     typedef std::function<void (const PingreqMsg& msg)> PingreqMsgReportCallback;
     PingreqMsgReportCallback setPingreqMsgReportCallback(PingreqMsgReportCallback&& func);
 
@@ -126,6 +131,7 @@ public:
     virtual void handle(PubrelMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
     virtual void handle(SubscribeMsg& msg) override;
+    virtual void handle(UnsubscribeMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
@@ -169,6 +175,7 @@ public:
         MqttsnTopicId topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal retCode);
+    DataBuf prepareUnsubackMsg(std::uint16_t msgId);
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
     DataBuf prepareDisconnectMsg();
@@ -189,6 +196,7 @@ private:
     PubrelMsgReportCallback m_pubrelMsgReportCallback;
     PubcompMsgReportCallback m_pubcompMsgReportCallback;
     SubscribeMsgReportCallback m_subscribeMsgReportCallback;
+    UnsubscribeMsgReportCallback m_unsubscribeMsgReportCallback;
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
     PingrespMsgReportCallback m_pingrespMsgReportCallback;
     DisconnectMsgReportCallback m_disconnectMsgReportCallback;
