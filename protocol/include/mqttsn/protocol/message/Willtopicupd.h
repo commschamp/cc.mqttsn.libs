@@ -35,7 +35,10 @@ namespace message
 template <typename TFieldBase, typename TOptions>
 using WilltopicupdFields =
     std::tuple<
-        field::Flags<TFieldBase>,
+        comms::field::Optional<
+            field::Flags<TFieldBase>,
+            comms::option::DefaultOptionalMode<comms::field::OptionalMode::Missing>
+        >,
         field::WillTopic<TFieldBase, TOptions>
     >;
 
@@ -65,6 +68,41 @@ public:
 
     static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
         "Number of fields is incorrect");
+
+    typedef typename Base::ReadIterator ReadIterator;
+
+protected:
+    comms::ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override
+    {
+        auto& allFields = Base::fields();
+        auto& flagsField = std::get<FieldIdx_flags>(allFields);
+        auto mode = comms::field::OptionalMode::Missing;
+        if (0U < len) {
+            mode = comms::field::OptionalMode::Exists;
+        }
+        flagsField.setMode(mode);
+        return Base::readImpl(iter, len);
+    }
+
+    bool refreshImpl() override
+    {
+        auto& allFields = Base::fields();
+        auto& flagsField = std::get<FieldIdx_flags>(allFields);
+        auto& willTopicField = std::get<FieldIdx_willTopic>(allFields);
+
+        auto expectedFlagsMode = comms::field::OptionalMode::Exists;
+        if (willTopicField.value().empty()) {
+            expectedFlagsMode = comms::field::OptionalMode::Missing;
+        }
+
+        bool refreshed = false;
+        if (flagsField.getMode() != expectedFlagsMode) {
+            flagsField.setMode(expectedFlagsMode);
+            refreshed = true;
+        }
+
+        return refreshed;
+    }
 };
 
 }  // namespace message

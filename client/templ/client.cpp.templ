@@ -284,3 +284,15 @@ MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
     return clientObj->unsubscribe(topic, callback, data);
 }
 
+MqttsnErrorCode mqttsn_##NAME##client_will_update(
+    ClientHandle client,
+    const MqttsnWillInfo* willInfo,
+    WillUpdateCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->willUpdate(willInfo, callback, data);
+}
+
+

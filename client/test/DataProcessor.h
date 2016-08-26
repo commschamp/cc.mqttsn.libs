@@ -65,6 +65,10 @@ public:
     typedef mqttsn::protocol::message::Pingreq<TestMessage> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<TestMessage> PingrespMsg;
     typedef mqttsn::protocol::message::Disconnect<TestMessage> DisconnectMsg;
+    typedef mqttsn::protocol::message::Willtopicupd<TestMessage> WilltopicupdMsg;
+    typedef mqttsn::protocol::message::Willmsgupd<TestMessage> WillmsgupdMsg;
+    typedef mqttsn::protocol::message::Willtopicresp<TestMessage> WilltopicrespMsg;
+    typedef mqttsn::protocol::message::Willmsgresp<TestMessage> WillmsgrespMsg;
 
 
     virtual ~DataProcessor();
@@ -117,6 +121,11 @@ public:
     typedef std::function<void (const DisconnectMsg& msg)> DisconnectMsgReportCallback;
     DisconnectMsgReportCallback setDisconnectMsgReportCallback(DisconnectMsgReportCallback&& func);
 
+    typedef std::function<void (const WilltopicupdMsg& msg)> WilltopicupdMsgReportCallback;
+    WilltopicupdMsgReportCallback setWilltopicupdMsgReportCallback(WilltopicupdMsgReportCallback&& func);
+
+    typedef std::function<void (const WillmsgupdMsg& msg)> WillmsgupdMsgReportCallback;
+    WillmsgupdMsgReportCallback setWillmsgupdMsgReportCallback(WillmsgupdMsgReportCallback&& func);
 
     using Base::handle;
     virtual void handle(SearchgwMsg& msg) override;
@@ -135,6 +144,8 @@ public:
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
+    virtual void handle(WilltopicupdMsg& msg) override;
+    virtual void handle(WillmsgupdMsg& msg) override;
     virtual void handle(TestMessage& msg) override;
 
 
@@ -179,6 +190,8 @@ public:
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
     DataBuf prepareDisconnectMsg();
+    DataBuf prepareWilltopicrespMsg(mqttsn::protocol::field::ReturnCodeVal retCode);
+    DataBuf prepareWillmsgrespMsg(mqttsn::protocol::field::ReturnCodeVal retCode);
 
 private:
     typedef mqttsn::protocol::Stack<TestMessage, AllTestMessages> ProtStack;
@@ -200,6 +213,8 @@ private:
     PingreqMsgReportCallback m_pingreqMsgReportCallback;
     PingrespMsgReportCallback m_pingrespMsgReportCallback;
     DisconnectMsgReportCallback m_disconnectMsgReportCallback;
+    WilltopicupdMsgReportCallback m_willtopicupdMsgReportCallback;
+    WillmsgupdMsgReportCallback m_willmsgupdMsgReportCallback;
 };
 
 

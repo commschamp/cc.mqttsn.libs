@@ -174,6 +174,10 @@ public:
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
     typedef mqttsn::protocol::message::Disconnect<Message> DisconnectMsg;
+    typedef mqttsn::protocol::message::Willtopicupd<Message, TProtOpts> WilltopicupdMsg;
+    typedef mqttsn::protocol::message::Willtopicresp<Message> WilltopicrespMsg;
+    typedef mqttsn::protocol::message::Willmsgupd<Message, TProtOpts> WillmsgupdMsg;
+    typedef mqttsn::protocol::message::Willmsgresp<Message> WillmsgrespMsg;
 
     Client() = default;
     virtual ~Client() = default;
@@ -326,7 +330,8 @@ public:
             &Client::subscribeIdCancel,
             &Client::subscribeCancel,
             &Client::unsubscribeIdCancel,
-            &Client::unsubscribeCancel
+            &Client::unsubscribeCancel,
+            &Client::willUpdateCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -647,8 +652,7 @@ public:
     MqttsnErrorCode unsubscribe(
         const char* topic,
         UnsubscribeCompleteReportFn callback,
-        void* data
-    )
+        void* data)
     {
         if (!m_connected) {
             return MqttsnErrorCode_NotConnected;
@@ -682,6 +686,43 @@ public:
         return MqttsnErrorCode_Success;
     }
 
+    MqttsnErrorCode willUpdate(
+        const MqttsnWillInfo* willInfo,
+        WillUpdateCompleteReportFn callback,
+        void* data)
+    {
+        if (!m_connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        bool timerWasActive = updateTimestamp();
+
+        m_currOp = Op::WillUpdate;
+        auto* op = newOp<WillUpdateOp>();
+        if (willInfo != nullptr) {
+            op->m_willInfo = *willInfo;
+        }
+        op->m_cb = callback;
+        op->m_cbData = data;
+
+        bool result = doWillUpdate();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        if (timerWasActive) {
+            programNextTimeout();
+        }
+
+        return MqttsnErrorCode_Success;
+    }
 
     using Base::handle;
     virtual void handle(AdvertiseMsg& msg) override
@@ -1268,6 +1309,61 @@ public:
         reportDisconnected();
     }
 
+    virtual void handle(WilltopicrespMsg& msg) override
+    {
+        if (m_currOp != Op::WillUpdate) {
+            return;
+        }
+
+        auto* op = opPtr<WillUpdateOp>();
+        if (op->m_willTopicAcked) {
+            return;
+        }
+
+        auto& fields = msg.fields();
+        auto& retCodeField = std::get<WilltopicrespMsg::FieldIdx_returnCode>(fields);
+
+        if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+            finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
+            return;
+        }
+
+
+        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+            finaliseWillUpdateOp(MqttsnAsyncOpStatus_Successful);
+            return;
+        }
+
+        op->m_lastMsgTimestamp = m_timestamp;
+        op->m_willTopicAcked = true;
+
+        WillmsgupdMsg msgUpdMsg;
+        auto& msgUpdFields = msgUpdMsg.fields();
+        auto& msgBodyField = std::get<WillmsgupdMsg::FieldIdx_willMsg>(msgUpdFields);
+        auto* msgBodyBeg = op->m_willInfo.msg;
+        if (msgBodyBeg != nullptr) {
+            auto* msgBodyEnd = msgBodyBeg + op->m_willInfo.msgLen;
+            msgBodyField.value().assign(msgBodyBeg, msgBodyEnd);
+        }
+        sendMessage(msgUpdMsg);
+    }
+
+    virtual void handle(WillmsgrespMsg& msg) override
+    {
+        if (m_currOp != Op::WillUpdate) {
+            return;
+        }
+
+        auto* op = opPtr<WillUpdateOp>();
+        if (!op->m_willTopicAcked) {
+            return;
+        }
+
+        auto& fields = msg.fields();
+        auto& retCodeField = std::get<WillmsgrespMsg::FieldIdx_returnCode>(fields);
+        finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
+    }
+
 private:
 
     enum class Op
@@ -1281,6 +1377,7 @@ private:
         Subscribe,
         UnsubscribeId,
         Unsubscribe,
+        WillUpdate,
         NumOfValues // must be last
     };
 
@@ -1364,6 +1461,13 @@ private:
         MqttsnTopicId m_topicId = 0U;
     };
 
+    struct WillUpdateOp : public OpBase
+    {
+        MqttsnWillInfo m_willInfo = MqttsnWillInfo();
+        WillUpdateCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+        bool m_willTopicAcked = false;
+    };
 
     typedef typename comms::util::AlignedUnion<
         ConnectOp,
@@ -1686,7 +1790,8 @@ private:
             &Client::subscribeIdTimeout,
             &Client::subscribeTimeout,
             &Client::unsubscribeIdTimeout,
-            &Client::unsubscribeTimeout
+            &Client::unsubscribeTimeout,
+            &Client::willUpdateTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -1894,6 +1999,23 @@ private:
         finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Aborted);
     }
 
+    void willUpdateTimeout()
+    {
+        GASSERT(m_currOp == Op::WillUpdate);
+
+        if (doWillUpdate()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseWillUpdateOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void willUpdateCancel()
+    {
+        GASSERT(m_currOp == Op::WillUpdate);
+        finaliseWillUpdateOp(MqttsnAsyncOpStatus_Aborted);
+    }
 
     void sendMessage(const Message& msg, bool broadcast = false)
     {
@@ -2219,6 +2341,40 @@ private:
         return true;
     }
 
+    bool doWillUpdate()
+    {
+        GASSERT (m_currOp == Op::WillUpdate);
+
+        auto* op = opPtr<WillUpdateOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+        op->m_willTopicAcked = false;
+
+        WilltopicupdMsg msg;
+        GASSERT(std::get<decltype(msg)::FieldIdx_flags>(msg.fields()).getMode() == comms::field::OptionalMode::Missing);
+        if ((op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0')) {
+            auto& fields = msg.fields();
+            auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+            auto& flagsMembers = flagsField.field().value();
+            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+            auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+
+            qosField.value() = details::translateQosValue(op->m_willInfo.qos);
+            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_willInfo.retain);
+            topicField.value() = op->m_willInfo.topic;
+
+            msg.refresh();
+            GASSERT(flagsField.getMode() == comms::field::OptionalMode::Exists);
+        }
+
+        sendMessage(msg);
+        return true;
+    }
+
     void sendConnect(
         const char* clientId,
         std::uint16_t keepAlivePeriod,
@@ -2384,6 +2540,19 @@ private:
         else {
             finaliseOp<UnsubscribeIdOp>();
         }
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
+    void finaliseWillUpdateOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::WillUpdate);
+        auto* op = opPtr<WillUpdateOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<WillUpdateOp>();
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
         cb(cbData, status);

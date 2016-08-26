@@ -126,6 +126,16 @@ QVariantMap createProps_flags()
             .asMap();
 }
 
+QVariantMap createProps_flagsOpt()
+{
+    return
+        cc::property::field::Optional()
+            .name("Flags")
+            .field(createProps_flags())
+            .uncheckable()
+            .asMap();
+}
+
 QVariantMap createProps_protocolId()
 {
     typedef mqttsn::protocol::field::ProtocolId<FieldBase> Field;

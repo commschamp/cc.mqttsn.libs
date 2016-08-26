@@ -147,6 +147,24 @@ DataProcessor::DisconnectMsgReportCallback DataProcessor::setDisconnectMsgReport
     return old;
 }
 
+DataProcessor::WilltopicupdMsgReportCallback
+DataProcessor::setWilltopicupdMsgReportCallback(
+    WilltopicupdMsgReportCallback&& func)
+{
+    WilltopicupdMsgReportCallback old = std::move(m_willtopicupdMsgReportCallback);
+    m_willtopicupdMsgReportCallback = std::move(func);
+    return old;
+}
+
+DataProcessor::WillmsgupdMsgReportCallback
+DataProcessor::setWillmsgupdMsgReportCallback(
+    WillmsgupdMsgReportCallback&& func)
+{
+    WillmsgupdMsgReportCallback old = std::move(m_willmsgupdMsgReportCallback);
+    m_willmsgupdMsgReportCallback = std::move(func);
+    return old;
+}
+
 void DataProcessor::handle(SearchgwMsg& msg)
 {
     if (m_searchgwMsgReportCallback) {
@@ -256,6 +274,20 @@ void DataProcessor::handle(DisconnectMsg& msg)
 {
     if (m_disconnectMsgReportCallback) {
         m_disconnectMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(WilltopicupdMsg& msg)
+{
+    if (m_willtopicupdMsgReportCallback) {
+        m_willtopicupdMsgReportCallback(msg);
+    }
+}
+
+void DataProcessor::handle(WillmsgupdMsg& msg)
+{
+    if (m_willmsgupdMsgReportCallback) {
+        m_willmsgupdMsgReportCallback(msg);
     }
 }
 
@@ -479,5 +511,25 @@ DataProcessor::DataBuf DataProcessor::preparePingrespMsg()
 DataProcessor::DataBuf DataProcessor::prepareDisconnectMsg()
 {
     return prepareInput(DisconnectMsg());
+}
+
+DataProcessor::DataBuf DataProcessor::prepareWilltopicrespMsg(
+    mqttsn::protocol::field::ReturnCodeVal retCode)
+{
+    WilltopicrespMsg msg;
+    auto& fields = msg.fields();
+    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
+    retCodeField.value() = retCode;
+    return prepareInput(msg);
+}
+
+DataProcessor::DataBuf DataProcessor::prepareWillmsgrespMsg(
+    mqttsn::protocol::field::ReturnCodeVal retCode)
+{
+    WillmsgrespMsg msg;
+    auto& fields = msg.fields();
+    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
+    retCodeField.value() = retCode;
+    return prepareInput(msg);
 }
 

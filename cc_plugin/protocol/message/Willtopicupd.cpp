@@ -42,7 +42,7 @@ namespace
 QVariantList createFieldsProperties()
 {
     QVariantList props;
-    props.append(field::createProps_flags());
+    props.append(field::createProps_flagsOpt());
     props.append(field::createProps_willTopic());
 
     assert(props.size() == Willtopicupd::FieldIdx_numOfValues);

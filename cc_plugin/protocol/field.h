@@ -42,6 +42,7 @@ QVariantMap createProps_durationOpt();
 QVariantMap createProps_radius();
 QVariantMap createProps_gwAdd();
 QVariantMap createProps_flags();
+QVariantMap createProps_flagsOpt();
 QVariantMap createProps_protocolId();
 QVariantMap createProps_clientId();
 QVariantMap createProps_returnCode();

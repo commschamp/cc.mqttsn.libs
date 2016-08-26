@@ -123,6 +123,14 @@ MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
     void* data
 );
 
+MqttsnErrorCode mqttsn_##NAME##client_will_update(
+    ClientHandle client,
+    const MqttsnWillInfo* willInfo,
+    WillUpdateCompleteReportFn callback,
+    void* data
+);
+
+
 
 #ifdef __cplusplus
 }
