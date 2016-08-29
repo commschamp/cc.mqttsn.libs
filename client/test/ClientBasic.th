@@ -69,6 +69,7 @@ public:
     void test35();
     void test36();
     void test37();
+    void test38();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -150,6 +151,7 @@ private:
         std::list<std::pair<MqttsnAsyncOpStatus, MqttsnQoS> > m_reportedSubscribes;
         std::list<MqttsnAsyncOpStatus> m_reportedUnsubscribes;
         std::list<MqttsnAsyncOpStatus> m_reportedWillUpdates;
+        std::list<MqttsnAsyncOpStatus> m_reportedSleeps;
     };
 
     template <typename TState>
@@ -216,6 +218,15 @@ private:
                 TS_TRACE("Will update complete with status: " + std::to_string((int)val));
                 if (state != nullptr) {
                     state->m_reportedWillUpdates.push_back(val);
+                }
+            });
+
+        ptr->setSleepCompleteCallback(
+            [state](MqttsnAsyncOpStatus val)
+            {
+                TS_TRACE("Sleep complete with status: " + std::to_string((int)val));
+                if (state != nullptr) {
+                    state->m_reportedSleeps.push_back(val);
                 }
             });
 
@@ -1027,15 +1038,23 @@ private:
 
     static void verifySent_DisconnectMsg(
         const TestBasicState& state,
-        DataProcessor& dataProc)
+        DataProcessor& dataProc,
+        std::uint16_t duration = 0U)
     {
         bool sent = false;
         auto oldCb = dataProc.setDisconnectMsgReportCallback(
-            [&sent](const DisconnectMsg& msg)
+            [&sent, duration](const DisconnectMsg& msg)
             {
                 sent = true;
                 static_cast<void>(msg);
                 TS_TRACE("<-- DISCONNECT");
+
+                if (duration != 0) {
+                    auto& fields = msg.fields();
+                    auto& durationField = std::get<DisconnectMsg::FieldIdx_duration>(fields);
+                    TS_ASSERT_EQUALS(durationField.getMode(), comms::field::OptionalMode::Exists);
+                    TS_ASSERT_EQUALS(durationField.field().value(), duration);
+                }
             });
 
         processOutput(state, dataProc);
@@ -1216,6 +1235,21 @@ private:
 
         TS_ASSERT_EQUALS(elem, status);
         state.m_reportedWillUpdates.pop_front();
+    }
+
+    static void verifyCb_ReportedSleep(
+        TestBasicState& state,
+        MqttsnAsyncOpStatus status)
+    {
+        TS_ASSERT(!state.m_reportedSleeps.empty());
+        if (state.m_reportedSleeps.empty()) {
+            return;
+        }
+
+        auto& elem = state.m_reportedSleeps.front();
+
+        TS_ASSERT_EQUALS(elem, status);
+        state.m_reportedSleeps.pop_front();
     }
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val)
@@ -3187,3 +3221,68 @@ void ClientBasic::test37()
     TS_ASSERT(state.m_nextOutput.empty());
     TS_ASSERT(state.m_reportedWillUpdates.empty());
 }
+
+void ClientBasic::test38()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test38State;
+    Test38State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const std::uint16_t Duration = 10000;
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->sleep(Duration);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_DisconnectMsg(state, dataProc, Duration);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    client->cancel();
+    verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_Aborted);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->sleep(Duration);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_DisconnectMsg(state, dataProc, Duration);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    client->tick(DefaultRetryTimeout);
+    verifySent_DisconnectMsg(state, dataProc, Duration);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    client->tick(DefaultRetryTimeout);
+    verifySent_DisconnectMsg(state, dataProc, Duration);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    client->tick(DefaultRetryTimeout);
+    verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_NoResponse);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->sleep(Duration);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_DisconnectMsg(state, dataProc, Duration);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto disconnectMsg = dataProc.prepareDisconnectMsg(Duration);
+    dataFromGw(*client, disconnectMsg, "DISCONNECT");
+    verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_Successful);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
+}
+

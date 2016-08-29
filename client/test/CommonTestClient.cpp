@@ -51,6 +51,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_unsubscribeIdFunc = &mqttsn_client_unsubscribe_id;
     funcs.m_unsubscribeFunc = &mqttsn_client_unsubscribe;
     funcs.m_willUpdateFunc = &mqttsn_client_will_update;
+    funcs.m_sleepFunc = &mqttsn_client_sleep;
     return funcs;
 }
 
@@ -141,6 +142,14 @@ CommonTestClient::WillUpdateCompleteCallback CommonTestClient::setWillUpdateComp
 {
     WillUpdateCompleteCallback old(std::move(m_willUpdateCompleteCallback));
     m_willUpdateCompleteCallback = std::move(func);
+    return old;
+}
+
+CommonTestClient::SleepCompleteCallback CommonTestClient::setSleepCompleteCallback(
+    SleepCompleteCallback&& func)
+{
+    SleepCompleteCallback old(std::move(m_sleepCompleteCallback));
+    m_sleepCompleteCallback = std::move(func);
     return old;
 }
 
@@ -322,6 +331,16 @@ MqttsnErrorCode CommonTestClient::willUpdate(const MqttsnWillInfo* willInfo)
         this);
 }
 
+MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
+{
+    assert(m_libFuncs.m_sleepFunc != nullptr);
+    return (m_libFuncs.m_sleepFunc)(
+        m_client,
+        duration,
+        &CommonTestClient::sleepCompleteCallback,
+        this);
+}
+
 MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
 {
     static_assert(
@@ -457,6 +476,14 @@ void CommonTestClient::reportWillUpdateComplete(MqttsnAsyncOpStatus status)
     }
 }
 
+void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
+{
+    if (m_sleepCompleteCallback) {
+        SleepCompleteCallback tmp(m_sleepCompleteCallback);
+        tmp(status);
+    }
+}
+
 void CommonTestClient::nextTickProgramCallback(void* data, unsigned duration)
 {
     assert(data != nullptr);
@@ -524,3 +551,8 @@ void CommonTestClient::willUpdateCompleteCallback(void* data, MqttsnAsyncOpStatu
     reinterpret_cast<CommonTestClient*>(data)->reportWillUpdateComplete(status);
 }
 
+void CommonTestClient::sleepCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportSleepComplete(status);
+}

@@ -189,7 +189,7 @@ public:
     DataBuf prepareUnsubackMsg(std::uint16_t msgId);
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
-    DataBuf prepareDisconnectMsg();
+    DataBuf prepareDisconnectMsg(std::uint16_t duration = 0);
     DataBuf prepareWilltopicrespMsg(mqttsn::protocol::field::ReturnCodeVal retCode);
     DataBuf prepareWillmsgrespMsg(mqttsn::protocol::field::ReturnCodeVal retCode);
 

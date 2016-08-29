@@ -508,9 +508,20 @@ DataProcessor::DataBuf DataProcessor::preparePingrespMsg()
     return prepareInput(PingrespMsg());
 }
 
-DataProcessor::DataBuf DataProcessor::prepareDisconnectMsg()
+DataProcessor::DataBuf DataProcessor::prepareDisconnectMsg(std::uint16_t duration)
 {
-    return prepareInput(DisconnectMsg());
+    DisconnectMsg msg;
+    auto& fields = msg.fields();
+    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
+
+    if (duration != 0U) {
+        durationField.setMode(comms::field::OptionalMode::Exists);
+        durationField.field().value() = duration;
+    }
+    else {
+        durationField.setMode(comms::field::OptionalMode::Missing);
+    }
+    return prepareInput(msg);
 }
 
 DataProcessor::DataBuf DataProcessor::prepareWilltopicrespMsg(

@@ -35,8 +35,7 @@ template <typename TFieldBase>
 using DisconnectFields =
     std::tuple<
         comms::field::Optional<
-            field::Duration<TFieldBase>,
-            comms::option::DefaultOptionalMode<comms::field::OptionalMode::Missing>
+            field::Duration<TFieldBase>
         >
     >;
 

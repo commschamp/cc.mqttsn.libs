@@ -295,4 +295,14 @@ MqttsnErrorCode mqttsn_##NAME##client_will_update(
     return clientObj->willUpdate(willInfo, callback, data);
 }
 
+MqttsnErrorCode mqttsn_##NAME##client_sleep(
+    ClientHandle client,
+    unsigned short duration,
+    SleepCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->sleep(duration, callback, data);
+}
 

@@ -130,6 +130,12 @@ MqttsnErrorCode mqttsn_##NAME##client_will_update(
     void* data
 );
 
+MqttsnErrorCode mqttsn_##NAME##client_sleep(
+    ClientHandle client,
+    unsigned short duration,
+    SleepCompleteReportFn callback,
+    void* data
+);
 
 
 #ifdef __cplusplus
