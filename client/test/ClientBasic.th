@@ -507,8 +507,8 @@ private:
 
     static void startClient(CommonTestClient& client)
     {
-        bool result = client.start();
-        TS_ASSERT(result);
+        auto result = client.start();
+        TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     }
 
     static void doTopicRegister(

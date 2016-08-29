@@ -57,8 +57,10 @@ enum MqttsnConnectionStatus
 enum MqttsnErrorCode
 {
     MqttsnErrorCode_Success,
-    MqttsnErrorCode_InvalidOperation,
+    MqttsnErrorCode_AlreadyStarted,
+    MqttsnErrorCode_NotStarted,
     MqttsnErrorCode_Busy,
+    MqttsnErrorCode_AlreadyConnected,
     MqttsnErrorCode_NotConnected,
     MqttsnErrorCode_NotSleeping,
     MqttsnErrorCode_BadParam,
@@ -82,7 +84,7 @@ enum MqttsnAsyncOpStatus
     MqttsnAsyncOpStatus_Aborted,
 };
 
-typedef void* ClientHandle;
+typedef void* MqttsnClientHandle;
 typedef unsigned short MqttsnTopicId;
 
 struct MqttsnWillInfo
@@ -104,18 +106,18 @@ struct MqttsnMessageInfo
     bool retain;
 };
 
-typedef void (*NextTickProgramFn)(void* data, unsigned duration);
-typedef unsigned (*CancelNextTickWaitFn)(void* data);
-typedef void (*SendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
-typedef void (*GwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
-typedef void (*ConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
-typedef void (*PublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-typedef void (*SubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
-typedef void (*UnsubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-typedef void (*WillUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-typedef void (*SleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-typedef void (*CheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-typedef void (*MessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
+typedef void (*MqttsnNextTickProgramFn)(void* data, unsigned duration);
+typedef unsigned (*MqttsnCancelNextTickWaitFn)(void* data);
+typedef void (*MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
+typedef void (*MqttsnGwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
+typedef void (*MqttsnConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
+typedef void (*MqttsnPublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
+typedef void (*MqttsnUnsubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnWillUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnSleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnCheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnMessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
 
 #ifdef __cplusplus
 }

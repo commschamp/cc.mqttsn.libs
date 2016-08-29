@@ -174,7 +174,7 @@ class Client : public THandler
         std::size_t m_msgLen = 0;
         MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
         bool m_retain = false;
-        PublishCompleteReportFn m_cb = nullptr;
+        MqttsnPublishCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         bool m_ackReceived = false;
     };
@@ -193,7 +193,7 @@ class Client : public THandler
     struct SubscribeOpBase : public OpBase
     {
         MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
-        SubscribeCompleteReportFn m_cb = nullptr;
+        MqttsnSubscribeCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         std::uint16_t m_msgId = 0U;
     };
@@ -211,7 +211,7 @@ class Client : public THandler
 
     struct UnsubscribeOpBase : public OpBase
     {
-        UnsubscribeCompleteReportFn m_cb = nullptr;
+        MqttsnUnsubscribeCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         std::uint16_t m_msgId = 0U;
     };
@@ -230,14 +230,14 @@ class Client : public THandler
     struct WillUpdateOp : public OpBase
     {
         MqttsnWillInfo m_willInfo = MqttsnWillInfo();
-        WillUpdateCompleteReportFn m_cb = nullptr;
+        MqttsnWillUpdateCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         bool m_willTopicAcked = false;
     };
 
     struct SleepOp : public OpBase
     {
-        SleepCompleteReportFn m_cb = nullptr;
+        MqttsnSleepCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         std::uint16_t m_duration = 0;
     };
@@ -245,7 +245,7 @@ class Client : public THandler
     struct CheckMessagesOp : public OpBase
     {
         const char* m_clientId = nullptr;
-        CheckMessagesCompleteReportFn m_cb = nullptr;
+        MqttsnCheckMessagesCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
     };
 
@@ -341,7 +341,7 @@ public:
         return m_advertisePeriod;
     }
 
-    void setNextTickProgramCallback(NextTickProgramFn cb, void* data)
+    void setNextTickProgramCallback(MqttsnNextTickProgramFn cb, void* data)
     {
         if (cb != nullptr) {
             m_nextTickProgramFn = cb;
@@ -349,7 +349,7 @@ public:
         }
     }
 
-    void setCancelNextTickWaitCallback(CancelNextTickWaitFn cb, void* data)
+    void setCancelNextTickWaitCallback(MqttsnCancelNextTickWaitFn cb, void* data)
     {
         if (cb != nullptr) {
             m_cancelNextTickWaitFn = cb;
@@ -357,7 +357,7 @@ public:
         }
     }
 
-    void setSendOutputDataCallback(SendOutputDataFn cb, void* data)
+    void setSendOutputDataCallback(MqttsnSendOutputDataFn cb, void* data)
     {
         if (cb != nullptr) {
             m_sendOutputDataFn = cb;
@@ -365,13 +365,13 @@ public:
         }
     }
 
-    void setGwStatusReportCallback(GwStatusReportFn cb, void* data)
+    void setGwStatusReportCallback(MqttsnGwStatusReportFn cb, void* data)
     {
         m_gwStatusReportFn = cb;
         m_gwStatusReportData = data;
     }
 
-    void setConnectionStatusReportCallback(ConnectionStatusReportFn cb, void* data)
+    void setConnectionStatusReportCallback(MqttsnConnectionStatusReportFn cb, void* data)
     {
         if (cb != nullptr) {
             m_connectionStatusReportFn = cb;
@@ -379,32 +379,64 @@ public:
         }
     }
 
-    void setMessageReportCallback(MessageReportFn cb, void* data)
+    void setMessageReportCallback(MqttsnMessageReportFn cb, void* data)
     {
         m_msgReportFn = cb;
         m_msgReportData = data;
     }
 
-    bool start()
+    MqttsnErrorCode start()
     {
-        if ((m_connectionStatus != ConnectionStatus::Disconnected) ||
-            (m_currOp != Op::None) ||
-            (m_timerActive) ||
-            (m_nextTickProgramFn == nullptr) ||
+        if (m_running) {
+            return MqttsnErrorCode_AlreadyStarted;
+        }
+
+        if ((m_nextTickProgramFn == nullptr) ||
             (m_cancelNextTickWaitFn == nullptr) ||
             (m_sendOutputDataFn == nullptr) ||
             (m_connectionStatusReportFn == nullptr) ||
             (m_msgReportFn == nullptr)) {
-            return false;
+            return MqttsnErrorCode_BadParam;
         }
+
+        m_running = true;
+
+        m_gwInfos.clear();
+        m_regInfos.clear();
+        m_timestamp = 0;
+        m_nextTimeoutTimestamp = 0;
+        m_lastGwSearchTimestamp = 0;
+        m_lastMsgTimestamp = 0;
+        m_lastPingTimestamp = 0;
+
+        m_pingCount = 0;
+        m_connectionStatus = ConnectionStatus::Disconnected;
+
+        m_currOp = Op::None;
+        m_timerActive = false;
 
         sendGwSearchReq();
         programNextTimeout();
-        return true;
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode stop()
+    {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
+        auto guard = apiCall();
+        m_running = false;
+        return MqttsnErrorCode_Success;
     }
 
     void tick(unsigned ms)
     {
+        if (!m_running) {
+            return;
+        }
+
         GASSERT(m_callStackCount == 0U);
         m_timerActive = false;
         m_timestamp += ms;
@@ -415,6 +447,10 @@ public:
 
     std::size_t processData(ReadIterator& iter, std::size_t len)
     {
+        if (!m_running) {
+            return 0U;
+        }
+
         auto guard = apiCall();
         std::size_t consumed = 0;
         while (true) {
@@ -447,6 +483,7 @@ public:
             return false;
         }
 
+        GASSERT(m_running);
         auto guard = apiCall();
 
         typedef void (Client<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
@@ -483,8 +520,12 @@ public:
         bool cleanSession,
         const MqttsnWillInfo* willInfo)
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus == ConnectionStatus::Connected) {
-            return MqttsnErrorCode_InvalidOperation;
+            return MqttsnErrorCode_AlreadyConnected;
         }
 
         if (m_currOp != Op::None) {
@@ -521,6 +562,10 @@ public:
 
     MqttsnErrorCode disconnect()
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus == ConnectionStatus::Disconnected) {
             return MqttsnErrorCode_NotConnected;
         }
@@ -547,13 +592,16 @@ public:
         std::size_t msgLen,
         MqttsnQoS qos,
         bool retain,
-        PublishCompleteReportFn callback,
+        MqttsnPublishCompleteReportFn callback,
         void* data)
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if ((m_connectionStatus != ConnectionStatus::Connected) && (qos != MqttsnQoS_NoGwPublish)) {
             return MqttsnErrorCode_NotConnected;
         }
-
 
         if (m_currOp != Op::None) {
             return MqttsnErrorCode_Busy;
@@ -609,9 +657,13 @@ public:
         std::size_t msgLen,
         MqttsnQoS qos,
         bool retain,
-        PublishCompleteReportFn callback,
+        MqttsnPublishCompleteReportFn callback,
         void* data)
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if ((m_connectionStatus != ConnectionStatus::Connected) && (qos != MqttsnQoS_NoGwPublish)) {
             return MqttsnErrorCode_NotConnected;
         }
@@ -648,10 +700,14 @@ public:
     MqttsnErrorCode subscribe(
         MqttsnTopicId topicId,
         MqttsnQoS qos,
-        SubscribeCompleteReportFn callback,
+        MqttsnSubscribeCompleteReportFn callback,
         void* data
     )
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus != ConnectionStatus::Connected) {
             return MqttsnErrorCode_NotConnected;
         }
@@ -686,10 +742,14 @@ public:
     MqttsnErrorCode subscribe(
         const char* topic,
         MqttsnQoS qos,
-        SubscribeCompleteReportFn callback,
+        MqttsnSubscribeCompleteReportFn callback,
         void* data
     )
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus != ConnectionStatus::Connected) {
             return MqttsnErrorCode_NotConnected;
         }
@@ -723,14 +783,17 @@ public:
 
     MqttsnErrorCode unsubscribe(
         MqttsnTopicId topicId,
-        UnsubscribeCompleteReportFn callback,
+        MqttsnUnsubscribeCompleteReportFn callback,
         void* data
     )
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus != ConnectionStatus::Connected) {
             return MqttsnErrorCode_NotConnected;
         }
-
 
         if (m_currOp != Op::None) {
             return MqttsnErrorCode_Busy;
@@ -758,9 +821,13 @@ public:
 
     MqttsnErrorCode unsubscribe(
         const char* topic,
-        UnsubscribeCompleteReportFn callback,
+        MqttsnUnsubscribeCompleteReportFn callback,
         void* data)
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus != ConnectionStatus::Connected) {
             return MqttsnErrorCode_NotConnected;
         }
@@ -791,9 +858,13 @@ public:
 
     MqttsnErrorCode willUpdate(
         const MqttsnWillInfo* willInfo,
-        WillUpdateCompleteReportFn callback,
+        MqttsnWillUpdateCompleteReportFn callback,
         void* data)
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus != ConnectionStatus::Connected) {
             return MqttsnErrorCode_NotConnected;
         }
@@ -825,9 +896,13 @@ public:
 
     MqttsnErrorCode sleep(
         std::uint16_t duration,
-        SleepCompleteReportFn callback,
+        MqttsnSleepCompleteReportFn callback,
         void* data)
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus == ConnectionStatus::Disconnected) {
             return MqttsnErrorCode_NotConnected;
         }
@@ -857,9 +932,13 @@ public:
 
     MqttsnErrorCode checkMessages(
         const char* clientId,
-        CheckMessagesCompleteReportFn callback,
+        MqttsnCheckMessagesCompleteReportFn callback,
         void* data)
     {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
         if (m_connectionStatus != ConnectionStatus::Asleep) {
             return MqttsnErrorCode_NotSleeping;
         }
@@ -1762,6 +1841,10 @@ private:
 
     void programNextTimeout()
     {
+        if (!m_running) {
+            return;
+        }
+
         unsigned delay = NoTimeout;
         delay = std::min(delay, calcGwReleaseTimeout());
         delay = std::min(delay, calcSearchGwSendTimeout());
@@ -2797,23 +2880,24 @@ private:
 
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;
-    unsigned m_callStackCount = 0U;
-
     Timestamp m_timestamp = 0;
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
     Timestamp m_lastMsgTimestamp = 0;
     Timestamp m_lastPingTimestamp = 0;
+
+    unsigned m_callStackCount = 0U;
     unsigned m_pingCount = 0;
     unsigned m_advertisePeriod = DefaultAdvertisePeriod;
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_keepAlivePeriod = 0;
+    ConnectionStatus m_connectionStatus = ConnectionStatus::Disconnected;
     std::uint16_t m_msgId = 0;
     std::uint8_t m_broadcastRadius = DefaultBroadcastRadius;
 
+    bool m_running = false;
     bool m_timerActive = false;
-    ConnectionStatus m_connectionStatus = ConnectionStatus::Disconnected;
 
     Op m_currOp = Op::None;
     OpStorageType m_opStorage;
@@ -2822,22 +2906,22 @@ private:
 
     LastInMsgInfo m_lastInMsg;
 
-    NextTickProgramFn m_nextTickProgramFn = nullptr;
+    MqttsnNextTickProgramFn m_nextTickProgramFn = nullptr;
     void* m_nextTickProgramData = nullptr;
 
-    CancelNextTickWaitFn m_cancelNextTickWaitFn = nullptr;
+    MqttsnCancelNextTickWaitFn m_cancelNextTickWaitFn = nullptr;
     void* m_cancelNextTickWaitData = nullptr;
 
-    SendOutputDataFn m_sendOutputDataFn = nullptr;
+    MqttsnSendOutputDataFn m_sendOutputDataFn = nullptr;
     void* m_sendOutputDataData = nullptr;
 
-    GwStatusReportFn m_gwStatusReportFn = nullptr;
+    MqttsnGwStatusReportFn m_gwStatusReportFn = nullptr;
     void* m_gwStatusReportData = nullptr;
 
-    ConnectionStatusReportFn m_connectionStatusReportFn = nullptr;
+    MqttsnConnectionStatusReportFn m_connectionStatusReportFn = nullptr;
     void* m_connectionStatusReportData = nullptr;
 
-    MessageReportFn m_msgReportFn = nullptr;
+    MqttsnMessageReportFn m_msgReportFn = nullptr;
     void* m_msgReportData = nullptr;
 
     static const unsigned DefaultAdvertisePeriod = 30 * 60 * 1000;

@@ -204,7 +204,7 @@ private:
     static void checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status);
 
     ClientLibFuncs m_libFuncs;
-    ClientHandle m_client = nullptr;
+    MqttsnClientHandle m_client = nullptr;
     InputData m_inData;
 
     ProgramNextTickCallback m_programNextTickCallback;

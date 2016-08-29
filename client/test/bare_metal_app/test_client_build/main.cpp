@@ -66,6 +66,12 @@ void subscribeCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)
     static_cast<void>(qos);
 }
 
+void unsubscribeCallback(void* data, MqttsnAsyncOpStatus status)
+{
+    static_cast<void>(data);
+    static_cast<void>(status);
+}
+
 int main(int argc, const char** argv)
 {
     static_cast<void>(argc);
@@ -128,6 +134,30 @@ int main(int argc, const char** argv)
         nullptr);
 
     mqttsn_test_bare_metal_client_cancel(client);
+
+    mqttsn_test_bare_metal_client_unsubscribe(
+        client,
+        Topic,
+        &unsubscribeCallback,
+        nullptr);
+
+    mqttsn_test_bare_metal_client_unsubscribe_id(
+        client,
+        0x1111,
+        &unsubscribeCallback,
+        nullptr);
+
+    mqttsn_test_bare_metal_client_sleep(
+        client,
+        10000,
+        &unsubscribeCallback,
+        nullptr);
+
+    mqttsn_test_bare_metal_client_check_messages(
+        client,
+        "my_id",
+        &unsubscribeCallback,
+        nullptr);
 
     mqttsn_test_bare_metal_client_disconnect(client);
     mqttsn_test_bare_metal_client_free(client);
