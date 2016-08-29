@@ -60,6 +60,7 @@ enum MqttsnErrorCode
     MqttsnErrorCode_InvalidOperation,
     MqttsnErrorCode_Busy,
     MqttsnErrorCode_NotConnected,
+    MqttsnErrorCode_NotSleeping,
     MqttsnErrorCode_BadParam,
 };
 
@@ -113,6 +114,7 @@ typedef void (*SubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status
 typedef void (*UnsubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*WillUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*SleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*CheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
 
 #ifdef __cplusplus

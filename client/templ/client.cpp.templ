@@ -306,3 +306,13 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
     return clientObj->sleep(duration, callback, data);
 }
 
+MqttsnErrorCode mqttsn_##NAME##client_check_messages(
+    ClientHandle client,
+    const char* clientId,
+    CheckMessagesCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->checkMessages(clientId, callback, data);
+}

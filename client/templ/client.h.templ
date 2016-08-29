@@ -137,6 +137,12 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
     void* data
 );
 
+MqttsnErrorCode mqttsn_##NAME##client_check_messages(
+    ClientHandle client,
+    const char* clientId,
+    CheckMessagesCompleteReportFn callback,
+    void* data
+);
 
 #ifdef __cplusplus
 }

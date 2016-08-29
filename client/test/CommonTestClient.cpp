@@ -52,6 +52,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_unsubscribeFunc = &mqttsn_client_unsubscribe;
     funcs.m_willUpdateFunc = &mqttsn_client_will_update;
     funcs.m_sleepFunc = &mqttsn_client_sleep;
+    funcs.m_checkMessagesFunc = &mqttsn_client_check_messages;
     return funcs;
 }
 
@@ -150,6 +151,14 @@ CommonTestClient::SleepCompleteCallback CommonTestClient::setSleepCompleteCallba
 {
     SleepCompleteCallback old(std::move(m_sleepCompleteCallback));
     m_sleepCompleteCallback = std::move(func);
+    return old;
+}
+
+CommonTestClient::CheckMessagesCompleteCallback CommonTestClient::setCheckMessagesCompleteCallback(
+    CheckMessagesCompleteCallback&& func)
+{
+    CheckMessagesCompleteCallback old(std::move(m_checkMessagesCompleteCallback));
+    m_checkMessagesCompleteCallback = std::move(func);
     return old;
 }
 
@@ -341,6 +350,16 @@ MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
         this);
 }
 
+MqttsnErrorCode CommonTestClient::checkMessages(const std::string& clientId)
+{
+    assert(m_libFuncs.m_checkMessagesFunc != nullptr);
+    return (m_libFuncs.m_checkMessagesFunc)(
+        m_client,
+        clientId.c_str(),
+        &CommonTestClient::checkMessagesCompleteCallback,
+        this);
+}
+
 MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
 {
     static_assert(
@@ -484,6 +503,14 @@ void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
     }
 }
 
+void CommonTestClient::reportCheckMessagesComplete(MqttsnAsyncOpStatus status)
+{
+    if (m_checkMessagesCompleteCallback) {
+        CheckMessagesCompleteCallback tmp(m_checkMessagesCompleteCallback);
+        tmp(status);
+    }
+}
+
 void CommonTestClient::nextTickProgramCallback(void* data, unsigned duration)
 {
     assert(data != nullptr);
@@ -555,4 +582,10 @@ void CommonTestClient::sleepCompleteCallback(void* data, MqttsnAsyncOpStatus sta
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportSleepComplete(status);
+}
+
+void CommonTestClient::checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportCheckMessagesComplete(status);
 }

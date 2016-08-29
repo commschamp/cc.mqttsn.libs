@@ -53,6 +53,7 @@ typedef decltype(&mqttsn_client_unsubscribe_id) UnsubscribeIdFunc;
 typedef decltype(&mqttsn_client_unsubscribe) UnsubscribeFunc;
 typedef decltype(&mqttsn_client_will_update) WillUpdateFunc;
 typedef decltype(&mqttsn_client_sleep) SleepFunc;
+typedef decltype(&mqttsn_client_check_messages) CheckMessagesFunc;
 
 
 struct ClientLibFuncs
@@ -83,6 +84,7 @@ struct ClientLibFuncs
     UnsubscribeFunc m_unsubscribeFunc = nullptr;
     WillUpdateFunc m_willUpdateFunc = nullptr;
     SleepFunc m_sleepFunc = nullptr;
+    CheckMessagesFunc m_checkMessagesFunc = nullptr;
 };
 
 class CommonTestClient
@@ -100,6 +102,7 @@ public:
     typedef std::function<void (MqttsnAsyncOpStatus status)> UnsubscribeCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> WillUpdateCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> SleepCompleteCallback;
+    typedef std::function<void (MqttsnAsyncOpStatus status)> CheckMessagesCompleteCallback;
 
     ~CommonTestClient();
 
@@ -114,6 +117,7 @@ public:
     UnsubscribeCompleteCallback setUnsubsribeCompleteCallback(UnsubscribeCompleteCallback&& func);
     WillUpdateCompleteCallback setWillUpdateCompleteCallback(WillUpdateCompleteCallback&& func);
     SleepCompleteCallback setSleepCompleteCallback(SleepCompleteCallback&& func);
+    CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
     bool start();
@@ -163,6 +167,8 @@ public:
 
     MqttsnErrorCode sleep(std::uint16_t duration);
 
+    MqttsnErrorCode checkMessages(const std::string& clientId);
+
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
     static mqttsn::protocol::field::QosType transformQos(MqttsnQoS val);
 
@@ -182,6 +188,7 @@ private:
     void reportUnsubsribeComplete(MqttsnAsyncOpStatus status);
     void reportWillUpdateComplete(MqttsnAsyncOpStatus status);
     void reportSleepComplete(MqttsnAsyncOpStatus status);
+    void reportCheckMessagesComplete(MqttsnAsyncOpStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
@@ -194,6 +201,7 @@ private:
     static void unsubsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void willUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void sleepCompleteCallback(void* data, MqttsnAsyncOpStatus status);
+    static void checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status);
 
     ClientLibFuncs m_libFuncs;
     ClientHandle m_client = nullptr;
@@ -210,6 +218,7 @@ private:
     UnsubscribeCompleteCallback m_unsubscribeCompleteCallback;
     WillUpdateCompleteCallback m_willUpdateCompleteCallback;
     SleepCompleteCallback m_sleepCompleteCallback;
+    CheckMessagesCompleteCallback m_checkMessagesCompleteCallback;
 
     static const ClientLibFuncs DefaultFuncs;
 };

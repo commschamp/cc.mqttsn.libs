@@ -70,6 +70,7 @@ public:
     void test36();
     void test37();
     void test38();
+    void test39();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -152,6 +153,7 @@ private:
         std::list<MqttsnAsyncOpStatus> m_reportedUnsubscribes;
         std::list<MqttsnAsyncOpStatus> m_reportedWillUpdates;
         std::list<MqttsnAsyncOpStatus> m_reportedSleeps;
+        std::list<MqttsnAsyncOpStatus> m_reportedMessageChecks;
     };
 
     template <typename TState>
@@ -227,6 +229,15 @@ private:
                 TS_TRACE("Sleep complete with status: " + std::to_string((int)val));
                 if (state != nullptr) {
                     state->m_reportedSleeps.push_back(val);
+                }
+            });
+
+        ptr->setCheckMessagesCompleteCallback(
+            [state](MqttsnAsyncOpStatus val)
+            {
+                TS_TRACE("Check messages complete with status: " + std::to_string((int)val));
+                if (state != nullptr) {
+                    state->m_reportedMessageChecks.push_back(val);
                 }
             });
 
@@ -429,7 +440,7 @@ private:
         verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_Available);
     }
 
-    static void doConnect(
+    static const std::string& doConnect(
         CommonTestClient& client,
         DataProcessor& dataProc,
         TestBasicState& state,
@@ -491,6 +502,7 @@ private:
         dataFromGw(client, connackMsg, "CONNACK");
         verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Connected);
         TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+        return ClientId;
     }
 
     static void startClient(CommonTestClient& client)
@@ -1002,15 +1014,19 @@ private:
 
     static void verifySent_PingreqMsg(
         const TestBasicState& state,
-        DataProcessor& dataProc)
+        DataProcessor& dataProc,
+        const std::string& clientId = std::string())
     {
         bool sent = false;
         auto oldCb = dataProc.setPingreqMsgReportCallback(
-            [&sent](const PingreqMsg& msg)
+            [&sent, &clientId](const PingreqMsg& msg)
             {
                 sent = true;
-                static_cast<void>(msg);
                 TS_TRACE("<-- PINGREQ");
+
+                auto& fields = msg.fields();
+                auto& clientIdField = std::get<PingreqMsg::FieldIdx_clientId>(fields);
+                TS_ASSERT_EQUALS(clientIdField.value(), clientId);
             });
 
         processOutput(state, dataProc);
@@ -1250,6 +1266,21 @@ private:
 
         TS_ASSERT_EQUALS(elem, status);
         state.m_reportedSleeps.pop_front();
+    }
+
+    static void verifyCb_ReportedMessageChecks(
+        TestBasicState& state,
+        MqttsnAsyncOpStatus status)
+    {
+        TS_ASSERT(!state.m_reportedMessageChecks.empty());
+        if (state.m_reportedMessageChecks.empty()) {
+            return;
+        }
+
+        auto& elem = state.m_reportedMessageChecks.front();
+
+        TS_ASSERT_EQUALS(elem, status);
+        state.m_reportedMessageChecks.pop_front();
     }
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val)
@@ -3283,10 +3314,89 @@ void ClientBasic::test38()
     auto disconnectMsg = dataProc.prepareDisconnectMsg(Duration);
     dataFromGw(*client, disconnectMsg, "DISCONNECT");
     verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_Successful);
+    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_DisconnectedAsleep);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    doConnect(*client, dataProc, state);
+    static const std::string ClientId = "test_client";
+    result = client->connect(ClientId.c_str(), DefaultKeepAlive, true, nullptr);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_ConnectMsg(state, dataProc, ClientId, DefaultKeepAlive, true, false);
+    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Disconnected);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+}
+
+void ClientBasic::test39()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test39State;
+    Test39State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    auto& clientId = doConnect(*client, dataProc, state);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    auto result = client->checkMessages(clientId);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_NotSleeping);
+
+    static const std::uint16_t Duration = 10000;
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    result = client->sleep(Duration);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_DisconnectMsg(state, dataProc, Duration);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto disconnectMsg = dataProc.prepareDisconnectMsg(Duration);
+    dataFromGw(*client, disconnectMsg, "DISCONNECT");
+    verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_Successful);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 2000;
+    result = client->checkMessages(clientId);
+    verifySent_PingreqMsg(state, dataProc, clientId);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    static const MqttsnTopicId TopicId = 0x1111;
+    static const std::uint16_t MsgId = 0x2222;
+    static const DataSeq Data = {0x0, 0x1, 0x2};
+    static const MqttsnQoS Qos = MqttsnQoS_AtMostOnceDelivery;
+    static const bool Retain = false;
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto publishMsg =
+        dataProc.preparePublishMsg(
+            TopicId,
+            MsgId,
+            Data,
+            mqttsn::protocol::field::TopicIdTypeVal::PreDefined,
+            transformQos(Qos),
+            false,
+            false);
+
+    dataFromGw(*client, publishMsg, "PUBLISH");
+    dataFromGw(*client, publishMsg, "PUBLISH");
+    dataFromGw(*client, publishMsg, "PUBLISH");
+
+    verifyCb_ReportedMessage(state, std::string(), TopicId, Data, Qos, Retain);
+    verifyCb_ReportedMessage(state, std::string(), TopicId, Data, Qos, Retain);
+    verifyCb_ReportedMessage(state, std::string(), TopicId, Data, Qos, Retain);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto pingrespMsg = dataProc.preparePingrespMsg();
+    dataFromGw(*client, pingrespMsg, "PINGRESP");
+    verifyCb_ReportedMessageChecks(state, MqttsnAsyncOpStatus_Successful);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
 }
 

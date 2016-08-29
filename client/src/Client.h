@@ -143,6 +143,7 @@ class Client : public THandler
         Unsubscribe,
         WillUpdate,
         Sleep,
+        CheckMessages,
         NumOfValues // must be last
     };
 
@@ -239,6 +240,13 @@ class Client : public THandler
         SleepCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         std::uint16_t m_duration = 0;
+    };
+
+    struct CheckMessagesOp : public OpBase
+    {
+        const char* m_clientId = nullptr;
+        CheckMessagesCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
     };
 
     enum class ConnectionStatus
@@ -453,7 +461,8 @@ public:
             &Client::unsubscribeIdCancel,
             &Client::unsubscribeCancel,
             &Client::willUpdateCancel,
-            &Client::sleepCancel
+            &Client::sleepCancel,
+            &Client::checkMessagesCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -484,6 +493,7 @@ public:
 
         auto guard = apiCall();
 
+        bool reportDisconnected = (m_connectionStatus == ConnectionStatus::Asleep);
         m_connectionStatus = ConnectionStatus::Disconnected;
         m_keepAlivePeriod = keepAlivePeriod * 1000;
         m_currOp = Op::Connect;
@@ -500,6 +510,11 @@ public:
         bool result = doConnect();
         static_cast<void>(result);
         GASSERT(result);
+
+        if (reportDisconnected) {
+            GASSERT(m_connectionStatusReportFn != nullptr);
+            m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+        }
 
         return MqttsnErrorCode_Success;
     }
@@ -834,6 +849,40 @@ public:
         op->m_cbData = data;
 
         bool result = doSleep();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode checkMessages(
+        const char* clientId,
+        CheckMessagesCompleteReportFn callback,
+        void* data)
+    {
+        if (m_connectionStatus != ConnectionStatus::Asleep) {
+            return MqttsnErrorCode_NotSleeping;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if ((clientId == nullptr) ||
+            (clientId[0] == '\0') ||
+            (callback == nullptr)) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        auto guard = apiCall();
+
+        m_currOp = Op::CheckMessages;
+        auto* op = newOp<CheckMessagesOp>();
+        op->m_clientId = clientId;
+        op->m_cb = callback;
+        op->m_cbData = data;
+
+        bool result = doCheckMessages();
         static_cast<void>(result);
         GASSERT(result);
 
@@ -1401,7 +1450,16 @@ public:
     virtual void handle(PingrespMsg& msg) override
     {
         static_cast<void>(msg);
+        bool pinging = (0U < m_pingCount);
         m_pingCount = 0U;
+
+        if (pinging || (m_currOp != Op::CheckMessages)) {
+            return;
+        }
+
+        // checking messages in asleep mode
+        GASSERT(m_connectionStatus == ConnectionStatus::Asleep);
+        finaliseCheckMessagesOp(MqttsnAsyncOpStatus_Successful);
     }
 
     virtual void handle(DisconnectMsg& msg) override
@@ -1494,7 +1552,8 @@ private:
         SubscribeIdOp,
         SubscribeOp,
         UnsubscribeIdOp,
-        UnsubscribeOp
+        UnsubscribeOp,
+        CheckMessagesOp
     >::Type OpStorageType;
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
@@ -1809,7 +1868,8 @@ private:
             &Client::unsubscribeIdTimeout,
             &Client::unsubscribeTimeout,
             &Client::willUpdateTimeout,
-            &Client::sleepTimeout
+            &Client::sleepTimeout,
+            &Client::checkMessagesTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -2051,6 +2111,24 @@ private:
     {
         GASSERT(m_currOp == Op::Sleep);
         finaliseSleepOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
+    void checkMessagesTimeout()
+    {
+        GASSERT(m_currOp == Op::CheckMessages);
+
+        if (doCheckMessages()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseCheckMessagesOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void checkMessagesCancel()
+    {
+        GASSERT(m_currOp == Op::CheckMessages);
+        finaliseCheckMessagesOp(MqttsnAsyncOpStatus_Aborted);
     }
 
     void sendMessage(const Message& msg, bool broadcast = false)
@@ -2435,6 +2513,26 @@ private:
         return true;
     }
 
+    bool doCheckMessages()
+    {
+        GASSERT (m_currOp == Op::CheckMessages);
+
+        auto* op = opPtr<CheckMessagesOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+
+        PingreqMsg msg;
+        auto& fields = msg.fields();
+        auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
+
+        clientIdField.value() = op->m_clientId;
+        sendMessage(msg);
+        return true;
+    }
+
     void sendConnect(
         const char* clientId,
         std::uint16_t keepAlivePeriod,
@@ -2633,6 +2731,19 @@ private:
         auto* cbData = op->m_cbData;
 
         finaliseOp<SleepOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
+    void finaliseCheckMessagesOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::CheckMessages);
+        auto* op = opPtr<CheckMessagesOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<CheckMessagesOp>();
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
         cb(cbData, status);
