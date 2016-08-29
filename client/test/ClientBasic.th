@@ -3284,5 +3284,9 @@ void ClientBasic::test38()
     dataFromGw(*client, disconnectMsg, "DISCONNECT");
     verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_Successful);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    doConnect(*client, dataProc, state);
 }
 

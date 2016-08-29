@@ -379,7 +379,10 @@ public:
 
     bool start()
     {
-        if ((m_nextTickProgramFn == nullptr) ||
+        if ((m_connectionStatus != ConnectionStatus::Disconnected) ||
+            (m_currOp != Op::None) ||
+            (m_timerActive) ||
+            (m_nextTickProgramFn == nullptr) ||
             (m_cancelNextTickWaitFn == nullptr) ||
             (m_sendOutputDataFn == nullptr) ||
             (m_connectionStatusReportFn == nullptr) ||
@@ -394,6 +397,7 @@ public:
 
     void tick(unsigned ms)
     {
+        GASSERT(m_callStackCount == 0U);
         m_timerActive = false;
         m_timestamp += ms;
 
@@ -403,7 +407,7 @@ public:
 
     std::size_t processData(ReadIterator& iter, std::size_t len)
     {
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
         std::size_t consumed = 0;
         while (true) {
             auto iterTmp = iter;
@@ -426,10 +430,6 @@ public:
             iter = iterTmp;
         }
 
-        if (timerWasActive) {
-            programNextTimeout();
-        }
-
         return consumed;
     }
 
@@ -438,6 +438,8 @@ public:
         if (m_currOp == Op::None) {
             return false;
         }
+
+        auto guard = apiCall();
 
         typedef void (Client<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
         static const CancelFunc OpCancelFuncMap[] =
@@ -480,8 +482,9 @@ public:
             return MqttsnErrorCode_Busy;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
+        m_connectionStatus = ConnectionStatus::Disconnected;
         m_keepAlivePeriod = keepAlivePeriod * 1000;
         m_currOp = Op::Connect;
 
@@ -498,10 +501,6 @@ public:
         static_cast<void>(result);
         GASSERT(result);
 
-        if (timerWasActive) {
-            programNextTimeout();
-        }
-
         return MqttsnErrorCode_Success;
     }
 
@@ -515,8 +514,7 @@ public:
             return MqttsnErrorCode_Busy;
         }
 
-        bool timerWasActive = updateTimestamp();
-
+        auto guard = apiCall();
         m_currOp = Op::Disconnect;
         auto* disconnectOp = newOp<DisconnectOp>();
         static_cast<void>(disconnectOp);
@@ -524,10 +522,6 @@ public:
         bool result = doDisconnect();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -559,7 +553,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
         if (MqttsnQoS_AtLeastOnceDelivery <= qos) {
             m_currOp = Op::PublishId;
@@ -591,10 +585,6 @@ public:
             }
         }
 
-        if (timerWasActive) {
-            programNextTimeout();
-        }
-
         return MqttsnErrorCode_Success;
     }
 
@@ -622,8 +612,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
-
+        auto guard = apiCall();
         m_currOp = Op::Publish;
         auto* pubOp = newOp<PublishOp>();
         pubOp->m_topic = topic;
@@ -637,10 +626,6 @@ public:
         bool result = doPublish();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -656,7 +641,6 @@ public:
             return MqttsnErrorCode_NotConnected;
         }
 
-
         if (m_currOp != Op::None) {
             return MqttsnErrorCode_Busy;
         }
@@ -667,7 +651,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
         m_currOp = Op::SubscribeId;
         auto* op = newOp<SubscribeIdOp>();
@@ -680,10 +664,6 @@ public:
         bool result = doSubscribeId();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -709,7 +689,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
         m_currOp = Op::Subscribe;
         auto* op = newOp<SubscribeOp>();
@@ -722,10 +702,6 @@ public:
         bool result = doSubscribe();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -749,7 +725,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
         m_currOp = Op::UnsubscribeId;
         auto* op = newOp<UnsubscribeIdOp>();
@@ -761,10 +737,6 @@ public:
         bool result = doUnsubscribeId();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -786,7 +758,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
         m_currOp = Op::Unsubscribe;
         auto* op = newOp<UnsubscribeOp>();
@@ -798,10 +770,6 @@ public:
         bool result = doUnsubscribe();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -823,7 +791,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
         m_currOp = Op::WillUpdate;
         auto* op = newOp<WillUpdateOp>();
@@ -836,10 +804,6 @@ public:
         bool result = doWillUpdate();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -861,7 +825,7 @@ public:
             return MqttsnErrorCode_BadParam;
         }
 
-        bool timerWasActive = updateTimestamp();
+        auto guard = apiCall();
 
         m_currOp = Op::Sleep;
         auto* op = newOp<SleepOp>();
@@ -872,10 +836,6 @@ public:
         bool result = doSleep();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (timerWasActive) {
-            programNextTimeout();
-        }
 
         return MqttsnErrorCode_Success;
     }
@@ -2700,9 +2660,34 @@ private:
         return status;
     }
 
+    void apiCallExit()
+    {
+        GASSERT(0U < m_callStackCount);
+        --m_callStackCount;
+        if (m_callStackCount == 0U) {
+            programNextTimeout();
+        }
+    }
+
+    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&Client<THandler, TClientOpts, TProtOpts>::apiCallExit, this)))
+    {
+        ++m_callStackCount;
+        if (m_callStackCount == 1U) {
+            updateTimestamp();
+        }
+
+        return
+            comms::util::makeScopeGuard(
+                std::bind(
+                    &Client<THandler, TClientOpts, TProtOpts>::apiCallExit,
+                    this));
+    }
+
 
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;
+    unsigned m_callStackCount = 0U;
+
     Timestamp m_timestamp = 0;
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
