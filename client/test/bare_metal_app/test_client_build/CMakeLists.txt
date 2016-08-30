@@ -8,7 +8,10 @@ set (MQTTSN_CLIENT_LIB_NAME "mqttsn_${TEST_BARE_METAL_CLIENT_NAME}_client")
 gen_lib_mqttsn_client("${TEST_BARE_METAL_CLIENT_NAME}" "${BARE_METAL_PROTOCOL_OPTS}" "${BARE_METAL_CLIENT_OPTS}" FALSE)
 target_compile_definitions("${MQTTSN_CLIENT_LIB_NAME}" PRIVATE "-DNOSTDLIB")
 
-include_directories (${CMAKE_CURRENT_BINARY_DIR})
+include_directories (
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/client/src/basic)
+
 #################################################################
 
 function (bin_client_build)

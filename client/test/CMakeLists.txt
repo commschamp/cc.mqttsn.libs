@@ -45,7 +45,7 @@ endfunction ()
 
 include_directories (
     "${CXXTEST_INCLUDE_DIR}"
-    "${CMAKE_BINARY_DIR}/client/src"
+    "${CMAKE_BINARY_DIR}/client/src/basic"
 )
 
 lib_common_test_client()
