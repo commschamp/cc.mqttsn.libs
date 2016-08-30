@@ -1,10 +1,6 @@
-if (NOT MQTTSN_CC_PROTOCOL_PLUGIN)
-    return ()
-endif ()
-######################################################################
 
-function (cc_plugin_mqttsn)
-    set (name "mqttsn")
+function (cc_plugin_mqttsn_protocol)
+    set (name "mqttsn_protocol")
     
     set (meta_file "${CMAKE_CURRENT_SOURCE_DIR}/mqttsn.json")
     set (stamp_file "${CMAKE_CURRENT_BINARY_DIR}/refresh_stamp.txt")
@@ -80,30 +76,7 @@ endfunction()
 
 ######################################################################
 
-if (NOT "${MQTTSN_QT_DIR}" STREQUAL "")
-    list (APPEND CMAKE_PREFIX_PATH ${MQTTSN_QT_DIR})
-endif ()
-
-find_package(Qt5Core REQUIRED)
-
-if (NOT "${MQTTSN_CC_INSTALL_PATH}" STREQUAL "")
-    list (APPEND CMAKE_PREFIX_PATH "${MQTTSN_CC_INSTALL_PATH}/cmake")
-endif ()
-
-find_package(CommsChampion)
-
-if (NOT CC_COMMS_CHAMPION_FOUND)
-    message (FATAL_ERROR "CommsChampion wasn't found!. Please set MQTTSN_CC_INSTALL_PATH to its installation path.")
-endif ()
-
-include_directories("${CC_INCLUDE_DIRS}")
-link_directories("${CC_PLUGIN_LIBRARY_DIRS}")
-
-if (CMAKE_COMPILER_IS_GNUCC)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
-endif ()
-
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/protocol/include)
 
-cc_plugin_mqttsn ()
+cc_plugin_mqttsn_protocol ()

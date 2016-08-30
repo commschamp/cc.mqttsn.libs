@@ -16,41 +16,35 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#pragma once
+#include "Plugin.h"
 
-#include <functional>
-#include <memory>
+namespace cc = comms_champion;
 
 namespace mqttsn
 {
 
-namespace client
+namespace cc_plugin
 {
 
-#include "common.h"
-
-class ClientImpl;
-class Client
+namespace client_filter
 {
-public:
-    typedef std::unique_ptr<Client> Ptr;
 
-    static Ptr alloc(const std::string& id);
+Plugin::Plugin()
+{
+    pluginProperties()
+        .setFiltersCreateFunc(
+            [this]() -> ListOfFilters
+            {
+                ListOfFilters list;
+                return list;
+            });
+}
 
-    Client(const Client&) = delete;
-    Client(Client&&) = default;
+Plugin::~Plugin() = default;
 
-    ~Client();
+}  // namespace client_filter
 
-    Client& operator=(const Client&) = delete;
-    Client& operator=(Client&&) = default;
-
-private:
-    Client();
-};
-
-}  // namespace client
+}  // namespace cc_plugin
 
 }  // namespace mqttsn
-
 
