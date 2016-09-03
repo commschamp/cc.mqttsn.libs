@@ -18,6 +18,10 @@
 
 #include "Plugin.h"
 
+#include "Filter.h"
+
+#include <iostream>
+
 namespace cc = comms_champion;
 
 namespace mqttsn
@@ -35,12 +39,35 @@ Plugin::Plugin()
         .setFiltersCreateFunc(
             [this]() -> ListOfFilters
             {
+                createFilterIfNeeded();
                 ListOfFilters list;
+                assert(m_filter);
+                list.append(m_filter);
                 return list;
             });
 }
 
 Plugin::~Plugin() = default;
+
+void Plugin::getCurrentConfigImpl(QVariantMap& config)
+{
+    static_cast<void>(config);
+    std::cout << __FUNCTION__ << std::endl;
+}
+
+void Plugin::reconfigureImpl(const QVariantMap& config)
+{
+    static_cast<void>(config);
+    std::cout << __FUNCTION__ << std::endl;
+}
+
+void Plugin::createFilterIfNeeded()
+{
+    if (!m_filter) {
+        m_filter.reset(new Filter());
+    }
+}
+
 
 }  // namespace client_filter
 

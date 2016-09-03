@@ -55,6 +55,8 @@ set (BIN_INSTALL_DIR ${INSTALL_DIR}/bin)
 set (INC_INSTALL_DIR ${INSTALL_DIR}/include)
 set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/plugin)
 
+set (DEFAULT_CLIENT_LIB_TGT "mqttsn_client")
+
 add_subdirectory(protocol)
 add_subdirectory(client)
 add_subdirectory(cc_plugin)

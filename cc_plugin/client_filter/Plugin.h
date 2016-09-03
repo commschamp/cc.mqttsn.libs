@@ -18,8 +18,13 @@
 
 #pragma once
 
+#include "comms/CompileControl.h"
+
+CC_DISABLE_WARNINGS()
 #include <QtCore/QObject>
 #include <QtCore/QtPlugin>
+CC_ENABLE_WARNINGS()
+
 #include "comms_champion/comms_champion.h"
 
 namespace mqttsn
@@ -38,9 +43,19 @@ class Plugin : public comms_champion::Plugin
     Q_INTERFACES(comms_champion::Plugin)
 
 public:
+    typedef comms_champion::FilterPtr FilterPtr;
+
     Plugin();
     ~Plugin();
 
+protected:
+    virtual void getCurrentConfigImpl(QVariantMap& config) override;
+    virtual void reconfigureImpl(const QVariantMap& config) override;
+
+private:
+    void createFilterIfNeeded();
+
+    FilterPtr m_filter;
 };
 
 }  // namespace client_filter

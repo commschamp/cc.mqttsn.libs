@@ -318,12 +318,16 @@ public:
 
     void setGwAdvertisePeriod(unsigned val)
     {
-        m_advertisePeriod = val;
+        static const auto MaxVal =
+            std::numeric_limits<decltype(m_advertisePeriod)>::max() / 1000;
+        m_advertisePeriod = std::min(val * 1000, MaxVal);
     }
 
     void setRetryPeriod(unsigned val)
     {
-        m_retryPeriod = val;
+        static const auto MaxVal =
+            std::numeric_limits<decltype(m_retryPeriod)>::max() / 1000;
+        m_retryPeriod = std::min(val * 1000, MaxVal);
     }
 
     void setRetryCount(unsigned val)
@@ -334,11 +338,6 @@ public:
     void setBroadcastRadius(std::uint8_t val)
     {
         m_broadcastRadius = val;
-    }
-
-    unsigned getGwAdvertisePeriod() const
-    {
-        return m_advertisePeriod;
     }
 
     void setNextTickProgramCallback(MqttsnNextTickProgramFn cb, void* data)

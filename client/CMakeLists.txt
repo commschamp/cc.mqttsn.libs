@@ -2,7 +2,6 @@ set (HEADER_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.h.templ)
 set (SRC_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.cpp.templ)
 set (TEMPL_PROCESS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/script/ProcessTemplate.cmake)
 set (DEFAULT_CLIENT_NAME "")
-set (DEFAULT_CLIENT_LIB_TGT "mqttsn_client")
 
 ######################################################################
 
@@ -63,7 +62,8 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst)
     )
     
     add_library (${lib_name} STATIC ${src_output})
-    target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")    
+    target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
     add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})    
     
     if (inst)

@@ -175,8 +175,8 @@ private:
     {
         auto ptr = CommonTestClient::alloc();
         assert(ptr);
-        ptr->setGwAdvertisePeriod(DefaultAdvertisePeriod);
-        ptr->setRetryPeriod(DefaultRetryTimeout);
+        ptr->setGwAdvertisePeriod(DefaultAdvertisePeriod / 1000);
+        ptr->setRetryPeriod(DefaultRetryTimeout / 1000);
         ptr->setRetryCount(DefaultRetryCount);
         ptr->setBroadcastRadius(DefaultBroadcastRadius);
         ptr->setConnectionStatusReportCallback(

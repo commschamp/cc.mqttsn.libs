@@ -2,6 +2,16 @@
 function (cc_plugin_mqttsn_client_filter)
     set (name "mqttsn_client_filter")
     
+    if (NOT Qt5Core_FOUND)
+        message(WARNING "Can NOT build ${name} due to missing Qt5Core library")
+        return()
+    endif ()
+    
+    if (NOT Qt5Widgets_FOUND)
+        message(WARNING "Can NOT build ${name} due to missing Qt5Widgets library")
+        return()
+    endif ()
+    
     set (meta_file "${CMAKE_CURRENT_SOURCE_DIR}/mqttsn_client_filter.json")
     set (stamp_file "${CMAKE_CURRENT_BINARY_DIR}/refresh_stamp.txt")
     
@@ -16,20 +26,25 @@ function (cc_plugin_mqttsn_client_filter)
     
     set (src
         Plugin.cpp
+        Filter.cpp
     )
     
     set (hdr
         Plugin.h
+        Filter.h
     )
-    
     
     qt5_wrap_cpp(
         moc
         ${hdr}
     )
     
-    add_library (${name} SHARED ${src} ${moc})
-    target_link_libraries (${name} ${CC_PLUGIN_LIBRARIES})
+    qt5_wrap_ui(
+        ui
+    )
+    
+    add_library (${name} SHARED ${src} ${moc} ${ui})
+    target_link_libraries (${name} ${DEFAULT_CLIENT_LIB_TGT} ${CC_PLUGIN_LIBRARIES})
     qt5_use_modules(${name} Core)
     
     install (
@@ -46,8 +61,12 @@ endfunction()
 
 ######################################################################
 
+find_package(Qt5Core)
+find_package(Qt5Widgets)
+
 include_directories(
     ${CMAKE_BINARY_DIR}/client/src/basic
+    ${CMAKE_SOURCE_DIR}/client/include
 )
 
 cc_plugin_mqttsn_client_filter ()
