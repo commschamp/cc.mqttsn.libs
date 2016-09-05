@@ -55,13 +55,16 @@ bool Filter::startImpl()
     mqttsn_client_set_message_report_callback(m_client.get(), &Filter::messageArrivedCb, this);
     mqttsn_client_set_send_output_data_callback(m_client.get(), &Filter::sendMessageCb, this);
     mqttsn_client_set_next_tick_program_callback(m_client.get(), &Filter::programNextTickCb, this);
-
-    return true;
+    mqttsn_client_set_cancel_next_tick_wait_callback(m_client.get(), &Filter::cancelTickCb, this);
+    mqttsn_client_set_gw_status_report_callback(m_client.get(), &Filter::gwStatusReportCb, this);
+    mqttsn_client_set_connection_status_report_callback(m_client.get(), &Filter::connectionStatusReportCb, this);
+    return mqttsn_client_start(m_client.get());
 }
 
 void Filter::stopImpl()
 {
     std::cout << "FILTER stopped: " << this << std::endl;
+    mqttsn_client_stop(m_client.get());
     m_client.reset();
 }
 
@@ -87,20 +90,6 @@ void Filter::tick()
 {
     mqttsn_client_tick(m_client.get(), m_tickDuration);
 }
-
-//void mqttsn_client_set_cancel_next_tick_wait_callback(
-//    MqttsnClientHandle client,
-//    MqttsnCancelNextTickWaitFn fn,
-//    void* data);
-//void mqttsn_client_set_gw_status_report_callback(
-//    MqttsnClientHandle client,
-//    MqttsnGwStatusReportFn fn,
-//    void* data);
-//void mqttsn_client_set_connection_status_report_callback(
-//    MqttsnClientHandle client,
-//    MqttsnConnectionStatusReportFn fn,
-//    void* data);
-//
 
 void Filter::reportReceivedMessage(const MqttsnMessageInfo& msgInfo)
 {
@@ -155,6 +144,32 @@ void Filter::programNextTick(unsigned duration)
     m_tickTimer.start();
 }
 
+unsigned Filter::cancelTick()
+{
+    if (!m_tickTimer.isActive()) {
+        return 0U;
+    }
+
+    auto remainingTime = m_tickTimer.remainingTime();
+    assert(0 <= remainingTime);
+    assert(static_cast<unsigned>(remainingTime) <= m_tickDuration);
+    auto ticks = m_tickDuration - remainingTime;
+    m_tickTimer.stop();
+    return ticks;
+}
+
+void Filter::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
+{
+    static_cast<void>(gwId);
+    static_cast<void>(status);
+    // TODO
+}
+
+void Filter::connectionStatusReport(MqttsnConnectionStatus status)
+{
+    static_cast<void>(status);
+}
+
 void Filter::messageArrivedCb(void* data, const MqttsnMessageInfo* msgInfo)
 {
     if ((data == nullptr) || (msgInfo == nullptr)) {
@@ -183,6 +198,36 @@ void Filter::programNextTickCb(void* data, unsigned duration)
     }
 
     reinterpret_cast<Filter*>(data)->programNextTick(duration);
+}
+
+unsigned Filter::cancelTickCb(void* data)
+{
+    if (data == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<Filter*>(data)->cancelTick();
+}
+
+void Filter::gwStatusReportCb(
+    void* data,
+    unsigned short gwId,
+    MqttsnGwStatus status)
+{
+    if (data == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Filter*>(data)->gwStatusReport(gwId, status);
+}
+
+void Filter::connectionStatusReportCb(void* data, MqttsnConnectionStatus status)
+{
+    if (data == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Filter*>(data)->connectionStatusReport(status);
 }
 
 }  // namespace client_filter

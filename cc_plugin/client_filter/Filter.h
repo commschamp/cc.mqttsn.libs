@@ -106,10 +106,16 @@ private:
     void reportReceivedMessage(const MqttsnMessageInfo& msgInfo);
     void sendMessage(const unsigned char* buf, unsigned bufLen, bool broadcast);
     void programNextTick(unsigned duration);
+    unsigned cancelTick();
+    void gwStatusReport(unsigned short gwId, MqttsnGwStatus status);
+    void connectionStatusReport(MqttsnConnectionStatus status);
 
     static void messageArrivedCb(void* data, const MqttsnMessageInfo* msgInfo);
     static void sendMessageCb(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void programNextTickCb(void* data, unsigned duration);
+    static unsigned cancelTickCb(void* data);
+    static void gwStatusReportCb(void* data, unsigned short gwId, MqttsnGwStatus status);
+    static void connectionStatusReportCb(void* data, MqttsnConnectionStatus status);
 
     ClientPtr m_client;
     int m_advertisePeriod = 15 * 60;
