@@ -27,11 +27,13 @@ function (cc_plugin_mqttsn_client_filter)
     set (src
         Plugin.cpp
         Filter.cpp
+        widget/PubSubWidget.cpp
     )
     
     set (hdr
         Plugin.h
         Filter.h
+        widget/PubSubWidget.h
     )
     
     qt5_wrap_cpp(
@@ -41,6 +43,7 @@ function (cc_plugin_mqttsn_client_filter)
     
     qt5_wrap_ui(
         ui
+        ui/PubSubWidget.ui
     )
     
     add_library (${name} SHARED ${src} ${moc} ${ui})
@@ -67,6 +70,8 @@ find_package(Qt5Widgets)
 include_directories(
     ${CMAKE_BINARY_DIR}/client/src/basic
     ${CMAKE_SOURCE_DIR}/client/include
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 cc_plugin_mqttsn_client_filter ()

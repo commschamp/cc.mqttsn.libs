@@ -18,7 +18,7 @@
 
 #include "Plugin.h"
 
-#include "Filter.h"
+#include "widget/PubSubWidget.h"
 
 #include <iostream>
 
@@ -44,6 +44,13 @@ Plugin::Plugin()
                 assert(m_filter);
                 list.append(m_filter);
                 return list;
+            })
+        .setConfigWidgetCreateFunc(
+            [this]() -> QWidget*
+            {
+                createFilterIfNeeded();
+                return new PubSubWidget(m_filter->defaultPubInfo(), false);
+
             });
 }
 

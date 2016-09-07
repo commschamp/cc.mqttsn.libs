@@ -18,16 +18,15 @@
 
 #pragma once
 
-#include <memory>
 #include "comms/CompileControl.h"
 
 CC_DISABLE_WARNINGS()
-#include <QtCore/QObject>
-#include <QtCore/QtPlugin>
+#include <QtWidgets/QWidget>
 CC_ENABLE_WARNINGS()
 
-#include "comms_champion/comms_champion.h"
 #include "Filter.h"
+#include "ui_PubSubWidget.h"
+
 
 namespace mqttsn
 {
@@ -38,26 +37,29 @@ namespace cc_plugin
 namespace client_filter
 {
 
-class Plugin : public comms_champion::Plugin
+class PubSubWidget : public QWidget
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "MQTT-SN.ClientFilter" FILE "mqttsn_client_filter.json")
-    Q_INTERFACES(comms_champion::Plugin)
+    typedef QWidget Base;
 
 public:
-    typedef std::shared_ptr<Filter> FilterPtr;
+    typedef Filter::PubSubInfo PubSubInfo;
 
-    Plugin();
-    ~Plugin();
+    PubSubWidget(PubSubInfo& info, bool sub);
+    virtual ~PubSubWidget();
 
-protected:
-    virtual void getCurrentConfigImpl(QVariantMap& config) override;
-    virtual void reconfigureImpl(const QVariantMap& config) override;
+private slots:
+    void topicChanged(const QString& val);
+    void topicIdChanged(int val);
+    void qosChanged(int val);
+    void retainChanged(int val);
 
 private:
-    void createFilterIfNeeded();
+    void refresh();
 
-    FilterPtr m_filter;
+    PubSubInfo& m_info;
+    Ui::PubSubWidget m_ui;
+    MqttsnTopicId m_oldTopicId = 0;
 };
 
 }  // namespace client_filter
@@ -65,3 +67,5 @@ private:
 }  // namespace cc_plugin
 
 }  // namespace mqttsn
+
+

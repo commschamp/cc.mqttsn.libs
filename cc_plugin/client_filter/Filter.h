@@ -83,6 +83,11 @@ public:
         return m_keepAlivePeriod;
     }
 
+    PubSubInfo& defaultPubInfo()
+    {
+        return m_pub;
+    }
+
 protected:
     virtual bool startImpl() override;
     virtual void stopImpl() override;
