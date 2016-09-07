@@ -19,6 +19,9 @@
 
 #include <cassert>
 #include <iostream>
+#include <iterator>
+
+#include "comms/util/ScopeGuard.h"
 
 namespace cc = comms_champion;
 
@@ -33,7 +36,6 @@ namespace client_filter
 
 Filter::Filter()
 {
-    assert(m_client);
     std::cout << __FUNCTION__ << ": " << this << std::endl;
 
     connect(
@@ -47,6 +49,13 @@ Filter::~Filter()
 
 bool Filter::startImpl()
 {
+    // TODO: remove and check parameters
+    m_pub.m_topicId = 5;
+    PubSubInfo sub;
+    sub.m_topic = "#";
+    sub.m_qos = MqttsnQoS_ExactlyOnceDelivery;
+    m_subs.append(std::move(sub));
+
     std::cout << "FILTER started: " << this << std::endl;
     m_client.reset(mqttsn_client_new());
     mqttsn_client_set_gw_advertise_period(m_client.get(), m_advertisePeriod);
@@ -58,7 +67,8 @@ bool Filter::startImpl()
     mqttsn_client_set_cancel_next_tick_wait_callback(m_client.get(), &Filter::cancelTickCb, this);
     mqttsn_client_set_gw_status_report_callback(m_client.get(), &Filter::gwStatusReportCb, this);
     mqttsn_client_set_connection_status_report_callback(m_client.get(), &Filter::connectionStatusReportCb, this);
-    return mqttsn_client_start(m_client.get());
+    QTimer::singleShot(0, this, SLOT(startClient()));
+    return true;
 }
 
 void Filter::stopImpl()
@@ -68,22 +78,74 @@ void Filter::stopImpl()
     m_client.reset();
 }
 
-Filter::DataInfoPtr Filter::recvDataImpl(DataInfoPtr dataPtr)
+QList<Filter::DataInfoPtr> Filter::recvDataImpl(DataInfoPtr dataPtr)
 {
+    if (!dataPtr) {
+        return std::move(m_readData);
+    }
+
+    m_readSendInProgress = true;
+    auto guard = comms::util::makeScopeGuard(
+        [this]()
+        {
+            m_readSendInProgress = false;
+            sendAccumulatedMessages();
+        });
+
     std::cout << "Data received" << std::endl;
 
-    static_cast<void>(dataPtr);
-    assert(!"NYI");
-    // TODO: report data
-    return dataPtr;
+    do {
+        if (!m_input) {
+            m_input = std::move(dataPtr);
+            break;
+        }
+
+        m_input->m_data.insert(m_input->m_data.end(), dataPtr->m_data.begin(), dataPtr->m_data.end());
+        m_input->m_timestamp = dataPtr->m_timestamp;
+        m_input->m_extraProperties = std::move(dataPtr->m_extraProperties);
+    } while (false);
+
+    assert(m_input);
+    auto iter = m_input->m_data.begin();
+    while (iter != m_input->m_data.end()) {
+        auto remLen = static_cast<unsigned>(std::distance(iter, m_input->m_data.end()));
+        auto consumed = mqttsn_client_process_data(m_client.get(), &(*iter), remLen);
+        if (consumed == 0U) {
+            break;
+        }
+
+        iter += consumed;
+    }
+
+    if (iter == m_input->m_data.end()) {
+        m_input.reset();
+    }
+    else {
+        m_input->m_data.erase(m_input->m_data.begin(), iter);
+    }
+
+    return std::move(m_readData);
 }
 
-Filter::DataInfoPtr Filter::sendDataImpl(DataInfoPtr dataPtr)
+QList<Filter::DataInfoPtr> Filter::sendDataImpl(DataInfoPtr dataPtr)
 {
-    std::cout << "Data sent" << std::endl;
-    assert(!"NYI");
-    // TODO: publish
-    return dataPtr;
+    std::cout << "Publish request" << std::endl;
+    assert(!m_readSendInProgress);
+    m_readSendInProgress = true;
+    auto guard = comms::util::makeScopeGuard(
+        [this]()
+        {
+            m_readSendInProgress = false;
+        });
+
+    bool firstPub = m_pendingPubs.isEmpty();
+    m_pendingPubs.append(std::move(dataPtr));
+
+    if (firstPub && m_connected && (m_subs.size() <= m_completedSubsCount)) {
+        doPublish();
+    }
+
+    return std::move(m_sendData);
 };
 
 void Filter::tick()
@@ -91,9 +153,205 @@ void Filter::tick()
     mqttsn_client_tick(m_client.get(), m_tickDuration);
 }
 
+void Filter::startClient()
+{
+    if (mqttsn_client_start(m_client.get()) != MqttsnErrorCode_Success) {
+        reportError("MQTT-SN client failed to start");
+    }
+}
+
+void Filter::doPublish()
+{
+    assert(!m_pendingPubs.isEmpty());
+    auto& pubInfo = m_pendingPubs.front();
+    assert(pubInfo);
+
+    MqttsnQoS qos = m_pub.m_qos;
+    auto qosVar = pubInfo->m_extraProperties.value(m_qosPropertyName);
+    if (qosVar.isValid() && qosVar.canConvert<int>()) {
+        qos = static_cast<MqttsnQoS>(qosVar.value<int>());
+    }
+
+    bool retain = m_pub.m_retain;
+    auto retainVar = pubInfo->m_extraProperties.value(m_retainPropertyName);
+    if (retainVar.isValid() && retainVar.canConvert<bool>()) {
+        retain = retainVar.value<bool>();
+    }
+
+    do {
+        auto topicId = m_pub.m_topicId;
+        auto topicIdVar = pubInfo->m_extraProperties.value(m_topicIdPropertyName);
+        if (topicIdVar.isValid() && topicIdVar.canConvert<MqttsnTopicId>()) {
+            topicId = topicIdVar.value<MqttsnTopicId>();
+        }
+
+        if (topicId == 0U) {
+            break;
+        }
+
+        auto result =
+            mqttsn_client_publish_id(
+                m_client.get(),
+                topicId,
+                &pubInfo->m_data[0],
+                pubInfo->m_data.size(),
+                qos,
+                retain,
+                &Filter::publishCompleteCb,
+                this);
+
+        if (result != MqttsnErrorCode_Success) {
+            std::cerr << "ERROR: MQTT-SN: publish operation cannot be performed" << std::endl;
+        }
+        return;
+    } while (false);
+
+    QString topic = m_pub.m_topic;
+    auto topicVar = pubInfo->m_extraProperties.value(m_topicPropertyName);
+    if (topicVar.isValid() && topicVar.canConvert<QString>()) {
+        auto topicValue = topicVar.toString();
+        if (!topicValue.isEmpty()) {
+            topic = topicValue;
+        }
+    }
+
+    if (topic.isEmpty()) {
+        std::cout << "ERROR: MQTT-SN: Cannot publish with empty topic" << std::endl;
+    }
+
+    m_topicHolder = topic.toStdString();
+    auto result =
+        mqttsn_client_publish(
+            m_client.get(),
+            m_topicHolder.c_str(),
+            &pubInfo->m_data[0],
+            pubInfo->m_data.size(),
+            qos,
+            retain,
+            &Filter::publishCompleteCb,
+            this);
+
+    if (result != MqttsnErrorCode_Success) {
+        std::cerr << "ERROR: MQTT-SN: publish operation cannot be performed" << std::endl;
+    }
+}
+
+void Filter::publishComplete(MqttsnAsyncOpStatus status)
+{
+    assert(!m_pendingPubs.isEmpty());
+
+    if (status == MqttsnAsyncOpStatus_Conjestion) {
+        doPublish();
+        return;
+    }
+
+    if (status != MqttsnAsyncOpStatus_Successful) {
+        std::cout << "ERROR: MQTT-SN: Publish has failed with status: " << (unsigned)status << std::endl;
+    }
+
+    m_pendingPubs.pop_front();
+    if (!m_pendingPubs.isEmpty()) {
+        doPublish();
+    }
+}
+
+void Filter::doConnect()
+{
+    if ((m_connected) || (m_gateways.isEmpty())) {
+        return;
+    }
+
+    std::cout << "Connecting" << std::endl;
+    assert(!m_clientId.empty());
+    auto result =
+        mqttsn_client_connect(
+            m_client.get(), m_clientId.c_str(), m_keepAlivePeriod, true, nullptr);
+
+    if (result != MqttsnErrorCode_Success) {
+        std::cerr << "ERROR: MQTT-SN: Failed to initiate connection to the GW" << std::endl;
+    }
+    std::cout << "Connection initiated" << std::endl;
+}
+
+void Filter::sendAccumulatedMessages()
+{
+    decltype(m_sendData) dataToSend;
+    dataToSend.swap(m_sendData);
+    assert(m_sendData.isEmpty());
+
+    for (auto& s : dataToSend) {
+        reportDataToSend(std::move(s));
+    }
+}
+
+void Filter::doSubscribe()
+{
+    if (m_subs.size() <= m_completedSubsCount) {
+        std::cout << "No more subscribes" << std::endl;
+        if (!m_pendingPubs.isEmpty()) {
+            std::cout << "Sending pending publishes" << std::endl;
+            doPublish();
+        }
+        return;
+    }
+
+    auto& sub = m_subs.front();
+    if (!sub.m_topic.isEmpty()) {
+        m_topicHolder = sub.m_topic.toStdString();
+        std::cout << "Subscribing to topic " << m_topicHolder << std::endl;
+        auto result =
+            mqttsn_client_subscribe(
+                m_client.get(),
+                m_topicHolder.c_str(),
+                sub.m_qos,
+                &Filter::subscribeCompleteCb,
+                this);
+
+        assert(result == MqttsnErrorCode_Success);
+        static_cast<void>(result);
+        return;
+    }
+
+    if (sub.m_topicId == 0) {
+        std::cerr << "ERROR: MQTT-SN: cannont subscribe to topic 0" << std::endl;
+        ++m_completedSubsCount;
+        doSubscribe();
+        return;
+    }
+
+    auto result =
+        mqttsn_client_subscribe_id(
+            m_client.get(),
+            sub.m_topicId,
+            sub.m_qos,
+            &Filter::subscribeCompleteCb,
+            this);
+
+    assert(result == MqttsnErrorCode_Success);
+    static_cast<void>(result);
+}
+
+void Filter::subscribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos)
+{
+    std::cout << "Subscribe complete with status " << status << std::endl;
+    static_cast<void>(qos);
+    assert(!m_subs.isEmpty());
+
+    if (status == MqttsnAsyncOpStatus_Conjestion) {
+        doSubscribe();
+        return;
+    }
+
+    if (status != MqttsnAsyncOpStatus_Successful) {
+        std::cerr << "ERROR: MQTT-SN: Subscribe has failed with status: " << (unsigned)status << std::endl;
+    }
+
+    ++m_completedSubsCount;
+    doSubscribe();
+}
+
 void Filter::reportReceivedMessage(const MqttsnMessageInfo& msgInfo)
 {
-    // TODO: process multiple messages from the same input;
     auto data = cc::makeDataInfo();
     data->m_timestamp = cc::DataInfo::TimestampClock::now();
     if ((msgInfo.msg != nullptr) && (0 < msgInfo.msgLen)) {
@@ -126,13 +384,22 @@ void Filter::sendMessage(const unsigned char* buf, unsigned bufLen, bool broadca
     auto data = cc::makeDataInfo();
     data->m_timestamp = cc::DataInfo::TimestampClock::now();
 
+    std::cout << "[" <<
+        std::chrono::duration_cast<std::chrono::milliseconds>
+            (data->m_timestamp.time_since_epoch()).count() <<
+            "] Sending message" << std::endl;
+
     data->m_data.insert(data->m_data.end(), buf, buf + bufLen);
     if (broadcast) {
         data->m_extraProperties.insert(m_broadcastPropertyName, true);
     }
 
     m_sendData.append(std::move(data));
-    // TODO: send
+    if (m_readSendInProgress) {
+        return;
+    }
+
+    sendAccumulatedMessages();
 }
 
 void Filter::programNextTick(unsigned duration)
@@ -160,14 +427,36 @@ unsigned Filter::cancelTick()
 
 void Filter::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
 {
-    static_cast<void>(gwId);
-    static_cast<void>(status);
-    // TODO
+    auto iter = std::find(m_gateways.begin(), m_gateways.end(), gwId);
+
+    if ((status == MqttsnGwStatus_TimedOut) && (iter != m_gateways.end())) {
+        m_gateways.erase(iter);
+        return;
+    }
+
+    if ((status == MqttsnGwStatus_Available) && (iter == m_gateways.end())) {
+        m_gateways.append(gwId);
+        if ((!m_connected) && (m_gateways.front() == gwId)) {
+            doConnect();
+        }
+        return;
+    }
 }
 
 void Filter::connectionStatusReport(MqttsnConnectionStatus status)
 {
-    static_cast<void>(status);
+    if (status != MqttsnConnectionStatus_Connected) {
+        std::cerr << "ERROR: MQTT-SN: Not connected to gateway: status=" << (int)status << std::endl;
+        m_connected = false;
+        doConnect();
+        return;
+    }
+
+    m_connected = true;
+    m_completedSubsCount = 0;
+
+    std::cout << "MQTT-SN: Connected, do subscribes!!!" << std::endl;
+    doSubscribe();
 }
 
 void Filter::messageArrivedCb(void* data, const MqttsnMessageInfo* msgInfo)
@@ -228,6 +517,24 @@ void Filter::connectionStatusReportCb(void* data, MqttsnConnectionStatus status)
     }
 
     reinterpret_cast<Filter*>(data)->connectionStatusReport(status);
+}
+
+void Filter::publishCompleteCb(void* data, MqttsnAsyncOpStatus status)
+{
+    if (data == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Filter*>(data)->publishComplete(status);
+}
+
+void Filter::subscribeCompleteCb(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+{
+    if (data == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Filter*>(data)->subscribeComplete(status, qos);
 }
 
 }  // namespace client_filter

@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <type_traits>
+#include <string>
 
 #include "comms/CompileControl.h"
 
@@ -51,11 +52,13 @@ public:
     struct PubSubInfo
     {
         QString m_topic;
-        int m_topicId = 0;
-        int m_qos = 0;
+        MqttsnTopicId m_topicId = 0;
+        MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
+        bool m_retain = false;
     };
 
     typedef QList<PubSubInfo> SubInfosList;
+    typedef unsigned short KeepAliveType;
 
     Filter();
     ~Filter();
@@ -75,7 +78,7 @@ public:
         return m_retryCount;
     }
 
-    int& keepAlivePeriod()
+    KeepAliveType& keepAlivePeriod()
     {
         return m_keepAlivePeriod;
     }
@@ -83,11 +86,12 @@ public:
 protected:
     virtual bool startImpl() override;
     virtual void stopImpl() override;
-    virtual DataInfoPtr recvDataImpl(DataInfoPtr dataPtr) override;
-    virtual DataInfoPtr sendDataImpl(DataInfoPtr dataPtr) override;
+    virtual QList<DataInfoPtr> recvDataImpl(DataInfoPtr dataPtr) override;
+    virtual QList<DataInfoPtr> sendDataImpl(DataInfoPtr dataPtr) override;
 
 private slots:
     void tick();
+    void startClient();
 
 private:
     struct MqttsnClientDeleter
@@ -103,6 +107,13 @@ private:
         MqttsnClientDeleter
     > ClientPtr;
 
+    void doPublish();
+    void publishComplete(MqttsnAsyncOpStatus status);
+    void doConnect();
+    void sendAccumulatedMessages();
+    void doSubscribe();
+    void subscribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos);
+
     void reportReceivedMessage(const MqttsnMessageInfo& msgInfo);
     void sendMessage(const unsigned char* buf, unsigned bufLen, bool broadcast);
     void programNextTick(unsigned duration);
@@ -116,14 +127,18 @@ private:
     static unsigned cancelTickCb(void* data);
     static void gwStatusReportCb(void* data, unsigned short gwId, MqttsnGwStatus status);
     static void connectionStatusReportCb(void* data, MqttsnConnectionStatus status);
+    static void publishCompleteCb(void* data, MqttsnAsyncOpStatus status);
+    static void subscribeCompleteCb(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
 
     ClientPtr m_client;
+    std::string m_clientId = "cc_filter";
     int m_advertisePeriod = 15 * 60;
     int m_retryPeriod = 5;
     int m_retryCount = 3;
-    int m_keepAlivePeriod = 60;
+    KeepAliveType m_keepAlivePeriod = 60;
     PubSubInfo m_pub;
     SubInfosList m_subs;
+    int m_completedSubsCount = 0;
     QString m_broadcastPropertyName = "broadcast";
     QString m_topicPropertyName = "topic";
     QString m_topicIdPropertyName = "topic_id";
@@ -131,8 +146,14 @@ private:
     QString m_retainPropertyName = "retain";
     QList<DataInfoPtr> m_readData;
     QList<DataInfoPtr> m_sendData;
+    QList<DataInfoPtr> m_pendingPubs;
+    DataInfoPtr m_input;
     QTimer m_tickTimer;
     unsigned m_tickDuration = 0;
+    bool m_readSendInProgress = false;
+    std::string m_topicHolder;
+    bool m_connected = false;
+    QList<unsigned short> m_gateways;
 };
 
 }  // namespace client_filter
