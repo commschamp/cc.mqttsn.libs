@@ -28,12 +28,14 @@ function (cc_plugin_mqttsn_client_filter)
         Plugin.cpp
         Filter.cpp
         widget/PubSubWidget.cpp
+        widget/SubListWidget.cpp
     )
     
     set (hdr
         Plugin.h
         Filter.h
         widget/PubSubWidget.h
+        widget/SubListWidget.h
     )
     
     qt5_wrap_cpp(
@@ -44,9 +46,13 @@ function (cc_plugin_mqttsn_client_filter)
     qt5_wrap_ui(
         ui
         ui/PubSubWidget.ui
+        ui/SubListElementWidget.ui
+        ui/SubListWidget.ui
     )
     
-    add_library (${name} SHARED ${src} ${moc} ${ui})
+    qt5_add_resources(resources ${CMAKE_CURRENT_SOURCE_DIR}/ui.qrc)
+    
+    add_library (${name} SHARED ${src} ${moc} ${ui} ${resources})
     target_link_libraries (${name} ${DEFAULT_CLIENT_LIB_TGT} ${CC_PLUGIN_LIBRARIES})
     qt5_use_modules(${name} Core)
     

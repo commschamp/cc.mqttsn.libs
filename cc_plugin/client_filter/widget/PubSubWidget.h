@@ -22,11 +22,10 @@
 
 CC_DISABLE_WARNINGS()
 #include <QtWidgets/QWidget>
+#include "ui_PubSubWidget.h"
 CC_ENABLE_WARNINGS()
 
 #include "Filter.h"
-#include "ui_PubSubWidget.h"
-
 
 namespace mqttsn
 {
@@ -59,7 +58,6 @@ private:
 
     PubSubInfo& m_info;
     Ui::PubSubWidget m_ui;
-    MqttsnTopicId m_oldTopicId = 0;
 };
 
 }  // namespace client_filter

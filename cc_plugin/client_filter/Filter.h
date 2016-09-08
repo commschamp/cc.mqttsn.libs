@@ -88,6 +88,12 @@ public:
         return m_pub;
     }
 
+    QList<PubSubInfo>& subInfos()
+    {
+        return m_subs;
+    }
+
+
 protected:
     virtual bool startImpl() override;
     virtual void stopImpl() override;

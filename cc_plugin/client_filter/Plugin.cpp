@@ -18,7 +18,7 @@
 
 #include "Plugin.h"
 
-#include "widget/PubSubWidget.h"
+#include "widget/SubListWidget.h"
 
 #include <iostream>
 
@@ -49,7 +49,7 @@ Plugin::Plugin()
             [this]() -> QWidget*
             {
                 createFilterIfNeeded();
-                return new PubSubWidget(m_filter->defaultPubInfo(), false);
+                return new SubListWidget(m_filter->subInfos());
 
             });
 }

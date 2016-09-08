@@ -72,6 +72,7 @@ void PubSubWidget::topicChanged(const QString& val)
 void PubSubWidget::topicIdChanged(int val)
 {
     m_info.m_topicId = static_cast<decltype(m_info.m_topicId)>(val);
+    refresh();
 }
 
 void PubSubWidget::qosChanged(int val)
@@ -87,19 +88,19 @@ void PubSubWidget::retainChanged(int val)
 void PubSubWidget::refresh()
 {
     if (!m_info.m_topic.isEmpty()) {
+        m_ui.m_topicWidget->show();
         m_ui.m_topicIdWidget->hide();
-        if (m_info.m_topicId != 0) {
-            m_oldTopicId = m_info.m_topicId;
-            m_info.m_topicId = 0;
-        }
+        m_info.m_topicId = 0;
+        return;
+    }
+
+    m_ui.m_topicIdWidget->show();
+
+    if (m_info.m_topicId != 0) {
+        m_ui.m_topicWidget->hide();
     }
     else {
-        m_ui.m_topicIdWidget->show();
-        if (m_oldTopicId != 0) {
-            m_info.m_topicId = m_oldTopicId;
-            m_oldTopicId = 0;
-            m_ui.m_topicIdSpinBox->setValue(m_info.m_topicId);
-        }
+        m_ui.m_topicWidget->show();
     }
 }
 
