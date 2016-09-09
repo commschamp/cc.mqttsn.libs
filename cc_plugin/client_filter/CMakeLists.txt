@@ -29,6 +29,7 @@ function (cc_plugin_mqttsn_client_filter)
         Filter.cpp
         widget/PubSubWidget.cpp
         widget/SubListWidget.cpp
+        widget/FilterConfigWidget.cpp
     )
     
     set (hdr
@@ -36,6 +37,7 @@ function (cc_plugin_mqttsn_client_filter)
         Filter.h
         widget/PubSubWidget.h
         widget/SubListWidget.h
+        widget/FilterConfigWidget.h
     )
     
     qt5_wrap_cpp(
@@ -48,6 +50,7 @@ function (cc_plugin_mqttsn_client_filter)
         ui/PubSubWidget.ui
         ui/SubListElementWidget.ui
         ui/SubListWidget.ui
+        ui/FilterConfigWidget.ui
     )
     
     qt5_add_resources(resources ${CMAKE_CURRENT_SOURCE_DIR}/ui.qrc)

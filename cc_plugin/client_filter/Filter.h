@@ -63,6 +63,11 @@ public:
     Filter();
     ~Filter();
 
+    std::string& clientId()
+    {
+        return m_clientId;
+    }
+
     int& advertisePeriod()
     {
         return m_advertisePeriod;
