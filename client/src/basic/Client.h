@@ -2295,6 +2295,13 @@ private:
             op->m_msgId = allocMsgId();
         }
 
+        if ((!firstAttempt) &&
+            (op->m_ackReceived) &&
+            (MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
+            sendPubrel(op->m_msgId);
+            return true;
+        }
+
         sendPublish(
             op->m_topicId,
             op->m_msgId,
@@ -2304,6 +2311,11 @@ private:
             details::translateQosValue(op->m_qos),
             op->m_retain,
             !firstAttempt);
+
+        if (op->m_qos <= MqttsnQoS_AtMostOnceDelivery) {
+            finalisePublishOp(MqttsnAsyncOpStatus_Successful);
+        }
+
         return true;
     }
 
@@ -2349,6 +2361,14 @@ private:
         }
 
         assert(op->m_registered);
+
+        if ((!firstAttempt) &&
+            (op->m_ackReceived) &&
+            (MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
+            sendPubrel(op->m_msgId);
+            return true;
+        }
+
         sendPublish(
             op->m_topicId,
             op->m_msgId,

@@ -1925,20 +1925,12 @@ void ClientBasic::test15()
     auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
     client->tick(nextTicks);
-    auto msgId2 = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, true);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-    TS_ASSERT_EQUALS(msgId, msgId2);
-    TS_ASSERT(state.m_reportedPublishes.empty());
-
-    clearState(state);
-    state.m_nextElapsedTicks = 1000;
-    pubrecMsg = dataProc.preparePubrecMsg(msgId);
-    dataFromGw(*client, pubrecMsg, "PUBREC");
     verifySent_PubrelMsg(state, dataProc, msgId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
 
     clearState(state);
+    state.m_nextElapsedTicks = 1000;
     auto pubcompMsg = dataProc.preparePubcompMsg(msgId);
     dataFromGw(*client, pubcompMsg, "PUBCOMP");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
