@@ -46,6 +46,7 @@ public:
     void setGatewayId(std::uint8_t value);
     bool start();
     void stop();
+    void tick();
 
 private:
     std::unique_ptr<GatewayImpl> m_pImpl;

@@ -62,6 +62,10 @@ void Gateway::stop()
     m_pImpl->stop();
 }
 
+void Gateway::tick()
+{
+    m_pImpl->tick();
+}
 
 }  // namespace gateway
 
