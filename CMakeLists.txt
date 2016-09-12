@@ -59,5 +59,6 @@ set (DEFAULT_CLIENT_LIB_TGT "mqttsn_client")
 
 add_subdirectory(protocol)
 add_subdirectory(client)
+add_subdirectory(gateway)
 add_subdirectory(cc_plugin)
 

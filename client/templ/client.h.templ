@@ -24,55 +24,55 @@
 extern "C" {
 #endif // #ifdef __cplusplus
 
-MqttsnClientHandle mqttsn_##NAME##client_new();
-void mqttsn_##NAME##client_free(MqttsnClientHandle client);
-void mqttsn_##NAME##client_set_next_tick_program_callback(
+MqttsnClientHandle MQTTSN_CLIENT_API mqttsn_##NAME##client_new();
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_free(MqttsnClientHandle client);
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_next_tick_program_callback(
     MqttsnClientHandle client,
     MqttsnNextTickProgramFn fn,
     void* data);
-void mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
     MqttsnClientHandle client,
     MqttsnCancelNextTickWaitFn fn,
     void* data);
-void mqttsn_##NAME##client_set_send_output_data_callback(
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_send_output_data_callback(
     MqttsnClientHandle client,
     MqttsnSendOutputDataFn fn,
     void* data);
-void mqttsn_##NAME##client_set_gw_status_report_callback(
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_gw_status_report_callback(
     MqttsnClientHandle client,
     MqttsnGwStatusReportFn fn,
     void* data);
-void mqttsn_##NAME##client_set_connection_status_report_callback(
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_connection_status_report_callback(
     MqttsnClientHandle client,
     MqttsnConnectionStatusReportFn fn,
     void* data);
 
-void mqttsn_##NAME##client_set_message_report_callback(
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_message_report_callback(
     MqttsnClientHandle client,
     MqttsnMessageReportFn fn,
     void* data);
     
-MqttsnErrorCode mqttsn_##NAME##client_start(MqttsnClientHandle client);
-MqttsnErrorCode mqttsn_##NAME##client_stop(MqttsnClientHandle client);
-unsigned mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const unsigned char* from, unsigned len);
-void mqttsn_##NAME##client_tick(MqttsnClientHandle client, unsigned ms);
-void mqttsn_##NAME##client_set_gw_advertise_period(MqttsnClientHandle client, unsigned value);
-void mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value);
-void mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned value);
-void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsigned char value);
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_start(MqttsnClientHandle client);
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_stop(MqttsnClientHandle client);
+unsigned MQTTSN_CLIENT_API mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const unsigned char* from, unsigned len);
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_tick(MqttsnClientHandle client, unsigned ms);
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_gw_advertise_period(MqttsnClientHandle client, unsigned value);
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value);
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned value);
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsigned char value);
 
-bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
+bool MQTTSN_CLIENT_API mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 
-MqttsnErrorCode mqttsn_##NAME##client_connect(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_connect(
     MqttsnClientHandle client,
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
     const MqttsnWillInfo* willInfo);
 
-MqttsnErrorCode mqttsn_##NAME##client_disconnect(MqttsnClientHandle client);
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_disconnect(MqttsnClientHandle client);
 
-MqttsnErrorCode mqttsn_##NAME##client_publish_id(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_publish_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
     const unsigned char* msg,
@@ -83,7 +83,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_publish(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_publish(
     MqttsnClientHandle client,
     const char* topic,
     const unsigned char* msg,
@@ -94,7 +94,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_subscribe_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
     MqttsnQoS qos,
@@ -102,7 +102,7 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_subscribe(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_subscribe(
     MqttsnClientHandle client,
     const char* topic,
     MqttsnQoS qos,
@@ -110,35 +110,35 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe(
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_unsubscribe_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
     MqttsnUnsubscribeCompleteReportFn callback,
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_unsubscribe(
     MqttsnClientHandle client,
     const char* topic,
     MqttsnUnsubscribeCompleteReportFn callback,
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_will_update(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_update(
     MqttsnClientHandle client,
     const MqttsnWillInfo* willInfo,
     MqttsnWillUpdateCompleteReportFn callback,
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_sleep(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_sleep(
     MqttsnClientHandle client,
     unsigned short duration,
     MqttsnSleepCompleteReportFn callback,
     void* data
 );
 
-MqttsnErrorCode mqttsn_##NAME##client_check_messages(
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_check_messages(
     MqttsnClientHandle client,
     const char* clientId,
     MqttsnCheckMessagesCompleteReportFn callback,

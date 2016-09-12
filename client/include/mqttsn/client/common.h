@@ -119,6 +119,19 @@ typedef void (*MqttsnSleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus stat
 typedef void (*MqttsnCheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnMessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
 
+#ifdef WIN32
+
+#ifdef MQTTSN_CLIENT_LIB_EXPORT
+#define MQTTSN_CLIENT_API __declspec(dllexport)
+#else // #ifdef MQTTSN_GATEWAY_LIB_EXPORT
+#define MQTTSN_CLIENT_API __declspec(dllimport)
+#endif // #ifdef MQTTSN_GATEWAY_LIB_EXPORT
+
+#else // #ifdef WIN32
+#define MQTTSN_CLIENT_API
+#endif // #ifdef WIN32
+
+
 #ifdef __cplusplus
 }
 #endif
