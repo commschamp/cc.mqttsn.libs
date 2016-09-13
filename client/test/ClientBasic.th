@@ -2517,7 +2517,7 @@ void ClientBasic::test25()
     publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);
-    TS_ASSERT(state.m_reportedMsgs.empty()); // Duplicated mustn't be reported
+    verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain); // Duplicate is reported for Qos 1
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
@@ -2586,7 +2586,8 @@ void ClientBasic::test26()
     pubrelMsg = dataProc.preparePubrelMsg(expectedMsgId);
     dataFromGw(*client, pubrelMsg, "PUBREL");
     verifySent_PubcompMsg(state, dataProc, expectedMsgId);
-    TS_ASSERT(state.m_reportedMsgs.empty()); // Duplicate not reported
+    // Although marked as duplicate, it is considered to be a new message
+    verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
 
     clearState(state);
     ++expectedMsgId;

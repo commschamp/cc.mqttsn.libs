@@ -1220,10 +1220,6 @@ public:
                 return;
             }
 
-            if (m_lastInMsg.m_topicId != MqttsnTopicId()) {
-                m_lastInMsg = LastInMsgInfo();
-            }
-
             reportMsgFunc(topicName);
             return;
         }
@@ -1235,34 +1231,29 @@ public:
             return;
         }
 
+        if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
+            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
+            reportMsgFunc(topicName);
+            return;
+        }
+
+        GASSERT(qosField.value() == mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
+
         bool newMessage =
             ((!dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup)) ||
              (topicIdField.value() != m_lastInMsg.m_topicId) ||
              (msgIdField.value() != m_lastInMsg.m_msgId) ||
-             (!m_lastInMsg.m_reported));
+             (m_lastInMsg.m_reported));
 
         if (newMessage) {
             m_lastInMsg = LastInMsgInfo();
 
             m_lastInMsg.m_topicId = topicIdField.value();
             m_lastInMsg.m_msgId = msgIdField.value();
-            m_lastInMsg.m_qos = details::translateQosValue(qosField.value());
             m_lastInMsg.m_retain =
                 midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
         }
 
-        if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
-            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
-
-            if (!m_lastInMsg.m_reported) {
-                m_lastInMsg.m_reported = true;
-                reportMsgFunc(topicName);
-            }
-
-            return;
-        }
-
-        GASSERT(qosField.value() == mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
         m_lastInMsg.m_msgData = dataField.value();
 
         PubrecMsg recMsg;
@@ -1355,8 +1346,7 @@ public:
         auto& fields = msg.fields();
         auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
 
-        if ((m_lastInMsg.m_msgId != msgIdField.value()) ||
-            (m_lastInMsg.m_qos != MqttsnQoS_ExactlyOnceDelivery)) {
+        if (m_lastInMsg.m_msgId != msgIdField.value()) {
             m_lastInMsg = LastInMsgInfo();
             return;
         }
@@ -1384,7 +1374,7 @@ public:
             msgInfo.topicId = m_lastInMsg.m_topicId;
             msgInfo.msg = &(*m_lastInMsg.m_msgData.begin());
             msgInfo.msgLen = m_lastInMsg.m_msgData.size();
-            msgInfo.qos = m_lastInMsg.m_qos;
+            msgInfo.qos = MqttsnQoS_ExactlyOnceDelivery;
             msgInfo.retain = m_lastInMsg.m_retain;
 
             m_lastInMsg.m_reported = true;
@@ -1653,7 +1643,6 @@ private:
         DataType m_msgData;
         MqttsnTopicId m_topicId = 0;
         std::uint16_t m_msgId = 0;
-        MqttsnQoS m_qos = MqttsnQoS_NoGwPublish;
         bool m_retain = false;
         bool m_reported = false;
     };
