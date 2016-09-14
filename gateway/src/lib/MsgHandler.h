@@ -16,8 +16,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "mqttsn/gateway/Session.h"
-#include "SessionImpl.h"
+#pragma once
+
+#include "comms/comms.h"
+#include "mqttsn/protocol/AllMessages.h"
+#include "mqtt/AllMessages.h"
+#include "messages.h"
 
 namespace mqttsn
 {
@@ -25,49 +29,31 @@ namespace mqttsn
 namespace gateway
 {
 
-Session::Session()
-  : m_pImpl(new SessionImpl)
-{
-}
+template<typename TMsgBase>
+using MqttsnMsgHandler = comms::GenericHandler<
+    TMsgBase,
+    mqttsn::protocol::AllMessages<TMsgBase>
+>;
 
-Session::~Session() = default;
+template<typename TMsgBase>
+using MqttMsgHandler = comms::GenericHandler<
+    TMsgBase,
+    mqtt::AllMessages<TMsgBase>
+>;
 
-void Session::setNextTickProgramReqCb(NextTickProgramReqCb&& func)
+class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler<MqttMessage>
 {
-    m_pImpl->setNextTickProgramReqCb(std::move(func));
-}
+    typedef MqttsnMsgHandler<MqttsnMessage> MqttsnBase;
+    typedef MqttMsgHandler<MqttMessage> MqttBase;
 
-void Session::setSendDataClientReqCb(SendDataReqCb& func)
-{
-    m_pImpl->setSendDataClientReqCb(std::move(func));
-}
+public:
+    using MqttsnBase::handle;
+    using MqttBase::handle;
+};
 
-void Session::setSendDataBrokerReqCb(SendDataReqCb&& func)
-{
-    m_pImpl->setSendDataBrokerReqCb(std::move(func));
-}
-
-void Session::setGatewayId(std::uint8_t value)
-{
-    m_pImpl->setGatewayId(value);
-}
-
-bool Session::start()
-{
-    return m_pImpl->start();
-}
-
-void Session::stop()
-{
-    m_pImpl->stop();
-}
-
-void Session::tick(unsigned ms)
-{
-    m_pImpl->tick(ms);
-}
 
 }  // namespace gateway
 
 }  // namespace mqttsn
+
 

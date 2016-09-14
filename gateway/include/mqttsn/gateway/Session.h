@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include <memory>
+#include <functional>
+#include <cstdint>
+
 #include "mqttsn/gateway/Api.h"
 
 namespace mqttsn
@@ -26,12 +30,30 @@ namespace mqttsn
 namespace gateway
 {
 
+class SessionImpl;
 class MQTTSN_GATEWAY_API Session
 {
 public:
 
+    typedef std::function<void (unsigned value)> NextTickProgramReqCb;
+    typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
+
+
     Session();
     ~Session();
+
+    void setNextTickProgramReqCb(NextTickProgramReqCb&& func);
+    void setSendDataClientReqCb(SendDataReqCb& func);
+    void setSendDataBrokerReqCb(SendDataReqCb&& func);
+    void setGatewayId(std::uint8_t value);
+
+    bool start();
+    void stop();
+    void tick(unsigned ms);
+
+
+private:
+    std::unique_ptr<SessionImpl> m_pImpl;
 };
 
 }  // namespace gateway

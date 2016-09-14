@@ -16,8 +16,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "mqttsn/gateway/Session.h"
-#include "SessionImpl.h"
+#pragma once
+
+#include "SessionOp.h"
+#include "common.h"
 
 namespace mqttsn
 {
@@ -25,49 +27,44 @@ namespace mqttsn
 namespace gateway
 {
 
-Session::Session()
-  : m_pImpl(new SessionImpl)
+namespace session_op
 {
-}
 
-Session::~Session() = default;
-
-void Session::setNextTickProgramReqCb(NextTickProgramReqCb&& func)
+class Connect : public SessionOp
 {
-    m_pImpl->setNextTickProgramReqCb(std::move(func));
-}
+    typedef SessionOp Base;
 
-void Session::setSendDataClientReqCb(SendDataReqCb& func)
-{
-    m_pImpl->setSendDataClientReqCb(std::move(func));
-}
+public:
+    Connect(ConnectionInfo& info)
+      : m_info(info)
+    {
+    }
 
-void Session::setSendDataBrokerReqCb(SendDataReqCb&& func)
-{
-    m_pImpl->setSendDataBrokerReqCb(std::move(func));
-}
+protected:
+    virtual void tickImpl() override;
+    virtual Type typeImpl() const override;
 
-void Session::setGatewayId(std::uint8_t value)
-{
-    m_pImpl->setGatewayId(value);
-}
+private:
+    struct State
+    {
+        bool m_hasClientId = false;
+        bool m_hasWillTopic = false;
+        bool m_hasWillMsg = false;
+    };
 
-bool Session::start()
-{
-    return m_pImpl->start();
-}
+    using Base::handle;
+    virtual void handle(ConnectMsg_SN& msg) override;
 
-void Session::stop()
-{
-    m_pImpl->stop();
-}
+    void forwardConnectionReq();
 
-void Session::tick(unsigned ms)
-{
-    m_pImpl->tick(ms);
-}
+    ConnectionInfo& m_info;
+    State m_state;
+};
+
+}  // namespace session_op
 
 }  // namespace gateway
 
 }  // namespace mqttsn
+
 

@@ -5,6 +5,8 @@ function (lib_mqttsn_gateway)
         Gateway.cpp
         GatewayImpl.cpp
         Session.cpp
+        SessionImpl.cpp
+        session_op/Connect.cpp
     )    
     
     add_library (${name} STATIC ${src})
@@ -20,6 +22,10 @@ endfunction()
 
 add_definitions(
     -DMQTTSN_GATEWAY_LIB_EXPORT
+)
+
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 lib_mqttsn_gateway ()
