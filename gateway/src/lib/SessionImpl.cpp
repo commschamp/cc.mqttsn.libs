@@ -90,12 +90,10 @@ void SessionImpl::sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& fun
 }
 
 template <typename TMsg>
-void SessionImpl::dispatchToOpCommon(SessionOp::Type type, TMsg& msg)
+void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 {
     for (auto& op : m_ops) {
-        if (op->type() == type) {
-            msg.dispatch(*op);
-        }
+        msg.dispatch(*op);
     }
 }
 
@@ -132,34 +130,24 @@ void SessionImpl::handle(SearchgwMsg_SN& msg)
 
 void SessionImpl::handle(ConnectMsg_SN& msg)
 {
-    SessionOp* op = nullptr;
-    auto iter = findOp(SessionOp::Type::Connect);
-    if (iter != m_ops.end()) {
-        op = iter->get();
-    }
-    else {
-        m_ops.emplace_back(new session_op::Connect(m_connInfo));
-        op = m_ops.back().get();
+    if (m_connStatus != ConnectionStatus::Connecting) {
+        std::unique_ptr<session_op::Connect> op(new session_op::Connect(m_clientId, m_connStatus));
+        op->setAuth(m_username, m_password);
         startOp(*op);
+        m_ops.push_back(std::move(op));
     }
 
-    assert(!op->isComplete());
-    msg.dispatch(*op);
+    dispatchToOps(msg);
 }
 
-void SessionImpl::handle(WilltopicMsg_SN& msg)
+void SessionImpl::handle(MqttsnMessage& msg)
 {
-    dispatchToOp(SessionOp::Type::Connect, msg);
+    dispatchToOps(msg);
 }
 
-void SessionImpl::handle(WillmsgMsg_SN& msg)
+void SessionImpl::handle(MqttMessage& msg)
 {
-    dispatchToOp(SessionOp::Type::Connect, msg);
-}
-
-void SessionImpl::handle(ConnackMsg& msg)
-{
-    dispatchToOp(SessionOp::Type::Connect, msg);
+    dispatchToOps(msg);
 }
 
 void SessionImpl::sendToClient(const MqttsnMessage& msg)
@@ -193,16 +181,15 @@ SessionImpl::OpsList::iterator SessionImpl::findOp(SessionOp::Type type)
             });
 }
 
-void SessionImpl::dispatchToOp(SessionOp::Type type, MqttsnMessage& msg)
+void SessionImpl::dispatchToOps(MqttsnMessage& msg)
 {
-    dispatchToOpCommon(type, msg);
+    dispatchToOpsCommon(msg);
 }
 
-void SessionImpl::dispatchToOp(SessionOp::Type type, MqttMessage& msg)
+void SessionImpl::dispatchToOps(MqttMessage& msg)
 {
-    dispatchToOpCommon(type, msg);
+    dispatchToOpsCommon(msg);
 }
-
 
 void SessionImpl::cleanCompleteOps()
 {

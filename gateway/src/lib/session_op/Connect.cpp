@@ -38,6 +38,7 @@ Connect::Type Connect::typeImpl() const
 
 void Connect::handle(ConnectMsg_SN& msg)
 {
+    m_status = ConnectionStatus::Connecting;
     typedef ConnectMsg_SN MsgType;
     auto& fields = msg.fields();
     auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
@@ -67,6 +68,7 @@ void Connect::handle(ConnectMsg_SN& msg)
 
 void Connect::handle(WilltopicMsg_SN& msg)
 {
+    assert(m_status == ConnectionStatus::Connecting);
     if ((!m_state.m_hasClientId) || (m_state.m_hasWillMsg)) {
         return;
     }
@@ -90,6 +92,7 @@ void Connect::handle(WilltopicMsg_SN& msg)
 
 void Connect::handle(WillmsgMsg_SN& msg)
 {
+    assert(m_status == ConnectionStatus::Connecting);
     if (!m_state.m_hasWillMsg) {
         return;
     }
@@ -109,6 +112,7 @@ void Connect::handle(WillmsgMsg_SN& msg)
 
 void Connect::handle(ConnackMsg& msg)
 {
+    assert(m_status == ConnectionStatus::Connecting);
     if (!m_state.m_hasWillMsg) {
         return;
     }
@@ -144,7 +148,9 @@ void Connect::handle(ConnackMsg& msg)
     respRetCodeField.value() = retCode;
     sendToClient(respMsg);
 
-    // TODO: update state to connected
+    m_clientId = m_info.m_clientId;
+    m_status = ConnectionStatus::Connected;
+    setComplete();
 }
 
 void Connect::doNextStep()
@@ -152,7 +158,8 @@ void Connect::doNextStep()
     cancelTick();
 
     if (m_state.m_attempt <= retryCount()) {
-        // TODO: report disconnected and complete op
+        m_clientId.clear();
+        m_status = ConnectionStatus::Disconnected;
         return;
     }
 
@@ -206,13 +213,13 @@ void Connect::forwardConnectionReq()
         highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain, m_info.m_will.m_retain);
     }
 
-    if (!m_info.m_username.empty()) {
+    if (!m_username.empty()) {
         auto& usernameField = std::get<decltype(msg)::FieldIdx_UserName>(fields);
-        usernameField.field().value() = m_info.m_username;
+        usernameField.field().value() = m_username;
 
-        if (!m_info.m_password.empty()) {
+        if (!m_password.empty()) {
             auto& passwordField = std::get<decltype(msg)::FieldIdx_Password>(fields);
-            passwordField.field().value() = m_info.m_password;
+            passwordField.field().value() = m_password;
         }
     }
 

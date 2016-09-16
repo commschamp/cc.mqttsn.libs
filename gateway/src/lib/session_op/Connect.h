@@ -35,9 +35,16 @@ class Connect : public SessionOp
     typedef SessionOp Base;
 
 public:
-    Connect(ConnectionInfo& info)
-      : m_info(info)
+    Connect(std::string& clientId, ConnectionStatus& status)
+      : m_clientId(clientId),
+        m_status(status)
     {
+    }
+
+    void setAuth(const std::string& username, const DataBuf& password)
+    {
+        m_username = username;
+        m_password = password;
     }
 
 protected:
@@ -62,7 +69,11 @@ private:
     void doNextStep();
     void forwardConnectionReq();
 
-    ConnectionInfo& m_info;
+    std::string& m_clientId;
+    ConnectionStatus& m_status;
+    std::string m_username;
+    DataBuf m_password;
+    ConnectionInfo m_info;
     State m_state;
     unsigned m_attempt = 0;
 };

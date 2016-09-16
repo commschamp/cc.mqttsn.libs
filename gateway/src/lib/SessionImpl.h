@@ -69,14 +69,14 @@ public:
 
     void setAuthInfo(const std::string& username, const std::uint8_t* password, std::size_t passLen)
     {
-        m_connInfo.m_username = username;
-        m_connInfo.m_password.assign(password, password + passLen);
+        m_username = username;
+        m_password.assign(password, password + passLen);
     }
 
     void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen)
     {
-        m_connInfo.m_username = username;
-        m_connInfo.m_password.assign(password, password + passLen);
+        m_username = username;
+        m_password.assign(password, password + passLen);
     }
 
     bool start()
@@ -108,10 +108,9 @@ private:
     using Base::handle;
     virtual void handle(SearchgwMsg_SN& msg) override;
     virtual void handle(ConnectMsg_SN& msg) override;
-    virtual void handle(WilltopicMsg_SN& msg) override;
-    virtual void handle(WillmsgMsg_SN& msg) override;
+    virtual void handle(MqttsnMessage& msg) override;
 
-    virtual void handle(ConnackMsg& msg) override;
+    virtual void handle(MqttMessage& msg) override;
 
     template <typename TStack>
     std::size_t processInputData(const std::uint8_t* buf, std::size_t len, TStack& stack);
@@ -120,14 +119,14 @@ private:
     void sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& func, DataBuf& buf);
 
     template <typename TMsg>
-    void dispatchToOpCommon(SessionOp::Type type, TMsg& msg);
+    void dispatchToOpsCommon(TMsg& msg);
 
     void sendToClient(const MqttsnMessage& msg);
     void sendToBroker(const MqttMessage& msg);
     void startOp(SessionOp& op);
     OpsList::iterator findOp(SessionOp::Type type);
-    void dispatchToOp(SessionOp::Type type, MqttsnMessage& msg);
-    void dispatchToOp(SessionOp::Type type, MqttMessage& msg);
+    void dispatchToOps(MqttsnMessage& msg);
+    void dispatchToOps(MqttMessage& msg);
     void cleanCompleteOps();
 
     NextTickProgramReqCb m_nextTickProgramCb;
@@ -136,9 +135,12 @@ private:
     std::uint8_t m_gwId = 0U;
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
+    std::string m_username;
+    DataBuf m_password;
     bool m_running = false;
-    ConnectionInfo m_connInfo;
     Timestamp m_timestamp = 0U;
+    std::string m_clientId;
+    ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
 
     MqttsnProtStack m_mqttsnStack;
     MqttProtStack m_mqttStack;

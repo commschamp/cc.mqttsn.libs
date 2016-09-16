@@ -61,7 +61,9 @@ public:
     void updateTimestamp(Timestamp val)
     {
         m_timestamp = val;
-        if ((m_nextTickTimestamp != 0) && (m_nextTickTimestamp <= m_timestamp)) {
+        if ((m_nextTickTimestamp != 0) &&
+            (m_nextTickTimestamp <= m_timestamp) &&
+            (!isComplete())) {
             m_nextTickTimestamp = 0;
             tickImpl();
         }
@@ -69,7 +71,7 @@ public:
 
     unsigned nextTick()
     {
-        if (m_nextTickTimestamp == 0) {
+        if ((m_nextTickTimestamp == 0) || (isComplete())) {
             return std::numeric_limits<unsigned>::max();
         }
 

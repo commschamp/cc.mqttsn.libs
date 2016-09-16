@@ -76,13 +76,18 @@ struct WillInfo
 struct ConnectionInfo
 {
     std::string m_clientId;
-    std::string m_username;
-    DataBuf m_password;
     WillInfo m_will;
     std::uint16_t m_keepAlive = 0U;
     bool m_clean = false;
 };
 
+enum class ConnectionStatus
+{
+    Disconnected,
+    Connecting,
+    Connected,
+    Asleep
+};
 
 }  // namespace gateway
 
