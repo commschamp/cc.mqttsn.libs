@@ -47,6 +47,7 @@ protected:
 private:
     struct State
     {
+        unsigned m_attempt = 0;
         bool m_hasClientId = false;
         bool m_hasWillTopic = false;
         bool m_hasWillMsg = false;
@@ -54,11 +55,16 @@ private:
 
     using Base::handle;
     virtual void handle(ConnectMsg_SN& msg) override;
+    virtual void handle(WilltopicMsg_SN& msg) override;
+    virtual void handle(WillmsgMsg_SN& msg) override;
+    virtual void handle(ConnackMsg& msg) override;
 
+    void doNextStep();
     void forwardConnectionReq();
 
     ConnectionInfo& m_info;
     State m_state;
+    unsigned m_attempt = 0;
 };
 
 }  // namespace session_op

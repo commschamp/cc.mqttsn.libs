@@ -89,13 +89,23 @@ void SessionImpl::sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& fun
     func(&buf[0], writtenCount);
 }
 
+template <typename TMsg>
+void SessionImpl::dispatchToOpCommon(SessionOp::Type type, TMsg& msg)
+{
+    for (auto& op : m_ops) {
+        if (op->type() == type) {
+            msg.dispatch(*op);
+        }
+    }
+}
 
 void SessionImpl::tick(unsigned ms)
 {
     static_cast<void>(ms);
+    m_timestamp += ms;
     // TODO
     for (auto& op : m_ops) {
-        op->tick(ms);
+        op->updateTimestamp(m_timestamp);
     }
     cleanCompleteOps();
 }
@@ -137,6 +147,21 @@ void SessionImpl::handle(ConnectMsg_SN& msg)
     msg.dispatch(*op);
 }
 
+void SessionImpl::handle(WilltopicMsg_SN& msg)
+{
+    dispatchToOp(SessionOp::Type::Connect, msg);
+}
+
+void SessionImpl::handle(WillmsgMsg_SN& msg)
+{
+    dispatchToOp(SessionOp::Type::Connect, msg);
+}
+
+void SessionImpl::handle(ConnackMsg& msg)
+{
+    dispatchToOp(SessionOp::Type::Connect, msg);
+}
+
 void SessionImpl::sendToClient(const MqttsnMessage& msg)
 {
     sendMessage(msg, m_mqttsnStack, m_sendToClientCb, m_mqttsnMsgData);
@@ -153,6 +178,7 @@ void SessionImpl::startOp(SessionOp& op)
     op.setSendToBrokerCb(std::bind(&SessionImpl::sendToBroker, this, std::placeholders::_1));
     op.setRetryPeriod(m_retryPeriod);
     op.setRetryCount(m_retryCount);
+    op.updateTimestamp(m_timestamp);
     op.start();
 }
 
@@ -166,6 +192,17 @@ SessionImpl::OpsList::iterator SessionImpl::findOp(SessionOp::Type type)
                 return elem->type() == type;
             });
 }
+
+void SessionImpl::dispatchToOp(SessionOp::Type type, MqttsnMessage& msg)
+{
+    dispatchToOpCommon(type, msg);
+}
+
+void SessionImpl::dispatchToOp(SessionOp::Type type, MqttMessage& msg)
+{
+    dispatchToOpCommon(type, msg);
+}
+
 
 void SessionImpl::cleanCompleteOps()
 {

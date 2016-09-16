@@ -42,6 +42,7 @@ public:
 
     typedef std::function<void (const MqttsnMessage&)> SendToClientCb;
     typedef std::function<void (const MqttMessage&)> SendToBrokerCb;
+    typedef unsigned long long Timestamp;
 
     virtual ~SessionOp() = default;
 
@@ -57,16 +58,25 @@ public:
         m_sendToBrokerFunc = std::forward<TFunc>(func);
     }
 
-    void tick(unsigned ms)
+    void updateTimestamp(Timestamp val)
     {
-        m_timestamp += ms;
+        m_timestamp = val;
         if ((m_nextTickTimestamp != 0) && (m_nextTickTimestamp <= m_timestamp)) {
+            m_nextTickTimestamp = 0;
             tickImpl();
         }
     }
 
     unsigned nextTick()
     {
+        if (m_nextTickTimestamp == 0) {
+            return std::numeric_limits<unsigned>::max();
+        }
+
+        if (m_nextTickTimestamp <= m_timestamp) {
+            return 1U;
+        }
+
         return m_nextTickTimestamp - m_timestamp;
     }
 
@@ -114,6 +124,11 @@ protected:
         m_nextTickTimestamp = m_timestamp + ms;
     }
 
+    void cancelTick()
+    {
+        m_nextTickTimestamp = 0;
+    }
+
     void setComplete()
     {
         m_complete = true;
@@ -136,8 +151,8 @@ protected:
 private:
     SendToClientCb m_sendToClientFunc;
     SendToBrokerCb m_sendToBrokerFunc;
-    unsigned m_timestamp = 0;
-    unsigned m_nextTickTimestamp = 0;
+    Timestamp m_timestamp = 0;
+    Timestamp m_nextTickTimestamp = 0;
     unsigned m_retryPeriod = 0;
     unsigned m_retryCount = 0;
     bool m_complete = false;

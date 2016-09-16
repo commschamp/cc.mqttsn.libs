@@ -28,7 +28,7 @@ namespace session_op
 
 void Connect::tickImpl()
 {
-    // TODO
+    doNextStep();
 }
 
 Connect::Type Connect::typeImpl() const
@@ -58,12 +58,125 @@ void Connect::handle(ConnectMsg_SN& msg)
     m_info.m_will = WillInfo();
 
     if (!midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_will)) {
-        forwardConnectionReq();
+        m_state.m_hasWillTopic = true;
+        m_state.m_hasWillMsg = true;
+    }
+
+    doNextStep();
+}
+
+void Connect::handle(WilltopicMsg_SN& msg)
+{
+    if ((!m_state.m_hasClientId) || (m_state.m_hasWillMsg)) {
         return;
     }
 
-    sendToClient(WilltopicreqMsg_SN());
-    // TODO: req tick
+    m_state.m_hasWillTopic = true;
+    m_state.m_attempt = 0;
+
+    typedef WilltopicMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+    auto& willTopicField = std::get<MsgType::FieldIdx_willTopic>(fields);
+
+    m_info.m_will.m_topic = willTopicField.value();
+    m_info.m_will.m_qos = translateQos(qosField.value());
+    m_info.m_will.m_retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+    doNextStep();
+}
+
+void Connect::handle(WillmsgMsg_SN& msg)
+{
+    if (!m_state.m_hasWillMsg) {
+        return;
+    }
+
+    assert(m_state.m_hasClientId);
+
+    m_state.m_hasWillMsg = true;
+    m_state.m_attempt = 0;
+
+    typedef WillmsgMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& willMsgField = std::get<MsgType::FieldIdx_willMsg>(fields);
+
+    m_info.m_will.m_msg = willMsgField.value();
+    doNextStep();
+}
+
+void Connect::handle(ConnackMsg& msg)
+{
+    if (!m_state.m_hasWillMsg) {
+        return;
+    }
+
+    static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
+        /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
+        /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
+        /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
+        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Conjestion,
+        /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
+        /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
+    };
+
+    static const std::size_t RetCodeMapSize =
+                        std::extent<decltype(RetCodeMap)>::value;
+
+    static_assert(RetCodeMapSize == (std::size_t)mqtt::message::ConnackResponseCode::NumOfValues,
+        "Incorrect map");
+
+    typedef ConnackMsg MsgType;
+    auto& fields = msg.fields();
+    auto& responseField = std::get<MsgType::FieldIdx_Response>(fields);
+    auto responseVal = responseField.value();
+
+    auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
+    if (static_cast<std::size_t>(responseVal) < RetCodeMapSize) {
+        retCode = RetCodeMap[static_cast<std::size_t>(responseVal)];
+    }
+
+    ConnackMsg_SN respMsg;
+    auto& respFields = respMsg.fields();
+    auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
+    respRetCodeField.value() = retCode;
+    sendToClient(respMsg);
+
+    // TODO: update state to connected
+}
+
+void Connect::doNextStep()
+{
+    cancelTick();
+
+    if (m_state.m_attempt <= retryCount()) {
+        // TODO: report disconnected and complete op
+        return;
+    }
+
+    ++m_state.m_attempt;
+
+    if (m_state.m_hasWillMsg) {
+        assert(m_state.m_hasWillTopic);
+        assert(m_state.m_hasWillMsg);
+        assert(m_state.m_hasClientId);
+        forwardConnectionReq();
+        nextTickReq(retryPeriod());
+        return;
+    }
+
+    if (m_state.m_hasWillTopic) {
+        assert(m_state.m_hasClientId);
+        sendToClient(WillmsgreqMsg_SN());
+        nextTickReq(retryPeriod());
+        return;
+    }
+
+    assert(m_state.m_hasClientId);
+    sendToClient(WillmsgreqMsg_SN());
+    nextTickReq(retryPeriod());
 }
 
 void Connect::forwardConnectionReq()

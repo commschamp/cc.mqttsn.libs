@@ -100,13 +100,18 @@ public:
     std::size_t dataFromClient(const std::uint8_t* buf, std::size_t len);
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
 
-    using Base::handle;
-    virtual void handle(SearchgwMsg_SN& msg) override;
-    virtual void handle(ConnectMsg_SN& msg) override;
-
 private:
 
     typedef std::list<SessionOpPtr> OpsList;
+    typedef unsigned long long Timestamp;
+
+    using Base::handle;
+    virtual void handle(SearchgwMsg_SN& msg) override;
+    virtual void handle(ConnectMsg_SN& msg) override;
+    virtual void handle(WilltopicMsg_SN& msg) override;
+    virtual void handle(WillmsgMsg_SN& msg) override;
+
+    virtual void handle(ConnackMsg& msg) override;
 
     template <typename TStack>
     std::size_t processInputData(const std::uint8_t* buf, std::size_t len, TStack& stack);
@@ -114,10 +119,15 @@ private:
     template <typename TMsg, typename TStack>
     void sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& func, DataBuf& buf);
 
+    template <typename TMsg>
+    void dispatchToOpCommon(SessionOp::Type type, TMsg& msg);
+
     void sendToClient(const MqttsnMessage& msg);
     void sendToBroker(const MqttMessage& msg);
     void startOp(SessionOp& op);
     OpsList::iterator findOp(SessionOp::Type type);
+    void dispatchToOp(SessionOp::Type type, MqttsnMessage& msg);
+    void dispatchToOp(SessionOp::Type type, MqttMessage& msg);
     void cleanCompleteOps();
 
     NextTickProgramReqCb m_nextTickProgramCb;
@@ -128,6 +138,7 @@ private:
     unsigned m_retryCount = DefaultRetryCount;
     bool m_running = false;
     ConnectionInfo m_connInfo;
+    Timestamp m_timestamp = 0U;
 
     MqttsnProtStack m_mqttsnStack;
     MqttProtStack m_mqttStack;
