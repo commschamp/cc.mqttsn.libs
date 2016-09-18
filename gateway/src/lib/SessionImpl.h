@@ -26,6 +26,7 @@
 #include "MsgHandler.h"
 #include "SessionOp.h"
 #include "common.h"
+#include "comms/util/ScopeGuard.h"
 
 namespace mqttsn
 {
@@ -39,6 +40,7 @@ class SessionImpl : public MsgHandler
 public:
     typedef Session::NextTickProgramReqCb NextTickProgramReqCb;
     typedef Session::SendDataReqCb SendDataReqCb;
+    typedef Session::CancelTickWaitReqCb CancelTickWaitReqCb;
 
     SessionImpl() = default;
     ~SessionImpl() = default;
@@ -48,6 +50,12 @@ public:
     void setNextTickProgramReqCb(TFunc&& func)
     {
         m_nextTickProgramCb = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setCancelTickWaitReqCb(TFunc&& func)
+    {
+        m_cancelTickCb = std::forward<TFunc>(func);
     }
 
     template <typename TFunc>
@@ -82,7 +90,11 @@ public:
     bool start()
     {
         if ((m_running) ||
-            (m_gwId == 0U)) {
+            (m_gwId == 0U) ||
+            (!m_nextTickProgramCb) ||
+            (!m_cancelTickCb) ||
+            (!m_sendToClientCb) ||
+            (!m_sendToBrokerCb)) {
             return false;
         }
 
@@ -124,20 +136,28 @@ private:
     void sendToClient(const MqttsnMessage& msg);
     void sendToBroker(const MqttMessage& msg);
     void startOp(SessionOp& op);
-    OpsList::iterator findOp(SessionOp::Type type);
     void dispatchToOps(MqttsnMessage& msg);
     void dispatchToOps(MqttMessage& msg);
     void cleanCompleteOps();
+    void programNextTimeout();
+    void updateTimestamp();
+    void updateOps();
+    void apiCallExit();
+    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&SessionImpl::apiCallExit, this)));
 
     NextTickProgramReqCb m_nextTickProgramCb;
+    CancelTickWaitReqCb m_cancelTickCb;
     SendDataReqCb m_sendToClientCb;
     SendDataReqCb m_sendToBrokerCb;
+
+    unsigned m_callStackCount = 0U;
     std::uint8_t m_gwId = 0U;
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
     std::string m_username;
     DataBuf m_password;
     bool m_running = false;
+    bool m_timerActive = false;
     Timestamp m_timestamp = 0U;
     std::string m_clientId;
     ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
@@ -152,7 +172,6 @@ private:
 
     static const unsigned DefaultRetryPeriod = 15 * 1000;
     static const unsigned DefaultRetryCount = 3;
-
 };
 
 }  // namespace gateway

@@ -36,6 +36,7 @@ class MQTTSN_GATEWAY_API Session
 public:
 
     typedef std::function<void (unsigned value)> NextTickProgramReqCb;
+    typedef std::function<unsigned ()> CancelTickWaitReqCb;
     typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
 
 

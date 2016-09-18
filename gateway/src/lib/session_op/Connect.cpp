@@ -31,11 +31,6 @@ void Connect::tickImpl()
     doNextStep();
 }
 
-Connect::Type Connect::typeImpl() const
-{
-    return Type::Connect;
-}
-
 void Connect::handle(ConnectMsg_SN& msg)
 {
     m_status = ConnectionStatus::Connecting;

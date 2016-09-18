@@ -35,10 +35,6 @@ class SessionOp : public MsgHandler
 {
     typedef MsgHandler Base;
 public:
-    enum class Type
-    {
-        Connect
-    };
 
     typedef std::function<void (const MqttsnMessage&)> SendToClientCb;
     typedef std::function<void (const MqttMessage&)> SendToBrokerCb;
@@ -80,11 +76,6 @@ public:
         }
 
         return m_nextTickTimestamp - m_timestamp;
-    }
-
-    Type type() const
-    {
-        return typeImpl();
     }
 
     void start()
@@ -147,7 +138,6 @@ protected:
     }
 
     virtual void tickImpl() {};
-    virtual Type typeImpl() const = 0;
     virtual void startImpl() {};
 
 private:

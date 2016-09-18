@@ -49,7 +49,6 @@ public:
 
 protected:
     virtual void tickImpl() override;
-    virtual Type typeImpl() const override;
 
 private:
     struct State

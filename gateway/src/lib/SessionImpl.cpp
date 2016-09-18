@@ -20,6 +20,7 @@
 #include <iterator>
 #include <cassert>
 #include <algorithm>
+#include <limits>
 
 #include "session_op/Connect.h"
 
@@ -29,9 +30,17 @@ namespace mqttsn
 namespace gateway
 {
 
+namespace
+{
+
+const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
+
+}  // namespace
+
 template <typename TStack>
 std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t len, TStack& stack)
 {
+    auto guard = apiCall();
     const std::uint8_t* bufTmp = buf;
     while (true) {
         typename TStack::ReadIterator iter = bufTmp;
@@ -99,13 +108,9 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 
 void SessionImpl::tick(unsigned ms)
 {
-    static_cast<void>(ms);
     m_timestamp += ms;
-    // TODO
-    for (auto& op : m_ops) {
-        op->updateTimestamp(m_timestamp);
-    }
-    cleanCompleteOps();
+    updateOps();
+    programNextTimeout();
 }
 
 std::size_t SessionImpl::dataFromClient(const std::uint8_t* buf, std::size_t len)
@@ -170,17 +175,6 @@ void SessionImpl::startOp(SessionOp& op)
     op.start();
 }
 
-SessionImpl::OpsList::iterator SessionImpl::findOp(SessionOp::Type type)
-{
-    return
-        std::find_if(
-            m_ops.begin(), m_ops.end(),
-            [type](SessionImpl::OpsList::const_reference elem) -> bool
-            {
-                return elem->type() == type;
-            });
-}
-
 void SessionImpl::dispatchToOps(MqttsnMessage& msg)
 {
     dispatchToOpsCommon(msg);
@@ -205,6 +199,74 @@ void SessionImpl::cleanCompleteOps()
         m_ops.erase(i);
     }
 }
+
+void SessionImpl::programNextTimeout()
+{
+    if (!m_running) {
+        return;
+    }
+
+    assert(!m_timerActive);
+    unsigned delay = NoTimeout;
+    for (auto& op : m_ops) {
+        delay = std::min(delay, op->nextTick());
+    }
+    // TODO: other delays
+
+    if (delay == NoTimeout) {
+        return;
+    }
+
+    GASSERT(m_nextTickProgramCb != nullptr);
+    m_nextTickProgramCb(delay);
+    m_timerActive = true;
+}
+
+void SessionImpl::updateTimestamp()
+{
+    if (!m_timerActive) {
+        return;
+    }
+
+    GASSERT(m_cancelTickCb);
+    m_timestamp += m_cancelTickCb();
+    m_timerActive = false;
+    updateOps();
+    // TODO: check other timers
+}
+
+void SessionImpl::updateOps()
+{
+    for (auto& op : m_ops) {
+        op->updateTimestamp(m_timestamp);
+    }
+    cleanCompleteOps();
+}
+
+void SessionImpl::apiCallExit()
+{
+    GASSERT(0U < m_callStackCount);
+    --m_callStackCount;
+    if (m_callStackCount == 0U) {
+        programNextTimeout();
+    }
+}
+
+auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&SessionImpl::apiCallExit, this)))
+{
+    ++m_callStackCount;
+    if (m_callStackCount == 1U) {
+        updateTimestamp();
+    }
+
+    return
+        comms::util::makeScopeGuard(
+            std::bind(
+                &SessionImpl::apiCallExit,
+                this));
+}
+
+
 
 }  // namespace gateway
 
