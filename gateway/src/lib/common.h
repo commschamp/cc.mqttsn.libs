@@ -41,21 +41,25 @@ enum QoS
     QoS_NumOfValues
 };
 
+inline
 mqtt::field::QosType translateQosForBroker(QoS val)
 {
     return static_cast<mqtt::field::QosType>(val);
 }
 
+inline
 mqttsn::protocol::field::QosType translateQosForClient(QoS val)
 {
     return static_cast<mqttsn::protocol::field::QosType>(val);
 }
 
+inline
 QoS translateQos(mqtt::field::QosType val)
 {
     return static_cast<QoS>(val);
 }
 
+inline
 QoS translateQos(mqttsn::protocol::field::QosType val)
 {
     if (val == mqttsn::protocol::field::QosType::NoGwPublish) {

@@ -21,6 +21,8 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <algorithm>
+#include <limits>
 
 #include "mqttsn/gateway/Session.h"
 #include "MsgHandler.h"
@@ -87,6 +89,16 @@ public:
         m_password.assign(password, password + passLen);
     }
 
+    void setRetryPeriod(unsigned value)
+    {
+        m_retryPeriod = std::min(std::numeric_limits<unsigned>::max() / 1000, value) * 1000;
+    }
+
+    void setRetryCount(unsigned value)
+    {
+        m_retryCount = value;
+    }
+
     bool start()
     {
         if ((m_running) ||
@@ -105,6 +117,11 @@ public:
     void stop()
     {
         m_running = false;
+    }
+
+    bool isRunning() const
+    {
+        return m_running;
     }
 
     void tick(unsigned ms);

@@ -1,0 +1,287 @@
+//
+// Copyright 2016 (C). Alex Robenko. All rights reserved.
+//
+
+// This file is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#include <list>
+#include <vector>
+#include <memory>
+
+#include "comms/comms.h"
+#include "mqttsn/gateway/Session.h"
+
+CC_DISABLE_WARNINGS()
+#include "cxxtest/TestSuite.h"
+CC_ENABLE_WARNINGS()
+
+#include "TestMsgHandler.h"
+
+class SessionTest : public CxxTest::TestSuite
+{
+public:
+    void test1();
+
+private:
+    typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
+    typedef std::vector<std::uint8_t> DataBuf;
+
+    static const std::uint8_t DefaultGwId = 5;
+    static const unsigned DefaultRetryPeriod = 15;
+    static const unsigned DefaultRetryCount = 3;
+
+    struct State
+    {
+        std::list<DataBuf> m_sentToClient;
+        std::list<DataBuf> m_sentToBroker;
+        std::list<unsigned> m_tickReq;
+        std::list<unsigned> m_elapsed;
+    };
+
+    struct WillInfo
+    {
+        std::string m_topic;
+        DataBuf m_msg;
+        mqtt::field::QosType m_qos = mqtt::field::QosType::AtMostOnceDelivery;
+        bool m_retain = false;
+    };
+
+    SessionPtr allocSession(
+        State& state,
+        TestMsgHandler& handler,
+        const std::uint8_t gwId = DefaultGwId,
+        const std::string* username = nullptr,
+        const DataBuf* password = nullptr)
+    {
+        SessionPtr session(new mqttsn::gateway::Session);
+        if (username != nullptr) {
+            std::size_t passLen = 0;
+            const std::uint8_t* passPtr = nullptr;
+            if (password != nullptr) {
+                passPtr = &((*password)[0]);
+                passLen = password->size();
+            }
+
+            session->setAuthInfo(*username, passPtr, passLen);
+        }
+
+        session->setNextTickProgramReqCb(
+            [&state](unsigned val) {
+                state.m_tickReq.push_back(val);
+            });
+
+        session->setCancelTickWaitReqCb(
+            [&state]() -> unsigned
+            {
+                if (state.m_elapsed.empty()) {
+                    assert(!"Elapsed timeout is not specified");
+                    return 0U;
+                }
+
+                auto val = state.m_elapsed.front();
+                TS_TRACE("[Elapsed]: " + std::to_string(val));
+                state.m_elapsed.pop_front();
+                return val;
+            });
+        session->setSendDataClientReqCb(
+            [&state](const std::uint8_t* buf, std::size_t bufSize)
+            {
+                state.m_sentToClient.emplace_back(buf, buf + bufSize);
+            });
+
+        session->setSendDataBrokerReqCb(
+            [&state](const std::uint8_t* buf, std::size_t bufSize)
+            {
+                state.m_sentToBroker.emplace_back(buf, buf + bufSize);
+            });
+
+        handler.setConnectMsgHandler(
+            [](const ConnectMsg&)
+            {
+                TS_TRACE("<-- CONNECT");
+            });
+
+        session->setRetryPeriod(DefaultRetryPeriod);
+        session->setRetryCount(DefaultRetryCount);
+        session->setGatewayId(gwId);
+        bool result = session->start();
+        TS_ASSERT(result);
+        TS_ASSERT(session->isRunning());
+        TS_ASSERT(state.m_sentToClient.empty());
+        TS_ASSERT(state.m_sentToBroker.empty());
+        TS_ASSERT(state.m_tickReq.empty());
+        TS_ASSERT(state.m_elapsed.empty());
+        return std::move(session);
+    }
+
+    void dataFromClient(
+        mqttsn::gateway::Session& session,
+        const DataBuf& buf,
+        const std::string& msgStr)
+    {
+        TS_TRACE("(CLIENT) --> " + msgStr);
+        auto consumed = session.dataFromClient(&buf[0], buf.size());
+        TS_ASSERT_EQUALS(consumed, buf.size());
+    }
+
+    void dataFromBroker(
+        mqttsn::gateway::Session& session,
+        const DataBuf& buf,
+        const std::string& msgStr)
+    {
+        auto consumed = session.dataFromBroker(&buf[0], buf.size());
+        TS_ASSERT_EQUALS(consumed, buf.size());
+        TS_TRACE("(BROKER) --> " + msgStr);
+    }
+
+    void verifySent_ConnectMsg(
+        State& state,
+        TestMsgHandler& handler,
+        const std::string& clientId,
+        std::uint16_t keepAlive,
+        bool cleanSession,
+        const WillInfo* willInfo = nullptr,
+        const std::string& username = std::string(),
+        const DataBuf& password = DataBuf())
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setConnectMsgHandler(
+                [&](const ConnectMsg& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- CONNECT");
+
+                    typedef ConnectMsg MsgType;
+                    auto& fields = msg.fields();
+                    auto& flagsField = std::get<MsgType::FieldIdx_Flags>(fields);
+                    auto& flagsMembers = flagsField.value();
+                    auto& lowFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsLow>(flagsMembers);
+                    auto& willQosField = std::get<mqtt::message::ConnectFlagsMemberIdx_WillQos>(flagsMembers);
+                    auto& highFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsHigh>(flagsMembers);
+                    auto& keepAliveField = std::get<MsgType::FieldIdx_KeepAlive>(fields);
+                    auto& clientIdField = std::get<MsgType::FieldIdx_ClientId>(fields);
+                    auto& willTopicField = std::get<MsgType::FieldIdx_WillTopic>(fields);
+                    auto& willMsgField = std::get<MsgType::FieldIdx_WillMessage>(fields);
+                    auto& usernameField = std::get<MsgType::FieldIdx_UserName>(fields);
+                    auto& passwordField = std::get<MsgType::FieldIdx_Password>(fields);
+
+                    TS_ASSERT_EQUALS(keepAliveField.value(), keepAlive);
+                    TS_ASSERT_EQUALS(clientIdField.value(), clientId);
+                    TS_ASSERT_EQUALS(lowFlagsField.getBitValue(mqtt::message::ConnectFlagsLowBitIdx_CleanSession), cleanSession);
+
+                    bool hasWill = (willInfo != nullptr);
+                    TS_ASSERT_EQUALS(lowFlagsField.getBitValue(mqtt::message::ConnectFlagsLowBitIdx_WillFlag), hasWill);
+
+                    if (hasWill) {
+                        TS_ASSERT_EQUALS(willQosField.value(), willInfo->m_qos);
+                        TS_ASSERT_EQUALS(highFlagsField.getBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain), willInfo->m_retain);
+                        TS_ASSERT_EQUALS(willTopicField.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(willMsgField.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(willTopicField.field().value(), willInfo->m_topic);
+                        TS_ASSERT_EQUALS(willMsgField.field().value(), willInfo->m_msg);
+                    }
+                    else {
+                        TS_ASSERT_EQUALS(willTopicField.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(willMsgField.getMode(), comms::field::OptionalMode::Missing);
+                    }
+
+                    TS_ASSERT_EQUALS(highFlagsField.getBitValue(mqtt::message::ConnectFlagsHighBitIdx_UserNameFlag), !username.empty());
+                    TS_ASSERT_EQUALS(highFlagsField.getBitValue(mqtt::message::ConnectFlagsHighBitIdx_PasswordFlag), !password.empty());
+
+                    if (!username.empty()) {
+                        TS_ASSERT_EQUALS(usernameField.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(usernameField.field().value(), username);
+                    }
+                    else {
+                        TS_ASSERT_EQUALS(usernameField.getMode(), comms::field::OptionalMode::Missing);
+                    }
+
+                    if (!password.empty()) {
+                        TS_ASSERT_EQUALS(passwordField.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(passwordField.field().value(), password);
+                    }
+                    else {
+                        TS_ASSERT_EQUALS(passwordField.getMode(), comms::field::OptionalMode::Missing);
+                    }
+
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setConnectMsgHandler(std::move(oldCb));
+    }
+
+    void verifySent_ConnackMsg(
+        State& state,
+        TestMsgHandler& handler,
+        mqttsn::protocol::field::ReturnCodeVal rc)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setConnackMsgHandler(
+                [&](const ConnackMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- CONNACK");
+
+                    typedef ConnackMsg_SN MsgType;
+                    auto& fields = msg.fields();
+                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
+
+                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setConnackMsgHandler(std::move(oldCb));
+    }
+};
+
+void SessionTest::test1()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string ClientId("bla");
+    static const std::uint16_t KeepAlive = 60;
+    static const bool CleanSession = true;
+    auto connectMsg = handler.prepareClientConnect(ClientId, KeepAlive, false, CleanSession);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifySent_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession);
+    TS_ASSERT(!state.m_tickReq.empty());
+
+    state.m_elapsed.push_back(1000);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    dataFromBroker(*session, connackMsg, "CONNACK");
+    verifySent_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+}
+
+
+

@@ -40,6 +40,10 @@ const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
 template <typename TStack>
 std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t len, TStack& stack)
 {
+    if (!isRunning()) {
+        return 0U;
+    }
+
     auto guard = apiCall();
     const std::uint8_t* bufTmp = buf;
     while (true) {
@@ -108,6 +112,10 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 
 void SessionImpl::tick(unsigned ms)
 {
+    if (!isRunning()) {
+        return;
+    }
+
     m_timestamp += ms;
     updateOps();
     programNextTimeout();

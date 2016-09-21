@@ -44,14 +44,22 @@ public:
     ~Session();
 
     void setNextTickProgramReqCb(NextTickProgramReqCb&& func);
-    void setSendDataClientReqCb(SendDataReqCb& func);
+    void setCancelTickWaitReqCb(CancelTickWaitReqCb&& func);
+    void setSendDataClientReqCb(SendDataReqCb&& func);
     void setSendDataBrokerReqCb(SendDataReqCb&& func);
     void setGatewayId(std::uint8_t value);
+    void setAuthInfo(const std::string& username, const std::uint8_t* password, std::size_t passLen);
+    void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen);
+    void setRetryPeriod(unsigned value);
+    void setRetryCount(unsigned value);
 
     bool start();
     void stop();
+    bool isRunning() const;
     void tick(unsigned ms);
 
+    std::size_t dataFromClient(const std::uint8_t* buf, std::size_t len);
+    std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
 
 private:
     std::unique_ptr<SessionImpl> m_pImpl;

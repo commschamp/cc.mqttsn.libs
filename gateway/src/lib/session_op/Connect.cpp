@@ -152,7 +152,7 @@ void Connect::doNextStep()
 {
     cancelTick();
 
-    if (m_state.m_attempt <= retryCount()) {
+    if (retryCount() <= m_state.m_attempt) {
         m_clientId.clear();
         m_status = ConnectionStatus::Disconnected;
         return;

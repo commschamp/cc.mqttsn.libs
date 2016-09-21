@@ -37,7 +37,12 @@ void Session::setNextTickProgramReqCb(NextTickProgramReqCb&& func)
     m_pImpl->setNextTickProgramReqCb(std::move(func));
 }
 
-void Session::setSendDataClientReqCb(SendDataReqCb& func)
+void Session::setCancelTickWaitReqCb(CancelTickWaitReqCb&& func)
+{
+    m_pImpl->setCancelTickWaitReqCb(std::move(func));
+}
+
+void Session::setSendDataClientReqCb(SendDataReqCb&& func)
 {
     m_pImpl->setSendDataClientReqCb(std::move(func));
 }
@@ -52,6 +57,32 @@ void Session::setGatewayId(std::uint8_t value)
     m_pImpl->setGatewayId(value);
 }
 
+void Session::setAuthInfo(
+    const std::string& username,
+    const std::uint8_t* password,
+    std::size_t passLen)
+{
+    m_pImpl->setAuthInfo(username, password, passLen);
+}
+
+void Session::setAuthInfo(
+    const char* username,
+    const std::uint8_t* password,
+    std::size_t passLen)
+{
+    m_pImpl->setAuthInfo(username, password, passLen);
+}
+
+void Session::setRetryPeriod(unsigned value)
+{
+    m_pImpl->setRetryPeriod(value);
+}
+
+void Session::setRetryCount(unsigned value)
+{
+    m_pImpl->setRetryCount(value);
+}
+
 bool Session::start()
 {
     return m_pImpl->start();
@@ -62,9 +93,24 @@ void Session::stop()
     m_pImpl->stop();
 }
 
+bool Session::isRunning() const
+{
+    return m_pImpl->isRunning();
+}
+
 void Session::tick(unsigned ms)
 {
     m_pImpl->tick(ms);
+}
+
+std::size_t Session::dataFromClient(const std::uint8_t* buf, std::size_t len)
+{
+    return m_pImpl->dataFromClient(buf, len);
+}
+
+std::size_t Session::dataFromBroker(const std::uint8_t* buf, std::size_t len)
+{
+    return m_pImpl->dataFromBroker(buf, len);
 }
 
 }  // namespace gateway
