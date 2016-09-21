@@ -66,6 +66,14 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TStack& stack, cons
 TestMsgHandler::TestMsgHandler() = default;
 TestMsgHandler::~TestMsgHandler() = default;
 
+TestMsgHandler::GwinfoMsgHandlerFunc
+TestMsgHandler::setGwinfoMsgHandler(GwinfoMsgHandlerFunc&& func)
+{
+    GwinfoMsgHandlerFunc old(std::move(m_gwInfoMsgHandler));
+    m_gwInfoMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -80,6 +88,13 @@ TestMsgHandler::ConnackMsgHandlerFunc TestMsgHandler::setConnackMsgHandler(
     ConnackMsgHandlerFunc old(std::move(m_connackMsgHandler));
     m_connackMsgHandler = std::move(func);
     return old;
+}
+
+void TestMsgHandler::handle(GwinfoMsg_SN& msg)
+{
+    if (m_gwInfoMsgHandler) {
+        m_gwInfoMsgHandler(msg);
+    }
 }
 
 void TestMsgHandler::handle(ConnackMsg_SN& msg)
@@ -126,6 +141,15 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareInput(const TestMqttsnMessage& ms
 TestMsgHandler::DataBuf TestMsgHandler::prepareInput(const TestMqttMessage& msg)
 {
     return prepareInputInternal(m_mqttStack, msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareSearchgw(std::uint8_t radius)
+{
+    SearchgwMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& radiusField = std::get<decltype(msg)::FieldIdx_radius>(fields);
+    radiusField.value() = radius;
+    return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientConnect(

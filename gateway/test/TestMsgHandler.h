@@ -108,6 +108,9 @@ public:
     TestMsgHandler();
     ~TestMsgHandler();
 
+    typedef std::function<void (const GwinfoMsg_SN& msg)> GwinfoMsgHandlerFunc;
+    GwinfoMsgHandlerFunc setGwinfoMsgHandler(GwinfoMsgHandlerFunc&& func);
+
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
@@ -117,6 +120,7 @@ public:
     using MqttsnBase::handle;
     using MqttBase::handle;
 
+    void handle(GwinfoMsg_SN& msg);
     void handle(ConnackMsg_SN& msg);
     void handle(TestMqttsnMessage& msg);
 
@@ -129,6 +133,7 @@ public:
     DataBuf prepareInput(const TestMqttsnMessage& msg);
     DataBuf prepareInput(const TestMqttMessage& msg);
 
+    DataBuf prepareSearchgw(std::uint8_t radius = 0);
     DataBuf prepareClientConnect(const std::string& id, std::uint16_t keepAlive, bool hasWill, bool clean);
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
 
@@ -142,6 +147,7 @@ private:
     TestMqttsnProtStack m_mqttsnStack;
     TestMqttProtStack m_mqttStack;
 
+    GwinfoMsgHandlerFunc m_gwInfoMsgHandler;
     ConnectMsgHandlerFunc m_connectMsgHandler;
     ConnackMsgHandlerFunc m_connackMsgHandler;
 };

@@ -548,7 +548,7 @@ private:
                 sent = true;
                 TS_TRACE("<-- SEARCHGW");
                 auto& fields = msg.fields();
-                auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
+                auto& radiusField = std::get<SearchgwMsg::FieldIdx_radius>(fields);
                 TS_ASSERT_EQUALS(radiusField.value(), radius);
             });
 

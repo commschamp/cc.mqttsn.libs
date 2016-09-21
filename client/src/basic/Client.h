@@ -1989,7 +1989,7 @@ private:
     {
         SearchgwMsg msg;
         auto& fields = msg.fields();
-        auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
+        auto& radiusField = std::get<SearchgwMsg::FieldIdx_radius>(fields);
         radiusField.value() = m_broadcastRadius;
 
         sendMessage(msg, true);
