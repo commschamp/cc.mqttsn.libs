@@ -111,17 +111,25 @@ public:
     typedef std::function<void (const GwinfoMsg_SN& msg)> GwinfoMsgHandlerFunc;
     GwinfoMsgHandlerFunc setGwinfoMsgHandler(GwinfoMsgHandlerFunc&& func);
 
-    typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
-    ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
-
     typedef std::function<void (const ConnackMsg_SN&)> ConnackMsgHandlerFunc;
     ConnackMsgHandlerFunc setConnackMsgHandler(ConnackMsgHandlerFunc&& func);
+
+    typedef std::function<void (const WilltopicreqMsg_SN&)> WilltopicreqMsgHandlerFunc;
+    WilltopicreqMsgHandlerFunc setWilltopicreqMsgHandler(WilltopicreqMsgHandlerFunc&& func);
+
+    typedef std::function<void (const WillmsgreqMsg_SN&)> WillmsgreqMsgHandlerFunc;
+    WillmsgreqMsgHandlerFunc setWillmsgreqMsgHandler(WillmsgreqMsgHandlerFunc&& func);
+
+    typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
+    ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
     using MqttsnBase::handle;
     using MqttBase::handle;
 
     void handle(GwinfoMsg_SN& msg);
     void handle(ConnackMsg_SN& msg);
+    void handle(WilltopicreqMsg_SN& msg);
+    void handle(WillmsgreqMsg_SN& msg);
     void handle(TestMqttsnMessage& msg);
 
     void handle(ConnectMsg& msg);
@@ -135,6 +143,13 @@ public:
 
     DataBuf prepareSearchgw(std::uint8_t radius = 0);
     DataBuf prepareClientConnect(const std::string& id, std::uint16_t keepAlive, bool hasWill, bool clean);
+    DataBuf prepareClientWilltopic(
+        const std::string& topic,
+        mqttsn::protocol::field::QosType qos,
+        bool retain);
+    DataBuf prepareClientWillmsg(const DataBuf& data);
+
+
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
 
 private:
@@ -148,6 +163,9 @@ private:
     TestMqttProtStack m_mqttStack;
 
     GwinfoMsgHandlerFunc m_gwInfoMsgHandler;
-    ConnectMsgHandlerFunc m_connectMsgHandler;
     ConnackMsgHandlerFunc m_connackMsgHandler;
+    WilltopicreqMsgHandlerFunc m_willtopicreqMsgHandler;
+    WillmsgreqMsgHandlerFunc m_willmsgreqMsgHandler;
+
+    ConnectMsgHandlerFunc m_connectMsgHandler;
 };

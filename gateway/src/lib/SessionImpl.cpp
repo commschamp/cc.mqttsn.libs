@@ -116,6 +116,7 @@ void SessionImpl::tick(unsigned ms)
         return;
     }
 
+    m_timerActive = false;
     m_timestamp += ms;
     updateOps();
     programNextTimeout();

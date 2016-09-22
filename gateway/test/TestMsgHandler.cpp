@@ -74,6 +74,30 @@ TestMsgHandler::setGwinfoMsgHandler(GwinfoMsgHandlerFunc&& func)
     return old;
 }
 
+TestMsgHandler::ConnackMsgHandlerFunc TestMsgHandler::setConnackMsgHandler(
+    ConnackMsgHandlerFunc&& func)
+{
+    ConnackMsgHandlerFunc old(std::move(m_connackMsgHandler));
+    m_connackMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::WilltopicreqMsgHandlerFunc
+TestMsgHandler::setWilltopicreqMsgHandler(WilltopicreqMsgHandlerFunc&& func)
+{
+    WilltopicreqMsgHandlerFunc old(std::move(m_willtopicreqMsgHandler));
+    m_willtopicreqMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::WillmsgreqMsgHandlerFunc
+TestMsgHandler::setWillmsgreqMsgHandler(WillmsgreqMsgHandlerFunc&& func)
+{
+    WillmsgreqMsgHandlerFunc old(std::move(m_willmsgreqMsgHandler));
+    m_willmsgreqMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -82,13 +106,6 @@ TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
     return old;
 }
 
-TestMsgHandler::ConnackMsgHandlerFunc TestMsgHandler::setConnackMsgHandler(
-    ConnackMsgHandlerFunc&& func)
-{
-    ConnackMsgHandlerFunc old(std::move(m_connackMsgHandler));
-    m_connackMsgHandler = std::move(func);
-    return old;
-}
 
 void TestMsgHandler::handle(GwinfoMsg_SN& msg)
 {
@@ -101,6 +118,20 @@ void TestMsgHandler::handle(ConnackMsg_SN& msg)
 {
     if (m_connackMsgHandler) {
         m_connackMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(WilltopicreqMsg_SN& msg)
+{
+    if (m_willtopicreqMsgHandler) {
+        m_willtopicreqMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(WillmsgreqMsg_SN& msg)
+{
+    if (m_willmsgreqMsgHandler) {
+        m_willmsgreqMsgHandler(msg);
     }
 }
 
@@ -170,6 +201,34 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientConnect(
     durationField.value() = keepAlive;
     midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
     midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession, clean);
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
+    const std::string& topic,
+    mqttsn::protocol::field::QosType qos,
+    bool retain)
+{
+    WilltopicMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+    auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+
+    qosField.value() = qos;
+    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
+    topicField.value() = topic;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsg(const DataBuf& data)
+{
+    WillmsgMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgField = std::get<decltype(msg)::FieldIdx_willMsg>(fields);
+    msgField.value() = data;
     return prepareInput(msg);
 }
 

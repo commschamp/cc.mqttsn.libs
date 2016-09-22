@@ -88,7 +88,7 @@ void Connect::handle(WilltopicMsg_SN& msg)
 void Connect::handle(WillmsgMsg_SN& msg)
 {
     assert(m_status == ConnectionStatus::Connecting);
-    if (!m_state.m_hasWillMsg) {
+    if (!m_state.m_hasWillTopic) {
         return;
     }
 
@@ -177,7 +177,7 @@ void Connect::doNextStep()
     }
 
     assert(m_state.m_hasClientId);
-    sendToClient(WillmsgreqMsg_SN());
+    sendToClient(WilltopicreqMsg_SN());
     nextTickReq(retryPeriod());
 }
 
@@ -211,10 +211,12 @@ void Connect::forwardConnectionReq()
     if (!m_username.empty()) {
         auto& usernameField = std::get<decltype(msg)::FieldIdx_UserName>(fields);
         usernameField.field().value() = m_username;
+        highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_UserNameFlag, true);
 
         if (!m_password.empty()) {
             auto& passwordField = std::get<decltype(msg)::FieldIdx_Password>(fields);
             passwordField.field().value() = m_password;
+            highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_PasswordFlag, true);
         }
     }
 
