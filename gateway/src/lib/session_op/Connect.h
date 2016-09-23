@@ -35,17 +35,8 @@ class Connect : public SessionOp
     typedef SessionOp Base;
 
 public:
-    Connect(std::string& clientId, ConnectionStatus& status)
-      : m_clientId(clientId),
-        m_status(status)
-    {
-    }
-
-    void setAuth(const std::string& username, const DataBuf& password)
-    {
-        m_username = username;
-        m_password = password;
-    }
+    Connect(SessionState& sessionState);
+    ~Connect();
 
 protected:
     virtual void tickImpl() override;
@@ -68,13 +59,11 @@ private:
     void doNextStep();
     void forwardConnectionReq();
 
-    std::string& m_clientId;
-    ConnectionStatus& m_status;
-    std::string m_username;
-    DataBuf m_password;
-    ConnectionInfo m_info;
-    State m_state;
-    unsigned m_attempt = 0;
+    std::string m_clientId;
+    WillInfo m_will;
+    std::uint16_t m_keepAlive = 0;
+    bool m_clean = false;
+    State m_internalState;
 };
 
 }  // namespace session_op

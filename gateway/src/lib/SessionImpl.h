@@ -74,35 +74,35 @@ public:
 
     void setGatewayId(std::uint8_t value)
     {
-        m_gwId = value;
+        m_state.m_gwId = value;
     }
 
     void setAuthInfo(const std::string& username, const std::uint8_t* password, std::size_t passLen)
     {
-        m_username = username;
-        m_password.assign(password, password + passLen);
+        m_state.m_username = username;
+        m_state.m_password.assign(password, password + passLen);
     }
 
     void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen)
     {
-        m_username = username;
-        m_password.assign(password, password + passLen);
+        m_state.m_username = username;
+        m_state.m_password.assign(password, password + passLen);
     }
 
     void setRetryPeriod(unsigned value)
     {
-        m_retryPeriod = std::min(std::numeric_limits<unsigned>::max() / 1000, value) * 1000;
+        m_state.m_retryPeriod = std::min(std::numeric_limits<unsigned>::max() / 1000, value) * 1000;
     }
 
     void setRetryCount(unsigned value)
     {
-        m_retryCount = value;
+        m_state.m_retryCount = value;
     }
 
     bool start()
     {
-        if ((m_running) ||
-            (m_gwId == 0U) ||
+        if ((m_state.m_running) ||
+            (m_state.m_gwId == 0U) ||
             (!m_nextTickProgramCb) ||
             (!m_cancelTickCb) ||
             (!m_sendToClientCb) ||
@@ -110,18 +110,18 @@ public:
             return false;
         }
 
-        m_running = true;
+        m_state.m_running = true;
         return true;
     }
 
     void stop()
     {
-        m_running = false;
+        m_state.m_running = false;
     }
 
     bool isRunning() const
     {
-        return m_running;
+        return m_state.m_running;
     }
 
     void tick(unsigned ms);
@@ -132,7 +132,6 @@ public:
 private:
 
     typedef std::list<SessionOpPtr> OpsList;
-    typedef unsigned long long Timestamp;
 
     using Base::handle;
     virtual void handle(SearchgwMsg_SN& msg) override;
@@ -167,18 +166,6 @@ private:
     SendDataReqCb m_sendToClientCb;
     SendDataReqCb m_sendToBrokerCb;
 
-    unsigned m_callStackCount = 0U;
-    std::uint8_t m_gwId = 0U;
-    unsigned m_retryPeriod = DefaultRetryPeriod;
-    unsigned m_retryCount = DefaultRetryCount;
-    std::string m_username;
-    DataBuf m_password;
-    bool m_running = false;
-    bool m_timerActive = false;
-    Timestamp m_timestamp = 0U;
-    std::string m_clientId;
-    ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
-
     MqttsnProtStack m_mqttsnStack;
     MqttProtStack m_mqttStack;
 
@@ -187,8 +174,7 @@ private:
 
     OpsList m_ops;
 
-    static const unsigned DefaultRetryPeriod = 15 * 1000;
-    static const unsigned DefaultRetryCount = 3;
+    SessionState m_state;
 };
 
 }  // namespace gateway

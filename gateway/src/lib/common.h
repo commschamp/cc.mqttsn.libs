@@ -77,20 +77,45 @@ struct WillInfo
     bool m_retain = false;
 };
 
-struct ConnectionInfo
-{
-    std::string m_clientId;
-    WillInfo m_will;
-    std::uint16_t m_keepAlive = 0U;
-    bool m_clean = false;
-};
+//struct ConnectionInfo
+//{
+//    std::string m_clientId;
+//    WillInfo m_will;
+//    std::uint16_t m_keepAlive = 0U;
+//    bool m_clean = false;
+//};
 
 enum class ConnectionStatus
 {
     Disconnected,
-    Connecting,
     Connected,
     Asleep
+};
+
+typedef unsigned long long Timestamp;
+
+struct SessionState
+{
+    static const unsigned DefaultRetryPeriod = 15 * 1000;
+    static const unsigned DefaultRetryCount = 3;
+
+    unsigned m_retryPeriod = DefaultRetryPeriod;
+    unsigned m_retryCount = DefaultRetryCount;
+    bool m_running = false;
+    bool m_connecting = false;
+    bool m_brokerConnected = false;
+    bool m_reconnecgingBroker = false;
+    bool m_timerActive = false;
+    Timestamp m_timestamp = 0U;
+    unsigned m_callStackCount = 0U;
+
+    ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
+    std::string m_clientId;
+    WillInfo m_will;
+    std::uint8_t m_gwId = 0U;
+    std::uint16_t m_keepAlive = 0U;
+    std::string m_username;
+    DataBuf m_password;
 };
 
 }  // namespace gateway

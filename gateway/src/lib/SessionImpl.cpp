@@ -116,8 +116,8 @@ void SessionImpl::tick(unsigned ms)
         return;
     }
 
-    m_timerActive = false;
-    m_timestamp += ms;
+    m_state.m_timerActive = false;
+    m_state.m_timestamp += ms;
     updateOps();
     programNextTimeout();
 }
@@ -138,17 +138,32 @@ void SessionImpl::handle(SearchgwMsg_SN& msg)
     GwinfoMsg_SN respMsg;
     auto& fields = respMsg.fields();
     auto& gwIdField = std::get<decltype(respMsg)::FieldIdx_gwId>(fields);
-    gwIdField.value() = m_gwId;
+    gwIdField.value() = m_state.m_gwId;
     sendToClient(respMsg);
 }
 
 void SessionImpl::handle(ConnectMsg_SN& msg)
 {
-    if (m_connStatus != ConnectionStatus::Connecting) {
-        std::unique_ptr<session_op::Connect> op(new session_op::Connect(m_clientId, m_connStatus));
-        op->setAuth(m_username, m_password);
+    typedef ConnectMsg_SN MsgType;
+    auto& fields = msg.fields();
+//    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
+//    auto& flagsMembers = flagsField.value();
+//    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+//    auto& keepAliveField = std::get<MsgType::FieldIdx_duration>(fields);
+    auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
+
+    if ((m_state.m_connStatus != ConnectionStatus::Disconnected) &&
+        (clientIdField.value() != m_state.m_clientId)) {
+        // TODO: send connack and disconnect
+        return;
+    }
+
+    // TODO:
+    if (!m_state.m_connecting) {
+        std::unique_ptr<session_op::Connect> op(new session_op::Connect(m_state));
         startOp(*op);
         m_ops.push_back(std::move(op));
+        assert(m_state.m_connecting);
     }
 
     dispatchToOps(msg);
@@ -178,9 +193,6 @@ void SessionImpl::startOp(SessionOp& op)
 {
     op.setSendToClientCb(std::bind(&SessionImpl::sendToClient, this, std::placeholders::_1));
     op.setSendToBrokerCb(std::bind(&SessionImpl::sendToBroker, this, std::placeholders::_1));
-    op.setRetryPeriod(m_retryPeriod);
-    op.setRetryCount(m_retryCount);
-    op.updateTimestamp(m_timestamp);
     op.start();
 }
 
@@ -211,11 +223,11 @@ void SessionImpl::cleanCompleteOps()
 
 void SessionImpl::programNextTimeout()
 {
-    if (!m_running) {
+    if (!isRunning()) {
         return;
     }
 
-    assert(!m_timerActive);
+    assert(!m_state.m_timerActive);
     unsigned delay = NoTimeout;
     for (auto& op : m_ops) {
         delay = std::min(delay, op->nextTick());
@@ -228,18 +240,18 @@ void SessionImpl::programNextTimeout()
 
     GASSERT(m_nextTickProgramCb != nullptr);
     m_nextTickProgramCb(delay);
-    m_timerActive = true;
+    m_state.m_timerActive = true;
 }
 
 void SessionImpl::updateTimestamp()
 {
-    if (!m_timerActive) {
+    if (!m_state.m_timerActive) {
         return;
     }
 
     GASSERT(m_cancelTickCb);
-    m_timestamp += m_cancelTickCb();
-    m_timerActive = false;
+    m_state.m_timestamp += m_cancelTickCb();
+    m_state.m_timerActive = false;
     updateOps();
     // TODO: check other timers
 }
@@ -247,24 +259,24 @@ void SessionImpl::updateTimestamp()
 void SessionImpl::updateOps()
 {
     for (auto& op : m_ops) {
-        op->updateTimestamp(m_timestamp);
+        op->timestampUpdated();
     }
     cleanCompleteOps();
 }
 
 void SessionImpl::apiCallExit()
 {
-    GASSERT(0U < m_callStackCount);
-    --m_callStackCount;
-    if (m_callStackCount == 0U) {
+    GASSERT(0U < m_state.m_callStackCount);
+    --m_state.m_callStackCount;
+    if (m_state.m_callStackCount == 0U) {
         programNextTimeout();
     }
 }
 
 auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&SessionImpl::apiCallExit, this)))
 {
-    ++m_callStackCount;
-    if (m_callStackCount == 1U) {
+    ++m_state.m_callStackCount;
+    if (m_state.m_callStackCount == 1U) {
         updateTimestamp();
     }
 

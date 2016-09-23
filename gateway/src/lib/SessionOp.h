@@ -24,6 +24,7 @@
 
 #include "mqttsn/gateway/Session.h"
 #include "MsgHandler.h"
+#include "common.h"
 
 namespace mqttsn
 {
@@ -54,11 +55,10 @@ public:
         m_sendToBrokerFunc = std::forward<TFunc>(func);
     }
 
-    void updateTimestamp(Timestamp val)
+    void timestampUpdated()
     {
-        m_timestamp = val;
         if ((m_nextTickTimestamp != 0) &&
-            (m_nextTickTimestamp <= m_timestamp) &&
+            (m_nextTickTimestamp <= m_state.m_timestamp) &&
             (!isComplete())) {
             m_nextTickTimestamp = 0;
             tickImpl();
@@ -71,11 +71,11 @@ public:
             return std::numeric_limits<unsigned>::max();
         }
 
-        if (m_nextTickTimestamp <= m_timestamp) {
+        if (m_nextTickTimestamp <= m_state.m_timestamp) {
             return 1U;
         }
 
-        return m_nextTickTimestamp - m_timestamp;
+        return m_nextTickTimestamp - m_state.m_timestamp;
     }
 
     void start()
@@ -88,18 +88,12 @@ public:
         return m_complete;
     }
 
-    void setRetryPeriod(unsigned val)
-    {
-        m_retryPeriod = val;
-    }
-
-    void setRetryCount(unsigned val)
-    {
-        m_retryCount = val;
-    }
-
 protected:
-    SessionOp() = default;
+    SessionOp(SessionState& state)
+      : m_state(state)
+    {
+    }
+
     void sendToClient(const MqttsnMessage& msg)
     {
         assert(m_sendToClientFunc);
@@ -114,7 +108,7 @@ protected:
 
     void nextTickReq(unsigned ms)
     {
-        m_nextTickTimestamp = m_timestamp + ms;
+        m_nextTickTimestamp = m_state.m_timestamp + ms;
     }
 
     void cancelTick()
@@ -127,26 +121,20 @@ protected:
         m_complete = true;
     }
 
-    unsigned retryPeriod() const
+    SessionState& state()
     {
-        return m_retryPeriod;
-    }
-
-    unsigned retryCount() const
-    {
-        return m_retryCount;
+        return m_state;
     }
 
     virtual void tickImpl() {};
     virtual void startImpl() {};
 
 private:
+    SessionState& m_state;
+
     SendToClientCb m_sendToClientFunc;
     SendToBrokerCb m_sendToBrokerFunc;
-    Timestamp m_timestamp = 0;
     Timestamp m_nextTickTimestamp = 0;
-    unsigned m_retryPeriod = 0;
-    unsigned m_retryCount = 0;
     bool m_complete = false;
 };
 

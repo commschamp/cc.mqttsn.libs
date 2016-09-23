@@ -26,6 +26,19 @@ namespace gateway
 namespace session_op
 {
 
+Connect::Connect(SessionState& sessionState)
+  : Base(sessionState)
+{
+    assert(!sessionState.m_connecting);
+    sessionState.m_connecting = true;
+}
+
+Connect::~Connect()
+{
+    assert(state().m_connecting);
+    state().m_connecting = false;
+}
+
 void Connect::tickImpl()
 {
     doNextStep();
@@ -33,7 +46,6 @@ void Connect::tickImpl()
 
 void Connect::handle(ConnectMsg_SN& msg)
 {
-    m_status = ConnectionStatus::Connecting;
     typedef ConnectMsg_SN MsgType;
     auto& fields = msg.fields();
     auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
@@ -42,20 +54,21 @@ void Connect::handle(ConnectMsg_SN& msg)
     auto& keepAliveField = std::get<MsgType::FieldIdx_duration>(fields);
     auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
 
-    if (m_state.m_hasClientId) {
-        m_state = State();
+    assert(state().m_clientId.empty() || state().m_clientId == clientIdField.value());
+    if (m_internalState.m_hasClientId) {
+        m_internalState = State();
     }
 
-    m_state.m_hasClientId = true;
+    m_internalState.m_hasClientId = true;
 
-    m_info.m_clientId = clientIdField.value();
-    m_info.m_keepAlive = keepAliveField.value();
-    m_info.m_clean = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession);
-    m_info.m_will = WillInfo();
+    m_clientId = clientIdField.value();
+    m_keepAlive = keepAliveField.value();
+    m_clean = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession);
+    m_will = WillInfo();
 
     if (!midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_will)) {
-        m_state.m_hasWillTopic = true;
-        m_state.m_hasWillMsg = true;
+        m_internalState.m_hasWillTopic = true;
+        m_internalState.m_hasWillMsg = true;
     }
 
     doNextStep();
@@ -63,13 +76,13 @@ void Connect::handle(ConnectMsg_SN& msg)
 
 void Connect::handle(WilltopicMsg_SN& msg)
 {
-    assert(m_status == ConnectionStatus::Connecting);
-    if ((!m_state.m_hasClientId) || (m_state.m_hasWillMsg)) {
+    assert(state().m_connecting);
+    if ((!m_internalState.m_hasClientId) || (m_internalState.m_hasWillMsg)) {
         return;
     }
 
-    m_state.m_hasWillTopic = true;
-    m_state.m_attempt = 0;
+    m_internalState.m_hasWillTopic = true;
+    m_internalState.m_attempt = 0;
 
     typedef WilltopicMsg_SN MsgType;
     auto& fields = msg.fields();
@@ -79,36 +92,36 @@ void Connect::handle(WilltopicMsg_SN& msg)
     auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
     auto& willTopicField = std::get<MsgType::FieldIdx_willTopic>(fields);
 
-    m_info.m_will.m_topic = willTopicField.value();
-    m_info.m_will.m_qos = translateQos(qosField.value());
-    m_info.m_will.m_retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+    m_will.m_topic = willTopicField.value();
+    m_will.m_qos = translateQos(qosField.value());
+    m_will.m_retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
     doNextStep();
 }
 
 void Connect::handle(WillmsgMsg_SN& msg)
 {
-    assert(m_status == ConnectionStatus::Connecting);
-    if (!m_state.m_hasWillTopic) {
+    assert(state().m_connecting);
+    if (!m_internalState.m_hasWillTopic) {
         return;
     }
 
-    assert(m_state.m_hasClientId);
+    assert(m_internalState.m_hasClientId);
 
-    m_state.m_hasWillMsg = true;
-    m_state.m_attempt = 0;
+    m_internalState.m_hasWillMsg = true;
+    m_internalState.m_attempt = 0;
 
     typedef WillmsgMsg_SN MsgType;
     auto& fields = msg.fields();
     auto& willMsgField = std::get<MsgType::FieldIdx_willMsg>(fields);
 
-    m_info.m_will.m_msg = willMsgField.value();
+    m_will.m_msg = willMsgField.value();
     doNextStep();
 }
 
 void Connect::handle(ConnackMsg& msg)
 {
-    assert(m_status == ConnectionStatus::Connecting);
-    if (!m_state.m_hasWillMsg) {
+    assert(state().m_connecting);
+    if (!m_internalState.m_hasWillMsg) {
         return;
     }
 
@@ -143,8 +156,11 @@ void Connect::handle(ConnackMsg& msg)
     respRetCodeField.value() = retCode;
     sendToClient(respMsg);
 
-    m_clientId = m_info.m_clientId;
-    m_status = ConnectionStatus::Connected;
+    auto& sessionState = state();
+    sessionState.m_clientId = m_clientId;
+    sessionState.m_connStatus = ConnectionStatus::Connected;
+    sessionState.m_keepAlive = m_keepAlive;
+    sessionState.m_will = m_will;
     setComplete();
 }
 
@@ -152,33 +168,33 @@ void Connect::doNextStep()
 {
     cancelTick();
 
-    if (retryCount() <= m_state.m_attempt) {
+    if (state().m_retryCount <= m_internalState.m_attempt) {
         m_clientId.clear();
-        m_status = ConnectionStatus::Disconnected;
+        state().m_connStatus = ConnectionStatus::Disconnected;
         return;
     }
 
-    ++m_state.m_attempt;
+    ++m_internalState.m_attempt;
 
-    if (m_state.m_hasWillMsg) {
-        assert(m_state.m_hasWillTopic);
-        assert(m_state.m_hasWillMsg);
-        assert(m_state.m_hasClientId);
+    if (m_internalState.m_hasWillMsg) {
+        assert(m_internalState.m_hasWillTopic);
+        assert(m_internalState.m_hasWillMsg);
+        assert(m_internalState.m_hasClientId);
         forwardConnectionReq();
-        nextTickReq(retryPeriod());
+        nextTickReq(state().m_retryPeriod);
         return;
     }
 
-    if (m_state.m_hasWillTopic) {
-        assert(m_state.m_hasClientId);
+    if (m_internalState.m_hasWillTopic) {
+        assert(m_internalState.m_hasClientId);
         sendToClient(WillmsgreqMsg_SN());
-        nextTickReq(retryPeriod());
+        nextTickReq(state().m_retryPeriod);
         return;
     }
 
-    assert(m_state.m_hasClientId);
+    assert(m_internalState.m_hasClientId);
     sendToClient(WilltopicreqMsg_SN());
-    nextTickReq(retryPeriod());
+    nextTickReq(state().m_retryPeriod);
 }
 
 void Connect::forwardConnectionReq()
@@ -192,30 +208,30 @@ void Connect::forwardConnectionReq()
     auto& keepAliveField = std::get<decltype(msg)::FieldIdx_KeepAlive>(fields);
     auto& clientIdField = std::get<decltype(msg)::FieldIdx_ClientId>(fields);
 
-    clientIdField.value() = m_info.m_clientId;
-    keepAliveField.value() = m_info.m_keepAlive;
-    lowFlagsField.setBitValue(mqtt::message::ConnectFlagsLowBitIdx_CleanSession, m_info.m_clean);
+    clientIdField.value() = m_clientId;
+    keepAliveField.value() = m_keepAlive;
+    lowFlagsField.setBitValue(mqtt::message::ConnectFlagsLowBitIdx_CleanSession, m_clean);
 
-    if (!m_info.m_will.m_topic.empty()) {
+    if (!m_will.m_topic.empty()) {
         auto& willTopicField = std::get<decltype(msg)::FieldIdx_WillTopic>(fields);
         auto& willMsgField = std::get<decltype(msg)::FieldIdx_WillMessage>(fields);
         auto& willQosField = std::get<mqtt::message::ConnectFlagsMemberIdx_WillQos>(flagsMembers);
 
         lowFlagsField.setBitValue(mqtt::message::ConnectFlagsLowBitIdx_WillFlag, true);
-        willTopicField.field().value() = m_info.m_will.m_topic;
-        willMsgField.field().value() = m_info.m_will.m_msg;
-        willQosField.value() = translateQosForBroker(m_info.m_will.m_qos);
-        highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain, m_info.m_will.m_retain);
+        willTopicField.field().value() = m_will.m_topic;
+        willMsgField.field().value() = m_will.m_msg;
+        willQosField.value() = translateQosForBroker(m_will.m_qos);
+        highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain, m_will.m_retain);
     }
 
-    if (!m_username.empty()) {
+    if (!state().m_username.empty()) {
         auto& usernameField = std::get<decltype(msg)::FieldIdx_UserName>(fields);
-        usernameField.field().value() = m_username;
+        usernameField.field().value() = state().m_username;
         highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_UserNameFlag, true);
 
-        if (!m_password.empty()) {
+        if (!state().m_password.empty()) {
             auto& passwordField = std::get<decltype(msg)::FieldIdx_Password>(fields);
-            passwordField.field().value() = m_password;
+            passwordField.field().value() = state().m_password;
             highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_PasswordFlag, true);
         }
     }
