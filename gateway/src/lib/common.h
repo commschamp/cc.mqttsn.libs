@@ -77,6 +77,23 @@ struct WillInfo
     bool m_retain = false;
 };
 
+inline
+bool operator==(const WillInfo& info1, const WillInfo& info2)
+{
+    return
+        ((info1.m_topic == info2.m_topic) &&
+         (info1.m_msg == info2.m_msg) &&
+         (info1.m_qos == info2.m_qos) &&
+         (info1.m_retain == info2.m_retain));
+}
+
+inline
+bool operator!=(const WillInfo& info1, const WillInfo& info2)
+{
+    return !(info1 == info2);
+}
+
+
 //struct ConnectionInfo
 //{
 //    std::string m_clientId;

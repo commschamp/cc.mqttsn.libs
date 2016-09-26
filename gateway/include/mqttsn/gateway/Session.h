@@ -38,6 +38,8 @@ public:
     typedef std::function<void (unsigned value)> NextTickProgramReqCb;
     typedef std::function<unsigned ()> CancelTickWaitReqCb;
     typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
+    typedef std::function<void ()> TerminationReqCb;
+    typedef std::function<void ()> BrokerReconnectReqCb;
 
 
     Session();
@@ -47,6 +49,8 @@ public:
     void setCancelTickWaitReqCb(CancelTickWaitReqCb&& func);
     void setSendDataClientReqCb(SendDataReqCb&& func);
     void setSendDataBrokerReqCb(SendDataReqCb&& func);
+    void setTerminationReqCb(TerminationReqCb&& func);
+    void setBrokerReconnectReqCb(BrokerReconnectReqCb&& func);
     void setGatewayId(std::uint8_t value);
     void setAuthInfo(const std::string& username, const std::uint8_t* password, std::size_t passLen);
     void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen);
@@ -60,6 +64,8 @@ public:
 
     std::size_t dataFromClient(const std::uint8_t* buf, std::size_t len);
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
+
+    void setBrokerConnected(bool connected);
 
 private:
     std::unique_ptr<SessionImpl> m_pImpl;

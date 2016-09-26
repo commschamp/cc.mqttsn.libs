@@ -40,6 +40,7 @@ public:
 
 protected:
     virtual void tickImpl() override;
+    virtual void brokerConnectionUpdatedImpl() override;
 
 private:
     struct State
@@ -58,6 +59,7 @@ private:
 
     void doNextStep();
     void forwardConnectionReq();
+    void processAck(mqtt::message::ConnackResponseCode respCode);
 
     std::string m_clientId;
     WillInfo m_will;

@@ -52,6 +52,16 @@ void Session::setSendDataBrokerReqCb(SendDataReqCb&& func)
     m_pImpl->setSendDataBrokerReqCb(std::move(func));
 }
 
+void Session::setTerminationReqCb(TerminationReqCb&& func)
+{
+    m_pImpl->setTerminationReqCb(std::move(func));
+}
+
+void Session::setBrokerReconnectReqCb(BrokerReconnectReqCb&& func)
+{
+    m_pImpl->setBrokerReconnectReqCb(std::move(func));
+}
+
 void Session::setGatewayId(std::uint8_t value)
 {
     m_pImpl->setGatewayId(value);
@@ -111,6 +121,11 @@ std::size_t Session::dataFromClient(const std::uint8_t* buf, std::size_t len)
 std::size_t Session::dataFromBroker(const std::uint8_t* buf, std::size_t len)
 {
     return m_pImpl->dataFromBroker(buf, len);
+}
+
+void Session::setBrokerConnected(bool connected)
+{
+    m_pImpl->setBrokerConnected(connected);
 }
 
 }  // namespace gateway

@@ -39,6 +39,8 @@ public:
 
     typedef std::function<void (const MqttsnMessage&)> SendToClientCb;
     typedef std::function<void (const MqttMessage&)> SendToBrokerCb;
+    typedef std::function<void ()> SessionTermReqCb;
+    typedef std::function<void ()> BrokerReconnectReqCb;
     typedef unsigned long long Timestamp;
 
     virtual ~SessionOp() = default;
@@ -53,6 +55,18 @@ public:
     void setSendToBrokerCb(TFunc&& func)
     {
         m_sendToBrokerFunc = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setSessionTermReqCb(TFunc&& func)
+    {
+        m_termReqFunc = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setBrokerReconnectReqCb(TFunc&& func)
+    {
+        m_brokerReconnectReqFunc = std::forward<TFunc>(func);
     }
 
     void timestampUpdated()
@@ -88,6 +102,11 @@ public:
         return m_complete;
     }
 
+    void brokerConnectionUpdated()
+    {
+        brokerConnectionUpdatedImpl();
+    }
+
 protected:
     SessionOp(SessionState& state)
       : m_state(state)
@@ -104,6 +123,12 @@ protected:
     {
         assert(m_sendToBrokerFunc);
         m_sendToBrokerFunc(msg);
+    }
+
+    void termRequest()
+    {
+        assert(m_termReqFunc);
+        m_termReqFunc();
     }
 
     void nextTickReq(unsigned ms)
@@ -128,12 +153,15 @@ protected:
 
     virtual void tickImpl() {};
     virtual void startImpl() {};
+    virtual void brokerConnectionUpdatedImpl() {}
 
 private:
     SessionState& m_state;
 
     SendToClientCb m_sendToClientFunc;
     SendToBrokerCb m_sendToBrokerFunc;
+    SessionTermReqCb m_termReqFunc;
+    BrokerReconnectReqCb m_brokerReconnectReqFunc;
     Timestamp m_nextTickTimestamp = 0;
     bool m_complete = false;
 };

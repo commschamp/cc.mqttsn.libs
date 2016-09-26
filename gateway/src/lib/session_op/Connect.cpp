@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Connect.h"
+#include <cassert>
 
 namespace mqttsn
 {
@@ -44,6 +45,12 @@ void Connect::tickImpl()
     doNextStep();
 }
 
+void Connect::brokerConnectionUpdatedImpl()
+{
+    // TODO: implement
+    assert(!"NYI");
+}
+
 void Connect::handle(ConnectMsg_SN& msg)
 {
     typedef ConnectMsg_SN MsgType;
@@ -53,6 +60,15 @@ void Connect::handle(ConnectMsg_SN& msg)
     auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
     auto& keepAliveField = std::get<MsgType::FieldIdx_duration>(fields);
     auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
+
+    if ((state().m_connStatus != ConnectionStatus::Disconnected) &&
+        (clientIdField.value() != state().m_clientId)) {
+        assert(!state().m_clientId.empty());
+        sendToClient(DisconnectMsg_SN());
+        state().m_connStatus = ConnectionStatus::Disconnected;
+        termRequest();
+        return;
+    }
 
     assert(state().m_clientId.empty() || state().m_clientId == clientIdField.value());
     if (m_internalState.m_hasClientId) {
@@ -125,43 +141,10 @@ void Connect::handle(ConnackMsg& msg)
         return;
     }
 
-    static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
-        /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
-        /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Conjestion,
-        /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
-    };
-
-    static const std::size_t RetCodeMapSize =
-                        std::extent<decltype(RetCodeMap)>::value;
-
-    static_assert(RetCodeMapSize == (std::size_t)mqtt::message::ConnackResponseCode::NumOfValues,
-        "Incorrect map");
-
     typedef ConnackMsg MsgType;
     auto& fields = msg.fields();
     auto& responseField = std::get<MsgType::FieldIdx_Response>(fields);
-    auto responseVal = responseField.value();
-
-    auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
-    if (static_cast<std::size_t>(responseVal) < RetCodeMapSize) {
-        retCode = RetCodeMap[static_cast<std::size_t>(responseVal)];
-    }
-
-    ConnackMsg_SN respMsg;
-    auto& respFields = respMsg.fields();
-    auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
-    respRetCodeField.value() = retCode;
-    sendToClient(respMsg);
-
-    auto& sessionState = state();
-    sessionState.m_clientId = m_clientId;
-    sessionState.m_connStatus = ConnectionStatus::Connected;
-    sessionState.m_keepAlive = m_keepAlive;
-    sessionState.m_will = m_will;
-    setComplete();
+    processAck(responseField.value());
 }
 
 void Connect::doNextStep()
@@ -180,6 +163,31 @@ void Connect::doNextStep()
         assert(m_internalState.m_hasWillTopic);
         assert(m_internalState.m_hasWillMsg);
         assert(m_internalState.m_hasClientId);
+
+        auto& st = state();
+        do {
+
+            if (st.m_clientId != m_clientId) {
+                break;
+            }
+
+            if ((!st.m_will.m_topic.empty()) &&
+                (!m_will.m_topic.empty()) &&
+                (st.m_will != m_will)) {
+                break;
+            }
+
+            processAck(mqtt::message::ConnackResponseCode::Accepted);
+            return;
+        } while (false);
+
+        if (st.m_connStatus == ConnectionStatus::Connected) {
+            // TODO: disconnect and reconnect broker
+            assert(!"NYI");
+            return;
+        }
+
+        assert(st.m_connStatus == ConnectionStatus::Disconnected);
         forwardConnectionReq();
         nextTickReq(state().m_retryPeriod);
         return;
@@ -238,6 +246,54 @@ void Connect::forwardConnectionReq()
 
     msg.refresh();
     sendToBroker(msg);
+}
+
+void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
+{
+    static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
+        /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
+        /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
+        /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
+        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Conjestion,
+        /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
+        /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
+    };
+
+    static const std::size_t RetCodeMapSize =
+                        std::extent<decltype(RetCodeMap)>::value;
+
+    static_assert(RetCodeMapSize == (std::size_t)mqtt::message::ConnackResponseCode::NumOfValues,
+        "Incorrect map");
+
+    auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
+    if (static_cast<std::size_t>(respCode) < RetCodeMapSize) {
+        retCode = RetCodeMap[static_cast<std::size_t>(respCode)];
+    }
+
+    ConnackMsg_SN respMsg;
+    auto& respFields = respMsg.fields();
+    auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
+    respRetCodeField.value() = retCode;
+    sendToClient(respMsg);
+
+    auto& sessionState = state();
+
+    // TODO: if clean session delete registrations.
+
+    if (retCode == mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+        sessionState.m_clientId = m_clientId;
+        sessionState.m_connStatus = ConnectionStatus::Connected;
+        sessionState.m_keepAlive = m_keepAlive;
+        sessionState.m_will = m_will;
+    }
+    else {
+        sessionState.m_clientId.clear();
+        sessionState.m_connStatus = ConnectionStatus::Disconnected;
+        sessionState.m_keepAlive = 0;
+        sessionState.m_will = WillInfo();
+    }
+    setComplete();
+
 }
 
 }  // namespace session_op

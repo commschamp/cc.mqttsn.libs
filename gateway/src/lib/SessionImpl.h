@@ -43,6 +43,8 @@ public:
     typedef Session::NextTickProgramReqCb NextTickProgramReqCb;
     typedef Session::SendDataReqCb SendDataReqCb;
     typedef Session::CancelTickWaitReqCb CancelTickWaitReqCb;
+    typedef Session::TerminationReqCb TerminationReqCb;
+    typedef Session::BrokerReconnectReqCb BrokerReconnectReqCb;
 
     SessionImpl() = default;
     ~SessionImpl() = default;
@@ -70,6 +72,18 @@ public:
     void setSendDataBrokerReqCb(TFunc&& func)
     {
         m_sendToBrokerCb = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setTerminationReqCb(TFunc&& func)
+    {
+        m_termReqCb = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setBrokerReconnectReqCb(TFunc&& func)
+    {
+        m_brokerReconnectReqCb = std::forward<TFunc>(func);
     }
 
     void setGatewayId(std::uint8_t value)
@@ -106,7 +120,9 @@ public:
             (!m_nextTickProgramCb) ||
             (!m_cancelTickCb) ||
             (!m_sendToClientCb) ||
-            (!m_sendToBrokerCb)) {
+            (!m_sendToBrokerCb) ||
+            (!m_termReqCb) ||
+            (!m_brokerReconnectReqCb)) {
             return false;
         }
 
@@ -128,6 +144,8 @@ public:
 
     std::size_t dataFromClient(const std::uint8_t* buf, std::size_t len);
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
+
+    void setBrokerConnected(bool connected);
 
 private:
 
@@ -165,6 +183,8 @@ private:
     CancelTickWaitReqCb m_cancelTickCb;
     SendDataReqCb m_sendToClientCb;
     SendDataReqCb m_sendToBrokerCb;
+    TerminationReqCb m_termReqCb;
+    BrokerReconnectReqCb m_brokerReconnectReqCb;
 
     MqttsnProtStack m_mqttsnStack;
     MqttProtStack m_mqttStack;

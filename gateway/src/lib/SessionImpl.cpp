@@ -132,6 +132,19 @@ std::size_t SessionImpl::dataFromBroker(const std::uint8_t* buf, std::size_t len
     return processInputData(buf, len, m_mqttStack);
 }
 
+void SessionImpl::setBrokerConnected(bool connected)
+{
+    if ((!isRunning()) || (m_state.m_brokerConnected == connected)) {
+        return;
+    }
+
+    auto guard = apiCall();
+    m_state.m_brokerConnected = connected;
+    for (auto& op : m_ops) {
+        op->brokerConnectionUpdated();
+    }
+}
+
 void SessionImpl::handle(SearchgwMsg_SN& msg)
 {
     static_cast<void>(msg);
@@ -193,6 +206,18 @@ void SessionImpl::startOp(SessionOp& op)
 {
     op.setSendToClientCb(std::bind(&SessionImpl::sendToClient, this, std::placeholders::_1));
     op.setSendToBrokerCb(std::bind(&SessionImpl::sendToBroker, this, std::placeholders::_1));
+    op.setSessionTermReqCb(
+        [this]()
+        {
+            if (m_termReqCb) {
+                m_termReqCb();
+            }
+        });
+    op.setBrokerReconnectReqCb(
+        [this]()
+        {
+
+        });
     op.start();
 }
 
