@@ -72,8 +72,7 @@ public:
     void timestampUpdated()
     {
         if ((m_nextTickTimestamp != 0) &&
-            (m_nextTickTimestamp <= m_state.m_timestamp) &&
-            (!isComplete())) {
+            (m_nextTickTimestamp <= m_state.m_timestamp)) {
             m_nextTickTimestamp = 0;
             tickImpl();
         }
@@ -81,7 +80,7 @@ public:
 
     unsigned nextTick()
     {
-        if ((m_nextTickTimestamp == 0) || (isComplete())) {
+        if (m_nextTickTimestamp == 0) {
             return std::numeric_limits<unsigned>::max();
         }
 
@@ -95,11 +94,6 @@ public:
     void start()
     {
         startImpl();
-    }
-
-    bool isComplete() const
-    {
-        return m_complete;
     }
 
     void brokerConnectionUpdated()
@@ -131,6 +125,12 @@ protected:
         m_termReqFunc();
     }
 
+    void brokerReconnectRequest()
+    {
+        assert(m_brokerReconnectReqFunc);
+        m_brokerReconnectReqFunc();
+    }
+
     void nextTickReq(unsigned ms)
     {
         m_nextTickTimestamp = m_state.m_timestamp + ms;
@@ -139,11 +139,6 @@ protected:
     void cancelTick()
     {
         m_nextTickTimestamp = 0;
-    }
-
-    void setComplete()
-    {
-        m_complete = true;
     }
 
     SessionState& state()
@@ -163,7 +158,6 @@ private:
     SessionTermReqCb m_termReqFunc;
     BrokerReconnectReqCb m_brokerReconnectReqFunc;
     Timestamp m_nextTickTimestamp = 0;
-    bool m_complete = false;
 };
 
 typedef std::unique_ptr<SessionOp> SessionOpPtr;

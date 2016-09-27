@@ -98,11 +98,27 @@ TestMsgHandler::setWillmsgreqMsgHandler(WillmsgreqMsgHandlerFunc&& func)
     return old;
 }
 
+TestMsgHandler::DisconnectSnMsgHandlerFunc TestMsgHandler::setDisconnectSnMsgHandler(
+    DisconnectSnMsgHandlerFunc&& func)
+{
+    DisconnectSnMsgHandlerFunc old(std::move(m_disconnectSnMsgHandler));
+    m_disconnectSnMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
     ConnectMsgHandlerFunc old(std::move(m_connectMsgHandler));
     m_connectMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::DisconnectMsgHandlerFunc
+TestMsgHandler::setDisconnectMsgHandler(DisconnectMsgHandlerFunc&& func)
+{
+    DisconnectMsgHandlerFunc old(std::move(m_disconnectMsgHandler));
+    m_disconnectMsgHandler = std::move(func);
     return old;
 }
 
@@ -135,6 +151,13 @@ void TestMsgHandler::handle(WillmsgreqMsg_SN& msg)
     }
 }
 
+void TestMsgHandler::handle(DisconnectMsg_SN& msg)
+{
+    if (m_disconnectSnMsgHandler) {
+        m_disconnectSnMsgHandler(msg);
+    }
+}
+
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
 {
     std::cout << "Unhandled message sent to client: " << (unsigned)msg.getId() << std::endl;
@@ -145,6 +168,13 @@ void TestMsgHandler::handle(ConnectMsg& msg)
 {
     if (m_connectMsgHandler) {
         m_connectMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(DisconnectMsg& msg)
+{
+    if (m_disconnectMsgHandler) {
+        m_disconnectMsgHandler(msg);
     }
 }
 

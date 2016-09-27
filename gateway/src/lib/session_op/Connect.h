@@ -49,6 +49,7 @@ private:
         bool m_hasClientId = false;
         bool m_hasWillTopic = false;
         bool m_hasWillMsg = false;
+        bool m_waitingForReconnect = false;
     };
 
     using Base::handle;
@@ -60,6 +61,8 @@ private:
     void doNextStep();
     void forwardConnectionReq();
     void processAck(mqtt::message::ConnackResponseCode respCode);
+    void clearConnectionInfo();
+    void clearInternalState();
 
     std::string m_clientId;
     WillInfo m_will;

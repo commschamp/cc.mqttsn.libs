@@ -47,8 +47,17 @@ void Connect::tickImpl()
 
 void Connect::brokerConnectionUpdatedImpl()
 {
-    // TODO: implement
-    assert(!"NYI");
+    if (!m_internalState.m_waitingForReconnect) {
+        return;
+    }
+
+    if (!state().m_brokerConnected) {
+        clearConnectionInfo();
+        return;
+    }
+
+    m_internalState.m_waitingForReconnect = false;
+    doNextStep();
 }
 
 void Connect::handle(ConnectMsg_SN& msg)
@@ -64,7 +73,11 @@ void Connect::handle(ConnectMsg_SN& msg)
     if ((state().m_connStatus != ConnectionStatus::Disconnected) &&
         (clientIdField.value() != state().m_clientId)) {
         assert(!state().m_clientId.empty());
-        sendToClient(DisconnectMsg_SN());
+        DisconnectMsg_SN respMsg;
+        auto& respFields = respMsg.fields();
+        auto& durationField = std::get<decltype(respMsg)::FieldIdx_duration>(respFields);
+        durationField.setMode(comms::field::OptionalMode::Missing);
+        sendToClient(respMsg);
         state().m_connStatus = ConnectionStatus::Disconnected;
         termRequest();
         return;
@@ -159,6 +172,12 @@ void Connect::doNextStep()
 
     ++m_internalState.m_attempt;
 
+    if (m_internalState.m_waitingForReconnect) {
+        processAck(mqtt::message::ConnackResponseCode::ServerUnavailable);
+        termRequest();
+        return;
+    }
+
     if (m_internalState.m_hasWillMsg) {
         assert(m_internalState.m_hasWillTopic);
         assert(m_internalState.m_hasWillMsg);
@@ -167,7 +186,12 @@ void Connect::doNextStep()
         auto& st = state();
         do {
 
-            if (st.m_clientId != m_clientId) {
+            if ((st.m_clientId != m_clientId) ||
+                (st.m_keepAlive != m_keepAlive)) {
+                break;
+            }
+
+            if (st.m_will.m_topic != m_will.m_topic) {
                 break;
             }
 
@@ -177,19 +201,21 @@ void Connect::doNextStep()
                 break;
             }
 
+            // TODO: if clean session and have subscriptions reconnect
             processAck(mqtt::message::ConnackResponseCode::Accepted);
             return;
         } while (false);
 
         if (st.m_connStatus == ConnectionStatus::Connected) {
-            // TODO: disconnect and reconnect broker
-            assert(!"NYI");
+            sendToBroker(DisconnectMsg());
+            m_internalState.m_waitingForReconnect = true;
+            nextTickReq(state().m_retryPeriod);
+            brokerReconnectRequest();
             return;
         }
 
         assert(st.m_connStatus == ConnectionStatus::Disconnected);
         forwardConnectionReq();
-        nextTickReq(state().m_retryPeriod);
         return;
     }
 
@@ -276,24 +302,40 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     respRetCodeField.value() = retCode;
     sendToClient(respMsg);
 
-    auto& sessionState = state();
+
 
     // TODO: if clean session delete registrations.
 
-    if (retCode == mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-        sessionState.m_clientId = m_clientId;
-        sessionState.m_connStatus = ConnectionStatus::Connected;
-        sessionState.m_keepAlive = m_keepAlive;
-        sessionState.m_will = m_will;
+    if (retCode != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+        clearConnectionInfo();
+        clearInternalState();
+        return;
     }
-    else {
-        sessionState.m_clientId.clear();
-        sessionState.m_connStatus = ConnectionStatus::Disconnected;
-        sessionState.m_keepAlive = 0;
-        sessionState.m_will = WillInfo();
-    }
-    setComplete();
 
+    auto& sessionState = state();
+    sessionState.m_clientId = m_clientId;
+    sessionState.m_connStatus = ConnectionStatus::Connected;
+    sessionState.m_keepAlive = m_keepAlive;
+    sessionState.m_will = m_will;
+    clearInternalState();
+}
+
+void Connect::clearConnectionInfo()
+{
+    auto& sessionState = state();
+    sessionState.m_clientId.clear();
+    sessionState.m_connStatus = ConnectionStatus::Disconnected;
+    sessionState.m_keepAlive = 0;
+    sessionState.m_will = WillInfo();
+}
+
+void Connect::clearInternalState()
+{
+    m_internalState = State();
+    m_clientId.clear();
+    m_will = WillInfo();
+    m_keepAlive = 0;
+    m_clean = false;
 }
 
 }  // namespace session_op

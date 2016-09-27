@@ -121,7 +121,8 @@ struct SessionState
     bool m_running = false;
     bool m_connecting = false;
     bool m_brokerConnected = false;
-    bool m_reconnecgingBroker = false;
+    bool m_reconnectingBroker = false;
+    bool m_terminating = false;
     bool m_timerActive = false;
     Timestamp m_timestamp = 0U;
     unsigned m_callStackCount = 0U;

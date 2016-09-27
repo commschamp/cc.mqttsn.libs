@@ -120,8 +120,15 @@ public:
     typedef std::function<void (const WillmsgreqMsg_SN&)> WillmsgreqMsgHandlerFunc;
     WillmsgreqMsgHandlerFunc setWillmsgreqMsgHandler(WillmsgreqMsgHandlerFunc&& func);
 
+    typedef std::function<void (const DisconnectMsg_SN&)> DisconnectSnMsgHandlerFunc;
+    DisconnectSnMsgHandlerFunc setDisconnectSnMsgHandler(DisconnectSnMsgHandlerFunc&& func);
+
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
+
+    typedef std::function<void (const DisconnectMsg&)> DisconnectMsgHandlerFunc;
+    DisconnectMsgHandlerFunc setDisconnectMsgHandler(DisconnectMsgHandlerFunc&& func);
+
 
     using MqttsnBase::handle;
     using MqttBase::handle;
@@ -130,9 +137,11 @@ public:
     void handle(ConnackMsg_SN& msg);
     void handle(WilltopicreqMsg_SN& msg);
     void handle(WillmsgreqMsg_SN& msg);
+    void handle(DisconnectMsg_SN& msg);
     void handle(TestMqttsnMessage& msg);
 
     void handle(ConnectMsg& msg);
+    void handle(DisconnectMsg& msg);
     void handle(TestMqttMessage& msg);
 
     void processDataForClient(const DataBuf& data);
@@ -166,6 +175,8 @@ private:
     ConnackMsgHandlerFunc m_connackMsgHandler;
     WilltopicreqMsgHandlerFunc m_willtopicreqMsgHandler;
     WillmsgreqMsgHandlerFunc m_willmsgreqMsgHandler;
+    DisconnectSnMsgHandlerFunc m_disconnectSnMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
+    DisconnectMsgHandlerFunc m_disconnectMsgHandler;
 };

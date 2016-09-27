@@ -147,6 +147,12 @@ private:
                 TS_TRACE("<-- WILLMSGREQ");
             });
 
+        handler.setDisconnectSnMsgHandler(
+            [](const DisconnectMsg_SN&)
+            {
+                TS_TRACE("<-- DISCONNECT");
+            });
+
 
         handler.setConnectMsgHandler(
             [](const ConnectMsg&)
@@ -154,10 +160,17 @@ private:
                 TS_TRACE("<-- CONNECT");
             });
 
+        handler.setDisconnectMsgHandler(
+            [](const DisconnectMsg&)
+            {
+                TS_TRACE("<-- DISCONNECT");
+            });
+
         session->setRetryPeriod(DefaultRetryPeriod);
         session->setRetryCount(DefaultRetryCount);
         session->setGatewayId(gwId);
         bool result = session->start();
+        session->setBrokerConnected(true);
         TS_ASSERT(result);
         TS_ASSERT(session->isRunning());
         TS_ASSERT(state.m_sentToClient.empty());
@@ -322,6 +335,34 @@ private:
         handler.setWillmsgreqMsgHandler(std::move(oldCb));
     }
 
+    void verifySentToClient_DisconnectMsg(State& state, TestMsgHandler& handler)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setDisconnectSnMsgHandler(
+                [&](const DisconnectMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- DISCONNECT");
+
+                    typedef DisconnectMsg_SN MsgType;
+                    auto& fields = msg.fields();
+                    auto& duration = std::get<MsgType::FieldIdx_duration>(fields);
+                    TS_ASSERT_EQUALS(duration.getMode(), comms::field::OptionalMode::Missing);
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setDisconnectSnMsgHandler(std::move(oldCb));
+    }
+
     void verifySentToBroker_ConnectMsg(
         State& state,
         TestMsgHandler& handler,
@@ -407,7 +448,53 @@ private:
         handler.setConnectMsgHandler(std::move(oldCb));
     }
 
-    void verifyNoOtherEvent(State& state)
+    void verifySentToBroker_DisconnectMsg(
+        State& state,
+        TestMsgHandler& handler)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setDisconnectMsgHandler(
+                [&](const DisconnectMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- DISCONNECT");
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setDisconnectMsgHandler(std::move(oldCb));
+    }
+
+    void verifyBrokerReconnectReq(State& state)
+    {
+        if (state.m_brokerReconnectRequests.empty()) {
+            TS_FAIL("No reconnect requests recorded");
+            return;
+        }
+
+        state.m_brokerReconnectRequests.pop_front();
+    }
+
+    void verifyTermReq(State& state)
+    {
+        if (state.m_termRequests.empty()) {
+            TS_FAIL("No termination requests recorded");
+            return;
+        }
+
+        state.m_termRequests.pop_front();
+    }
+
+    void verifyNoOtherEvent(State& state, TestMsgHandler& handler)
     {
         TS_ASSERT(state.m_sentToClient.empty());
         TS_ASSERT(state.m_sentToBroker.empty());
@@ -415,6 +502,16 @@ private:
         TS_ASSERT(state.m_elapsed.empty());
         TS_ASSERT(state.m_termRequests.empty());
         TS_ASSERT(state.m_brokerReconnectRequests.empty());
+
+        while (!state.m_sentToClient.empty()) {
+            handler.processDataForClient(state.m_sentToClient.front());
+            state.m_sentToClient.pop_front();
+        }
+
+        while (!state.m_sentToBroker.empty()) {
+            handler.processDataForBroker(state.m_sentToBroker.front());
+            state.m_sentToBroker.pop_front();
+        }
     }
 
     void verifyTickReq(State& state, unsigned value)
@@ -435,7 +532,7 @@ void SessionTest::test1()
     auto searchgwMsg = handler.prepareSearchgw();
     dataFromClient(*session, searchgwMsg, "SEARCHGW");
     verifySent_GwinfoMsg(state, handler, DefaultGwId);
-    verifyNoOtherEvent(state);
+    verifyNoOtherEvent(state, handler);
 }
 
 void SessionTest::test2()
@@ -450,15 +547,12 @@ void SessionTest::test2()
     auto connectMsg = handler.prepareClientConnect(ClientId, KeepAlive, false, CleanSession);
     dataFromClient(*session, connectMsg, "CONNECT");
     verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
-    verifyNoOtherEvent(state);
+    verifyNoOtherEvent(state, handler);
 
-    state.m_elapsed.push_back(1000);
     auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
-    TS_TRACE(state.m_tickReq.front());
-    verifyNoOtherEvent(state);
+    verifyNoOtherEvent(state, handler);
 }
 
 void SessionTest::test3()
@@ -473,18 +567,52 @@ void SessionTest::test3()
     auto connectMsg = handler.prepareClientConnect(ClientId, KeepAlive, false, CleanSession);
     dataFromClient(*session, connectMsg, "CONNECT");
     verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession);
+    verifyNoOtherEvent(state, handler);
 
-    checkTickValue(state, DefaultRetryPeriod * 1000);
-    doTick(state, *session);
+    dataFromClient(*session, connectMsg, "CONNECT");
     verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession);
+    verifyNoOtherEvent(state, handler);
 
-    checkTickValue(state, DefaultRetryPeriod * 1000);
-    doTick(state, *session);
-    verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    dataFromBroker(*session, connackMsg, "CONNACK");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyNoOtherEvent(state, handler);
 
-    checkTickValue(state, DefaultRetryPeriod * 1000);
-    doTick(state, *session);
-    verifyNoOtherEvent(state);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyNoOtherEvent(state, handler);
+
+
+    static const std::uint16_t KeepAlive2 = 120;
+    static const bool CleanSession2 = false;
+
+    auto connectMsg2 = handler.prepareClientConnect(ClientId, KeepAlive2, false, CleanSession2);
+    dataFromClient(*session, connectMsg2, "CONNECT");
+    verifySentToBroker_DisconnectMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyBrokerReconnectReq(state);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(500);
+    session->setBrokerConnected(false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 500);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    session->setBrokerConnected(true);
+    verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive2, CleanSession2);
+    verifyNoOtherEvent(state, handler);
+
+    dataFromBroker(*session, connackMsg, "CONNACK");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyNoOtherEvent(state, handler);
+
+    static const std::string ClientId2 = "blablabla";
+    auto connectMsg3 = handler.prepareClientConnect(ClientId2, KeepAlive, false, CleanSession);
+    dataFromClient(*session, connectMsg3, "CONNECT");
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifyTermReq(state);
+    verifyNoOtherEvent(state, handler);
 }
 
 void SessionTest::test4()
@@ -524,17 +652,10 @@ void SessionTest::test4()
     auto willmsgMsg = handler.prepareClientWillmsg(WillMsg);
     dataFromClient(*session, willmsgMsg, "WILLMSG");
     verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession, &willInfo, Username, Password);
-    TS_ASSERT(!state.m_tickReq.empty());
 
-    doTick(state, *session);
-    verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession, &willInfo, Username, Password);
-    TS_ASSERT(!state.m_tickReq.empty());
-    verifyTickReq(state, state.m_tickReq.front());
-
-    state.m_elapsed.push_back(1000);
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::BadUsernameOrPassword);
     dataFromBroker(*session, connackMsg, "CONNACK");
-    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
-    verifyNoOtherEvent(state);
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+    verifyNoOtherEvent(state, handler);
 }
 

@@ -70,7 +70,6 @@ std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t l
         if (es == comms::ErrorStatus::Success) {
             assert(msg);
             msg->dispatch(*this);
-            cleanCompleteOps();
         }
 
         bufTmp = iter;
@@ -110,6 +109,15 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
     }
 }
 
+SessionImpl::SessionImpl()
+{
+    m_ops.emplace_back(new session_op::Connect(m_state));
+
+    for (auto& op : m_ops) {
+        startOp(*op);
+    }
+}
+
 void SessionImpl::tick(unsigned ms)
 {
     if (!isRunning()) {
@@ -139,6 +147,10 @@ void SessionImpl::setBrokerConnected(bool connected)
     }
 
     auto guard = apiCall();
+    if (connected && m_state.m_reconnectingBroker) {
+        m_state.m_reconnectingBroker = false;
+    }
+
     m_state.m_brokerConnected = connected;
     for (auto& op : m_ops) {
         op->brokerConnectionUpdated();
@@ -153,33 +165,6 @@ void SessionImpl::handle(SearchgwMsg_SN& msg)
     auto& gwIdField = std::get<decltype(respMsg)::FieldIdx_gwId>(fields);
     gwIdField.value() = m_state.m_gwId;
     sendToClient(respMsg);
-}
-
-void SessionImpl::handle(ConnectMsg_SN& msg)
-{
-    typedef ConnectMsg_SN MsgType;
-    auto& fields = msg.fields();
-//    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-//    auto& flagsMembers = flagsField.value();
-//    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-//    auto& keepAliveField = std::get<MsgType::FieldIdx_duration>(fields);
-    auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
-
-    if ((m_state.m_connStatus != ConnectionStatus::Disconnected) &&
-        (clientIdField.value() != m_state.m_clientId)) {
-        // TODO: send connack and disconnect
-        return;
-    }
-
-    // TODO:
-    if (!m_state.m_connecting) {
-        std::unique_ptr<session_op::Connect> op(new session_op::Connect(m_state));
-        startOp(*op);
-        m_ops.push_back(std::move(op));
-        assert(m_state.m_connecting);
-    }
-
-    dispatchToOps(msg);
 }
 
 void SessionImpl::handle(MqttsnMessage& msg)
@@ -209,14 +194,24 @@ void SessionImpl::startOp(SessionOp& op)
     op.setSessionTermReqCb(
         [this]()
         {
-            if (m_termReqCb) {
-                m_termReqCb();
+            if ((!m_termReqCb) || (m_state.m_terminating)) {
+                return;
             }
+
+            m_state.m_terminating = true;
         });
+
     op.setBrokerReconnectReqCb(
         [this]()
         {
+            if ((!m_brokerReconnectReqCb) ||
+                (m_state.m_reconnectingBroker) ||
+                (m_state.m_terminating)) {
+                return;
+            }
 
+            m_state.m_reconnectingBroker = true;
+            m_brokerReconnectReqCb();
         });
     op.start();
 }
@@ -229,21 +224,6 @@ void SessionImpl::dispatchToOps(MqttsnMessage& msg)
 void SessionImpl::dispatchToOps(MqttMessage& msg)
 {
     dispatchToOpsCommon(msg);
-}
-
-void SessionImpl::cleanCompleteOps()
-{
-    std::list<OpsList::iterator> iters;
-    for (auto iter = m_ops.begin(); iter != m_ops.end(); ++iter) {
-        auto* op = iter->get();
-        if (op->isComplete()) {
-            iters.push_back(iter);
-        }
-    }
-
-    for (auto i : iters) {
-        m_ops.erase(i);
-    }
 }
 
 void SessionImpl::programNextTimeout()
@@ -286,13 +266,19 @@ void SessionImpl::updateOps()
     for (auto& op : m_ops) {
         op->timestampUpdated();
     }
-    cleanCompleteOps();
 }
 
 void SessionImpl::apiCallExit()
 {
     GASSERT(0U < m_state.m_callStackCount);
     --m_state.m_callStackCount;
+
+    if (m_state.m_terminating) {
+        assert(m_termReqCb);
+        m_termReqCb();
+        return;
+    }
+
     if (m_state.m_callStackCount == 0U) {
         programNextTimeout();
     }

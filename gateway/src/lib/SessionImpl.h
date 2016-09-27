@@ -46,7 +46,7 @@ public:
     typedef Session::TerminationReqCb TerminationReqCb;
     typedef Session::BrokerReconnectReqCb BrokerReconnectReqCb;
 
-    SessionImpl() = default;
+    SessionImpl();
     ~SessionImpl() = default;
 
 
@@ -153,7 +153,6 @@ private:
 
     using Base::handle;
     virtual void handle(SearchgwMsg_SN& msg) override;
-    virtual void handle(ConnectMsg_SN& msg) override;
     virtual void handle(MqttsnMessage& msg) override;
 
     virtual void handle(MqttMessage& msg) override;
@@ -172,7 +171,6 @@ private:
     void startOp(SessionOp& op);
     void dispatchToOps(MqttsnMessage& msg);
     void dispatchToOps(MqttMessage& msg);
-    void cleanCompleteOps();
     void programNextTimeout();
     void updateTimestamp();
     void updateOps();
