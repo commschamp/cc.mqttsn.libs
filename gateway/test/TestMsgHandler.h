@@ -157,9 +157,11 @@ public:
         mqttsn::protocol::field::QosType qos,
         bool retain);
     DataBuf prepareClientWillmsg(const DataBuf& data);
+    DataBuf prepareClientDisconnect(std::uint16_t duration = 0);
 
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
+    DataBuf prepareBrokerDisconnect();
 
 private:
     template <typename TStack>

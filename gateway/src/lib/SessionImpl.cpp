@@ -23,6 +23,7 @@
 #include <limits>
 
 #include "session_op/Connect.h"
+#include "session_op/Disconnect.h"
 
 namespace mqttsn
 {
@@ -40,7 +41,7 @@ const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
 template <typename TStack>
 std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t len, TStack& stack)
 {
-    if (!isRunning()) {
+    if ((!isRunning()) || m_state.m_terminating) {
         return 0U;
     }
 
@@ -112,6 +113,7 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 SessionImpl::SessionImpl()
 {
     m_ops.emplace_back(new session_op::Connect(m_state));
+    m_ops.emplace_back(new session_op::Disconnect(m_state));
 
     for (auto& op : m_ops) {
         startOp(*op);
@@ -120,7 +122,7 @@ SessionImpl::SessionImpl()
 
 void SessionImpl::tick(unsigned ms)
 {
-    if (!isRunning()) {
+    if ((!isRunning()) || m_state.m_terminating) {
         return;
     }
 

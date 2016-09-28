@@ -119,7 +119,6 @@ struct SessionState
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
     bool m_running = false;
-    bool m_connecting = false;
     bool m_brokerConnected = false;
     bool m_reconnectingBroker = false;
     bool m_terminating = false;

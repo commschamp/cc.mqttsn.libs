@@ -262,6 +262,20 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsg(const DataBuf& data
     return prepareInput(msg);
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientDisconnect(std::uint16_t duration)
+{
+    DisconnectMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
+    durationField.field().value() = duration;
+    auto mode = comms::field::OptionalMode::Missing;
+    if (duration != 0) {
+        mode = comms::field::OptionalMode::Exists;
+    }
+    durationField.setMode(mode);
+    return prepareInput(msg);
+}
+
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
     mqtt::message::ConnackResponseCode rc,
     bool sessionPresent)
@@ -274,4 +288,9 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
     flagsField.setBitValue(0, sessionPresent);
     responseField.value() = rc;
     return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerDisconnect()
+{
+    return prepareInput(DisconnectMsg());
 }

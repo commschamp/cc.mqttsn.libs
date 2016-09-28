@@ -30,15 +30,9 @@ namespace session_op
 Connect::Connect(SessionState& sessionState)
   : Base(sessionState)
 {
-    assert(!sessionState.m_connecting);
-    sessionState.m_connecting = true;
 }
 
-Connect::~Connect()
-{
-    assert(state().m_connecting);
-    state().m_connecting = false;
-}
+Connect::~Connect() = default;
 
 void Connect::tickImpl()
 {
@@ -105,7 +99,6 @@ void Connect::handle(ConnectMsg_SN& msg)
 
 void Connect::handle(WilltopicMsg_SN& msg)
 {
-    assert(state().m_connecting);
     if ((!m_internalState.m_hasClientId) || (m_internalState.m_hasWillMsg)) {
         return;
     }
@@ -129,7 +122,6 @@ void Connect::handle(WilltopicMsg_SN& msg)
 
 void Connect::handle(WillmsgMsg_SN& msg)
 {
-    assert(state().m_connecting);
     if (!m_internalState.m_hasWillTopic) {
         return;
     }
@@ -149,7 +141,6 @@ void Connect::handle(WillmsgMsg_SN& msg)
 
 void Connect::handle(ConnackMsg& msg)
 {
-    assert(state().m_connecting);
     if (!m_internalState.m_hasWillMsg) {
         return;
     }
@@ -304,7 +295,8 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
 
 
 
-    // TODO: if clean session delete registrations.
+    // TODO: if clean session delete registrations and pending pubs.
+    // TODO: if pending pubs, initiate republish
 
     if (retCode != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
         clearConnectionInfo();
