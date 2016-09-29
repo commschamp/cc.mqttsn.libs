@@ -52,6 +52,12 @@ void Asleep::handle(DisconnectMsg_SN& msg)
         return;
     }
 
+    DisconnectMsg_SN respMsg;
+    auto& respFields = respMsg.fields();
+    auto& respDurationField = std::get<decltype(respMsg)::FieldIdx_duration>(respFields);
+    respDurationField.setMode(comms::field::OptionalMode::Missing);
+    sendToClient(respMsg);
+
     state().m_connStatus = ConnectionStatus::Asleep;
     m_attempt = 0;
     doPing();
@@ -86,17 +92,27 @@ void Asleep::doPing()
 
 void Asleep::reqNextTick()
 {
-    unsigned period = state().m_retryPeriod;
-    if ((m_lastReq <= m_lastResp) && (0 < m_lastReq)) {
-        auto nextKeepAlivePeriod =
-            static_cast<unsigned>(
-                (m_lastReq + (state().m_keepAlive * 1000)) - state().m_timestamp);
-        period = std::min(nextKeepAlivePeriod, period);
+    assert(0 < m_lastReq);
+
+    auto& st = state();
+    auto nextRetryTimestamp = std::numeric_limits<Timestamp>::max();
+    if (m_lastResp < m_lastReq) {
+        nextRetryTimestamp = (m_lastReq + st.m_retryPeriod);
+        if (nextRetryTimestamp <= st.m_timestamp) {
+            nextTickReq(1U);
+            return;
+        }
     }
 
-    if ((m_lastResp < m_lastReq) || (m_lastResp == 0)) {
-        nextTickReq(period);
+    auto nextKeepAliveTimestamp = (m_lastReq + (st.m_keepAlive * 1000));
+    if (nextKeepAliveTimestamp <= st.m_timestamp) {
+        nextTickReq(1U);
+        return;
     }
+
+    auto nextTickTimestamp = std::min(nextRetryTimestamp, nextKeepAliveTimestamp);
+    assert(st.m_timestamp < nextTickTimestamp);
+    nextTickReq(static_cast<unsigned>(nextTickTimestamp - st.m_timestamp));
 }
 
 }  // namespace session_op

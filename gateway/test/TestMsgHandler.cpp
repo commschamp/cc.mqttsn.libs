@@ -122,6 +122,13 @@ TestMsgHandler::setDisconnectMsgHandler(DisconnectMsgHandlerFunc&& func)
     return old;
 }
 
+TestMsgHandler::PingreqMsgHandlerFunc
+TestMsgHandler::setPingreqMsgHandler(PingreqMsgHandlerFunc&& func)
+{
+    PingreqMsgHandlerFunc old(std::move(m_pingreqMsgHandler));
+    m_pingreqMsgHandler = std::move(func);
+    return old;
+}
 
 void TestMsgHandler::handle(GwinfoMsg_SN& msg)
 {
@@ -175,6 +182,13 @@ void TestMsgHandler::handle(DisconnectMsg& msg)
 {
     if (m_disconnectMsgHandler) {
         m_disconnectMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PingreqMsg& msg)
+{
+    if (m_pingreqMsgHandler) {
+        m_pingreqMsgHandler(msg);
     }
 }
 
@@ -293,4 +307,9 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerDisconnect()
 {
     return prepareInput(DisconnectMsg());
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPingresp()
+{
+    return prepareInput(PingrespMsg());
 }

@@ -36,6 +36,7 @@ public:
     void test3();
     void test4();
     void test5();
+    void test6();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -168,6 +169,12 @@ private:
                 TS_TRACE("<-- DISCONNECT");
             });
 
+        handler.setPingreqMsgHandler(
+            [](const PingreqMsg&)
+            {
+                TS_TRACE("<-- PINGREQ");
+            });
+
         session->setRetryPeriod(DefaultRetryPeriod);
         session->setRetryCount(DefaultRetryCount);
         session->setGatewayId(gwId);
@@ -200,19 +207,6 @@ private:
         auto consumed = session.dataFromBroker(&buf[0], buf.size());
         TS_ASSERT_EQUALS(consumed, buf.size());
         TS_TRACE("(BROKER) --> " + msgStr);
-    }
-
-    static void doTick(State& state, mqttsn::gateway::Session& session)
-    {
-        if (state.m_tickReq.empty()) {
-            TS_FAIL("Tick wan't requested");
-            return;
-        }
-
-        auto value = state.m_tickReq.front();
-        TS_TRACE("[TICK]: " + std::to_string(value));
-        state.m_tickReq.pop_front();
-        session.tick(value);
     }
 
     static void checkTickValue(State& state, unsigned value)
@@ -476,6 +470,32 @@ private:
         handler.setDisconnectMsgHandler(std::move(oldCb));
     }
 
+    static void verifySentToBroker_PingreqMsg(
+        State& state,
+        TestMsgHandler& handler)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPingreqMsgHandler(
+                [&](const PingreqMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- PINGREQ");
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setPingreqMsgHandler(std::move(oldCb));
+    }
+
     static void verifyBrokerReconnectReq(State& state)
     {
         if (state.m_brokerReconnectRequests.empty()) {
@@ -529,6 +549,27 @@ private:
     static mqttsn::protocol::field::QosType translateQos(mqtt::field::QosType val)
     {
         return static_cast<mqttsn::protocol::field::QosType>(val);
+    }
+
+    static void doTick(State& state, mqttsn::gateway::Session& session, unsigned ms = 0)
+    {
+        if (ms != 0) {
+            TS_TRACE("[TICK]: " + std::to_string(ms));
+            TS_ASSERT(state.m_tickReq.size() <= 1U);
+            state.m_tickReq.clear();
+            session.tick(ms);
+            return;
+        }
+
+        if (state.m_tickReq.empty()) {
+            TS_FAIL("Tick wan't requested");
+            return;
+        }
+
+        auto value = state.m_tickReq.front();
+        TS_TRACE("[TICK]: " + std::to_string(value));
+        state.m_tickReq.pop_front();
+        session.tick(value);
     }
 
     static void doConnect(
@@ -735,5 +776,49 @@ void SessionTest::test5()
     session->setBrokerConnected(false);
     verifySentToClient_DisconnectMsg(state, handler);
     verifyTermReq(state);
+    verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test6()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    doConnect(*session, state, handler);
+
+    static const std::uint16_t SleepDuration = 30 * 60;
+
+    auto disconnectSnMsg = handler.prepareClientDisconnect(SleepDuration);
+    dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, DefaultRetryPeriod * 1000);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pingrespMsg = handler.prepareBrokerPingresp();
+    dataFromBroker(*session, pingrespMsg, "PINGRESP");
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    verifyTickReq(state, expectedTickReq);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, expectedTickReq - 1000);
+    verifyTickReq(state, 1000);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, 1000);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, pingrespMsg, "PINGRESP");
+    verifyTickReq(state, expectedTickReq);
     verifyNoOtherEvent(state, handler);
 }

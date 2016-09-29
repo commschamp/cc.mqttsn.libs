@@ -115,6 +115,7 @@ struct SessionState
 {
     static const unsigned DefaultRetryPeriod = 15 * 1000;
     static const unsigned DefaultRetryCount = 3;
+    static const Timestamp InitialTimestamp = 1000U;
 
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
@@ -124,7 +125,7 @@ struct SessionState
     bool m_terminating = false;
     bool m_timerActive = false;
     bool m_pendingClientDisconnect = false;
-    Timestamp m_timestamp = 0U;
+    Timestamp m_timestamp = InitialTimestamp;
     unsigned m_callStackCount = 0U;
 
     ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;

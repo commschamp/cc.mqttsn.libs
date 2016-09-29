@@ -129,6 +129,9 @@ public:
     typedef std::function<void (const DisconnectMsg&)> DisconnectMsgHandlerFunc;
     DisconnectMsgHandlerFunc setDisconnectMsgHandler(DisconnectMsgHandlerFunc&& func);
 
+    typedef std::function<void (const PingreqMsg&)> PingreqMsgHandlerFunc;
+    PingreqMsgHandlerFunc setPingreqMsgHandler(PingreqMsgHandlerFunc&& func);
+
 
     using MqttsnBase::handle;
     using MqttBase::handle;
@@ -142,6 +145,7 @@ public:
 
     void handle(ConnectMsg& msg);
     void handle(DisconnectMsg& msg);
+    void handle(PingreqMsg& msg);
     void handle(TestMqttMessage& msg);
 
     void processDataForClient(const DataBuf& data);
@@ -162,6 +166,7 @@ public:
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
+    DataBuf prepareBrokerPingresp();
 
 private:
     template <typename TStack>
@@ -181,4 +186,5 @@ private:
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
+    PingreqMsgHandlerFunc m_pingreqMsgHandler;
 };
