@@ -36,10 +36,21 @@ Disconnect::~Disconnect() = default;
 
 void Disconnect::brokerConnectionUpdatedImpl()
 {
-    if ((!state().m_brokerConnected) && (!state().m_reconnectingBroker)) {
-        sendDisconnectToClient();
-        termRequest();
+    auto& st = state();
+    if (st.m_brokerConnected || state().m_reconnectingBroker) {
+        return;
     }
+
+    if (st.m_connStatus == ConnectionStatus::Asleep) {
+        st.m_pendingClientDisconnect = true;
+        return;
+    }
+
+    if (st.m_connStatus == ConnectionStatus::Connected) {
+        sendDisconnectToClient();
+    }
+
+    termRequest();
 }
 
 void Disconnect::handle(DisconnectMsg_SN& msg)
@@ -49,6 +60,7 @@ void Disconnect::handle(DisconnectMsg_SN& msg)
     auto& durationField = std::get<MsgType::FieldIdx_duration>(fields);
 
     if (durationField.getMode() != comms::field::OptionalMode::Missing) {
+        // Monotor disconnect with duration in Asleep op
         return;
     }
 
@@ -69,7 +81,7 @@ void Disconnect::handle(DisconnectMsg& msg)
         return;
     }
 
-    // TODO: Monitor disconnect by Asleep op
+    state().m_pendingClientDisconnect = true;
 }
 
 void Disconnect::sendDisconnectToClient()

@@ -30,23 +30,28 @@ namespace gateway
 namespace session_op
 {
 
-class Disconnect : public SessionOp
+class Asleep : public SessionOp
 {
     typedef SessionOp Base;
 
 public:
-    Disconnect(SessionState& sessionState);
-    ~Disconnect();
+    Asleep(SessionState& sessionState);
+    ~Asleep();
 
 protected:
-    virtual void brokerConnectionUpdatedImpl() override;
+    virtual void tickImpl() override;
 
 private:
     using Base::handle;
     virtual void handle(DisconnectMsg_SN& msg) override;
-    virtual void handle(DisconnectMsg& msg) override;
+    virtual void handle(PingrespMsg& msg) override;
 
-    void sendDisconnectToClient();
+    void doPing();
+    void reqNextTick();
+
+    unsigned m_attempt = 0;
+    Timestamp m_lastReq = 0;
+    Timestamp m_lastResp = 0;
 };
 
 }  // namespace session_op

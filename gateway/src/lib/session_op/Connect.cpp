@@ -192,6 +192,10 @@ void Connect::doNextStep()
                 break;
             }
 
+            if (st.m_connStatus == ConnectionStatus::Asleep) {
+                sendToBroker(PingreqMsg());
+            }
+
             // TODO: if clean session and have subscriptions reconnect
             processAck(mqtt::message::ConnackResponseCode::Accepted);
             return;

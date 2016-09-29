@@ -123,6 +123,7 @@ struct SessionState
     bool m_reconnectingBroker = false;
     bool m_terminating = false;
     bool m_timerActive = false;
+    bool m_pendingClientDisconnect = false;
     Timestamp m_timestamp = 0U;
     unsigned m_callStackCount = 0U;
 
