@@ -44,7 +44,9 @@ protected:
 private:
     using Base::handle;
     virtual void handle(DisconnectMsg_SN& msg) override;
+    virtual void handle(MqttsnMessage& msg) override;
     virtual void handle(PingrespMsg& msg) override;
+    virtual void handle(MqttMessage& msg) override;
 
     void doPing();
     void reqNextTick();

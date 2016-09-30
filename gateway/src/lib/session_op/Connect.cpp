@@ -211,7 +211,7 @@ void Connect::doNextStep()
             return;
         } while (false);
 
-        if (st.m_connStatus == ConnectionStatus::Connected) {
+        if (st.m_connStatus != ConnectionStatus::Disconnected) {
             sendToBroker(DisconnectMsg());
             m_internalState.m_waitingForReconnect = true;
             nextTickReq(state().m_retryPeriod);
@@ -219,7 +219,6 @@ void Connect::doNextStep()
             return;
         }
 
-        assert(st.m_connStatus == ConnectionStatus::Disconnected);
         forwardConnectionReq();
         return;
     }
