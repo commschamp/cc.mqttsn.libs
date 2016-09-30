@@ -38,6 +38,12 @@ Asleep::~Asleep() = default;
 
 void Asleep::tickImpl()
 {
+    auto& st = state();
+    if ((st.m_pendingClientDisconnect) ||
+        (st.m_connStatus != ConnectionStatus::Asleep)) {
+        return;
+    }
+
     doPing();
 }
 

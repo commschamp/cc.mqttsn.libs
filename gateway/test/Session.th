@@ -37,6 +37,7 @@ public:
     void test4();
     void test5();
     void test6();
+    void test7();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -46,6 +47,7 @@ private:
     static const std::uint16_t DefaultKeepAlivePeriod = 60;
     static const unsigned DefaultRetryPeriod = 15;
     static const unsigned DefaultRetryCount = 3;
+    static const std::string DefaultClientId;
 
     struct State
     {
@@ -536,6 +538,11 @@ private:
             handler.processDataForBroker(state.m_sentToBroker.front());
             state.m_sentToBroker.pop_front();
         }
+
+        while (!state.m_tickReq.empty()) {
+            TS_TRACE("Unexpected tick req: " + std::to_string(state.m_tickReq.front()));
+            state.m_tickReq.pop_front();
+        }
     }
 
     static void verifyTickReq(State& state, unsigned value)
@@ -579,9 +586,8 @@ private:
         WillInfo* willInfo = nullptr,
         bool cleanSession = true)
     {
-        static const std::string ClientId("client");
         bool hasWill = (willInfo != nullptr);
-        auto connectMsg = handler.prepareClientConnect(ClientId, DefaultKeepAlivePeriod, hasWill, cleanSession);
+        auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, hasWill, cleanSession);
         dataFromClient(session, connectMsg, "CONNECT");
 
         if (hasWill) {
@@ -601,7 +607,7 @@ private:
             dataFromClient(session, willmsgMsg, "WILLMSG");
         }
 
-        verifySentToBroker_ConnectMsg(state, handler, ClientId, DefaultKeepAlivePeriod, cleanSession);
+        verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, cleanSession);
         verifyNoOtherEvent(state, handler);
 
         auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
@@ -610,6 +616,8 @@ private:
         verifyNoOtherEvent(state, handler);
     }
 };
+
+const std::string SessionTest::DefaultClientId("client");
 
 void SessionTest::test1()
 {
@@ -820,5 +828,38 @@ void SessionTest::test6()
     state.m_elapsed.push_back(1000);
     dataFromBroker(*session, pingrespMsg, "PINGRESP");
     verifyTickReq(state, expectedTickReq);
+    verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test7()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    doConnect(*session, state, handler);
+
+    static const std::uint16_t SleepDuration = 30 * 60;
+
+    auto disconnectSnMsg = handler.prepareClientDisconnect(SleepDuration);
+    dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pingrespMsg = handler.prepareBrokerPingresp();
+    dataFromBroker(*session, pingrespMsg, "PINGRESP");
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    verifyTickReq(state, expectedTickReq);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(2000);
+    auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, false, false);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, state.m_tickReq.front()); // doesn't matter
     verifyNoOtherEvent(state, handler);
 }

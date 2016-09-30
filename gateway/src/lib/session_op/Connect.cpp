@@ -87,12 +87,22 @@ void Connect::handle(ConnectMsg_SN& msg)
     m_clientId = clientIdField.value();
     m_keepAlive = keepAliveField.value();
     m_clean = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession);
-    m_will = WillInfo();
 
-    if (!midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_will)) {
+    do {
+        if (midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_will)) {
+            break;
+        }
+
         m_internalState.m_hasWillTopic = true;
         m_internalState.m_hasWillMsg = true;
-    }
+
+        if (m_clean) {
+            m_will = WillInfo();
+            break;
+        }
+
+        m_will = state().m_will;
+    } while (false);
 
     doNextStep();
 }
