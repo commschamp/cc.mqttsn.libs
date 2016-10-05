@@ -123,6 +123,10 @@ public:
     typedef std::function<void (const DisconnectMsg_SN&)> DisconnectSnMsgHandlerFunc;
     DisconnectSnMsgHandlerFunc setDisconnectSnMsgHandler(DisconnectSnMsgHandlerFunc&& func);
 
+    typedef std::function<void (const RegackMsg_SN&)> RegackMsgHandlerFunc;
+    RegackMsgHandlerFunc setRegackMsgHandler(RegackMsgHandlerFunc&& func);
+
+
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
@@ -141,6 +145,7 @@ public:
     void handle(WilltopicreqMsg_SN& msg);
     void handle(WillmsgreqMsg_SN& msg);
     void handle(DisconnectMsg_SN& msg);
+    void handle(RegackMsg_SN& msg);
     void handle(TestMqttsnMessage& msg);
 
     void handle(ConnectMsg& msg);
@@ -162,7 +167,7 @@ public:
         bool retain);
     DataBuf prepareClientWillmsg(const DataBuf& data);
     DataBuf prepareClientDisconnect(std::uint16_t duration = 0);
-
+    DataBuf prepareClientRegister(const std::string& topic, std::uint16_t msgId);
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
@@ -183,6 +188,7 @@ private:
     WilltopicreqMsgHandlerFunc m_willtopicreqMsgHandler;
     WillmsgreqMsgHandlerFunc m_willmsgreqMsgHandler;
     DisconnectSnMsgHandlerFunc m_disconnectSnMsgHandler;
+    RegackMsgHandlerFunc m_regackMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;

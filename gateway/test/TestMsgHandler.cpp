@@ -106,6 +106,14 @@ TestMsgHandler::DisconnectSnMsgHandlerFunc TestMsgHandler::setDisconnectSnMsgHan
     return old;
 }
 
+TestMsgHandler::RegackMsgHandlerFunc TestMsgHandler::setRegackMsgHandler(
+    RegackMsgHandlerFunc&& func)
+{
+    RegackMsgHandlerFunc old(std::move(m_regackMsgHandler));
+    m_regackMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -162,6 +170,13 @@ void TestMsgHandler::handle(DisconnectMsg_SN& msg)
 {
     if (m_disconnectSnMsgHandler) {
         m_disconnectSnMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(RegackMsg_SN& msg)
+{
+    if (m_regackMsgHandler) {
+        m_regackMsgHandler(msg);
     }
 }
 
@@ -287,6 +302,20 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientDisconnect(std::uint16_t du
         mode = comms::field::OptionalMode::Exists;
     }
     durationField.setMode(mode);
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegister(
+    const std::string& topic,
+    std::uint16_t msgId)
+{
+    RegisterMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& topicField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
+
+    topicField.value() = topic;
+    msgIdField.value() = msgId;
     return prepareInput(msg);
 }
 

@@ -27,6 +27,17 @@ namespace mqttsn
 namespace gateway
 {
 
+bool RegMgr::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal)
+{
+    if (maxVal < minVal) {
+        return false;
+    }
+
+    m_minTopicId = minVal;
+    m_maxTopicId = maxVal;
+    return true;
+}
+
 bool RegMgr::regPredefined(const std::string& topic, std::uint16_t topicId)
 {
     if (topicId == 0U) {
@@ -64,7 +75,7 @@ bool RegMgr::regPredefined(const std::string& topic, std::uint16_t topicId)
 
 }
 
-std::uint16_t RegMgr::mapTopic(const std::string& topic, Type type)
+std::tuple<std::uint16_t, bool> RegMgr::mapTopic(const std::string& topic, Type type)
 {
     assert(type != Type::Predefined);
     assert(type != Type::Invalid);
@@ -81,7 +92,7 @@ std::uint16_t RegMgr::mapTopic(const std::string& topic, Type type)
             assert(regInfoIter->m_topic == topic);
             if (regInfoIter->m_type != Type::Predefined) {
                 assert(regInfoIter->m_topicId != 0);
-                return regInfoIter->m_topicId;
+                return std::make_tuple(regInfoIter->m_topicId, false);
             }
         }
 
@@ -89,14 +100,21 @@ std::uint16_t RegMgr::mapTopic(const std::string& topic, Type type)
 
     std::uint16_t topicId = 0;
     do {
+        if (m_regInfos.empty()) {
+            topicId = m_minTopicId;
+            break;
+        }
+
+        assert(!m_regInfosMap.empty());
+        assert(!m_regInfosRevMap.empty());
         auto lastIt = m_regInfosRevMap.rbegin();
-        if (lastIt->first < std::numeric_limits<decltype(topicId)>::max()) {
+        if (lastIt->first < m_maxTopicId) {
             topicId = lastIt->first + 1;
             break;
         }
 
         auto firstIt = m_regInfosRevMap.begin();
-        if (1 < firstIt->first) {
+        if (m_minTopicId < firstIt->first) {
             topicId = firstIt->first - 1;
             break;
         }
@@ -105,10 +123,12 @@ std::uint16_t RegMgr::mapTopic(const std::string& topic, Type type)
             auto it =
                 std::find_if(
                     m_regInfosRevMap.begin(), m_regInfosRevMap.end(),
-                    [](decltype(m_regInfosRevMap)::const_reference elem) -> bool
+                    [this](decltype(m_regInfosRevMap)::const_reference elem) -> bool
                     {
                         auto regInfoIter = elem.second;
-                        return regInfoIter->m_type != Type::Predefined;
+                        return (regInfoIter->m_type != Type::Predefined) &&
+                               (m_minTopicId <= regInfoIter->m_topicId) &&
+                               (regInfoIter->m_topicId <= m_maxTopicId);
                     });
             topicId = it->first;
             auto infoIter = it->second;
@@ -120,7 +140,9 @@ std::uint16_t RegMgr::mapTopic(const std::string& topic, Type type)
         std::uint16_t prevTopicId = 0;
         for (auto it = m_regInfosRevMap.begin(); it != m_regInfosRevMap.end(); ++it) {
             auto expId = prevTopicId + 1;
-            if (it->first != expId) {
+            if ((it->first != expId) &&
+                (m_minTopicId <= expId) &&
+                (expId <= m_maxTopicId)) {
                 topicId = expId;
                 break;
             }
@@ -139,7 +161,7 @@ std::uint16_t RegMgr::mapTopic(const std::string& topic, Type type)
     --infoIter;
     m_regInfosMap.insert(std::make_pair(topic, infoIter));
     m_regInfosRevMap.insert(std::make_pair(topicId, infoIter));
-    return topicId;
+    return std::make_tuple(topicId, true);
 }
 void RegMgr::removeFromTopicMap(const std::string& topic, RegInfosList::iterator info)
 {

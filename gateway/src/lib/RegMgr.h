@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <list>
 #include <map>
+#include <tuple>
 
 namespace mqttsn
 {
@@ -40,8 +41,9 @@ public:
         FromGw
     };
 
+    bool setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal);
     bool regPredefined(const std::string& topic, std::uint16_t topicId);
-    std::uint16_t mapTopic(const std::string& topic, Type type);
+    std::tuple<std::uint16_t, bool> mapTopic(const std::string& topic, Type type);
 
 private:
 
@@ -58,6 +60,12 @@ private:
     RegInfosList m_regInfos;
     std::multimap<std::string, RegInfosList::iterator> m_regInfosMap;
     std::map<std::uint16_t, RegInfosList::iterator> m_regInfosRevMap;
+
+    std::uint16_t m_minTopicId = DefaultMinTopicId;
+    std::uint16_t m_maxTopicId = DefaultMaxTopicId;
+
+    static const std::uint16_t DefaultMinTopicId = 1;
+    static const std::uint16_t DefaultMaxTopicId = 0xffff;
 };
 
 }  // namespace gateway

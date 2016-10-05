@@ -166,6 +166,11 @@ bool SessionImpl::addPredefinedTopic(const std::string& topic, std::uint16_t top
     return m_state.m_regMgr.regPredefined(topic, topicId);
 }
 
+bool SessionImpl::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal)
+{
+    return m_state.m_regMgr.setTopicIdAllocationRange(minVal, maxVal);
+}
+
 void SessionImpl::handle(SearchgwMsg_SN& msg)
 {
     static_cast<void>(msg);
@@ -189,8 +194,9 @@ void SessionImpl::handle(RegisterMsg_SN& msg)
     auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
     auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
 
-    respTopicIdField.value() =
+    std::tie(respTopicIdField.value(), std::ignore) =
         m_state.m_regMgr.mapTopic(topicField.value(), RegMgr::Type::FromClient);
+
     respMsgIdField.value() = msgIdField.value();
     assert(respRetCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted);
     if (respTopicIdField.value() == 0U) {

@@ -133,6 +133,11 @@ bool Session::addPredefinedTopic(const std::string& topic, std::uint16_t topicId
     return m_pImpl->addPredefinedTopic(topic, topicId);
 }
 
+bool Session::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal)
+{
+    return m_pImpl->setTopicIdAllocationRange(minVal, maxVal);
+}
+
 }  // namespace gateway
 
 }  // namespace mqttsn
