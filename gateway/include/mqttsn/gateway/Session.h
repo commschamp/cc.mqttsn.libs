@@ -66,6 +66,7 @@ public:
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
 
     void setBrokerConnected(bool connected);
+    bool addPredefinedTopic(const std::string& topic, std::uint16_t topicId);
 
 private:
     std::unique_ptr<SessionImpl> m_pImpl;

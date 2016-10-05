@@ -161,6 +161,11 @@ void SessionImpl::setBrokerConnected(bool connected)
     }
 }
 
+bool SessionImpl::addPredefinedTopic(const std::string& topic, std::uint16_t topicId)
+{
+    return m_state.m_regMgr.regPredefined(topic, topicId);
+}
+
 void SessionImpl::handle(SearchgwMsg_SN& msg)
 {
     static_cast<void>(msg);
@@ -168,6 +173,29 @@ void SessionImpl::handle(SearchgwMsg_SN& msg)
     auto& fields = respMsg.fields();
     auto& gwIdField = std::get<decltype(respMsg)::FieldIdx_gwId>(fields);
     gwIdField.value() = m_state.m_gwId;
+    sendToClient(respMsg);
+}
+
+void SessionImpl::handle(RegisterMsg_SN& msg)
+{
+    typedef RegisterMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+    auto& topicField = std::get<MsgType::FieldIdx_topicName>(fields);
+
+    RegackMsg_SN respMsg;
+    auto& respFields = respMsg.fields();
+    auto& respTopicIdField = std::get<decltype(respMsg)::FieldIdx_topicId>(respFields);
+    auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
+    auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
+
+    respTopicIdField.value() =
+        m_state.m_regMgr.mapTopic(topicField.value(), RegMgr::Type::FromClient);
+    respMsgIdField.value() = msgIdField.value();
+    assert(respRetCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    if (respTopicIdField.value() == 0U) {
+        respRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
+    }
     sendToClient(respMsg);
 }
 

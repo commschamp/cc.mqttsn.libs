@@ -20,10 +20,11 @@
 
 #include <string>
 #include <vector>
+#include <list>
 
 #include "mqtt/field/QoS.h"
 #include "mqttsn/protocol/field.h"
-
+#include "RegMgr.h"
 
 namespace mqttsn
 {
@@ -93,15 +94,6 @@ bool operator!=(const WillInfo& info1, const WillInfo& info2)
     return !(info1 == info2);
 }
 
-
-//struct ConnectionInfo
-//{
-//    std::string m_clientId;
-//    WillInfo m_will;
-//    std::uint16_t m_keepAlive = 0U;
-//    bool m_clean = false;
-//};
-
 enum class ConnectionStatus
 {
     Disconnected,
@@ -110,6 +102,15 @@ enum class ConnectionStatus
 };
 
 typedef unsigned long long Timestamp;
+
+struct PubInfo
+{
+    std::string m_topic;
+    DataBuf m_msg;
+    QoS m_qos = QoS_AtMostOnceDelivery;
+    bool m_retain = false;
+    bool m_dup = false;
+};
 
 struct SessionState
 {
@@ -135,6 +136,9 @@ struct SessionState
     std::uint16_t m_keepAlive = 0U;
     std::string m_username;
     DataBuf m_password;
+
+    std::list<PubInfo> m_brokerPubs;
+    RegMgr m_regMgr;
 };
 
 }  // namespace gateway

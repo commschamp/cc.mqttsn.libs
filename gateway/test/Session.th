@@ -935,11 +935,5 @@ void SessionTest::test8()
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
-
-
-//    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
-//    verifySentToBroker_PingreqMsg(state, handler);
-//    verifyTickReq(state, state.m_tickReq.front()); // doesn't matter
-
 }
 

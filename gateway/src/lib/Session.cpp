@@ -128,6 +128,11 @@ void Session::setBrokerConnected(bool connected)
     m_pImpl->setBrokerConnected(connected);
 }
 
+bool Session::addPredefinedTopic(const std::string& topic, std::uint16_t topicId)
+{
+    return m_pImpl->addPredefinedTopic(topic, topicId);
+}
+
 }  // namespace gateway
 
 }  // namespace mqttsn
