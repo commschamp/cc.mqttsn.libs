@@ -40,6 +40,7 @@ public:
     void test7();
     void test8();
     void test9();
+    void test10();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -408,6 +409,7 @@ private:
 
         state.m_sentToClient.pop_front();
         handler.setRegackMsgHandler(std::move(oldCb));
+        TS_TRACE("[Topic ID]: " + std::to_string(topicId));
         return topicId;
     }
 
@@ -1008,5 +1010,34 @@ void SessionTest::test9()
     dataFromClient(*session, registerMsg2, "REGISTER");
     auto topicId2 = verifySentToClient_RegackMsg(state, handler, MsgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     TS_ASSERT_EQUALS(topicId, topicId2);
+    verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test10()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+    static const std::string Topic1("this/is/topic1");
+    static const std::uint16_t TopicId1 = 0x1111;
+
+
+    session->addPredefinedTopic(Topic1, TopicId1);
+    doConnect(*session, state, handler);
+
+    static const std::string Topic2("this/is/topic2");
+    static const std::uint16_t MsgId = 0x1122;
+    auto registerMsg = handler.prepareClientRegister(Topic2, MsgId);
+    dataFromClient(*session, registerMsg, "REGISTER");
+    auto topicId = verifySentToClient_RegackMsg(state, handler, MsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    TS_ASSERT_LESS_THAN_EQUALS(DefaultMinTopicId, topicId);
+    TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
+    TS_ASSERT_DIFFERS(topicId, TopicId1);
+    verifyNoOtherEvent(state, handler);
+
+    auto registerMsg2 = handler.prepareClientRegister(Topic1, MsgId + 1);
+    dataFromClient(*session, registerMsg2, "REGISTER");
+    auto topicId2 = verifySentToClient_RegackMsg(state, handler, MsgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    TS_ASSERT_EQUALS(topicId2, TopicId1);
     verifyNoOtherEvent(state, handler);
 }

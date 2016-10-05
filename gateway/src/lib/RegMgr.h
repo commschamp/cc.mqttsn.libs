@@ -33,17 +33,18 @@ namespace gateway
 class RegMgr
 {
 public:
-    enum class Type
+
+    struct TopicInfo
     {
-        Invalid,
-        Predefined,
-        FromClient,
-        FromGw
+        std::uint16_t m_topicId = 0;
+        bool m_predefined = false;
+        bool m_newInsersion = false;
     };
 
     bool setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal);
     bool regPredefined(const std::string& topic, std::uint16_t topicId);
-    std::tuple<std::uint16_t, bool> mapTopic(const std::string& topic, Type type);
+    std::uint16_t mapTopicNoInfo(const std::string& topic);
+    TopicInfo mapTopic(const std::string& topic);
 
 private:
 
@@ -51,21 +52,21 @@ private:
     {
         std::string m_topic;
         std::uint16_t m_topicId = 0U;
-        Type m_type = Type::Invalid;
+        bool m_predefined = false;
     };
     typedef std::list<RegInfo> RegInfosList;
 
     void removeFromTopicMap(const std::string& topic, RegInfosList::iterator info);
 
     RegInfosList m_regInfos;
-    std::multimap<std::string, RegInfosList::iterator> m_regInfosMap;
+    std::map<std::string, RegInfosList::iterator> m_regInfosMap;
     std::map<std::uint16_t, RegInfosList::iterator> m_regInfosRevMap;
 
     std::uint16_t m_minTopicId = DefaultMinTopicId;
     std::uint16_t m_maxTopicId = DefaultMaxTopicId;
 
     static const std::uint16_t DefaultMinTopicId = 1;
-    static const std::uint16_t DefaultMaxTopicId = 0xffff;
+    static const std::uint16_t DefaultMaxTopicId = 0xfffe;
 };
 
 }  // namespace gateway
