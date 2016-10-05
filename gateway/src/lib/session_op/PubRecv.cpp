@@ -62,9 +62,21 @@ void PubRecv::handle(PublishMsg& msg)
         sendToBroker(respMsg);
     }
 
-    auto cleanPubsFunc =
-        [this, &packetIdField]()
+    auto cleanIncompleteFunc =
+        [this]()
         {
+            m_recvMsgs.remove_if(
+                [this](BrokPubInfosList::const_reference elem) -> bool
+                {
+                    return (elem.m_timestamp + state().m_retryPeriod) < state().m_timestamp;
+                });
+        };
+
+    auto cleanPubsFunc =
+        [this, &packetIdField, cleanIncompleteFunc]()
+        {
+            cleanIncompleteFunc();
+
             if (packetIdField.getMode() != comms::field::OptionalMode::Exists) {
                 return;
             }
@@ -88,17 +100,84 @@ void PubRecv::handle(PublishMsg& msg)
         return;
     }
 
-    if (!dup) {
-        cleanPubsFunc();
+    assert(packetIdField.getMode() == comms::field::OptionalMode::Exists);
+    auto sendRecFunc =
+        [this, &packetIdField]()
+        {
+            PubrecMsg respMsg;
+            auto& respFields = respMsg.fields();
+            auto& respPacketIdField = std::get<decltype(respMsg)::FieldIdx_PacketId>(respFields);
+            respPacketIdField.value() = packetIdField.field().value();
+            sendToBroker(respMsg);
+        };
 
-        // TODO: insert new elem
+    do {
+        if (!dup) {
+            break;
+        }
+
+        auto iter = std::find_if(
+            m_recvMsgs.begin(), m_recvMsgs.end(),
+            [&packetIdField](BrokPubInfosList::const_reference elem) -> bool
+            {
+                return packetIdField.field().value() == elem.m_packetId;
+            });
+
+        if (iter == m_recvMsgs.end()) {
+            break;
+        }
+
+        iter->m_topic = topicField.value();
+        iter->m_msg = payloadField.value();
+        iter->m_dup = dup;
+        iter->m_retain = retain;
+        iter->m_timestamp = state().m_timestamp;
+        cleanIncompleteFunc();
+        sendRecFunc();
+        return;
+    } while (false);
+
+    cleanPubsFunc();
+
+    BrokPubInfo info;
+    info.m_topic = topicField.value();
+    info.m_msg = payloadField.value();
+    info.m_dup = dup;
+    info.m_retain = retain;
+    info.m_timestamp = state().m_timestamp;
+    m_recvMsgs.push_back(std::move(info));
+    sendRecFunc();
+}
+
+void PubRecv::handle(PubrelMsg& msg)
+{
+    typedef PubrelMsg MsgType;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+
+    auto iter = std::find_if(
+        m_recvMsgs.begin(), m_recvMsgs.end(),
+        [&packetIdField](BrokPubInfosList::const_reference elem) -> bool
+        {
+            return packetIdField.value() == elem.m_packetId;
+        });
+
+    if (iter != m_recvMsgs.end()) {
+        PubInfo pubInfo;
+        pubInfo.m_topic = iter->m_topic;
+        pubInfo.m_msg = iter->m_msg;
+        pubInfo.m_qos = QoS_ExactlyOnceDelivery;
+        pubInfo.m_retain = iter->m_retain;
+        pubInfo.m_dup = false;
+        state().m_brokerPubs.push_back(std::move(pubInfo));
+        m_recvMsgs.erase(iter);
     }
-    else {
 
-    }
-
-
-//    BrokPubInfo info;
+    PubcompMsg respMsg;
+    auto& respFields = respMsg.fields();
+    auto& respPacketIdField = std::get<decltype(respMsg)::FieldIdx_PacketId>(respFields);
+    respPacketIdField.value() = packetIdField.value();
+    sendToBroker(respMsg);
 }
 
 }  // namespace session_op

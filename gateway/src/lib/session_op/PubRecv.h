@@ -43,12 +43,12 @@ protected:
 private:
     using Base::handle;
     virtual void handle(PublishMsg& msg) override;
+    virtual void handle(PubrelMsg& msg) override;
 
     struct BrokPubInfo
     {
         std::string m_topic;
         DataBuf m_msg;
-        QoS m_qos = QoS_AtMostOnceDelivery;
         bool m_dup = false;
         bool m_retain = false;
         std::uint16_t m_packetId = 0U;
