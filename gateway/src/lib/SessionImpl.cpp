@@ -25,6 +25,8 @@
 #include "session_op/Connect.h"
 #include "session_op/Disconnect.h"
 #include "session_op/Asleep.h"
+#include "session_op/PubRecv.h"
+#include "session_op/PubSend.h"
 
 namespace mqttsn
 {
@@ -116,6 +118,8 @@ SessionImpl::SessionImpl()
     m_ops.emplace_back(new session_op::Connect(m_state));
     m_ops.emplace_back(new session_op::Disconnect(m_state));
     m_ops.emplace_back(new session_op::Asleep(m_state));
+    m_ops.emplace_back(new session_op::PubRecv(m_state));
+    m_ops.emplace_back(new session_op::PubSend(m_state));
 
     for (auto& op : m_ops) {
         startOp(*op);

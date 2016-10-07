@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <memory>
 
 #include "mqtt/field/QoS.h"
 #include "mqttsn/protocol/field.h"
@@ -112,6 +113,8 @@ struct PubInfo
     bool m_dup = false;
 };
 
+typedef std::unique_ptr<PubInfo> PubInfoPtr;
+
 struct SessionState
 {
     static const unsigned DefaultRetryPeriod = 15 * 1000;
@@ -137,7 +140,7 @@ struct SessionState
     std::string m_username;
     DataBuf m_password;
 
-    std::list<PubInfo> m_brokerPubs;
+    std::list<PubInfoPtr> m_brokerPubs;
     RegMgr m_regMgr;
 };
 

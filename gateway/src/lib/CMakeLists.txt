@@ -11,6 +11,7 @@ function (lib_mqttsn_gateway)
         session_op/Disconnect.cpp
         session_op/Asleep.cpp
         session_op/PubRecv.cpp
+        session_op/PubSend.cpp
     )    
     
     add_library (${name} STATIC ${src})

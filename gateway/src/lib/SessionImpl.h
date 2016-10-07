@@ -151,7 +151,7 @@ public:
 
 private:
 
-    typedef std::list<SessionOpPtr> OpsList;
+    typedef std::vector<SessionOpPtr> OpsList;
 
     using Base::handle;
     virtual void handle(SearchgwMsg_SN& msg) override;

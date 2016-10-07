@@ -90,12 +90,12 @@ void PubRecv::handle(PublishMsg& msg)
 
     if (qosField.value() <= mqtt::field::QosType::AtLeastOnceDelivery) {
         cleanPubsFunc();
-        PubInfo pubInfo;
-        pubInfo.m_topic = topicField.value();
-        pubInfo.m_msg = payloadField.value();
-        pubInfo.m_qos = translateQos(qosField.value());
-        pubInfo.m_retain = retain;
-        pubInfo.m_dup = dup;
+        PubInfoPtr pubInfo(new PubInfo);
+        pubInfo->m_topic = topicField.value();
+        pubInfo->m_msg = payloadField.value();
+        pubInfo->m_qos = translateQos(qosField.value());
+        pubInfo->m_retain = retain;
+        pubInfo->m_dup = dup;
         state().m_brokerPubs.push_back(std::move(pubInfo));
         return;
     }
@@ -163,12 +163,12 @@ void PubRecv::handle(PubrelMsg& msg)
         });
 
     if (iter != m_recvMsgs.end()) {
-        PubInfo pubInfo;
-        pubInfo.m_topic = iter->m_topic;
-        pubInfo.m_msg = iter->m_msg;
-        pubInfo.m_qos = QoS_ExactlyOnceDelivery;
-        pubInfo.m_retain = iter->m_retain;
-        pubInfo.m_dup = false;
+        PubInfoPtr pubInfo(new PubInfo);
+        pubInfo->m_topic = iter->m_topic;
+        pubInfo->m_msg = iter->m_msg;
+        pubInfo->m_qos = QoS_ExactlyOnceDelivery;
+        pubInfo->m_retain = iter->m_retain;
+        pubInfo->m_dup = false;
         state().m_brokerPubs.push_back(std::move(pubInfo));
         m_recvMsgs.erase(iter);
     }

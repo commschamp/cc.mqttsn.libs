@@ -45,6 +45,7 @@ public:
     bool regPredefined(const std::string& topic, std::uint16_t topicId);
     std::uint16_t mapTopicNoInfo(const std::string& topic);
     TopicInfo mapTopic(const std::string& topic);
+    void discardRegistration(std::uint16_t topicId);
 
 private:
 
