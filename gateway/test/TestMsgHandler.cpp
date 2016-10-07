@@ -114,6 +114,14 @@ TestMsgHandler::RegackMsgHandlerFunc TestMsgHandler::setRegackMsgHandler(
     return old;
 }
 
+TestMsgHandler::PublishMsgHandlerFunc TestMsgHandler::setPublishMsgHandler(
+    PublishMsgHandlerFunc&& func)
+{
+    PublishMsgHandlerFunc old(std::move(m_publishMsgHandler));
+    m_publishMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -177,6 +185,13 @@ void TestMsgHandler::handle(RegackMsg_SN& msg)
 {
     if (m_regackMsgHandler) {
         m_regackMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PublishMsg_SN& msg)
+{
+    if (m_publishMsgHandler) {
+        m_publishMsgHandler(msg);
     }
 }
 
@@ -342,3 +357,38 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPingresp()
 {
     return prepareInput(PingrespMsg());
 }
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
+    const std::string& topic,
+    const DataBuf& msgData,
+    std::uint16_t packetId,
+    mqtt::field::QosType qos,
+    bool retain,
+    bool duplicate)
+{
+    PublishMsg msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_PublishFlags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& retainFlagsField = std::get<mqtt::message::PublishActualFlagIdx_Retain>(flagsMembers);
+    auto& qosField = std::get<mqtt::message::PublishActualFlagIdx_QoS>(flagsMembers);
+    auto& dupFlagsField = std::get<mqtt::message::PublishActualFlagIdx_Dup>(flagsMembers);
+    auto& topicField = std::get<decltype(msg)::FieldIdx_Topic>(fields);
+    auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
+    auto& payloadField = std::get<decltype(msg)::FieldIdx_Payload>(fields);
+
+    topicField.value() = topic;
+    payloadField.value() = msgData;
+    packetIdField.field().value() = packetId;
+    qosField.value() = qos;
+    retainFlagsField.setBitValue(0, retain);
+    dupFlagsField.setBitValue(0, duplicate);
+
+    msg.refresh();
+    assert((qos == mqtt::field::QosType::AtMostOnceDelivery) ||
+           (packetIdField.getMode() == comms::field::OptionalMode::Exists));
+    assert((mqtt::field::QosType::AtMostOnceDelivery < qos) ||
+           (packetIdField.getMode() == comms::field::OptionalMode::Missing));
+    return prepareInput(msg);
+}
+

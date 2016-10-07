@@ -126,6 +126,9 @@ public:
     typedef std::function<void (const RegackMsg_SN&)> RegackMsgHandlerFunc;
     RegackMsgHandlerFunc setRegackMsgHandler(RegackMsgHandlerFunc&& func);
 
+    typedef std::function<void (const PublishMsg_SN&)> PublishMsgHandlerFunc;
+    PublishMsgHandlerFunc setPublishMsgHandler(PublishMsgHandlerFunc&& func);
+
 
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
@@ -140,18 +143,19 @@ public:
     using MqttsnBase::handle;
     using MqttBase::handle;
 
-    void handle(GwinfoMsg_SN& msg);
-    void handle(ConnackMsg_SN& msg);
-    void handle(WilltopicreqMsg_SN& msg);
-    void handle(WillmsgreqMsg_SN& msg);
-    void handle(DisconnectMsg_SN& msg);
-    void handle(RegackMsg_SN& msg);
-    void handle(TestMqttsnMessage& msg);
+    virtual void handle(GwinfoMsg_SN& msg) override;
+    virtual void handle(ConnackMsg_SN& msg) override;
+    virtual void handle(WilltopicreqMsg_SN& msg) override;
+    virtual void handle(WillmsgreqMsg_SN& msg) override;
+    virtual void handle(DisconnectMsg_SN& msg) override;
+    virtual void handle(RegackMsg_SN& msg) override;
+    virtual void handle(PublishMsg_SN& msg) override;
+    virtual void handle(TestMqttsnMessage& msg) override;
 
-    void handle(ConnectMsg& msg);
-    void handle(DisconnectMsg& msg);
-    void handle(PingreqMsg& msg);
-    void handle(TestMqttMessage& msg);
+    virtual void handle(ConnectMsg& msg) override;
+    virtual void handle(DisconnectMsg& msg) override;
+    virtual void handle(PingreqMsg& msg) override;
+    virtual void handle(TestMqttMessage& msg) override;
 
     void processDataForClient(const DataBuf& data);
     void processDataForBroker(const DataBuf& data);
@@ -172,6 +176,13 @@ public:
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
     DataBuf prepareBrokerPingresp();
+    DataBuf prepareBrokerPublish(
+        const std::string& topic,
+        const DataBuf& msgData,
+        std::uint16_t packetId,
+        mqtt::field::QosType qos,
+        bool retain,
+        bool duplicate);
 
 private:
     template <typename TStack>
@@ -189,6 +200,7 @@ private:
     WillmsgreqMsgHandlerFunc m_willmsgreqMsgHandler;
     DisconnectSnMsgHandlerFunc m_disconnectSnMsgHandler;
     RegackMsgHandlerFunc m_regackMsgHandler;
+    PublishMsgHandlerFunc m_publishMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
