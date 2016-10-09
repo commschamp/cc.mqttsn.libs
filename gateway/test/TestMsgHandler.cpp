@@ -146,6 +146,14 @@ TestMsgHandler::setPingreqMsgHandler(PingreqMsgHandlerFunc&& func)
     return old;
 }
 
+TestMsgHandler::PubackMsgHandlerFunc
+TestMsgHandler::setPubackMsgHandler(PubackMsgHandlerFunc&& func)
+{
+    PubackMsgHandlerFunc old(std::move(m_pubackMsgHandler));
+    m_pubackMsgHandler = std::move(func);
+    return old;
+}
+
 void TestMsgHandler::handle(GwinfoMsg_SN& msg)
 {
     if (m_gwInfoMsgHandler) {
@@ -219,6 +227,13 @@ void TestMsgHandler::handle(PingreqMsg& msg)
 {
     if (m_pingreqMsgHandler) {
         m_pingreqMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PubackMsg& msg)
+{
+    if (m_pubackMsgHandler) {
+        m_pubackMsgHandler(msg);
     }
 }
 
@@ -331,6 +346,23 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegister(
 
     topicField.value() = topic;
     msgIdField.value() = msgId;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::ReturnCodeVal rc)
+{
+    PubackMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
+
+    topicIdField.value() = topicId;
+    msgIdField.value() = msgId;
+    retCodeField.value() = rc;
     return prepareInput(msg);
 }
 

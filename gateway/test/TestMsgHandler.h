@@ -139,6 +139,8 @@ public:
     typedef std::function<void (const PingreqMsg&)> PingreqMsgHandlerFunc;
     PingreqMsgHandlerFunc setPingreqMsgHandler(PingreqMsgHandlerFunc&& func);
 
+    typedef std::function<void (const PubackMsg&)> PubackMsgHandlerFunc;
+    PubackMsgHandlerFunc setPubackMsgHandler(PubackMsgHandlerFunc&& func);
 
     using MqttsnBase::handle;
     using MqttBase::handle;
@@ -155,6 +157,7 @@ public:
     virtual void handle(ConnectMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
+    virtual void handle(PubackMsg& msg) override;
     virtual void handle(TestMqttMessage& msg) override;
 
     void processDataForClient(const DataBuf& data);
@@ -172,6 +175,10 @@ public:
     DataBuf prepareClientWillmsg(const DataBuf& data);
     DataBuf prepareClientDisconnect(std::uint16_t duration = 0);
     DataBuf prepareClientRegister(const std::string& topic, std::uint16_t msgId);
+    DataBuf prepareClientPuback(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal rc);
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
@@ -205,4 +212,5 @@ private:
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
     PingreqMsgHandlerFunc m_pingreqMsgHandler;
+    PubackMsgHandlerFunc m_pubackMsgHandler;
 };

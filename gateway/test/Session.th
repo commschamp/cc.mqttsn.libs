@@ -42,6 +42,7 @@ public:
     void test9();
     void test10();
     void test11();
+    void test12();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -222,6 +223,10 @@ private:
         auto consumed = session.dataFromBroker(&buf[0], buf.size());
         TS_ASSERT_EQUALS(consumed, buf.size());
         TS_TRACE("(BROKER) --> " + msgStr);
+
+//        std::cout << std::hex;
+//        std::copy(buf.begin(), buf.end(), std::ostream_iterator<unsigned>(std::cout, " "));
+//        std::cout << std::endl;
     }
 
     static void checkTickValue(State& state, unsigned value)
@@ -604,6 +609,37 @@ private:
 
         state.m_sentToBroker.pop_front();
         handler.setPingreqMsgHandler(std::move(oldCb));
+    }
+
+    static void verifySentToBroker_PubackMsg(
+        State& state,
+        TestMsgHandler& handler,
+        std::uint16_t packetId)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPubackMsgHandler(
+                [&](const PubackMsg& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- PUBACK");
+                    typedef PubackMsg MsgType;
+                    auto& fields = msg.fields();
+                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+
+                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setPubackMsgHandler(std::move(oldCb));
     }
 
     static void verifyBrokerReconnectReq(State& state)
@@ -1118,4 +1154,49 @@ void SessionTest::test11()
     dataFromBroker(*session, publishMsg, "PUBLISH");
     verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, Dup);
     verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test12()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string Topic("topic");
+    static const std::uint16_t TopicId = 0x1111;
+    session->addPredefinedTopic(Topic, TopicId);
+
+    doConnect(*session, state, handler);
+
+    static const DataBuf Data = {0, 1, 2, 3, 4 };
+    static const std::uint16_t MsgId = 1234;
+    static const auto Qos = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const bool Retain = false;
+    auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifySentToBroker_PubackMsg(state, handler, MsgId);
+    auto msgId = verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(2000);
+    auto publishMsg2 = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, true);
+    dataFromBroker(*session, publishMsg2, "PUBLISH");
+    verifySentToBroker_PubackMsg(state, handler, MsgId);
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 2000);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, DefaultRetryPeriod * 1000 - 2000);
+    auto msgId2 = verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, true);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+    TS_ASSERT_EQUALS(msgId, msgId2);
+
+    state.m_elapsed.push_back(1000);
+    auto pubackMsg = handler.prepareClientPuback(TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, pubackMsg, "PUBACK");
+    auto msgId3 = verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, true);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+    TS_ASSERT_DIFFERS(msgId, msgId3);
 }
