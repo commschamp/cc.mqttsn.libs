@@ -144,6 +144,7 @@ void PubRecv::handle(PublishMsg& msg)
     info.m_msg = payloadField.value();
     info.m_dup = dup;
     info.m_retain = retain;
+    info.m_packetId = packetIdField.field().value();
     info.m_timestamp = state().m_timestamp;
     m_recvMsgs.push_back(std::move(info));
     sendRecFunc();

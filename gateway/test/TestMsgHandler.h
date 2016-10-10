@@ -123,12 +123,17 @@ public:
     typedef std::function<void (const DisconnectMsg_SN&)> DisconnectSnMsgHandlerFunc;
     DisconnectSnMsgHandlerFunc setDisconnectSnMsgHandler(DisconnectSnMsgHandlerFunc&& func);
 
+    typedef std::function<void (const RegisterMsg_SN&)> RegisterMsgHandlerFunc;
+    RegisterMsgHandlerFunc setRegisterMsgHandler(RegisterMsgHandlerFunc&& func);
+
     typedef std::function<void (const RegackMsg_SN&)> RegackMsgHandlerFunc;
     RegackMsgHandlerFunc setRegackMsgHandler(RegackMsgHandlerFunc&& func);
 
     typedef std::function<void (const PublishMsg_SN&)> PublishMsgHandlerFunc;
     PublishMsgHandlerFunc setPublishMsgHandler(PublishMsgHandlerFunc&& func);
 
+    typedef std::function<void (const PubrelMsg_SN&)> PubrelMsgHandlerFunc;
+    PubrelMsgHandlerFunc setPubrelMsgHandler(PubrelMsgHandlerFunc&& func);
 
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
@@ -142,6 +147,12 @@ public:
     typedef std::function<void (const PubackMsg&)> PubackMsgHandlerFunc;
     PubackMsgHandlerFunc setPubackMsgHandler(PubackMsgHandlerFunc&& func);
 
+    typedef std::function<void (const PubrecMsg&)> PubrecMsgHandlerFunc;
+    PubrecMsgHandlerFunc setPubrecMsgHandler(PubrecMsgHandlerFunc&& func);
+
+    typedef std::function<void (const PubcompMsg&)> PubcompMsgHandlerFunc;
+    PubcompMsgHandlerFunc setPubcompMsgHandler(PubcompMsgHandlerFunc&& func);
+
     using MqttsnBase::handle;
     using MqttBase::handle;
 
@@ -150,14 +161,18 @@ public:
     virtual void handle(WilltopicreqMsg_SN& msg) override;
     virtual void handle(WillmsgreqMsg_SN& msg) override;
     virtual void handle(DisconnectMsg_SN& msg) override;
+    virtual void handle(RegisterMsg_SN& msg) override;
     virtual void handle(RegackMsg_SN& msg) override;
     virtual void handle(PublishMsg_SN& msg) override;
+    virtual void handle(PubrelMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PubackMsg& msg) override;
+    virtual void handle(PubrecMsg& msg) override;
+    virtual void handle(PubcompMsg& msg) override;
     virtual void handle(TestMqttMessage& msg) override;
 
     void processDataForClient(const DataBuf& data);
@@ -175,10 +190,16 @@ public:
     DataBuf prepareClientWillmsg(const DataBuf& data);
     DataBuf prepareClientDisconnect(std::uint16_t duration = 0);
     DataBuf prepareClientRegister(const std::string& topic, std::uint16_t msgId);
+    DataBuf prepareClientRegack(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal rc);
     DataBuf prepareClientPuback(
         std::uint16_t topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal rc);
+    DataBuf prepareClientPubrec(std::uint16_t msgId);
+    DataBuf prepareClientPubcomp(std::uint16_t msgId);
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
@@ -190,6 +211,9 @@ public:
         mqtt::field::QosType qos,
         bool retain,
         bool duplicate);
+
+    DataBuf prepareBrokerPubrel(std::uint16_t packetId);
+
 
 private:
     template <typename TStack>
@@ -206,11 +230,15 @@ private:
     WilltopicreqMsgHandlerFunc m_willtopicreqMsgHandler;
     WillmsgreqMsgHandlerFunc m_willmsgreqMsgHandler;
     DisconnectSnMsgHandlerFunc m_disconnectSnMsgHandler;
+    RegisterMsgHandlerFunc m_registerMsgHandler;
     RegackMsgHandlerFunc m_regackMsgHandler;
     PublishMsgHandlerFunc m_publishMsgHandler;
+    PubrelMsgHandlerFunc m_pubrelMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
     PingreqMsgHandlerFunc m_pingreqMsgHandler;
     PubackMsgHandlerFunc m_pubackMsgHandler;
+    PubrecMsgHandlerFunc m_pubrecMsgHandler;
+    PubcompMsgHandlerFunc m_pubcompMsgHandler;
 };

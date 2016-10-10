@@ -43,6 +43,7 @@ public:
     void test10();
     void test11();
     void test12();
+    void test13();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -165,6 +166,24 @@ private:
                 TS_TRACE("<-- DISCONNECT");
             });
 
+        handler.setRegisterMsgHandler(
+            [](const RegisterMsg_SN&)
+            {
+                TS_TRACE("<-- REGISTER");
+            });
+
+        handler.setPublishMsgHandler(
+            [](const PublishMsg_SN&)
+            {
+                TS_TRACE("<-- PUBLISH");
+            });
+
+        handler.setPubrelMsgHandler(
+            [](const PubrelMsg_SN&)
+            {
+                TS_TRACE("<-- PUBREL");
+            });
+
         handler.setRegackMsgHandler(
             [](const RegackMsg_SN&)
             {
@@ -189,6 +208,25 @@ private:
             {
                 TS_TRACE("<-- PINGREQ");
             });
+
+        handler.setPubackMsgHandler(
+            [](const PubackMsg&)
+            {
+                TS_TRACE("<-- PUBACK");
+            });
+
+        handler.setPubrecMsgHandler(
+            [](const PubrecMsg&)
+            {
+                TS_TRACE("<-- PUBREC");
+            });
+
+        handler.setPubcompMsgHandler(
+            [](const PubcompMsg&)
+            {
+                TS_TRACE("<-- PUBCOMP");
+            });
+
 
         session->setRetryPeriod(DefaultRetryPeriod);
         session->setRetryCount(DefaultRetryCount);
@@ -419,6 +457,47 @@ private:
         return topicId;
     }
 
+    static std::tuple<std::uint16_t, std::uint16_t> verifySentToClient_RegisterMsg(
+        State& state,
+        TestMsgHandler& handler,
+        const std::string& topic)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return std::make_tuple(0U, 0U);
+        }
+
+        bool sent = false;
+        std::uint16_t topicId = 0U;
+        std::uint16_t msgId = 0U;
+        auto oldCb =
+            handler.setRegisterMsgHandler(
+                [&](const RegisterMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- REGISTER");
+
+                    typedef RegisterMsg_SN MsgType;
+                    auto& fields = msg.fields();
+                    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
+                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+                    auto& topicNameField = std::get<MsgType::FieldIdx_topicName>(fields);
+
+                    TS_ASSERT_EQUALS(topicNameField.value(), topic);
+                    topicId = topicIdField.value();
+                    msgId = msgIdField.value();
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setRegisterMsgHandler(std::move(oldCb));
+        TS_TRACE("[Topic ID]: " + std::to_string(topicId));
+        TS_TRACE("[Msg ID]: " + std::to_string(msgId));
+        return std::make_tuple(topicId, msgId);
+    }
+
     static std::uint16_t verifySentToClient_PublishMsg(
         State& state,
         TestMsgHandler& handler,
@@ -473,6 +552,37 @@ private:
         return msgId;
     }
 
+    static void verifySentToClient_PubrelMsg(
+        State& state,
+        TestMsgHandler& handler,
+        std::uint16_t msgId)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPubrelMsgHandler(
+                [&](const PubrelMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- PUBREL");
+
+                    typedef PubrelMsg_SN MsgType;
+                    auto& fields = msg.fields();
+                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+
+                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setPubrelMsgHandler(std::move(oldCb));
+    }
 
     static void verifySentToBroker_ConnectMsg(
         State& state,
@@ -640,6 +750,68 @@ private:
 
         state.m_sentToBroker.pop_front();
         handler.setPubackMsgHandler(std::move(oldCb));
+    }
+
+    static void verifySentToBroker_PubrecMsg(
+        State& state,
+        TestMsgHandler& handler,
+        std::uint16_t packetId)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPubrecMsgHandler(
+                [&](const PubrecMsg& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- PUBREC");
+                    typedef PubrecMsg MsgType;
+                    auto& fields = msg.fields();
+                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+
+                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setPubrecMsgHandler(std::move(oldCb));
+    }
+
+    static void verifySentToBroker_PubcompMsg(
+        State& state,
+        TestMsgHandler& handler,
+        std::uint16_t packetId)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPubcompMsgHandler(
+                [&](const PubcompMsg& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- PUBCOMP");
+                    typedef PubcompMsg MsgType;
+                    auto& fields = msg.fields();
+                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+
+                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setPubcompMsgHandler(std::move(oldCb));
     }
 
     static void verifyBrokerReconnectReq(State& state)
@@ -1199,4 +1371,74 @@ void SessionTest::test12()
     verifyTickReq(state, DefaultRetryPeriod * 1000);
     verifyNoOtherEvent(state, handler);
     TS_ASSERT_DIFFERS(msgId, msgId3);
+}
+
+void SessionTest::test13()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    doConnect(*session, state, handler);
+
+    static const std::string Topic("topic/bla/bla");
+    static const DataBuf Data = {0, 1, 2, 3, 4};
+    static const std::uint16_t MsgId = 0x1234;
+    static const auto Qos = mqtt::field::QosType::ExactlyOnceDelivery;
+    static const bool Retain = true;
+
+    auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifySentToBroker_PubrecMsg(state, handler, MsgId);
+    verifyNoOtherEvent(state, handler);
+
+    auto pubrelMsg = handler.prepareBrokerPubrel(MsgId);
+    dataFromBroker(*session, pubrelMsg, "PUBREL");
+    verifySentToBroker_PubcompMsg(state, handler, MsgId);
+    verifySentToClient_RegisterMsg(state, handler, Topic);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    std::uint16_t topicId = 0U;
+    std::uint16_t msgId = 0U;
+    doTick(state, *session, DefaultRetryPeriod * 1000);
+    std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto regackMsg = handler.prepareClientRegack(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, regackMsg, "REGACK");
+    verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    std::uint16_t pubMsgId = 0U;
+    doTick(state, *session, DefaultRetryPeriod * 1000);
+    pubMsgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, true);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pubrecMsg = handler.prepareClientPubrec(pubMsgId);
+    dataFromClient(*session, pubrecMsg, "PUBREC");
+    verifySentToClient_PubrelMsg(state, handler, pubMsgId);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, DefaultRetryPeriod * 1000);
+    verifySentToClient_PubrelMsg(state, handler, pubMsgId);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pubcompMsg = handler.prepareClientPubcomp(pubMsgId + 1);
+    dataFromClient(*session, pubcompMsg, "PUBCOMP");
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    pubcompMsg = handler.prepareClientPubcomp(pubMsgId);
+    dataFromClient(*session, pubcompMsg, "PUBCOMP");
+    verifyNoOtherEvent(state, handler);
 }

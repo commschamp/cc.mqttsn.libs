@@ -254,7 +254,7 @@ void PubSend::doSend()
 
 unsigned PubSend::allocMsgId()
 {
-    return ++m_currMsgId;
+    return ++m_nextMsgId;
 }
 
 void PubSend::sendDisconnect()

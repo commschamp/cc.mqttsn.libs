@@ -106,6 +106,14 @@ TestMsgHandler::DisconnectSnMsgHandlerFunc TestMsgHandler::setDisconnectSnMsgHan
     return old;
 }
 
+TestMsgHandler::RegisterMsgHandlerFunc TestMsgHandler::setRegisterMsgHandler(
+    RegisterMsgHandlerFunc&& func)
+{
+    RegisterMsgHandlerFunc old(std::move(m_registerMsgHandler));
+    m_registerMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::RegackMsgHandlerFunc TestMsgHandler::setRegackMsgHandler(
     RegackMsgHandlerFunc&& func)
 {
@@ -119,6 +127,14 @@ TestMsgHandler::PublishMsgHandlerFunc TestMsgHandler::setPublishMsgHandler(
 {
     PublishMsgHandlerFunc old(std::move(m_publishMsgHandler));
     m_publishMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PubrelMsgHandlerFunc TestMsgHandler::setPubrelMsgHandler(
+    PubrelMsgHandlerFunc&& func)
+{
+    PubrelMsgHandlerFunc old(std::move(m_pubrelMsgHandler));
+    m_pubrelMsgHandler = std::move(func);
     return old;
 }
 
@@ -151,6 +167,22 @@ TestMsgHandler::setPubackMsgHandler(PubackMsgHandlerFunc&& func)
 {
     PubackMsgHandlerFunc old(std::move(m_pubackMsgHandler));
     m_pubackMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PubrecMsgHandlerFunc
+TestMsgHandler::setPubrecMsgHandler(PubrecMsgHandlerFunc&& func)
+{
+    PubrecMsgHandlerFunc old(std::move(m_pubrecMsgHandler));
+    m_pubrecMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PubcompMsgHandlerFunc
+TestMsgHandler::setPubcompMsgHandler(PubcompMsgHandlerFunc&& func)
+{
+    PubcompMsgHandlerFunc old(std::move(m_pubcompMsgHandler));
+    m_pubcompMsgHandler = std::move(func);
     return old;
 }
 
@@ -189,6 +221,13 @@ void TestMsgHandler::handle(DisconnectMsg_SN& msg)
     }
 }
 
+void TestMsgHandler::handle(RegisterMsg_SN& msg)
+{
+    if (m_registerMsgHandler) {
+        m_registerMsgHandler(msg);
+    }
+}
+
 void TestMsgHandler::handle(RegackMsg_SN& msg)
 {
     if (m_regackMsgHandler) {
@@ -200,6 +239,13 @@ void TestMsgHandler::handle(PublishMsg_SN& msg)
 {
     if (m_publishMsgHandler) {
         m_publishMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PubrelMsg_SN& msg)
+{
+    if (m_pubrelMsgHandler) {
+        m_pubrelMsgHandler(msg);
     }
 }
 
@@ -234,6 +280,20 @@ void TestMsgHandler::handle(PubackMsg& msg)
 {
     if (m_pubackMsgHandler) {
         m_pubackMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PubrecMsg& msg)
+{
+    if (m_pubrecMsgHandler) {
+        m_pubrecMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PubcompMsg& msg)
+{
+    if (m_pubcompMsgHandler) {
+        m_pubcompMsgHandler(msg);
     }
 }
 
@@ -349,6 +409,23 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegister(
     return prepareInput(msg);
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegack(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::ReturnCodeVal rc)
+{
+    RegackMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
+
+    topicIdField.value() = topicId;
+    msgIdField.value() = msgId;
+    retCodeField.value() = rc;
+    return prepareInput(msg);
+}
+
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
     std::uint16_t topicId,
     std::uint16_t msgId,
@@ -363,6 +440,26 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
     topicIdField.value() = topicId;
     msgIdField.value() = msgId;
     retCodeField.value() = rc;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubrec(std::uint16_t msgId)
+{
+    PubrecMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+
+    msgIdField.value() = msgId;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubcomp(std::uint16_t msgId)
+{
+    PubcompMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+
+    msgIdField.value() = msgId;
     return prepareInput(msg);
 }
 
@@ -424,3 +521,11 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
     return prepareInput(msg);
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubrel(std::uint16_t packetId)
+{
+    PubrelMsg msg;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
+    packetIdField.value() = packetId;
+    return prepareInput(msg);
+}
