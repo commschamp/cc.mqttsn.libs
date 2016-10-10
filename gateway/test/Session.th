@@ -44,6 +44,8 @@ public:
     void test11();
     void test12();
     void test13();
+    void test14();
+    void test15();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -1441,4 +1443,129 @@ void SessionTest::test13()
     pubcompMsg = handler.prepareClientPubcomp(pubMsgId);
     dataFromClient(*session, pubcompMsg, "PUBCOMP");
     verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test14()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    doConnect(*session, state, handler);
+
+    static const std::string Topic("topic/bla/bla");
+    static const DataBuf Data = {0, 1, 2, 3, 4};
+    static const std::uint16_t MsgId = 0x1234;
+    static const auto Qos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const bool Retain = true;
+
+    auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    std::uint16_t topicId = 0U;
+    std::uint16_t msgId = 0U;
+    std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto regackMsg = handler.prepareClientRegack(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, regackMsg, "REGACK");
+    verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
+    verifyNoOtherEvent(state, handler);
+
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
+    verifyNoOtherEvent(state, handler);
+
+    static const auto Qos2 = mqtt::field::QosType::AtLeastOnceDelivery;
+    publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos2, Retain, false);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifySentToBroker_PubackMsg(state, handler, MsgId);
+    msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos2), Retain, false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pubackMsg = handler.prepareClientPuback(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    dataFromClient(*session, pubackMsg, "PUBACK");
+    std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    regackMsg = handler.prepareClientRegack(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, regackMsg, "REGACK");
+    msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos2), Retain, false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    pubackMsg = handler.prepareClientPuback(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, pubackMsg, "PUBACK");
+    verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test15()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    doConnect(*session, state, handler);
+
+    static const std::string Topic("topic/bla/bla");
+    static const DataBuf Data = {0, 1, 2, 3, 4};
+    static const std::uint16_t MsgId = 0x1234;
+    static const auto Qos = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const bool Retain = false;
+
+    auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifySentToBroker_PubackMsg(state, handler, MsgId);
+
+    std::uint16_t topicId = 0U;
+    std::uint16_t msgId = 0U;
+    std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto regackMsg = handler.prepareClientRegack(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, regackMsg, "REGACK");
+    msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pubackMsg = handler.prepareClientPuback(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    dataFromClient(*session, pubackMsg, "PUBACK");
+    std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    regackMsg = handler.prepareClientRegack(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, regackMsg, "REGACK");
+    msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    pubackMsg = handler.prepareClientPuback(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    dataFromClient(*session, pubackMsg, "PUBACK");
+    std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    regackMsg = handler.prepareClientRegack(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, regackMsg, "REGACK");
+    msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    pubackMsg = handler.prepareClientPuback(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    dataFromClient(*session, pubackMsg, "PUBACK");
+    verifyNoOtherEvent(state, handler); // discarding the publish is expected
 }

@@ -73,6 +73,7 @@ void PubSend::handle(RegackMsg_SN& msg)
         return;
     }
 
+    cancelTick();
     if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
         m_currPub.reset();
         checkSend();
@@ -81,6 +82,7 @@ void PubSend::handle(RegackMsg_SN& msg)
 
     m_attempt = 0;
     m_registered = true;
+    ++m_registerCount;
     m_currMsgId = allocMsgId();
     doSend();
 }
@@ -99,15 +101,16 @@ void PubSend::handle(PubackMsg_SN& msg)
         return;
     }
 
+    if ((retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted) &&
+        (m_currPub->m_qos == QoS_ExactlyOnceDelivery)) {
+        return; // "PUBREC" is expected instead of "PUBACK"
+    }
+
+    cancelTick();
     if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
         state().m_regMgr.discardRegistration(m_currTopicInfo.m_topicId);
         sendCurrent();
         return;
-    }
-
-    if ((retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted) &&
-        (m_currPub->m_qos == QoS_ExactlyOnceDelivery)) {
-        return; // "PUBREC" is expected instead of "PUBACK"
     }
 
     m_currPub.reset();
@@ -164,6 +167,7 @@ void PubSend::newSends()
         m_currPub = std::move(st.m_brokerPubs.front());
         st.m_brokerPubs.pop_front();
 
+        m_registerCount = 0U;
         sendCurrent();
     }
 
@@ -201,6 +205,13 @@ void PubSend::doSend()
     if ((m_currTopicInfo.m_newInsersion) &&
         (!m_currTopicInfo.m_predefined) &&
         (!m_registered)) {
+
+        if (st.m_retryCount <= m_registerCount) {
+            m_currPub.reset();
+            checkSend();
+            return;
+        }
+
         RegisterMsg_SN msg;
         auto& fields = msg.fields();
         auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);

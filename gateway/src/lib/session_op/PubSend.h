@@ -65,6 +65,7 @@ private:
     PubInfoPtr m_currPub;
     TopicInfo m_currTopicInfo;
     std::uint16_t m_currMsgId = 0;
+    unsigned m_registerCount = 0U;
     bool m_registered = false;
     bool m_acked = false;
 };
