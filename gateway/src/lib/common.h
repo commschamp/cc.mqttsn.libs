@@ -130,6 +130,7 @@ struct SessionState
     bool m_timerActive = false;
     bool m_pendingClientDisconnect = false;
     Timestamp m_timestamp = InitialTimestamp;
+    Timestamp m_lastMsgTimestamp = InitialTimestamp;
     unsigned m_callStackCount = 0U;
 
     ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;

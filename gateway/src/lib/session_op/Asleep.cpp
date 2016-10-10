@@ -47,6 +47,15 @@ void Asleep::tickImpl()
     doPing();
 }
 
+void Asleep::brokerConnectionUpdatedImpl()
+{
+    auto& st = state();
+    if ((!st.m_brokerConnected) &&
+        (!st.m_reconnectingBroker)) {
+        cancelTick();
+    }
+}
+
 void Asleep::handle(DisconnectMsg_SN& msg)
 {
     typedef DisconnectMsg_SN MsgType;

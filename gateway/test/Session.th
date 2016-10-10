@@ -46,6 +46,7 @@ public:
     void test13();
     void test14();
     void test15();
+    void test16();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -1568,4 +1569,58 @@ void SessionTest::test15()
     pubackMsg = handler.prepareClientPuback(topicId, msgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
     dataFromClient(*session, pubackMsg, "PUBACK");
     verifyNoOtherEvent(state, handler); // discarding the publish is expected
+}
+
+void SessionTest::test16()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string Topic("topic");
+    static const std::uint16_t TopicId = 0x1111;
+    session->addPredefinedTopic(Topic, TopicId);
+
+    doConnect(*session, state, handler);
+
+    static const std::uint16_t SleepDuration = 30 * 60;
+
+    auto disconnectSnMsg = handler.prepareClientDisconnect(SleepDuration);
+    dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pingrespMsg = handler.prepareBrokerPingresp();
+    dataFromBroker(*session, pingrespMsg, "PINGRESP");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    static const DataBuf Data = {0, 1, 2, 3, 4 };
+    static const std::uint16_t MsgId = 1234;
+    static const auto Qos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const bool Retain = false;
+
+    state.m_elapsed.push_back(1000);
+    auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 2000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 3000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 4000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    doBrokerDisconnect(*session);
+    verifyTickReq(state, ((SleepDuration * 3000) / 2) - 5000);
+    verifyNoOtherEvent(state, handler);
 }

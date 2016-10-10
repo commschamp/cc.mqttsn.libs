@@ -30,31 +30,30 @@ namespace gateway
 namespace session_op
 {
 
-class Asleep : public SessionOp
+class AsleepMonitor : public SessionOp
 {
     typedef SessionOp Base;
 
 public:
-    Asleep(SessionState& sessionState);
-    ~Asleep();
+    AsleepMonitor(SessionState& sessionState);
+    ~AsleepMonitor();
 
 protected:
     virtual void tickImpl() override;
-    virtual void brokerConnectionUpdatedImpl() override;
+//    virtual void brokerConnectionUpdatedImpl() override;
 
 private:
     using Base::handle;
     virtual void handle(DisconnectMsg_SN& msg) override;
+    virtual void handle(PingreqMsg_SN& msg) override;
     virtual void handle(MqttsnMessage& msg) override;
-    virtual void handle(PingrespMsg& msg) override;
     virtual void handle(MqttMessage& msg) override;
 
-    void doPing();
+    void checkTickRequired();
     void reqNextTick();
 
-    unsigned m_attempt = 0;
-    Timestamp m_lastReq = 0;
-    Timestamp m_lastResp = 0;
+    Timestamp m_lastPing = 0;
+    unsigned m_duration = 0U;
 };
 
 }  // namespace session_op

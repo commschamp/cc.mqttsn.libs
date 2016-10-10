@@ -25,6 +25,7 @@
 #include "session_op/Connect.h"
 #include "session_op/Disconnect.h"
 #include "session_op/Asleep.h"
+#include "session_op/AsleepMonitor.h"
 #include "session_op/PubRecv.h"
 #include "session_op/PubSend.h"
 
@@ -73,6 +74,7 @@ std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t l
 
         if (es == comms::ErrorStatus::Success) {
             assert(msg);
+            m_state.m_lastMsgTimestamp = m_state.m_timestamp;
             msg->dispatch(*this);
         }
 
@@ -118,6 +120,7 @@ SessionImpl::SessionImpl()
     m_ops.emplace_back(new session_op::Connect(m_state));
     m_ops.emplace_back(new session_op::Disconnect(m_state));
     m_ops.emplace_back(new session_op::Asleep(m_state));
+    m_ops.emplace_back(new session_op::AsleepMonitor(m_state));
     m_ops.emplace_back(new session_op::PubRecv(m_state));
     m_ops.emplace_back(new session_op::PubSend(m_state));
 
