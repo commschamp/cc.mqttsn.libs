@@ -193,6 +193,12 @@ private:
                 TS_TRACE("<-- REGACK");
             });
 
+        handler.setPingrespMsgHandler(
+            [](const PingrespMsg_SN&)
+            {
+                TS_TRACE("<-- PINGRESP");
+            });
+
 
         handler.setConnectMsgHandler(
             [](const ConnectMsg&)
@@ -586,6 +592,33 @@ private:
         state.m_sentToClient.pop_front();
         handler.setPubrelMsgHandler(std::move(oldCb));
     }
+
+    static void verifySentToClient_PingrespMsg(
+        State& state,
+        TestMsgHandler& handler)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPingrespMsgHandler(
+                [&](const PingrespMsg_SN& msg)
+                {
+                    static_cast<void>(msg);
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- PINGRESP");
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setPingrespMsgHandler(std::move(oldCb));
+    }
+
 
     static void verifySentToBroker_ConnectMsg(
         State& state,
@@ -1620,7 +1653,43 @@ void SessionTest::test16()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
+    auto pingreqMsg = handler.prepareClientPingreq(DefaultClientId);
+    dataFromClient(*session, pingreqMsg, "PINGREQ");
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PingrespMsg(state, handler);
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 5000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 6000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 7000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 8000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
     doBrokerDisconnect(*session);
-    verifyTickReq(state, ((SleepDuration * 3000) / 2) - 5000);
+    verifyTickReq(state, ((SleepDuration * 3000) / 2) - 4000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, false, false);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifyTermReq(state);
     verifyNoOtherEvent(state, handler);
 }

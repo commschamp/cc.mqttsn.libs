@@ -146,6 +146,23 @@ void PubSend::handle(PubcompMsg_SN& msg)
     checkSend();
 }
 
+void PubSend::handle(PingreqMsg_SN& msg)
+{
+    if (state().m_connStatus != ConnectionStatus::Asleep) {
+        return;
+    }
+
+    typedef PingreqMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
+    if (clientIdField.value() != state().m_clientId) {
+        return;
+    }
+
+    m_ping = true;
+    checkSend();
+}
+
 void PubSend::handle(MqttsnMessage& msg)
 {
     static_cast<void>(msg);
@@ -171,8 +188,18 @@ void PubSend::newSends()
         sendCurrent();
     }
 
-    if (st.m_brokerPubs.empty() && st.m_pendingClientDisconnect) {
+    if (!st.m_brokerPubs.empty()) {
+        return;
+    }
+
+    if (st.m_pendingClientDisconnect) {
         sendDisconnect();
+        return;
+    }
+
+    if (m_ping) {
+        m_ping = false;
+        sendToClient(PingrespMsg_SN());
     }
 }
 
@@ -290,8 +317,18 @@ void PubSend::sendPubrel()
 
 void PubSend::checkSend()
 {
+    auto& st = state();
     if ((m_currPub) ||
-        (state().m_connStatus != ConnectionStatus::Connected)) {
+        (st.m_connStatus == ConnectionStatus::Disconnected)) {
+        return;
+    }
+
+    if ((st.m_connStatus == ConnectionStatus::Asleep) && (m_ping)) {
+        newSends();
+        return;
+    }
+
+    if (st.m_connStatus != ConnectionStatus::Connected) {
         return;
     }
 

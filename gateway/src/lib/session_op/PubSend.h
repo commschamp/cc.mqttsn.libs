@@ -48,6 +48,7 @@ private:
     virtual void handle(PubackMsg_SN& msg) override;
     virtual void handle(PubrecMsg_SN& msg) override;
     virtual void handle(PubcompMsg_SN& msg) override;
+    virtual void handle(PingreqMsg_SN& msg) override;
     virtual void handle(MqttsnMessage& msg) override;
     virtual void handle(MqttMessage& msg) override;
 
@@ -68,6 +69,7 @@ private:
     unsigned m_registerCount = 0U;
     bool m_registered = false;
     bool m_acked = false;
+    bool m_ping = false;
 };
 
 }  // namespace session_op

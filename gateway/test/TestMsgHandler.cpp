@@ -138,6 +138,14 @@ TestMsgHandler::PubrelMsgHandlerFunc TestMsgHandler::setPubrelMsgHandler(
     return old;
 }
 
+TestMsgHandler::PingrespMsgHandlerFunc TestMsgHandler::setPingrespMsgHandler(
+    PingrespMsgHandlerFunc&& func)
+{
+    PingrespMsgHandlerFunc old(std::move(m_pingrespMsgHandler));
+    m_pingrespMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -246,6 +254,13 @@ void TestMsgHandler::handle(PubrelMsg_SN& msg)
 {
     if (m_pubrelMsgHandler) {
         m_pubrelMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PingrespMsg_SN& msg)
+{
+    if (m_pingrespMsgHandler) {
+        m_pingrespMsgHandler(msg);
     }
 }
 
@@ -460,6 +475,16 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubcomp(std::uint16_t msgId
     auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
 
     msgIdField.value() = msgId;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingreq(
+    const std::string& clientId)
+{
+    PingreqMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
+    clientIdField.value() = clientId;
     return prepareInput(msg);
 }
 

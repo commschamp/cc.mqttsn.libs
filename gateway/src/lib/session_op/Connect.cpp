@@ -186,10 +186,9 @@ void Connect::doNextStep()
 
         auto& st = state();
         do {
-
-            if ((st.m_clientId != m_clientId) ||
-                (st.m_keepAlive != m_keepAlive)) {
-                break;
+            if ((!st.m_clientId.empty()) && (st.m_clientId != m_clientId)) {
+                processAck(mqtt::message::ConnackResponseCode::IdentifierRejected);
+                return;
             }
 
             if (st.m_will.m_topic != m_will.m_topic) {
@@ -202,7 +201,22 @@ void Connect::doNextStep()
                 break;
             }
 
-            if (st.m_connStatus == ConnectionStatus::Asleep) {
+            if (st.m_clientId != m_clientId) {
+                break;
+            }
+
+            if (st.m_pendingClientDisconnect) {
+                // Emulate successful connection, Disconnect will be sent from PubSend op
+                processAck(mqtt::message::ConnackResponseCode::Accepted);
+                return;
+            }
+
+            if (st.m_keepAlive != m_keepAlive) {
+                break;
+            }
+
+            if ((st.m_connStatus == ConnectionStatus::Asleep) &&
+                (st.m_brokerConnected)) {
                 sendToBroker(PingreqMsg());
             }
 
@@ -210,6 +224,11 @@ void Connect::doNextStep()
             processAck(mqtt::message::ConnackResponseCode::Accepted);
             return;
         } while (false);
+
+        if (!st.m_brokerConnected) {
+            processAck(mqtt::message::ConnackResponseCode::ServerUnavailable);
+            return;
+        }
 
         if (st.m_connStatus != ConnectionStatus::Disconnected) {
             sendToBroker(DisconnectMsg());

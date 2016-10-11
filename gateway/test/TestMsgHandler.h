@@ -135,6 +135,9 @@ public:
     typedef std::function<void (const PubrelMsg_SN&)> PubrelMsgHandlerFunc;
     PubrelMsgHandlerFunc setPubrelMsgHandler(PubrelMsgHandlerFunc&& func);
 
+    typedef std::function<void (const PingrespMsg_SN&)> PingrespMsgHandlerFunc;
+    PingrespMsgHandlerFunc setPingrespMsgHandler(PingrespMsgHandlerFunc&& func);
+
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
@@ -165,6 +168,7 @@ public:
     virtual void handle(RegackMsg_SN& msg) override;
     virtual void handle(PublishMsg_SN& msg) override;
     virtual void handle(PubrelMsg_SN& msg) override;
+    virtual void handle(PingrespMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
@@ -200,6 +204,7 @@ public:
         mqttsn::protocol::field::ReturnCodeVal rc);
     DataBuf prepareClientPubrec(std::uint16_t msgId);
     DataBuf prepareClientPubcomp(std::uint16_t msgId);
+    DataBuf prepareClientPingreq(const std::string& clientId = std::string());
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
@@ -234,6 +239,7 @@ private:
     RegackMsgHandlerFunc m_regackMsgHandler;
     PublishMsgHandlerFunc m_publishMsgHandler;
     PubrelMsgHandlerFunc m_pubrelMsgHandler;
+    PingrespMsgHandlerFunc m_pingrespMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
