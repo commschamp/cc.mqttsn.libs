@@ -2471,6 +2471,14 @@ void ClientBasic::test24()
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain);
     TS_ASSERT(state.m_nextOutput.empty());
+    TS_ASSERT(state.m_reportedMsgs.empty());
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    publishMsg = dataProc.preparePublishMsg(TopicId + 1, MsgId + 2, Data, TopicIdTypeVal::Normal, Qos, Retain, false);
+    dataFromGw(*client, publishMsg, "PUBLISH");
+    verifySent_PubackMsg(state, dataProc, TopicId + 1, MsgId + 2, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    TS_ASSERT(state.m_reportedMsgs.empty());
 }
 
 void ClientBasic::test25()

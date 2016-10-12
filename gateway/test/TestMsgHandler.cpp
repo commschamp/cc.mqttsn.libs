@@ -122,11 +122,19 @@ TestMsgHandler::RegackMsgHandlerFunc TestMsgHandler::setRegackMsgHandler(
     return old;
 }
 
-TestMsgHandler::PublishMsgHandlerFunc TestMsgHandler::setPublishMsgHandler(
-    PublishMsgHandlerFunc&& func)
+TestMsgHandler::PublishSnMsgHandlerFunc TestMsgHandler::setPublishSnMsgHandler(
+    PublishSnMsgHandlerFunc&& func)
 {
-    PublishMsgHandlerFunc old(std::move(m_publishMsgHandler));
-    m_publishMsgHandler = std::move(func);
+    PublishSnMsgHandlerFunc old(std::move(m_publishSnMsgHandler));
+    m_publishSnMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PubackSnMsgHandlerFunc TestMsgHandler::setPubackSnMsgHandler(
+    PubackSnMsgHandlerFunc&& func)
+{
+    PubackSnMsgHandlerFunc old(std::move(m_pubackSnMsgHandler));
+    m_pubackSnMsgHandler = std::move(func);
     return old;
 }
 
@@ -167,6 +175,14 @@ TestMsgHandler::setPingreqMsgHandler(PingreqMsgHandlerFunc&& func)
 {
     PingreqMsgHandlerFunc old(std::move(m_pingreqMsgHandler));
     m_pingreqMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PublishMsgHandlerFunc
+TestMsgHandler::setPublishMsgHandler(PublishMsgHandlerFunc&& func)
+{
+    PublishMsgHandlerFunc old(std::move(m_publishMsgHandler));
+    m_publishMsgHandler = std::move(func);
     return old;
 }
 
@@ -245,8 +261,15 @@ void TestMsgHandler::handle(RegackMsg_SN& msg)
 
 void TestMsgHandler::handle(PublishMsg_SN& msg)
 {
-    if (m_publishMsgHandler) {
-        m_publishMsgHandler(msg);
+    if (m_publishSnMsgHandler) {
+        m_publishSnMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PubackMsg_SN& msg)
+{
+    if (m_pubackSnMsgHandler) {
+        m_pubackSnMsgHandler(msg);
     }
 }
 
@@ -288,6 +311,13 @@ void TestMsgHandler::handle(PingreqMsg& msg)
 {
     if (m_pingreqMsgHandler) {
         m_pingreqMsgHandler(msg);
+    }
+}
+
+void TestMsgHandler::handle(PublishMsg& msg)
+{
+    if (m_publishMsgHandler) {
+        m_publishMsgHandler(msg);
     }
 }
 
@@ -488,6 +518,39 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingreq(
     return prepareInput(msg);
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPublish(
+    const DataBuf& data,
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::TopicIdTypeVal topicIdType,
+    mqttsn::protocol::field::QosType qos,
+    bool retain,
+    bool dup)
+{
+    PublishMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& dupField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& dataField = std::get<decltype(msg)::FieldIdx_data>(fields);
+
+    topicIdTypeField.value() = topicIdType;
+    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
+    qosField.value() = qos;
+    dupField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, dup);
+    topicIdField.value() = topicId;
+    msgIdField.value() = msgId;
+    dataField.value() = data;
+
+    return prepareInput(msg);
+}
+
+
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
     mqtt::message::ConnackResponseCode rc,
     bool sessionPresent)
@@ -543,6 +606,15 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
            (packetIdField.getMode() == comms::field::OptionalMode::Exists));
     assert((mqtt::field::QosType::AtMostOnceDelivery < qos) ||
            (packetIdField.getMode() == comms::field::OptionalMode::Missing));
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPuback(std::uint16_t packetId)
+{
+    PubackMsg msg;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
+    packetIdField.value() = packetId;
     return prepareInput(msg);
 }
 

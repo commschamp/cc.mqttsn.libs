@@ -188,6 +188,20 @@ void RegMgr::discardRegistration(std::uint16_t topicId)
     m_regInfos.erase(infoIter);
 }
 
+const std::string& RegMgr::mapTopicId(std::uint16_t topicId)
+{
+    auto idIter = m_regInfosRevMap.find(topicId);
+    if (idIter == m_regInfosRevMap.end()) {
+        static const std::string EmptyString;
+        return EmptyString;
+    }
+
+    auto infoIter = idIter->second;
+    assert(infoIter != m_regInfos.end());
+
+    return infoIter->m_topic;
+}
+
 void RegMgr::removeFromTopicMap(const std::string& topic, RegInfosList::iterator info)
 {
     auto topicMapIters = m_regInfosMap.equal_range(topic);

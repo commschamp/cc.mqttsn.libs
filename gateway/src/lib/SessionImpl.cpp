@@ -28,6 +28,7 @@
 #include "session_op/AsleepMonitor.h"
 #include "session_op/PubRecv.h"
 #include "session_op/PubSend.h"
+#include "session_op/Forward.h"
 
 namespace mqttsn
 {
@@ -123,6 +124,7 @@ SessionImpl::SessionImpl()
     m_ops.emplace_back(new session_op::AsleepMonitor(m_state));
     m_ops.emplace_back(new session_op::PubRecv(m_state));
     m_ops.emplace_back(new session_op::PubSend(m_state));
+    m_ops.emplace_back(new session_op::Forward(m_state));
 
     for (auto& op : m_ops) {
         startOp(*op);

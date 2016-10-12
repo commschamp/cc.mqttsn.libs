@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "SessionOp.h"
 #include "common.h"
 
@@ -30,29 +32,25 @@ namespace gateway
 namespace session_op
 {
 
-class AsleepMonitor : public SessionOp
+class Forward : public SessionOp
 {
     typedef SessionOp Base;
 
 public:
-    AsleepMonitor(SessionState& sessionState);
-    ~AsleepMonitor();
+    Forward(SessionState& sessionState);
+    ~Forward();
 
 protected:
-    virtual void tickImpl() override;
 
 private:
     using Base::handle;
-    virtual void handle(DisconnectMsg_SN& msg) override;
-    virtual void handle(PingreqMsg_SN& msg) override;
-    virtual void handle(MqttsnMessage& msg) override;
-    virtual void handle(MqttMessage& msg) override;
+    virtual void handle(PublishMsg_SN& msg) override;
 
-    void checkTickRequired();
-    void reqNextTick();
+    virtual void handle(PubackMsg& msg) override;
+    virtual void handle(PubrecMsg& msg) override;
+    virtual void handle(PubcompMsg& msg) override;
 
-    Timestamp m_lastPing = 0;
-    unsigned m_duration = 0U;
+    std::uint16_t m_lastPubTopicId = 0;
 };
 
 }  // namespace session_op

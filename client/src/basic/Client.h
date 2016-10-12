@@ -1205,6 +1205,10 @@ public:
                 {
                     return elem.m_allocated && (elem.m_topicId == topicIdField.value());
                 });
+
+            if (iter == m_regInfos.end()) {
+                sendPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+            }
         }
 
         const char* topicName = nullptr;
@@ -1227,12 +1231,11 @@ public:
         if ((iter == m_regInfos.end()) &&
             (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
             m_lastInMsg = LastInMsgInfo();
-            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
             return;
         }
 
         if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
-            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
+            sendPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
             reportMsgFunc(topicName);
             return;
         }
@@ -1266,16 +1269,31 @@ public:
 
     virtual void handle(PubackMsg& msg) override
     {
+        auto& fields = msg.fields();
+        auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
+        auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
+        auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
+
+        if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+
+            auto iter = std::find_if(
+                m_regInfos.begin(), m_regInfos.end(),
+                [&topicIdField](typename RegInfosList::const_reference elem) -> bool
+                {
+                    return elem.m_allocated && (elem.m_topicId == topicIdField.value());
+                });
+
+            if (iter != m_regInfos.end()) {
+                dropRegInfo(iter);
+            }
+        }
+
         if ((m_currOp != Op::Publish) && (m_currOp != Op::PublishId)) {
             return;
         }
 
         auto* op = opPtr<PublishOpBase>();
 
-        auto& fields = msg.fields();
-        auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
-        auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
 
         if ((topicIdField.value() != op->m_topicId) ||
             (msgIdField.value() != op->m_msgId)) {
@@ -1289,26 +1307,12 @@ public:
         }
 
         do {
-
             if ((op->m_qos < MqttsnQoS_AtLeastOnceDelivery) ||
                 (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) ||
                 (m_currOp != Op::Publish) ||
                 (opPtr<PublishOp>()->m_didRegistration)) {
                 break;
             }
-
-            auto iter = std::find_if(
-                m_regInfos.begin(), m_regInfos.end(),
-                [op](typename RegInfosList::const_reference elem) -> bool
-                {
-                    return elem.m_allocated && (elem.m_topicId == op->m_topicId);
-                });
-
-            if (iter == m_regInfos.end()) {
-                return;
-            }
-
-            dropRegInfo(iter);
 
             op->m_lastMsgTimestamp = m_timestamp;
             op->m_topicId = 0U;
@@ -2687,7 +2691,7 @@ private:
         sendMessage(pubMsg);
     }
 
-    void sentPuback(
+    void sendPuback(
         MqttsnTopicId topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal retCode)

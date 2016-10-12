@@ -13,6 +13,7 @@ function (lib_mqttsn_gateway)
         session_op/AsleepMonitor.cpp
         session_op/PubRecv.cpp
         session_op/PubSend.cpp
+        session_op/Forward.cpp
     )    
     
     add_library (${name} STATIC ${src})
