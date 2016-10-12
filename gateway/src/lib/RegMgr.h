@@ -47,6 +47,7 @@ public:
     TopicInfo mapTopic(const std::string& topic);
     void discardRegistration(std::uint16_t topicId);
     const std::string& mapTopicId(std::uint16_t topicId);
+    void clearRegistrations();
 
 private:
 

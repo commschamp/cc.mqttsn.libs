@@ -220,7 +220,10 @@ void Connect::doNextStep()
                 sendToBroker(PingreqMsg());
             }
 
-            // TODO: if clean session and have subscriptions reconnect
+            if (m_clean) {
+                st.m_regMgr.clearRegistrations();
+            }
+
             processAck(mqtt::message::ConnackResponseCode::Accepted);
             return;
         } while (false);
@@ -342,6 +345,10 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     sessionState.m_keepAlive = m_keepAlive;
     sessionState.m_will = m_will;
     clearInternalState();
+
+    if (m_clean) {
+        sessionState.m_regMgr.clearRegistrations();
+    }
 }
 
 void Connect::clearConnectionInfo()

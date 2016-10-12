@@ -1847,7 +1847,32 @@ void SessionTest::test17()
     verifySentToClient_PubackMsg(state, handler, topicId, MsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
 
-    //static const std::uint16_t SleepDuration = 30 * 60;
+    static const std::uint16_t SleepDuration = 30 * 60;
+    auto disconnectSnMsg = handler.prepareClientDisconnect(SleepDuration);
+    dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pingrespMsg = handler.prepareBrokerPingresp();
+    dataFromBroker(*session, pingrespMsg, "PINGRESP");
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    verifyTickReq(state, expectedTickReq);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, false, true);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyNoOtherEvent(state, handler);
+
+    dataFromClient(*session, publishMsg, "PUBLISH");
+    verifySentToClient_PubackMsg(state, handler, topicId, MsgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    verifyNoOtherEvent(state, handler);
+
 
     // TODO: test registration removal in clean session
 }

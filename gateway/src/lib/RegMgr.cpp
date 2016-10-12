@@ -202,6 +202,28 @@ const std::string& RegMgr::mapTopicId(std::uint16_t topicId)
     return infoIter->m_topic;
 }
 
+void RegMgr::clearRegistrations()
+{
+    auto prevSize = m_regInfos.size();
+    m_regInfos.remove_if(
+        [](RegInfosList::const_reference& elem) -> bool
+        {
+            return !elem.m_predefined;
+        });
+
+    if (prevSize == m_regInfos.size()) {
+        return;
+    }
+
+    m_regInfosMap.clear();
+    m_regInfosRevMap.clear();
+
+    for (auto iter = m_regInfos.begin(); iter != m_regInfos.end(); ++iter) {
+        m_regInfosMap.insert(std::make_pair(iter->m_topic, iter));
+        m_regInfosRevMap.insert(std::make_pair(iter->m_topicId, iter));
+    }
+}
+
 void RegMgr::removeFromTopicMap(const std::string& topic, RegInfosList::iterator info)
 {
     auto topicMapIters = m_regInfosMap.equal_range(topic);
