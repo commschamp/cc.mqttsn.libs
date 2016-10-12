@@ -138,11 +138,27 @@ TestMsgHandler::PubackSnMsgHandlerFunc TestMsgHandler::setPubackSnMsgHandler(
     return old;
 }
 
-TestMsgHandler::PubrelMsgHandlerFunc TestMsgHandler::setPubrelMsgHandler(
-    PubrelMsgHandlerFunc&& func)
+TestMsgHandler::PubrecSnMsgHandlerFunc TestMsgHandler::setPubrecSnMsgHandler(
+    PubrecSnMsgHandlerFunc&& func)
 {
-    PubrelMsgHandlerFunc old(std::move(m_pubrelMsgHandler));
-    m_pubrelMsgHandler = std::move(func);
+    PubrecSnMsgHandlerFunc old(std::move(m_pubrecSnMsgHandler));
+    m_pubrecSnMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PubrelSnMsgHandlerFunc TestMsgHandler::setPubrelSnMsgHandler(
+    PubrelSnMsgHandlerFunc&& func)
+{
+    PubrelSnMsgHandlerFunc old(std::move(m_pubrelSnMsgHandler));
+    m_pubrelSnMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PubcompSnMsgHandlerFunc TestMsgHandler::setPubcompSnMsgHandler(
+    PubcompSnMsgHandlerFunc&& func)
+{
+    PubcompSnMsgHandlerFunc old(std::move(m_pubcompSnMsgHandler));
+    m_pubcompSnMsgHandler = std::move(func);
     return old;
 }
 
@@ -202,6 +218,14 @@ TestMsgHandler::setPubrecMsgHandler(PubrecMsgHandlerFunc&& func)
     return old;
 }
 
+TestMsgHandler::PubrelMsgHandlerFunc
+TestMsgHandler::setPubrelMsgHandler(PubrelMsgHandlerFunc&& func)
+{
+    PubrelMsgHandlerFunc old(std::move(m_pubrelMsgHandler));
+    m_pubrelMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::PubcompMsgHandlerFunc
 TestMsgHandler::setPubcompMsgHandler(PubcompMsgHandlerFunc&& func)
 {
@@ -212,79 +236,80 @@ TestMsgHandler::setPubcompMsgHandler(PubcompMsgHandlerFunc&& func)
 
 void TestMsgHandler::handle(GwinfoMsg_SN& msg)
 {
-    if (m_gwInfoMsgHandler) {
-        m_gwInfoMsgHandler(msg);
-    }
+    assert(m_gwInfoMsgHandler);
+    m_gwInfoMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(ConnackMsg_SN& msg)
 {
-    if (m_connackMsgHandler) {
-        m_connackMsgHandler(msg);
-    }
+    assert(m_connackMsgHandler);
+    m_connackMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(WilltopicreqMsg_SN& msg)
 {
-    if (m_willtopicreqMsgHandler) {
-        m_willtopicreqMsgHandler(msg);
-    }
+    assert(m_willtopicreqMsgHandler);
+    m_willtopicreqMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(WillmsgreqMsg_SN& msg)
 {
-    if (m_willmsgreqMsgHandler) {
-        m_willmsgreqMsgHandler(msg);
-    }
+    assert(m_willmsgreqMsgHandler);
+    m_willmsgreqMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(DisconnectMsg_SN& msg)
 {
-    if (m_disconnectSnMsgHandler) {
-        m_disconnectSnMsgHandler(msg);
-    }
+    assert(m_disconnectSnMsgHandler);
+    m_disconnectSnMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(RegisterMsg_SN& msg)
 {
-    if (m_registerMsgHandler) {
-        m_registerMsgHandler(msg);
-    }
+    assert(m_registerMsgHandler);
+    m_registerMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(RegackMsg_SN& msg)
 {
-    if (m_regackMsgHandler) {
-        m_regackMsgHandler(msg);
-    }
+    assert(m_regackMsgHandler);
+    m_regackMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PublishMsg_SN& msg)
 {
-    if (m_publishSnMsgHandler) {
-        m_publishSnMsgHandler(msg);
-    }
+    assert(m_publishSnMsgHandler);
+    m_publishSnMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PubackMsg_SN& msg)
 {
-    if (m_pubackSnMsgHandler) {
-        m_pubackSnMsgHandler(msg);
-    }
+    assert(m_pubackSnMsgHandler);
+    m_pubackSnMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(PubrecMsg_SN& msg)
+{
+    assert(m_pubrecSnMsgHandler);
+    m_pubrecSnMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PubrelMsg_SN& msg)
 {
-    if (m_pubrelMsgHandler) {
-        m_pubrelMsgHandler(msg);
-    }
+    assert(m_pubrelSnMsgHandler);
+    m_pubrelSnMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(PubcompMsg_SN& msg)
+{
+    assert(m_pubcompSnMsgHandler);
+    m_pubcompSnMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PingrespMsg_SN& msg)
 {
-    if (m_pingrespMsgHandler) {
-        m_pingrespMsgHandler(msg);
-    }
+    assert(m_pingrespMsgHandler);
+    m_pingrespMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
@@ -295,51 +320,50 @@ void TestMsgHandler::handle(TestMqttsnMessage& msg)
 
 void TestMsgHandler::handle(ConnectMsg& msg)
 {
-    if (m_connectMsgHandler) {
-        m_connectMsgHandler(msg);
-    }
+    assert(m_connectMsgHandler);
+    m_connectMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(DisconnectMsg& msg)
 {
-    if (m_disconnectMsgHandler) {
-        m_disconnectMsgHandler(msg);
-    }
+    assert(m_disconnectMsgHandler);
+    m_disconnectMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PingreqMsg& msg)
 {
-    if (m_pingreqMsgHandler) {
-        m_pingreqMsgHandler(msg);
-    }
+    assert(m_pingreqMsgHandler);
+    m_pingreqMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PublishMsg& msg)
 {
-    if (m_publishMsgHandler) {
-        m_publishMsgHandler(msg);
-    }
+    assert(m_publishMsgHandler);
+    m_publishMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PubackMsg& msg)
 {
-    if (m_pubackMsgHandler) {
-        m_pubackMsgHandler(msg);
-    }
+    assert(m_pubackMsgHandler);
+    m_pubackMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PubrecMsg& msg)
 {
-    if (m_pubrecMsgHandler) {
-        m_pubrecMsgHandler(msg);
-    }
+    assert(m_pubrecMsgHandler);
+    m_pubrecMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(PubrelMsg& msg)
+{
+    assert(m_pubrelMsgHandler);
+    m_pubrelMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PubcompMsg& msg)
 {
-    if (m_pubcompMsgHandler) {
-        m_pubcompMsgHandler(msg);
-    }
+    assert(m_pubcompMsgHandler);
+    m_pubcompMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(TestMqttMessage& msg)
@@ -471,53 +495,6 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegack(
     return prepareInput(msg);
 }
 
-TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
-    std::uint16_t topicId,
-    std::uint16_t msgId,
-    mqttsn::protocol::field::ReturnCodeVal rc)
-{
-    PubackMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    topicIdField.value() = topicId;
-    msgIdField.value() = msgId;
-    retCodeField.value() = rc;
-    return prepareInput(msg);
-}
-
-TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubrec(std::uint16_t msgId)
-{
-    PubrecMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-
-    msgIdField.value() = msgId;
-    return prepareInput(msg);
-}
-
-TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubcomp(std::uint16_t msgId)
-{
-    PubcompMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-
-    msgIdField.value() = msgId;
-    return prepareInput(msg);
-}
-
-TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingreq(
-    const std::string& clientId)
-{
-    PingreqMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
-    clientIdField.value() = clientId;
-    return prepareInput(msg);
-}
-
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientPublish(
     const DataBuf& data,
     std::uint16_t topicId,
@@ -547,6 +524,63 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPublish(
     msgIdField.value() = msgId;
     dataField.value() = data;
 
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::ReturnCodeVal rc)
+{
+    PubackMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
+
+    topicIdField.value() = topicId;
+    msgIdField.value() = msgId;
+    retCodeField.value() = rc;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubrec(std::uint16_t msgId)
+{
+    PubrecMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+
+    msgIdField.value() = msgId;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubrel(std::uint16_t msgId)
+{
+    PubrelMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+
+    msgIdField.value() = msgId;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubcomp(std::uint16_t msgId)
+{
+    PubcompMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+
+    msgIdField.value() = msgId;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingreq(
+    const std::string& clientId)
+{
+    PingreqMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
+    clientIdField.value() = clientId;
     return prepareInput(msg);
 }
 
@@ -618,9 +652,27 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPuback(std::uint16_t packet
     return prepareInput(msg);
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubrec(std::uint16_t packetId)
+{
+    PubrecMsg msg;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
+    packetIdField.value() = packetId;
+    return prepareInput(msg);
+}
+
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubrel(std::uint16_t packetId)
 {
     PubrelMsg msg;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
+    packetIdField.value() = packetId;
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubcomp(std::uint16_t packetId)
+{
+    PubcompMsg msg;
     auto& fields = msg.fields();
     auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
     packetIdField.value() = packetId;

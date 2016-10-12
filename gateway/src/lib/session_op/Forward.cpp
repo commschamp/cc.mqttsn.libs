@@ -90,6 +90,20 @@ void Forward::handle(PublishMsg_SN& msg)
     sendToBroker(fwdMsg);
 }
 
+void Forward::handle(PubrelMsg_SN& msg)
+{
+    typedef PubrelMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+
+    PubrelMsg fwdMsg;
+    auto& fwdFields = fwdMsg.fields();
+    auto& packetIdField = std::get<decltype(fwdMsg)::FieldIdx_PacketId>(fwdFields);
+
+    packetIdField.value() = msgIdField.value();
+    sendToBroker(fwdMsg);
+}
+
 void Forward::handle(PubackMsg& msg)
 {
     typedef PubackMsg MsgType;

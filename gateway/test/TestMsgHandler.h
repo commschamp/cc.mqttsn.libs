@@ -135,8 +135,14 @@ public:
     typedef std::function<void (const PubackMsg_SN&)> PubackSnMsgHandlerFunc;
     PubackSnMsgHandlerFunc setPubackSnMsgHandler(PubackSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubrelMsg_SN&)> PubrelMsgHandlerFunc;
-    PubrelMsgHandlerFunc setPubrelMsgHandler(PubrelMsgHandlerFunc&& func);
+    typedef std::function<void (const PubrecMsg_SN&)> PubrecSnMsgHandlerFunc;
+    PubrecSnMsgHandlerFunc setPubrecSnMsgHandler(PubrecSnMsgHandlerFunc&& func);
+
+    typedef std::function<void (const PubrelMsg_SN&)> PubrelSnMsgHandlerFunc;
+    PubrelSnMsgHandlerFunc setPubrelSnMsgHandler(PubrelSnMsgHandlerFunc&& func);
+
+    typedef std::function<void (const PubcompMsg_SN&)> PubcompSnMsgHandlerFunc;
+    PubcompSnMsgHandlerFunc setPubcompSnMsgHandler(PubcompSnMsgHandlerFunc&& func);
 
     typedef std::function<void (const PingrespMsg_SN&)> PingrespMsgHandlerFunc;
     PingrespMsgHandlerFunc setPingrespMsgHandler(PingrespMsgHandlerFunc&& func);
@@ -159,6 +165,9 @@ public:
     typedef std::function<void (const PubrecMsg&)> PubrecMsgHandlerFunc;
     PubrecMsgHandlerFunc setPubrecMsgHandler(PubrecMsgHandlerFunc&& func);
 
+    typedef std::function<void (const PubrelMsg&)> PubrelMsgHandlerFunc;
+    PubrelMsgHandlerFunc setPubrelMsgHandler(PubrelMsgHandlerFunc&& func);
+
     typedef std::function<void (const PubcompMsg&)> PubcompMsgHandlerFunc;
     PubcompMsgHandlerFunc setPubcompMsgHandler(PubcompMsgHandlerFunc&& func);
 
@@ -174,7 +183,9 @@ public:
     virtual void handle(RegackMsg_SN& msg) override;
     virtual void handle(PublishMsg_SN& msg) override;
     virtual void handle(PubackMsg_SN& msg) override;
+    virtual void handle(PubrecMsg_SN& msg) override;
     virtual void handle(PubrelMsg_SN& msg) override;
+    virtual void handle(PubcompMsg_SN& msg) override;
     virtual void handle(PingrespMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
@@ -184,6 +195,7 @@ public:
     virtual void handle(PublishMsg& msg) override;
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PubrecMsg& msg) override;
+    virtual void handle(PubrelMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
     virtual void handle(TestMqttMessage& msg) override;
 
@@ -206,13 +218,6 @@ public:
         std::uint16_t topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal rc);
-    DataBuf prepareClientPuback(
-        std::uint16_t topicId,
-        std::uint16_t msgId,
-        mqttsn::protocol::field::ReturnCodeVal rc);
-    DataBuf prepareClientPubrec(std::uint16_t msgId);
-    DataBuf prepareClientPubcomp(std::uint16_t msgId);
-    DataBuf prepareClientPingreq(const std::string& clientId = std::string());
     DataBuf prepareClientPublish(
         const DataBuf& data,
         std::uint16_t topicId,
@@ -221,6 +226,15 @@ public:
         mqttsn::protocol::field::QosType qos,
         bool retain,
         bool dup);
+    DataBuf prepareClientPuback(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal rc);
+    DataBuf prepareClientPubrec(std::uint16_t msgId);
+    DataBuf prepareClientPubrel(std::uint16_t msgId);
+    DataBuf prepareClientPubcomp(std::uint16_t msgId);
+    DataBuf prepareClientPingreq(const std::string& clientId = std::string());
+
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
@@ -233,7 +247,9 @@ public:
         bool retain,
         bool duplicate);
     DataBuf prepareBrokerPuback(std::uint16_t packetId);
+    DataBuf prepareBrokerPubrec(std::uint16_t packetId);
     DataBuf prepareBrokerPubrel(std::uint16_t packetId);
+    DataBuf prepareBrokerPubcomp(std::uint16_t packetId);
 
 
 private:
@@ -255,7 +271,9 @@ private:
     RegackMsgHandlerFunc m_regackMsgHandler;
     PublishSnMsgHandlerFunc m_publishSnMsgHandler;
     PubackSnMsgHandlerFunc m_pubackSnMsgHandler;
-    PubrelMsgHandlerFunc m_pubrelMsgHandler;
+    PubrecSnMsgHandlerFunc m_pubrecSnMsgHandler;
+    PubrelSnMsgHandlerFunc m_pubrelSnMsgHandler;
+    PubcompSnMsgHandlerFunc m_pubcompSnMsgHandler;
     PingrespMsgHandlerFunc m_pingrespMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
@@ -264,5 +282,6 @@ private:
     PublishMsgHandlerFunc m_publishMsgHandler;
     PubackMsgHandlerFunc m_pubackMsgHandler;
     PubrecMsgHandlerFunc m_pubrecMsgHandler;
+    PubrelMsgHandlerFunc m_pubrelMsgHandler;
     PubcompMsgHandlerFunc m_pubcompMsgHandler;
 };

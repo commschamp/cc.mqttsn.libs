@@ -45,6 +45,7 @@ protected:
 private:
     using Base::handle;
     virtual void handle(PublishMsg_SN& msg) override;
+    virtual void handle(PubrelMsg_SN& msg) override;
 
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PubrecMsg& msg) override;
