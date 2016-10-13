@@ -162,11 +162,19 @@ TestMsgHandler::PubcompSnMsgHandlerFunc TestMsgHandler::setPubcompSnMsgHandler(
     return old;
 }
 
-TestMsgHandler::PingrespMsgHandlerFunc TestMsgHandler::setPingrespMsgHandler(
-    PingrespMsgHandlerFunc&& func)
+TestMsgHandler::PingreqSnMsgHandlerFunc TestMsgHandler::setPingreqSnMsgHandler(
+    PingreqSnMsgHandlerFunc&& func)
 {
-    PingrespMsgHandlerFunc old(std::move(m_pingrespMsgHandler));
-    m_pingrespMsgHandler = std::move(func);
+    PingreqSnMsgHandlerFunc old(std::move(m_pingreqSnMsgHandler));
+    m_pingreqSnMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PingrespSnMsgHandlerFunc TestMsgHandler::setPingrespSnMsgHandler(
+    PingrespSnMsgHandlerFunc&& func)
+{
+    PingrespSnMsgHandlerFunc old(std::move(m_pingrespSnMsgHandler));
+    m_pingrespSnMsgHandler = std::move(func);
     return old;
 }
 
@@ -191,6 +199,14 @@ TestMsgHandler::setPingreqMsgHandler(PingreqMsgHandlerFunc&& func)
 {
     PingreqMsgHandlerFunc old(std::move(m_pingreqMsgHandler));
     m_pingreqMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::PingrespMsgHandlerFunc
+TestMsgHandler::setPingrespMsgHandler(PingrespMsgHandlerFunc&& func)
+{
+    PingrespMsgHandlerFunc old(std::move(m_pingrespMsgHandler));
+    m_pingrespMsgHandler = std::move(func);
     return old;
 }
 
@@ -306,10 +322,16 @@ void TestMsgHandler::handle(PubcompMsg_SN& msg)
     m_pubcompSnMsgHandler(msg);
 }
 
+void TestMsgHandler::handle(PingreqMsg_SN& msg)
+{
+    assert(m_pingreqSnMsgHandler);
+    m_pingreqSnMsgHandler(msg);
+}
+
 void TestMsgHandler::handle(PingrespMsg_SN& msg)
 {
-    assert(m_pingrespMsgHandler);
-    m_pingrespMsgHandler(msg);
+    assert(m_pingrespSnMsgHandler);
+    m_pingrespSnMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
@@ -334,6 +356,12 @@ void TestMsgHandler::handle(PingreqMsg& msg)
 {
     assert(m_pingreqMsgHandler);
     m_pingreqMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(PingrespMsg& msg)
+{
+    assert(m_pingrespMsgHandler);
+    m_pingrespMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(PublishMsg& msg)
@@ -584,6 +612,10 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingreq(
     return prepareInput(msg);
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingresp()
+{
+    return prepareInput(PingrespMsg_SN());
+}
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
     mqtt::message::ConnackResponseCode rc,
@@ -602,6 +634,11 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerDisconnect()
 {
     return prepareInput(DisconnectMsg());
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPingreq()
+{
+    return prepareInput(PingreqMsg());
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPingresp()

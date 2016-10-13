@@ -46,12 +46,17 @@ private:
     using Base::handle;
     virtual void handle(PublishMsg_SN& msg) override;
     virtual void handle(PubrelMsg_SN& msg) override;
+    virtual void handle(PingreqMsg_SN& msg) override;
+    virtual void handle(PingrespMsg_SN& msg) override;
 
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PubrecMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
+    virtual void handle(PingreqMsg& msg) override;
+    virtual void handle(PingrespMsg& msg) override;
 
     std::uint16_t m_lastPubTopicId = 0;
+    bool m_pingInProgress = false;
 };
 
 }  // namespace session_op

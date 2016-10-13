@@ -104,6 +104,23 @@ void Forward::handle(PubrelMsg_SN& msg)
     sendToBroker(fwdMsg);
 }
 
+void Forward::handle(PingreqMsg_SN& msg)
+{
+    static_cast<void>(msg);
+    if (state().m_connStatus != ConnectionStatus::Connected) {
+        return;
+    }
+
+    m_pingInProgress = true;
+    sendToBroker(PingreqMsg());
+}
+
+void Forward::handle(PingrespMsg_SN& msg)
+{
+    static_cast<void>(msg);
+    sendToBroker(PingrespMsg());
+}
+
 void Forward::handle(PubackMsg& msg)
 {
     typedef PubackMsg MsgType;
@@ -150,6 +167,26 @@ void Forward::handle(PubcompMsg& msg)
     sendToClient(respMsg);
 }
 
+void Forward::handle(PingreqMsg& msg)
+{
+    static_cast<void>(msg);
+    if (state().m_connStatus != ConnectionStatus::Connected) {
+        return;
+    }
+
+    sendToClient(PingreqMsg_SN());
+}
+
+void Forward::handle(PingrespMsg& msg)
+{
+    static_cast<void>(msg);
+    if (!m_pingInProgress) {
+        return;
+    }
+
+    m_pingInProgress = false;
+    sendToClient(PingrespMsg_SN());
+}
 
 }  // namespace session_op
 

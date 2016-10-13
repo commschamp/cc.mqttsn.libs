@@ -144,8 +144,11 @@ public:
     typedef std::function<void (const PubcompMsg_SN&)> PubcompSnMsgHandlerFunc;
     PubcompSnMsgHandlerFunc setPubcompSnMsgHandler(PubcompSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PingrespMsg_SN&)> PingrespMsgHandlerFunc;
-    PingrespMsgHandlerFunc setPingrespMsgHandler(PingrespMsgHandlerFunc&& func);
+    typedef std::function<void (const PingreqMsg_SN&)> PingreqSnMsgHandlerFunc;
+    PingreqSnMsgHandlerFunc setPingreqSnMsgHandler(PingreqSnMsgHandlerFunc&& func);
+
+    typedef std::function<void (const PingrespMsg_SN&)> PingrespSnMsgHandlerFunc;
+    PingrespSnMsgHandlerFunc setPingrespSnMsgHandler(PingrespSnMsgHandlerFunc&& func);
 
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
@@ -155,6 +158,9 @@ public:
 
     typedef std::function<void (const PingreqMsg&)> PingreqMsgHandlerFunc;
     PingreqMsgHandlerFunc setPingreqMsgHandler(PingreqMsgHandlerFunc&& func);
+
+    typedef std::function<void (const PingrespMsg&)> PingrespMsgHandlerFunc;
+    PingrespMsgHandlerFunc setPingrespMsgHandler(PingrespMsgHandlerFunc&& func);
 
     typedef std::function<void (const PublishMsg&)> PublishMsgHandlerFunc;
     PublishMsgHandlerFunc setPublishMsgHandler(PublishMsgHandlerFunc&& func);
@@ -186,12 +192,14 @@ public:
     virtual void handle(PubrecMsg_SN& msg) override;
     virtual void handle(PubrelMsg_SN& msg) override;
     virtual void handle(PubcompMsg_SN& msg) override;
+    virtual void handle(PingreqMsg_SN& msg) override;
     virtual void handle(PingrespMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
+    virtual void handle(PingrespMsg& msg) override;
     virtual void handle(PublishMsg& msg) override;
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PubrecMsg& msg) override;
@@ -234,10 +242,12 @@ public:
     DataBuf prepareClientPubrel(std::uint16_t msgId);
     DataBuf prepareClientPubcomp(std::uint16_t msgId);
     DataBuf prepareClientPingreq(const std::string& clientId = std::string());
+    DataBuf prepareClientPingresp();
 
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
+    DataBuf prepareBrokerPingreq();
     DataBuf prepareBrokerPingresp();
     DataBuf prepareBrokerPublish(
         const std::string& topic,
@@ -274,11 +284,13 @@ private:
     PubrecSnMsgHandlerFunc m_pubrecSnMsgHandler;
     PubrelSnMsgHandlerFunc m_pubrelSnMsgHandler;
     PubcompSnMsgHandlerFunc m_pubcompSnMsgHandler;
-    PingrespMsgHandlerFunc m_pingrespMsgHandler;
+    PingreqSnMsgHandlerFunc m_pingreqSnMsgHandler;
+    PingrespSnMsgHandlerFunc m_pingrespSnMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
     PingreqMsgHandlerFunc m_pingreqMsgHandler;
+    PingrespMsgHandlerFunc m_pingrespMsgHandler;
     PublishMsgHandlerFunc m_publishMsgHandler;
     PubackMsgHandlerFunc m_pubackMsgHandler;
     PubrecMsgHandlerFunc m_pubrecMsgHandler;

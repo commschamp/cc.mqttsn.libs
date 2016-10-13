@@ -50,6 +50,7 @@ public:
     void test17();
     void test18();
     void test19();
+    void test20();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -214,7 +215,13 @@ private:
                 TS_TRACE("(CLIENT) <-- PUBCOMP");
             });
 
-        handler.setPingrespMsgHandler(
+        handler.setPingreqSnMsgHandler(
+            [](const PingreqMsg_SN&)
+            {
+                TS_TRACE("(CLIENT) <-- PINGREQ");
+            });
+
+        handler.setPingrespSnMsgHandler(
             [](const PingrespMsg_SN&)
             {
                 TS_TRACE("(CLIENT) <-- PINGRESP");
@@ -237,6 +244,12 @@ private:
             [](const PingreqMsg&)
             {
                 TS_TRACE("(BROKER) <-- PINGREQ");
+            });
+
+        handler.setPingrespMsgHandler(
+            [](const PingrespMsg&)
+            {
+                TS_TRACE("(BROKER) <-- PINGRESP");
             });
 
         handler.setPublishMsgHandler(
@@ -728,6 +741,34 @@ private:
         handler.setPubcompSnMsgHandler(std::move(oldCb));
     }
 
+    static void verifySentToClient_PingreqMsg(
+        State& state,
+        TestMsgHandler& handler)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPingreqSnMsgHandler(
+                [&](const PingreqMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- PINGREQ");
+                    auto& fields = msg.fields();
+                    auto& clientIdField = std::get<PingreqMsg_SN::FieldIdx_clientId>(fields);
+                    TS_ASSERT(clientIdField.value().empty());
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setPingreqSnMsgHandler(std::move(oldCb));
+    }
+
     static void verifySentToClient_PingrespMsg(
         State& state,
         TestMsgHandler& handler)
@@ -739,7 +780,7 @@ private:
 
         bool sent = false;
         auto oldCb =
-            handler.setPingrespMsgHandler(
+            handler.setPingrespSnMsgHandler(
                 [&](const PingrespMsg_SN& msg)
                 {
                     static_cast<void>(msg);
@@ -751,7 +792,7 @@ private:
         TS_ASSERT(sent);
 
         state.m_sentToClient.pop_front();
-        handler.setPingrespMsgHandler(std::move(oldCb));
+        handler.setPingrespSnMsgHandler(std::move(oldCb));
     }
 
 
@@ -890,6 +931,32 @@ private:
 
         state.m_sentToBroker.pop_front();
         handler.setPingreqMsgHandler(std::move(oldCb));
+    }
+
+    static void verifySentToBroker_PingrespMsg(
+        State& state,
+        TestMsgHandler& handler)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setPingrespMsgHandler(
+                [&](const PingrespMsg& msg)
+                {
+                    static_cast<void>(msg);
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- PINGRESP");
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setPingrespMsgHandler(std::move(oldCb));
     }
 
     static void verifySentToBroker_PublishMsg(
@@ -2154,7 +2221,42 @@ void SessionTest::test19()
     verifyNoOtherEvent(state, handler);
 }
 
-// TODO: test ping forwarding
+void SessionTest::test20()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    auto cReq = handler.prepareClientPingreq();
+    dataFromClient(*session, cReq, "PINGRESP");
+    verifyNoOtherEvent(state, handler);
+
+    doConnect(*session, state, handler);
+
+    dataFromClient(*session, cReq, "PINGREQ");
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyNoOtherEvent(state, handler);
+
+    auto bResp = handler.prepareBrokerPingresp();
+    dataFromBroker(*session, bResp, "PINGRESP");
+    verifySentToClient_PingrespMsg(state, handler);
+    verifyNoOtherEvent(state, handler);
+
+    auto bReq = handler.prepareBrokerPingreq();
+    dataFromBroker(*session, bReq, "PINGREQ");
+    verifySentToClient_PingreqMsg(state, handler);
+    verifyNoOtherEvent(state, handler);
+
+    auto cResp = handler.prepareClientPingresp();
+    dataFromClient(*session, cResp, "PINGRESP");
+    verifySentToBroker_PingrespMsg(state, handler);
+    verifyNoOtherEvent(state, handler);
+
+    // should be ignored
+    dataFromBroker(*session, bResp, "PINGRESP");
+    verifyNoOtherEvent(state, handler);
+}
+
 // TODO: test subscribes/unsubscribes
 // TODO: test will update
 // TODO: test limit of pending messages
