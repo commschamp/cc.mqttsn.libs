@@ -49,6 +49,7 @@ public:
     void test16();
     void test17();
     void test18();
+    void test19();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -2054,4 +2055,107 @@ void SessionTest::test18()
     verifyNoOtherEvent(state, handler);
 }
 
-// TODO: test parallel publishes from broker
+void SessionTest::test19()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string Topic("predefined/topic");
+    static const std::uint16_t TopicId = 0x1111;
+    session->addPredefinedTopic(Topic, TopicId);
+
+    doConnect(*session, state, handler);
+
+    static const DataBuf Data1 = {0, 1, 2, 3, 4, 5, 6};
+    static const DataBuf Data2 = {10, 11, 12, 13, 14, 15, 16};
+    static const DataBuf Data3 = {20, 21, 22, 23, 24, 25, 26};
+    static const DataBuf Data4 = {30, 31, 32, 33, 34, 35, 36};
+    static const auto Qos0 = mqtt::field::QosType::AtMostOnceDelivery;
+    static const auto Qos1 = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const auto Qos2 = mqtt::field::QosType::ExactlyOnceDelivery;
+    static const bool Retain = true;
+    static const bool Dup = false;
+
+    static const uint16_t MsgId1 = 0x1111;
+    static const uint16_t MsgId2 = 0x2222;
+    static const uint16_t MsgId3 = 0x3333;
+    static const uint16_t MsgId4 = 0x4444;
+
+    auto pub1 = handler.prepareBrokerPublish(Topic, Data1, MsgId1, Qos2, Retain, Dup);
+    dataFromBroker(*session, pub1, "PUBLISH");
+    verifySentToBroker_PubrecMsg(state, handler, MsgId1);
+    verifyNoOtherEvent(state, handler);
+
+    auto pub2 = handler.prepareBrokerPublish(Topic, Data2, MsgId2, Qos1, Retain, Dup);
+    dataFromBroker(*session, pub2, "PUBLISH");
+    verifySentToBroker_PubackMsg(state, handler, MsgId2);
+    auto msgId1 = verifySentToClient_PublishMsg(state, handler, TopicId, Data2, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos1), Retain, Dup);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pub3 = handler.prepareBrokerPublish(Topic, Data3, MsgId3, Qos0, Retain, Dup);
+    dataFromBroker(*session, pub3, "PUBLISH");
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pub4 = handler.prepareBrokerPublish(Topic, Data4, MsgId4, Qos2, Retain, Dup);
+    dataFromBroker(*session, pub4, "PUBLISH");
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 2000);
+    verifySentToBroker_PubrecMsg(state, handler, MsgId4);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto ack1 = handler.prepareClientPuback(TopicId, msgId1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromClient(*session, ack1, "PUBACK");
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data3, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos0), Retain, Dup);
+    verifyNoOtherEvent(state, handler);
+
+    auto b_rec = handler.prepareBrokerPubrel(MsgId1);
+    dataFromBroker(*session, b_rec, "PUBREC");
+    verifySentToBroker_PubcompMsg(state, handler, MsgId1);
+    auto msgId2 = verifySentToClient_PublishMsg(state, handler, TopicId, Data1, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos2), Retain, Dup);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto b_rec2 = handler.prepareBrokerPubrel(MsgId4);
+    dataFromBroker(*session, b_rec2, "PUBREC");
+    verifySentToBroker_PubcompMsg(state, handler, MsgId4);
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto rec2 = handler.prepareClientPubrec(msgId2);
+    dataFromClient(*session, rec2, "PUBREC");
+    verifySentToClient_PubrelMsg(state, handler, msgId2);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto comp = handler.prepareClientPubcomp(msgId2);
+    dataFromClient(*session, comp, "PUBCOMP");
+    auto msgId3 = verifySentToClient_PublishMsg(state, handler, TopicId, Data4, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos2), Retain, Dup);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto rec3 = handler.prepareClientPubrec(msgId3);
+    dataFromClient(*session, rec3, "PUBREC");
+    verifySentToClient_PubrelMsg(state, handler, msgId3);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto comp2 = handler.prepareClientPubcomp(msgId3);
+    dataFromClient(*session, comp2, "PUBCOMP");
+    verifyNoOtherEvent(state, handler);
+}
+
+// TODO: test ping forwarding
+// TODO: test subscribes/unsubscribes
+// TODO: test will update
+// TODO: test limit of pending messages
+// TODO: test qos=-1 publishes.
