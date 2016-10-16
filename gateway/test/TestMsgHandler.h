@@ -150,6 +150,9 @@ public:
     typedef std::function<void (const PingrespMsg_SN&)> PingrespSnMsgHandlerFunc;
     PingrespSnMsgHandlerFunc setPingrespSnMsgHandler(PingrespSnMsgHandlerFunc&& func);
 
+    typedef std::function<void (const SubackMsg_SN&)> SabackSnMsgHandlerFunc;
+    SabackSnMsgHandlerFunc setSubackSnMsgHandler(SabackSnMsgHandlerFunc&& func);
+
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
@@ -177,6 +180,9 @@ public:
     typedef std::function<void (const PubcompMsg&)> PubcompMsgHandlerFunc;
     PubcompMsgHandlerFunc setPubcompMsgHandler(PubcompMsgHandlerFunc&& func);
 
+    typedef std::function<void (const SubscribeMsg&)> SubscribeMsgHandlerFunc;
+    SubscribeMsgHandlerFunc setSubscribeMsgHandler(SubscribeMsgHandlerFunc&& func);
+
     using MqttsnBase::handle;
     using MqttBase::handle;
 
@@ -194,6 +200,7 @@ public:
     virtual void handle(PubcompMsg_SN& msg) override;
     virtual void handle(PingreqMsg_SN& msg) override;
     virtual void handle(PingrespMsg_SN& msg) override;
+    virtual void handle(SubackMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
@@ -205,6 +212,7 @@ public:
     virtual void handle(PubrecMsg& msg) override;
     virtual void handle(PubrelMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
+    virtual void handle(SubscribeMsg& msg) override;
     virtual void handle(TestMqttMessage& msg) override;
 
     void processDataForClient(const DataBuf& data);
@@ -243,6 +251,15 @@ public:
     DataBuf prepareClientPubcomp(std::uint16_t msgId);
     DataBuf prepareClientPingreq(const std::string& clientId = std::string());
     DataBuf prepareClientPingresp();
+    DataBuf prepareClientSubscribe(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::QosType qos,
+        bool predefined);
+    DataBuf prepareClientSubscribe(
+        const std::string& topic,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::QosType qos);
 
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
@@ -260,6 +277,7 @@ public:
     DataBuf prepareBrokerPubrec(std::uint16_t packetId);
     DataBuf prepareBrokerPubrel(std::uint16_t packetId);
     DataBuf prepareBrokerPubcomp(std::uint16_t packetId);
+    DataBuf prepareBrokerSuback(std::uint16_t packetId, mqtt::message::SubackReturnCode rc);
 
 
 private:
@@ -286,6 +304,7 @@ private:
     PubcompSnMsgHandlerFunc m_pubcompSnMsgHandler;
     PingreqSnMsgHandlerFunc m_pingreqSnMsgHandler;
     PingrespSnMsgHandlerFunc m_pingrespSnMsgHandler;
+    SabackSnMsgHandlerFunc m_subackSnMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
@@ -296,4 +315,5 @@ private:
     PubrecMsgHandlerFunc m_pubrecMsgHandler;
     PubrelMsgHandlerFunc m_pubrelMsgHandler;
     PubcompMsgHandlerFunc m_pubcompMsgHandler;
+    SubscribeMsgHandlerFunc m_subscribeMsgHandler;
 };

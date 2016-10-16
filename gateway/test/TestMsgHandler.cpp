@@ -178,6 +178,14 @@ TestMsgHandler::PingrespSnMsgHandlerFunc TestMsgHandler::setPingrespSnMsgHandler
     return old;
 }
 
+TestMsgHandler::SabackSnMsgHandlerFunc TestMsgHandler::setSubackSnMsgHandler(
+    SabackSnMsgHandlerFunc&& func)
+{
+    SabackSnMsgHandlerFunc old(std::move(m_subackSnMsgHandler));
+    m_subackSnMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -247,6 +255,14 @@ TestMsgHandler::setPubcompMsgHandler(PubcompMsgHandlerFunc&& func)
 {
     PubcompMsgHandlerFunc old(std::move(m_pubcompMsgHandler));
     m_pubcompMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::SubscribeMsgHandlerFunc
+TestMsgHandler::setSubscribeMsgHandler(SubscribeMsgHandlerFunc&& func)
+{
+    SubscribeMsgHandlerFunc old(std::move(m_subscribeMsgHandler));
+    m_subscribeMsgHandler = std::move(func);
     return old;
 }
 
@@ -334,6 +350,12 @@ void TestMsgHandler::handle(PingrespMsg_SN& msg)
     m_pingrespSnMsgHandler(msg);
 }
 
+void TestMsgHandler::handle(SubackMsg_SN& msg)
+{
+    assert(m_subackSnMsgHandler);
+    m_subackSnMsgHandler(msg);
+}
+
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
 {
     std::cout << "Unhandled message sent to client: " << (unsigned)msg.getId() << std::endl;
@@ -392,6 +414,12 @@ void TestMsgHandler::handle(PubcompMsg& msg)
 {
     assert(m_pubcompMsgHandler);
     m_pubcompMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(SubscribeMsg& msg)
+{
+    assert(m_subscribeMsgHandler);
+    m_subscribeMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(TestMqttMessage& msg)
@@ -617,6 +645,59 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingresp()
     return prepareInput(PingrespMsg_SN());
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::QosType qos,
+    bool predefined)
+{
+    SubscribeMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+
+    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+    if (predefined) {
+        topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+    }
+
+    qosField.value() = qos;
+    msgIdField.value() = msgId;
+    topicIdField.field().value() = topicId;
+
+    msg.refresh();
+    assert(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
+    const std::string& topic,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::QosType qos)
+{
+    SubscribeMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
+
+    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+    qosField.value() = qos;
+    msgIdField.value() = msgId;
+    topicNameField.field().value() = topic;
+
+    msg.refresh();
+    assert(topicNameField.getMode() == comms::field::OptionalMode::Exists);
+    return prepareInput(msg);
+}
+
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
     mqtt::message::ConnackResponseCode rc,
     bool sessionPresent)
@@ -715,3 +796,22 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubcomp(std::uint16_t packe
     packetIdField.value() = packetId;
     return prepareInput(msg);
 }
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerSuback(
+    std::uint16_t packetId,
+    mqtt::message::SubackReturnCode rc)
+{
+    SubackMsg msg;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
+    auto& payloadField = std::get<decltype(msg)::FieldIdx_Payload>(fields);
+
+    packetIdField.value() = packetId;
+    typedef typename std::decay<decltype(payloadField.value())>::type PayloadListType;
+    typedef typename PayloadListType::value_type RcElemType;
+    RcElemType rcElem;
+    rcElem.value() = rc;
+    payloadField.value().push_back(rcElem);
+    return prepareInput(msg);
+}
+

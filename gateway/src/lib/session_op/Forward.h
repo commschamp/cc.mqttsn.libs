@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cstdint>
+#include <list>
 
 #include "SessionOp.h"
 #include "common.h"
@@ -48,15 +49,27 @@ private:
     virtual void handle(PubrelMsg_SN& msg) override;
     virtual void handle(PingreqMsg_SN& msg) override;
     virtual void handle(PingrespMsg_SN& msg) override;
+    virtual void handle(SubscribeMsg_SN& msg) override;
 
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PubrecMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
+    virtual void handle(SubackMsg& msg) override;
+
+    struct SubInfo
+    {
+        Timestamp m_timestamp = 0U;
+        std::uint16_t m_msgId = 0;
+        std::uint16_t m_topicId = 0;
+    };
+
+    typedef std::list<SubInfo> SubsInProgressList;
 
     std::uint16_t m_lastPubTopicId = 0;
     bool m_pingInProgress = false;
+    SubsInProgressList m_subs;
 };
 
 }  // namespace session_op

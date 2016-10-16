@@ -51,6 +51,7 @@ public:
     void test18();
     void test19();
     void test20();
+    void test21();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -227,6 +228,12 @@ private:
                 TS_TRACE("(CLIENT) <-- PINGRESP");
             });
 
+        handler.setSubackSnMsgHandler(
+            [](const SubackMsg_SN&)
+            {
+                TS_TRACE("(CLIENT) <-- SUBACK");
+            });
+
 
         handler.setConnectMsgHandler(
             [](const ConnectMsg&)
@@ -280,6 +287,12 @@ private:
             [](const PubcompMsg&)
             {
                 TS_TRACE("(BROKER) <-- PUBCOMP");
+            });
+
+        handler.setSubscribeMsgHandler(
+            [](const SubscribeMsg&)
+            {
+                TS_TRACE("(BROKER) <-- SUBSCRIBE");
             });
 
 
@@ -795,6 +808,47 @@ private:
         handler.setPingrespSnMsgHandler(std::move(oldCb));
     }
 
+    static void verifySentToClient_SubackMsg(
+        State& state,
+        TestMsgHandler& handler,
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::QosType qos,
+        mqttsn::protocol::field::ReturnCodeVal rc)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setSubackSnMsgHandler(
+                [&](const SubackMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- SUBACK");
+                    typedef SubackMsg_SN MsgType;
+                    auto& fields = msg.fields();
+                    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
+                    auto& flagsMembers = flagsField.value();
+                    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+                    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
+                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
+
+                    TS_ASSERT_EQUALS(qosField.value(), qos);
+                    TS_ASSERT_EQUALS(topicIdField.value(), topicId);
+                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setSubackSnMsgHandler(std::move(oldCb));
+    }
 
     static void verifySentToBroker_ConnectMsg(
         State& state,
@@ -1137,6 +1191,53 @@ private:
 
         state.m_sentToBroker.pop_front();
         handler.setPubcompMsgHandler(std::move(oldCb));
+    }
+
+    static void verifySentToBroker_SubscribeMsg(
+        State& state,
+        TestMsgHandler& handler,
+        const std::string& topic,
+        mqtt::field::QosType qos,
+        std::uint16_t packetId)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setSubscribeMsgHandler(
+                [&](const SubscribeMsg& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- SUBSCRIBE");
+                    typedef SubscribeMsg MsgType;
+                    auto& fields = msg.fields();
+                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+                    auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
+
+                    TS_ASSERT(packetIdField.value() == packetId);
+                    auto& payload = payloadField.value();
+                    if (payload.empty()) {
+                        TS_FAIL("Payload musn't be empty");
+                        return;
+                    }
+
+                    auto& subElem = payload.front();
+                    auto& subMembers = subElem.value();
+                    auto& subTopicField = std::get<0>(subMembers);
+                    auto& subQosField = std::get<1>(subMembers);
+
+                    TS_ASSERT_EQUALS(subTopicField.value(), topic);
+                    TS_ASSERT_EQUALS(subQosField.value(), qos);
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setSubscribeMsgHandler(std::move(oldCb));
     }
 
     static void verifyBrokerReconnectReq(State& state)
@@ -2254,6 +2355,31 @@ void SessionTest::test20()
 
     // should be ignored
     dataFromBroker(*session, bResp, "PINGRESP");
+    verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test21()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string PredefinedTopic("predefined/topic");
+    static const std::uint16_t PredefinedTopicId = 0x1111;
+    session->addPredefinedTopic(PredefinedTopic, PredefinedTopicId);
+
+    doConnect(*session, state, handler);
+
+    static const auto Qos = mqttsn::protocol::field::QosType::ExactlyOnceDelivery;
+    static const std::uint16_t SubMsgId1 = 0x1234;
+    auto subMsg1 = handler.prepareClientSubscribe(PredefinedTopicId, SubMsgId1, Qos, true);
+    dataFromClient(*session, subMsg1, "SUBSCRIBE");
+    verifySentToBroker_SubscribeMsg(state, handler, PredefinedTopic, translateQos(Qos), SubMsgId1);
+    verifyNoOtherEvent(state, handler);
+
+    auto subackMsg1 = handler.prepareBrokerSuback(SubMsgId1, mqtt::message::SubackReturnCode::SuccessQos2);
+    dataFromBroker(*session, subackMsg1, "SUBACK");
+    verifySentToClient_SubackMsg(state, handler, PredefinedTopicId, SubMsgId1, Qos, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
 }
 

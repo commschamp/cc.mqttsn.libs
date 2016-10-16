@@ -121,6 +121,108 @@ void Forward::handle(PingrespMsg_SN& msg)
     sendToBroker(PingrespMsg());
 }
 
+void Forward::handle(SubscribeMsg_SN& msg)
+{
+    typedef SubscribeMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
+    auto& topicNameField = std::get<MsgType::FieldIdx_topicName>(fields);
+
+    auto sendSubackFunc =
+        [this, &msgIdField, topicIdField](mqttsn::protocol::field::ReturnCodeVal rc)
+        {
+            SubackMsg_SN respMsg;
+            auto& respFields = respMsg.fields();
+            auto& respTopicIdField = std::get<decltype(respMsg)::FieldIdx_topicId>(respFields);
+            auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
+            auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
+
+            respTopicIdField.value() = topicIdField.field().value();
+            respMsgIdField.value() = msgIdField.value();
+            respRetCodeField.value() = rc;
+            sendToClient(respMsg);
+        };
+
+    if (state().m_connStatus != ConnectionStatus::Connected) {
+        sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+        return;
+    }
+
+
+    const std::string* topic = nullptr;
+    std::uint16_t topicId = 0U;
+    do {
+        if (topicNameField.getMode() == comms::field::OptionalMode::Exists) {
+            assert(topicIdField.getMode() == comms::field::OptionalMode::Missing);
+            topic = &topicNameField.field().value();
+
+            if (topic->empty()) {
+                sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+                return;
+            }
+
+            bool hasWildcards =
+                std::any_of(topic->begin(), topic->end(),
+                    [](char ch) -> bool
+                    {
+                        return (ch == '*') || (ch == '+');
+                    });
+
+            if (hasWildcards) {
+                break;
+            }
+
+            topicId = state().m_regMgr.mapTopicNoInfo(*topic);
+            break;
+        }
+
+        assert(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+        assert(topicNameField.getMode() == comms::field::OptionalMode::Missing);
+
+        auto& topicStr = state().m_regMgr.mapTopicId(topicIdField.field().value());
+        if (!topicStr.empty()) {
+            topic = &topicStr;
+            topicId = topicIdField.field().value();
+            break;
+        }
+
+        sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+        return;
+    } while (false);
+
+    SubInfo info;
+    info.m_timestamp = state().m_timestamp;
+    info.m_msgId = msgIdField.value();
+    info.m_topicId = topicId;
+    m_subs.push_back(info);
+
+    SubscribeMsg fwdMsg;
+    auto& fwdFields = fwdMsg.fields();
+    auto& packetIdField = std::get<decltype(fwdMsg)::FieldIdx_PacketId>(fwdFields);
+    auto& payloadField = std::get<decltype(fwdMsg)::FieldIdx_Payload>(fwdFields);
+
+    packetIdField.value() = msgIdField.value();
+    auto& payloadContainer = payloadField.value();
+    typedef typename std::decay<decltype(payloadContainer)>::type ContainerType;
+    typedef ContainerType::value_type SubElemBundle;
+
+    SubElemBundle subElem;
+    auto& subMembers = subElem.value();
+    auto& subTopicField = std::get<0>(subMembers);
+    auto& subQosField = std::get<1>(subMembers);
+
+    assert(topic != nullptr);
+    subTopicField.value() = *topic;
+    subQosField.value() = translateQosForBroker(translateQos(qosField.value()));
+
+    payloadContainer.push_back(std::move(subElem));
+    sendToBroker(fwdMsg);
+}
+
 void Forward::handle(PubackMsg& msg)
 {
     typedef PubackMsg MsgType;
@@ -186,6 +288,70 @@ void Forward::handle(PingrespMsg& msg)
 
     m_pingInProgress = false;
     sendToClient(PingrespMsg_SN());
+}
+
+void Forward::handle(SubackMsg& msg)
+{
+    typedef SubackMsg MsgType;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+
+    std::uint16_t msgId = packetIdField.value();
+    std::uint16_t topicId = 0U;
+
+    auto iter =
+        std::find_if(
+            m_subs.begin(), m_subs.end(),
+            [msgId](SubsInProgressList::const_reference elem) -> bool
+            {
+                return elem.m_msgId == msgId;
+            });
+
+    if (iter != m_subs.end()) {
+        topicId = iter->m_topicId;
+        m_subs.erase(iter);
+    }
+
+    m_subs.remove_if(
+        [this](SubsInProgressList::const_reference elem) -> bool
+        {
+            return (elem.m_timestamp + state().m_retryPeriod) < state().m_timestamp;
+        });
+
+    auto qos = mqttsn::protocol::field::QosType::AtMostOnceDelivery;
+    auto rc = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
+    do {
+        auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
+        auto& retCodesList = payloadField.value();
+        if (retCodesList.empty()) {
+            break;
+        }
+
+        auto& ackRetCode = retCodesList.front();
+        if (ackRetCode.value() == mqtt::message::SubackReturnCode::Failure) {
+            break;
+        }
+
+        auto adjustedRetCode = std::min(ackRetCode.value(), mqtt::message::SubackReturnCode::SuccessQos2);
+        auto reportedQos = static_cast<mqtt::field::QosType>(adjustedRetCode);
+        qos = translateQosForClient(translateQos(reportedQos));
+        rc = mqttsn::protocol::field::ReturnCodeVal_Accepted;
+    } while (false);
+
+    SubackMsg_SN respMsg;
+    auto& respFields = respMsg.fields();
+    auto& respFlagsField = std::get<decltype(respMsg)::FieldIdx_flags>(respFields);
+    auto& respFlagsMembers = respFlagsField.value();
+    auto& respQosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(respFlagsMembers);
+    auto& respTopicIdField = std::get<decltype(respMsg)::FieldIdx_topicId>(respFields);
+    auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
+    auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
+
+    respQosField.value() = qos;
+    respTopicIdField.value() = topicId;
+    respMsgIdField.value() = msgId;
+    respRetCodeField.value() = rc;
+    sendToClient(respMsg);
 }
 
 }  // namespace session_op
