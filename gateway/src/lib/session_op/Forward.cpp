@@ -133,14 +133,18 @@ void Forward::handle(SubscribeMsg_SN& msg)
     auto& topicNameField = std::get<MsgType::FieldIdx_topicName>(fields);
 
     auto sendSubackFunc =
-        [this, &msgIdField, topicIdField](mqttsn::protocol::field::ReturnCodeVal rc)
+        [this, &qosField, &msgIdField, &topicIdField](mqttsn::protocol::field::ReturnCodeVal rc)
         {
             SubackMsg_SN respMsg;
             auto& respFields = respMsg.fields();
+            auto& respFlagsField = std::get<decltype(respMsg)::FieldIdx_flags>(respFields);
+            auto& respFlagsMembers = respFlagsField.value();
+            auto& respQosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(respFlagsMembers);
             auto& respTopicIdField = std::get<decltype(respMsg)::FieldIdx_topicId>(respFields);
             auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
             auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
 
+            respQosField.value() = qosField.value();
             respTopicIdField.value() = topicIdField.field().value();
             respMsgIdField.value() = msgIdField.value();
             respRetCodeField.value() = rc;

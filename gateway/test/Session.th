@@ -2381,6 +2381,44 @@ void SessionTest::test21()
     dataFromBroker(*session, subackMsg1, "SUBACK");
     verifySentToClient_SubackMsg(state, handler, PredefinedTopicId, SubMsgId1, Qos, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
+
+    static const std::string Topic("this/is/topic");
+    static const std::uint16_t TopicId = 0x2222;
+    static const std::uint16_t SubMsgId2 = 0x5555;
+    auto subMsg2 = handler.prepareClientSubscribe(TopicId, SubMsgId2, Qos, false);
+    dataFromClient(*session, subMsg2, "SUBSCRIBE");
+    verifySentToClient_SubackMsg(state, handler, TopicId, SubMsgId2, Qos, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    verifyNoOtherEvent(state, handler);
+
+    static const std::uint16_t RegMsgId = 0x5556;
+    auto registerMsg = handler.prepareClientRegister(Topic, RegMsgId);
+    dataFromClient(*session, registerMsg, "REGISTER");
+    auto topicId = verifySentToClient_RegackMsg(state, handler, RegMsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    TS_ASSERT_LESS_THAN_EQUALS(DefaultMinTopicId, topicId);
+    TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
+    verifyNoOtherEvent(state, handler);
+
+    static const std::uint16_t SubMsgId3 = 0x5557;
+    auto subMsg3 = handler.prepareClientSubscribe(topicId, SubMsgId3, Qos, false);
+    dataFromClient(*session, subMsg3, "SUBSCRIBE");
+    verifySentToBroker_SubscribeMsg(state, handler, Topic, translateQos(Qos), SubMsgId3);
+    verifyNoOtherEvent(state, handler);
+
+    auto subackMsg2 = handler.prepareBrokerSuback(SubMsgId3, mqtt::message::SubackReturnCode::SuccessQos1);
+    dataFromBroker(*session, subackMsg2, "SUBACK");
+    verifySentToClient_SubackMsg(state, handler, topicId, SubMsgId3, mqttsn::protocol::field::QosType::AtLeastOnceDelivery, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyNoOtherEvent(state, handler);
+
+    static const std::uint16_t SubMsgId4 = 0x6000;
+    auto subMsg4 = handler.prepareClientSubscribe(Topic, SubMsgId4, Qos);
+    dataFromClient(*session, subMsg4, "SUBSCRIBE");
+    verifySentToBroker_SubscribeMsg(state, handler, Topic, translateQos(Qos), SubMsgId4);
+    verifyNoOtherEvent(state, handler);
+
+    auto subackMsg3 = handler.prepareBrokerSuback(SubMsgId4, mqtt::message::SubackReturnCode::SuccessQos2);
+    dataFromBroker(*session, subackMsg3, "SUBACK");
+    verifySentToClient_SubackMsg(state, handler, topicId, SubMsgId4, Qos, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyNoOtherEvent(state, handler);
 }
 
 // TODO: test subscribes/unsubscribes
