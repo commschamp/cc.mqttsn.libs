@@ -52,6 +52,7 @@ public:
     void test19();
     void test20();
     void test21();
+    void test22();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -933,7 +934,7 @@ private:
                     TS_ASSERT_EQUALS(clientIdField.value(), clientId);
                     TS_ASSERT_EQUALS(lowFlagsField.getBitValue(mqtt::message::ConnectFlagsLowBitIdx_CleanSession), cleanSession);
 
-                    bool hasWill = (willInfo != nullptr);
+                    bool hasWill = ((willInfo != nullptr) && (!willInfo->m_topic.empty()));
                     TS_ASSERT_EQUALS(lowFlagsField.getBitValue(mqtt::message::ConnectFlagsLowBitIdx_WillFlag), hasWill);
 
                     if (hasWill) {
@@ -1419,7 +1420,8 @@ private:
         State& state,
         TestMsgHandler& handler,
         WillInfo* willInfo = nullptr,
-        bool cleanSession = true)
+        bool cleanSession = true,
+        bool expectReconnect = false)
     {
         bool hasWill = (willInfo != nullptr);
         auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, hasWill, cleanSession);
@@ -1433,13 +1435,31 @@ private:
             state.m_elapsed.push_back(1000);
             auto willtopicMsg = handler.prepareClientWilltopic(willInfo->m_topic, translateQos(willInfo->m_qos), willInfo->m_retain);
             dataFromClient(session, willtopicMsg, "WILLTOPIC");
-            verifySentToClient_WillmsgreqMsg(state, handler);
+
+            if (!willInfo->m_topic.empty()) {
+                verifySentToClient_WillmsgreqMsg(state, handler);
+                verifyTickReq(state, DefaultRetryPeriod * 1000);
+                verifyNoOtherEvent(state, handler);
+
+                state.m_elapsed.push_back(1000);
+                auto willmsgMsg = handler.prepareClientWillmsg(willInfo->m_msg);
+                dataFromClient(session, willmsgMsg, "WILLMSG");
+            }
+        }
+
+        if (expectReconnect) {
+            verifySentToBroker_DisconnectMsg(state, handler);
             verifyTickReq(state, DefaultRetryPeriod * 1000);
+            verifyBrokerReconnectReq(state);
             verifyNoOtherEvent(state, handler);
 
             state.m_elapsed.push_back(1000);
-            auto willmsgMsg = handler.prepareClientWillmsg(willInfo->m_msg);
-            dataFromClient(session, willmsgMsg, "WILLMSG");
+            doBrokerDisconnect(session);
+            verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+            verifyNoOtherEvent(state, handler);
+
+            state.m_elapsed.push_back(1000);
+            doBrokerConnect(session);
         }
 
         verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, cleanSession, willInfo);
@@ -1451,13 +1471,13 @@ private:
         verifyNoOtherEvent(state, handler);
     }
 
-    void doBrokerConnect(mqttsn::gateway::Session& session)
+    static void doBrokerConnect(mqttsn::gateway::Session& session)
     {
         session.setBrokerConnected(true);
         TS_TRACE("[BROKER connected]");
     }
 
-    void doBrokerDisconnect(mqttsn::gateway::Session& session)
+    static void doBrokerDisconnect(mqttsn::gateway::Session& session)
     {
         session.setBrokerConnected(false);
         TS_TRACE("[BROKER disconnected]");
@@ -2543,7 +2563,30 @@ void SessionTest::test21()
     verifyNoOtherEvent(state, handler);
 }
 
-// TODO: test subscribes/unsubscribes
+void SessionTest::test22()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string WillTopic1("will/topic/1");
+    static const DataBuf WillData1 = {0, 1, 2};
+    static const auto WillQos1 = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const bool WillRetain1 = true;
+    WillInfo will1;
+    will1.m_topic = WillTopic1;
+    will1.m_msg = WillData1;
+    will1.m_qos = WillQos1;
+    will1.m_retain = WillRetain1;
+
+
+    doConnect(*session, state, handler, &will1);
+    verifyNoOtherEvent(state, handler);
+
+    WillInfo will2;
+    doConnect(*session, state, handler, &will2, false, true);
+}
+
 // TODO: test will update
 // TODO: test limit of pending messages
 // TODO: test qos=-1 publishes.

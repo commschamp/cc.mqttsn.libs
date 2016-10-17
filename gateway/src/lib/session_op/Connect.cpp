@@ -127,6 +127,11 @@ void Connect::handle(WilltopicMsg_SN& msg)
     m_will.m_topic = willTopicField.value();
     m_will.m_qos = translateQos(qosField.value());
     m_will.m_retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+
+    if (m_will.m_topic.empty()) {
+        m_internalState.m_hasWillMsg = true;
+    }
+
     doNextStep();
 }
 
