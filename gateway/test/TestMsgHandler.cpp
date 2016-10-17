@@ -178,11 +178,19 @@ TestMsgHandler::PingrespSnMsgHandlerFunc TestMsgHandler::setPingrespSnMsgHandler
     return old;
 }
 
-TestMsgHandler::SabackSnMsgHandlerFunc TestMsgHandler::setSubackSnMsgHandler(
-    SabackSnMsgHandlerFunc&& func)
+TestMsgHandler::SubackSnMsgHandlerFunc TestMsgHandler::setSubackSnMsgHandler(
+    SubackSnMsgHandlerFunc&& func)
 {
-    SabackSnMsgHandlerFunc old(std::move(m_subackSnMsgHandler));
+    SubackSnMsgHandlerFunc old(std::move(m_subackSnMsgHandler));
     m_subackSnMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::UnsubackSnMsgHandlerFunc TestMsgHandler::setUnsubackSnMsgHandler(
+    UnsubackSnMsgHandlerFunc&& func)
+{
+    UnsubackSnMsgHandlerFunc old(std::move(m_unsubackSnMsgHandler));
+    m_unsubackSnMsgHandler = std::move(func);
     return old;
 }
 
@@ -263,6 +271,14 @@ TestMsgHandler::setSubscribeMsgHandler(SubscribeMsgHandlerFunc&& func)
 {
     SubscribeMsgHandlerFunc old(std::move(m_subscribeMsgHandler));
     m_subscribeMsgHandler = std::move(func);
+    return old;
+}
+
+TestMsgHandler::UnsubscribeMsgHandlerFunc
+TestMsgHandler::setUnsubscribeMsgHandler(UnsubscribeMsgHandlerFunc&& func)
+{
+    UnsubscribeMsgHandlerFunc old(std::move(m_unsubscribeMsgHandler));
+    m_unsubscribeMsgHandler = std::move(func);
     return old;
 }
 
@@ -356,6 +372,12 @@ void TestMsgHandler::handle(SubackMsg_SN& msg)
     m_subackSnMsgHandler(msg);
 }
 
+void TestMsgHandler::handle(UnsubackMsg_SN& msg)
+{
+    assert(m_unsubackSnMsgHandler);
+    m_unsubackSnMsgHandler(msg);
+}
+
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
 {
     std::cout << "Unhandled message sent to client: " << (unsigned)msg.getId() << std::endl;
@@ -420,6 +442,12 @@ void TestMsgHandler::handle(SubscribeMsg& msg)
 {
     assert(m_subscribeMsgHandler);
     m_subscribeMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(UnsubscribeMsg& msg)
+{
+    assert(m_unsubscribeMsgHandler);
+    m_unsubscribeMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(TestMqttMessage& msg)
@@ -698,6 +726,53 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     return prepareInput(msg);
 }
 
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    bool predefined)
+{
+    UnsubscribeMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+
+    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+    if (predefined) {
+        topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+    }
+
+    msgIdField.value() = msgId;
+    topicIdField.field().value() = topicId;
+
+    msg.refresh();
+    assert(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
+    const std::string& topic,
+    std::uint16_t msgId)
+{
+    UnsubscribeMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
+
+    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+    msgIdField.value() = msgId;
+    topicNameField.field().value() = topic;
+
+    msg.refresh();
+    assert(topicNameField.getMode() == comms::field::OptionalMode::Exists);
+    return prepareInput(msg);
+}
+
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
     mqtt::message::ConnackResponseCode rc,
     bool sessionPresent)
@@ -814,4 +889,16 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerSuback(
     payloadField.value().push_back(rcElem);
     return prepareInput(msg);
 }
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerUnsuback(
+    std::uint16_t packetId)
+{
+    UnsubackMsg msg;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<decltype(msg)::FieldIdx_PacketId>(fields);
+
+    packetIdField.value() = packetId;
+    return prepareInput(msg);
+}
+
 

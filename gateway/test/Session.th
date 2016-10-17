@@ -234,6 +234,11 @@ private:
                 TS_TRACE("(CLIENT) <-- SUBACK");
             });
 
+        handler.setUnsubackSnMsgHandler(
+            [](const UnsubackMsg_SN&)
+            {
+                TS_TRACE("(CLIENT) <-- UNSUBACK");
+            });
 
         handler.setConnectMsgHandler(
             [](const ConnectMsg&)
@@ -293,6 +298,12 @@ private:
             [](const SubscribeMsg&)
             {
                 TS_TRACE("(BROKER) <-- SUBSCRIBE");
+            });
+
+        handler.setUnsubscribeMsgHandler(
+            [](const UnsubscribeMsg&)
+            {
+                TS_TRACE("(BROKER) <-- UNSUBSCRIBE");
             });
 
 
@@ -850,6 +861,37 @@ private:
         handler.setSubackSnMsgHandler(std::move(oldCb));
     }
 
+    static void verifySentToClient_UnsubackMsg(
+        State& state,
+        TestMsgHandler& handler,
+        std::uint16_t msgId)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setUnsubackSnMsgHandler(
+                [&](const UnsubackMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- UNSUBACK");
+                    typedef UnsubackMsg_SN MsgType;
+                    auto& fields = msg.fields();
+                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+
+                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setUnsubackSnMsgHandler(std::move(oldCb));
+    }
+
     static void verifySentToBroker_ConnectMsg(
         State& state,
         TestMsgHandler& handler,
@@ -1238,6 +1280,48 @@ private:
 
         state.m_sentToBroker.pop_front();
         handler.setSubscribeMsgHandler(std::move(oldCb));
+    }
+
+    static void verifySentToBroker_UnsubscribeMsg(
+        State& state,
+        TestMsgHandler& handler,
+        const std::string& topic,
+        std::uint16_t packetId)
+    {
+        if (state.m_sentToBroker.empty()) {
+            TS_FAIL("No data was sent to broker");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setUnsubscribeMsgHandler(
+                [&](const UnsubscribeMsg& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(BROKER) <-- UNSUBSCRIBE");
+                    typedef SubscribeMsg MsgType;
+                    auto& fields = msg.fields();
+                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+                    auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
+
+                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                    auto& payload = payloadField.value();
+                    if (payload.empty()) {
+                        TS_FAIL("Payload musn't be empty");
+                        return;
+                    }
+
+                    auto& unsubStr = payload.front();
+
+                    TS_ASSERT_EQUALS(unsubStr.value(), topic);
+                });
+
+        handler.processDataForBroker(state.m_sentToBroker.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToBroker.pop_front();
+        handler.setUnsubscribeMsgHandler(std::move(oldCb));
     }
 
     static void verifyBrokerReconnectReq(State& state)
@@ -2418,6 +2502,44 @@ void SessionTest::test21()
     auto subackMsg3 = handler.prepareBrokerSuback(SubMsgId4, mqtt::message::SubackReturnCode::SuccessQos2);
     dataFromBroker(*session, subackMsg3, "SUBACK");
     verifySentToClient_SubackMsg(state, handler, topicId, SubMsgId4, Qos, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyNoOtherEvent(state, handler);
+
+    static const std::uint16_t UnsubMsgId1 = 0x0001;
+    auto unsubMsg1 = handler.prepareClientUnsubscribe(PredefinedTopicId, UnsubMsgId1, true);
+    dataFromClient(*session, unsubMsg1, "UNSUBSCRIBE");
+    verifySentToBroker_UnsubscribeMsg(state, handler, PredefinedTopic, UnsubMsgId1);
+    verifyNoOtherEvent(state, handler);
+
+    auto unsubackMsg1 = handler.prepareBrokerUnsuback(UnsubMsgId1);
+    dataFromBroker(*session, unsubackMsg1, "UNSUBACK");
+    verifySentToClient_UnsubackMsg(state, handler, UnsubMsgId1);
+    verifyNoOtherEvent(state, handler);
+
+    static const std::uint16_t UnsubMsgId2 = 0x0002;
+    auto unsubMsg2 = handler.prepareClientUnsubscribe(TopicId, UnsubMsgId2,  false);
+    dataFromClient(*session, unsubMsg2, "UNSUBSCRIBE");
+    verifyNoOtherEvent(state, handler);
+
+    static const std::uint16_t UnsubMsgId3 = 0x0003;
+    auto unsubMsg3 = handler.prepareClientUnsubscribe(topicId, UnsubMsgId3, false);
+    dataFromClient(*session, unsubMsg3, "UNSUBSCRIBE");
+    verifySentToBroker_UnsubscribeMsg(state, handler, Topic, UnsubMsgId3);
+    verifyNoOtherEvent(state, handler);
+
+    auto unsubackMsg2 = handler.prepareBrokerUnsuback(UnsubMsgId3);
+    dataFromBroker(*session, unsubackMsg2, "UNSUBACK");
+    verifySentToClient_UnsubackMsg(state, handler, UnsubMsgId3);
+    verifyNoOtherEvent(state, handler);
+
+    static const std::uint16_t UnsubMsgId4 = 0x0004;
+    auto unsubMsg4 = handler.prepareClientUnsubscribe(Topic, UnsubMsgId4);
+    dataFromClient(*session, unsubMsg4, "UNSUBSCRIBE");
+    verifySentToBroker_UnsubscribeMsg(state, handler, Topic, UnsubMsgId4);
+    verifyNoOtherEvent(state, handler);
+
+    auto unsubackMsg3 = handler.prepareBrokerUnsuback(UnsubMsgId4);
+    dataFromBroker(*session, unsubackMsg3, "UNSUBACK");
+    verifySentToClient_UnsubackMsg(state, handler, UnsubMsgId4);
     verifyNoOtherEvent(state, handler);
 }
 

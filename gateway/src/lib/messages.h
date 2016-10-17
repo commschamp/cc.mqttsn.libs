@@ -67,7 +67,7 @@ typedef mqttsn::protocol::message::Pubcomp<MqttsnMessage> PubcompMsg_SN;
 typedef mqttsn::protocol::message::Subscribe<MqttsnMessage> SubscribeMsg_SN;
 typedef mqttsn::protocol::message::Suback<MqttsnMessage> SubackMsg_SN;
 typedef mqttsn::protocol::message::Unsubscribe<MqttsnMessage> UnsubscribeMsg_SN;
-typedef mqttsn::protocol::message::Unsuback<MqttsnMessage> Unsuback_SN;
+typedef mqttsn::protocol::message::Unsuback<MqttsnMessage> UnsubackMsg_SN;
 typedef mqttsn::protocol::message::Pingreq<MqttsnMessage> PingreqMsg_SN;
 typedef mqttsn::protocol::message::Pingresp<MqttsnMessage> PingrespMsg_SN;
 typedef mqttsn::protocol::message::Disconnect<MqttsnMessage> DisconnectMsg_SN;

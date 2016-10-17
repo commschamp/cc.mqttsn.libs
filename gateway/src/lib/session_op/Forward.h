@@ -50,6 +50,7 @@ private:
     virtual void handle(PingreqMsg_SN& msg) override;
     virtual void handle(PingrespMsg_SN& msg) override;
     virtual void handle(SubscribeMsg_SN& msg) override;
+    virtual void handle(UnsubscribeMsg_SN& msg) override;
 
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PubrecMsg& msg) override;
@@ -57,6 +58,7 @@ private:
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(SubackMsg& msg) override;
+    virtual void handle(UnsubackMsg& msg) override;
 
     struct SubInfo
     {

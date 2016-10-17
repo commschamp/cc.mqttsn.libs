@@ -227,6 +227,57 @@ void Forward::handle(SubscribeMsg_SN& msg)
     sendToBroker(fwdMsg);
 }
 
+void Forward::handle(UnsubscribeMsg_SN& msg)
+{
+    if (state().m_connStatus != ConnectionStatus::Connected) {
+        return;
+    }
+
+    typedef UnsubscribeMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
+    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
+    auto& topicNameField = std::get<MsgType::FieldIdx_topicName>(fields);
+
+    const std::string* topic = nullptr;
+    do {
+        if (topicNameField.getMode() == comms::field::OptionalMode::Exists) {
+            assert(topicIdField.getMode() == comms::field::OptionalMode::Missing);
+            topic = &topicNameField.field().value();
+
+            if (topic->empty()) {
+                return;
+            }
+
+            break;
+        }
+
+        assert(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+        assert(topicNameField.getMode() == comms::field::OptionalMode::Missing);
+
+        auto& topicStr = state().m_regMgr.mapTopicId(topicIdField.field().value());
+        if (topicStr.empty()) {
+            return;
+        }
+        topic = &topicStr;
+    } while (false);
+
+    UnsubscribeMsg fwdMsg;
+    auto& fwdFields = fwdMsg.fields();
+    auto& packetIdField = std::get<decltype(fwdMsg)::FieldIdx_PacketId>(fwdFields);
+    auto& payloadField = std::get<decltype(fwdMsg)::FieldIdx_Payload>(fwdFields);
+
+    packetIdField.value() = msgIdField.value();
+    auto& payloadContainer = payloadField.value();
+    typedef typename std::decay<decltype(payloadContainer)>::type ContainerType;
+    typedef ContainerType::value_type UnsubString;
+
+    UnsubString unsubStr;
+    unsubStr.value() = *topic;
+    payloadContainer.push_back(std::move(unsubStr));
+    sendToBroker(fwdMsg);
+}
+
 void Forward::handle(PubackMsg& msg)
 {
     typedef PubackMsg MsgType;
@@ -357,6 +408,21 @@ void Forward::handle(SubackMsg& msg)
     respRetCodeField.value() = rc;
     sendToClient(respMsg);
 }
+
+void Forward::handle(UnsubackMsg& msg)
+{
+    typedef UnsubackMsg MsgType;
+    auto& fields = msg.fields();
+    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+
+    UnsubackMsg_SN fwdMsg;
+    auto& fwdFields = fwdMsg.fields();
+    auto& fwdMsgIdField = std::get<decltype(fwdMsg)::FieldIdx_msgId>(fwdFields);
+
+    fwdMsgIdField.value() = packetIdField.value();
+    sendToClient(fwdMsg);
+}
+
 
 }  // namespace session_op
 

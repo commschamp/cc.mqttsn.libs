@@ -61,7 +61,7 @@ typedef mqttsn::protocol::message::Pubcomp<TestMqttsnMessage> PubcompMsg_SN;
 typedef mqttsn::protocol::message::Subscribe<TestMqttsnMessage> SubscribeMsg_SN;
 typedef mqttsn::protocol::message::Suback<TestMqttsnMessage> SubackMsg_SN;
 typedef mqttsn::protocol::message::Unsubscribe<TestMqttsnMessage> UnsubscribeMsg_SN;
-typedef mqttsn::protocol::message::Unsuback<TestMqttsnMessage> Unsuback_SN;
+typedef mqttsn::protocol::message::Unsuback<TestMqttsnMessage> UnsubackMsg_SN;
 typedef mqttsn::protocol::message::Pingreq<TestMqttsnMessage> PingreqMsg_SN;
 typedef mqttsn::protocol::message::Pingresp<TestMqttsnMessage> PingrespMsg_SN;
 typedef mqttsn::protocol::message::Disconnect<TestMqttsnMessage> DisconnectMsg_SN;
@@ -150,8 +150,11 @@ public:
     typedef std::function<void (const PingrespMsg_SN&)> PingrespSnMsgHandlerFunc;
     PingrespSnMsgHandlerFunc setPingrespSnMsgHandler(PingrespSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const SubackMsg_SN&)> SabackSnMsgHandlerFunc;
-    SabackSnMsgHandlerFunc setSubackSnMsgHandler(SabackSnMsgHandlerFunc&& func);
+    typedef std::function<void (const SubackMsg_SN&)> SubackSnMsgHandlerFunc;
+    SubackSnMsgHandlerFunc setSubackSnMsgHandler(SubackSnMsgHandlerFunc&& func);
+
+    typedef std::function<void (const UnsubackMsg_SN&)> UnsubackSnMsgHandlerFunc;
+    UnsubackSnMsgHandlerFunc setUnsubackSnMsgHandler(UnsubackSnMsgHandlerFunc&& func);
 
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
@@ -183,6 +186,9 @@ public:
     typedef std::function<void (const SubscribeMsg&)> SubscribeMsgHandlerFunc;
     SubscribeMsgHandlerFunc setSubscribeMsgHandler(SubscribeMsgHandlerFunc&& func);
 
+    typedef std::function<void (const UnsubscribeMsg&)> UnsubscribeMsgHandlerFunc;
+    UnsubscribeMsgHandlerFunc setUnsubscribeMsgHandler(UnsubscribeMsgHandlerFunc&& func);
+
     using MqttsnBase::handle;
     using MqttBase::handle;
 
@@ -201,6 +207,7 @@ public:
     virtual void handle(PingreqMsg_SN& msg) override;
     virtual void handle(PingrespMsg_SN& msg) override;
     virtual void handle(SubackMsg_SN& msg) override;
+    virtual void handle(UnsubackMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
@@ -213,6 +220,7 @@ public:
     virtual void handle(PubrelMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
     virtual void handle(SubscribeMsg& msg) override;
+    virtual void handle(UnsubscribeMsg& msg) override;
     virtual void handle(TestMqttMessage& msg) override;
 
     void processDataForClient(const DataBuf& data);
@@ -260,6 +268,13 @@ public:
         const std::string& topic,
         std::uint16_t msgId,
         mqttsn::protocol::field::QosType qos);
+    DataBuf prepareClientUnsubscribe(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        bool predefined);
+    DataBuf prepareClientUnsubscribe(
+        const std::string& topic,
+        std::uint16_t msgId);
 
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
@@ -278,6 +293,7 @@ public:
     DataBuf prepareBrokerPubrel(std::uint16_t packetId);
     DataBuf prepareBrokerPubcomp(std::uint16_t packetId);
     DataBuf prepareBrokerSuback(std::uint16_t packetId, mqtt::message::SubackReturnCode rc);
+    DataBuf prepareBrokerUnsuback(std::uint16_t packetId);
 
 
 private:
@@ -304,7 +320,8 @@ private:
     PubcompSnMsgHandlerFunc m_pubcompSnMsgHandler;
     PingreqSnMsgHandlerFunc m_pingreqSnMsgHandler;
     PingrespSnMsgHandlerFunc m_pingrespSnMsgHandler;
-    SabackSnMsgHandlerFunc m_subackSnMsgHandler;
+    SubackSnMsgHandlerFunc m_subackSnMsgHandler;
+    UnsubackSnMsgHandlerFunc m_unsubackSnMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;
@@ -316,4 +333,5 @@ private:
     PubrelMsgHandlerFunc m_pubrelMsgHandler;
     PubcompMsgHandlerFunc m_pubcompMsgHandler;
     SubscribeMsgHandlerFunc m_subscribeMsgHandler;
+    UnsubscribeMsgHandlerFunc m_unsubscribeMsgHandler;
 };
