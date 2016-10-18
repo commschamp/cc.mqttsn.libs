@@ -7,6 +7,7 @@ function (lib_mqttsn_gateway)
         Session.cpp
         SessionImpl.cpp
         RegMgr.cpp
+        SessionOp.cpp
         session_op/Connect.cpp
         session_op/Disconnect.cpp
         session_op/Asleep.cpp
@@ -14,6 +15,7 @@ function (lib_mqttsn_gateway)
         session_op/PubRecv.cpp
         session_op/PubSend.cpp
         session_op/Forward.cpp
+        session_op/WillUpdate.cpp
     )    
     
     add_library (${name} STATIC ${src})

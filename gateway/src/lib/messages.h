@@ -71,10 +71,10 @@ typedef mqttsn::protocol::message::Unsuback<MqttsnMessage> UnsubackMsg_SN;
 typedef mqttsn::protocol::message::Pingreq<MqttsnMessage> PingreqMsg_SN;
 typedef mqttsn::protocol::message::Pingresp<MqttsnMessage> PingrespMsg_SN;
 typedef mqttsn::protocol::message::Disconnect<MqttsnMessage> DisconnectMsg_SN;
-typedef mqttsn::protocol::message::Willtopicupd<MqttsnMessage> Willtopicupd_SN;
-typedef mqttsn::protocol::message::Willtopicresp<MqttsnMessage> Willtopicresp_SN;
-typedef mqttsn::protocol::message::Willmsgupd<MqttsnMessage> Willmsgupd_SN;
-typedef mqttsn::protocol::message::Willmsgresp<MqttsnMessage> Willmsgresp_SN;
+typedef mqttsn::protocol::message::Willtopicupd<MqttsnMessage> WilltopicupdMsg_SN;
+typedef mqttsn::protocol::message::Willtopicresp<MqttsnMessage> WilltopicrespMsg_SN;
+typedef mqttsn::protocol::message::Willmsgupd<MqttsnMessage> WillmsgupdMsg_SN;
+typedef mqttsn::protocol::message::Willmsgresp<MqttsnMessage> WillmsgrespMsg_SN;
 typedef mqttsn::protocol::Stack<MqttsnMessage> MqttsnProtStack;
 
 typedef mqtt::message::Connect<MqttMessage> ConnectMsg;

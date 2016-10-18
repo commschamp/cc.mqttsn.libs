@@ -67,11 +67,7 @@ void Connect::handle(ConnectMsg_SN& msg)
     if ((state().m_connStatus != ConnectionStatus::Disconnected) &&
         (clientIdField.value() != state().m_clientId)) {
         assert(!state().m_clientId.empty());
-        DisconnectMsg_SN respMsg;
-        auto& respFields = respMsg.fields();
-        auto& durationField = std::get<decltype(respMsg)::FieldIdx_duration>(respFields);
-        durationField.setMode(comms::field::OptionalMode::Missing);
-        sendToClient(respMsg);
+        sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
         termRequest();
         return;

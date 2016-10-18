@@ -15,11 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-#pragma once
-
 #include "SessionOp.h"
-#include "common.h"
 
 namespace mqttsn
 {
@@ -27,29 +23,15 @@ namespace mqttsn
 namespace gateway
 {
 
-namespace session_op
+void SessionOp::sendDisconnectToClient()
 {
+    DisconnectMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
+    durationField.setMode(comms::field::OptionalMode::Missing);
+    sendToClient(msg);
 
-class Disconnect : public SessionOp
-{
-    typedef SessionOp Base;
-
-public:
-    Disconnect(SessionState& sessionState);
-    ~Disconnect();
-
-protected:
-    virtual void brokerConnectionUpdatedImpl() override;
-
-private:
-    using Base::handle;
-    virtual void handle(DisconnectMsg_SN& msg) override;
-    virtual void handle(DisconnectMsg& msg) override;
-
-    void sendDisconnectSn();
-};
-
-}  // namespace session_op
+}
 
 }  // namespace gateway
 

@@ -146,6 +146,8 @@ protected:
         return m_state;
     }
 
+    void sendDisconnectToClient();
+
     virtual void tickImpl() {};
     virtual void startImpl() {};
     virtual void brokerConnectionUpdatedImpl() {}

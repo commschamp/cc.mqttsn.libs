@@ -47,7 +47,7 @@ void Disconnect::brokerConnectionUpdatedImpl()
     }
 
     if (st.m_connStatus == ConnectionStatus::Connected) {
-        sendDisconnectToClient();
+        sendDisconnectSn();
     }
 
     termRequest();
@@ -65,7 +65,7 @@ void Disconnect::handle(DisconnectMsg_SN& msg)
     }
 
     sendToBroker(DisconnectMsg());
-    sendDisconnectToClient();
+    sendDisconnectSn();
     termRequest();
 }
 
@@ -73,7 +73,7 @@ void Disconnect::handle(DisconnectMsg& msg)
 {
     static_cast<void>(msg);
     if (state().m_connStatus == ConnectionStatus::Connected) {
-        sendDisconnectToClient();
+        sendDisconnectSn();
     }
 
     if (state().m_connStatus != ConnectionStatus::Asleep) {
@@ -84,13 +84,9 @@ void Disconnect::handle(DisconnectMsg& msg)
     state().m_pendingClientDisconnect = true;
 }
 
-void Disconnect::sendDisconnectToClient()
+void Disconnect::sendDisconnectSn()
 {
-    DisconnectMsg_SN respMsg;
-    auto& respFields = respMsg.fields();
-    auto& durationField = std::get<decltype(respMsg)::FieldIdx_duration>(respFields);
-    durationField.setMode(comms::field::OptionalMode::Missing);
-    sendToClient(respMsg);
+    Base::sendDisconnectToClient();
     state().m_connStatus = ConnectionStatus::Disconnected;
 }
 

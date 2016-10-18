@@ -30,23 +30,48 @@ namespace gateway
 namespace session_op
 {
 
-class Disconnect : public SessionOp
+class WillUpdate : public SessionOp
 {
     typedef SessionOp Base;
 
 public:
-    Disconnect(SessionState& sessionState);
-    ~Disconnect();
+    WillUpdate(SessionState& sessionState);
+    ~WillUpdate();
 
 protected:
+    virtual void tickImpl() override;
     virtual void brokerConnectionUpdatedImpl() override;
 
 private:
-    using Base::handle;
-    virtual void handle(DisconnectMsg_SN& msg) override;
-    virtual void handle(DisconnectMsg& msg) override;
+    enum class Op
+    {
+        None,
+        TopicUpd,
+        MsgUpd
+    };
 
-    void sendDisconnectSn();
+    using Base::handle;
+    virtual void handle(ConnectMsg_SN& msg) override;
+    virtual void handle(DisconnectMsg_SN& msg) override;
+    virtual void handle(WilltopicupdMsg_SN& msg) override;
+    virtual void handle(WillmsgupdMsg_SN& msg) override;
+    virtual void handle(ConnackMsg& msg) override;
+
+    void startOp(Op op);
+    void doNextStage();
+    void cancelOp();
+    void sendTopicResp(mqttsn::protocol::field::ReturnCodeVal rc);
+    void sendMsgResp(mqttsn::protocol::field::ReturnCodeVal rc);
+    void sendResp(mqttsn::protocol::field::ReturnCodeVal rc);
+    void sendConnectMsg();
+
+    void doPing();
+    void reqNextTick();
+
+    Op m_op = Op::None;
+    WillInfo m_will;
+    bool m_reconnectRequested = false;
+    bool m_brokerConnectSent = false;
 };
 
 }  // namespace session_op
