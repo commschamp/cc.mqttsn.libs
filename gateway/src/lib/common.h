@@ -121,6 +121,7 @@ struct SessionState
     static const unsigned DefaultRetryPeriod = 15 * 1000;
     static const unsigned DefaultRetryCount = 3;
     static const Timestamp InitialTimestamp = 1000U;
+    static const std::uint16_t DefaultKeepAlive = 60U;
 
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
@@ -136,9 +137,11 @@ struct SessionState
 
     ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
     std::string m_clientId;
+    std::string m_pubOnlyClientId;
     WillInfo m_will;
     std::size_t m_sleepPubAccLimit = std::numeric_limits<std::size_t>::max();
     std::uint16_t m_keepAlive = 0U;
+    std::uint16_t m_pubOnlyKeepAlive = DefaultKeepAlive;
     std::uint8_t m_gwId = 0U;
     std::string m_username;
     DataBuf m_password;

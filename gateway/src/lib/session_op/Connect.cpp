@@ -150,6 +150,40 @@ void Connect::handle(WillmsgMsg_SN& msg)
     doNextStep();
 }
 
+void Connect::handle(PublishMsg_SN& msg)
+{
+    auto& st = state();
+    if ((st.m_connStatus != ConnectionStatus::Disconnected) ||
+        (st.m_pendingClientDisconnect) ||
+        (!st.m_clientId.empty()) ||
+        (!m_clientId.empty()) ||
+        (st.m_pubOnlyClientId.empty())) {
+        return;
+    }
+
+    typedef PublishMsg_SN MsgType;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.value();
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+
+    if (qosField.value() != mqttsn::protocol::field::QosType::NoGwPublish) {
+        return;
+    }
+
+    clearInternalState();
+    m_clientId = st.m_pubOnlyClientId;
+    m_keepAlive = st.m_pubOnlyKeepAlive;
+    m_clean = true;
+
+    m_internalState.m_hasClientId = true;
+    m_internalState.m_hasWillTopic = true;
+    m_internalState.m_hasWillMsg = true;
+    m_internalState.m_pubOnlyClient = true;
+
+    doNextStep();
+}
+
 void Connect::handle(ConnackMsg& msg)
 {
     if (!m_internalState.m_hasWillMsg) {
@@ -243,6 +277,9 @@ void Connect::doNextStep()
         }
 
         forwardConnectionReq();
+        if (m_internalState.m_pubOnlyClient) {
+            nextTickReq(state().m_retryPeriod);
+        }
         return;
     }
 
@@ -323,16 +360,16 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
         retCode = RetCodeMap[static_cast<std::size_t>(respCode)];
     }
 
-    ConnackMsg_SN respMsg;
-    auto& respFields = respMsg.fields();
-    auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
-    respRetCodeField.value() = retCode;
-    sendToClient(respMsg);
-
-
-
-    // TODO: if clean session delete registrations and pending pubs.
-    // TODO: if pending pubs, initiate republish
+    if (!m_internalState.m_pubOnlyClient) {
+        ConnackMsg_SN respMsg;
+        auto& respFields = respMsg.fields();
+        auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
+        respRetCodeField.value() = retCode;
+        sendToClient(respMsg);
+    }
+    else {
+        cancelTick();
+    }
 
     if (retCode != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
         clearConnectionInfo();

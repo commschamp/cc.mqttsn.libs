@@ -98,6 +98,16 @@ void Session::setSleepingClientMsgLimit(std::size_t value)
     m_pImpl->setSleepingClientMsgLimit(value);
 }
 
+void Session::setPubOnlyClientId(const std::string& value)
+{
+    m_pImpl->setPubOnlyClientId(value);
+}
+
+void Session::setPubOnlyKeepAlive(std::uint16_t value)
+{
+    m_pImpl->setPubOnlyKeepAlive(value);
+}
+
 bool Session::start()
 {
     return m_pImpl->start();

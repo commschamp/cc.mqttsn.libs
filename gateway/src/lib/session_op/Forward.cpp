@@ -51,12 +51,25 @@ void Forward::handle(PublishMsg_SN& msg)
 
     auto& st = state();
 
-    if ((qosField.value() == mqttsn::protocol::field::QosType::NoGwPublish) &&
-        (st.m_connStatus != ConnectionStatus::Connected)) {
-        // TODO: special treatment;
-        assert(!"NYI");
+    do {
+
+        if ((qosField.value() != mqttsn::protocol::field::QosType::NoGwPublish) ||
+            (st.m_connStatus == ConnectionStatus::Connected)) {
+            break;
+        }
+
+        if ((!st.m_brokerConnected) ||
+            (st.m_connStatus != ConnectionStatus::Disconnected) ||
+            (st.m_pubOnlyClientId.empty())) {
+            return;
+        }
+
+        NoGwPubInfo info;
+        info.m_topicId = topicIdField.value();
+        info.m_data = dataField.value();
+        m_pubs.push_back(std::move(info));
         return;
-    }
+    } while (false);
 
     if (st.m_connStatus != ConnectionStatus::Connected) {
         sendPubackToClient(
@@ -294,6 +307,45 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
     unsubStr.value() = *topic;
     payloadContainer.push_back(std::move(unsubStr));
     sendToBroker(fwdMsg);
+}
+
+void Forward::handle(ConnackMsg&)
+{
+    auto& st = state();
+    if ((m_pubs.empty()) ||
+        (st.m_connStatus != ConnectionStatus::Connected) ||
+        (!st.m_brokerConnected)) {
+        return;
+    }
+
+    while (!m_pubs.empty()) {
+        auto guard =
+            comms::util::makeScopeGuard(
+                [this]()
+                {
+                    m_pubs.pop_front();
+                });
+
+        auto& pub = m_pubs.front();
+        auto& topic = st.m_regMgr.mapTopicId(pub.m_topicId);
+        if (topic.empty()) {
+            continue;
+        }
+
+        PublishMsg msg;
+        auto& fields = msg.fields();
+        auto& flagsField = std::get<decltype(msg)::FieldIdx_PublishFlags>(fields);
+        auto& flagsMembers = flagsField.value();
+        auto& qosField = std::get<mqtt::message::PublishActualFlagIdx_QoS>(flagsMembers);
+        auto& topicField = std::get<decltype(msg)::FieldIdx_Topic>(fields);
+        auto& payloadField = std::get<decltype(msg)::FieldIdx_Payload>(fields);
+
+        qosField.value() = mqtt::field::QosType::AtMostOnceDelivery;
+        topicField.value() = topic;
+        payloadField.value() = std::move(pub.m_data);
+        msg.refresh();
+        sendToBroker(msg);
+    }
 }
 
 void Forward::handle(PubackMsg& msg)

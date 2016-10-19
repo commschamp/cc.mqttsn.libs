@@ -50,12 +50,14 @@ private:
         bool m_hasWillTopic = false;
         bool m_hasWillMsg = false;
         bool m_waitingForReconnect = false;
+        bool m_pubOnlyClient = false;
     };
 
     using Base::handle;
     virtual void handle(ConnectMsg_SN& msg) override;
     virtual void handle(WilltopicMsg_SN& msg) override;
     virtual void handle(WillmsgMsg_SN& msg) override;
+    virtual void handle(PublishMsg_SN& msg) override;
     virtual void handle(ConnackMsg& msg) override;
 
     void doNextStep();

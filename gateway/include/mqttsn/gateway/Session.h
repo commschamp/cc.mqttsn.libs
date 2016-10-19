@@ -57,6 +57,8 @@ public:
     void setRetryPeriod(unsigned value);
     void setRetryCount(unsigned value);
     void setSleepingClientMsgLimit(std::size_t value);
+    void setPubOnlyClientId(const std::string& value);
+    void setPubOnlyKeepAlive(std::uint16_t value);
 
     bool start();
     void stop();
@@ -69,6 +71,7 @@ public:
     void setBrokerConnected(bool connected);
     bool addPredefinedTopic(const std::string& topic, std::uint16_t topicId);
     bool setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal);
+
 
 private:
     std::unique_ptr<SessionImpl> m_pImpl;

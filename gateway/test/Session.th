@@ -56,6 +56,7 @@ public:
     void test23();
     void test24();
     void test25();
+    void test26();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -2969,4 +2970,49 @@ void SessionTest::test25()
     verifyNoOtherEvent(state, handler);
 }
 
-// TODO: test qos=-1 publishes.
+void SessionTest::test26()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string Topic("topic");
+    static const std::uint16_t TopicId = 0x1111;
+    session->addPredefinedTopic(Topic, TopicId);
+
+    static const std::string ClientId("bla-bla");
+    session->setPubOnlyClientId(ClientId);
+    session->setPubOnlyKeepAlive(DefaultKeepAlivePeriod);
+
+    static const DataBuf Data1 = {0, 1, 2, 5, 8};
+    static const std::uint16_t MsgId = 0x0001;
+
+    auto pub1 = handler.prepareClientPublish(Data1, TopicId, MsgId, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, mqttsn::protocol::field::QosType::NoGwPublish, false, false);
+    dataFromClient(*session, pub1, "PUBLISH");
+    verifySentToBroker_ConnectMsg(state, handler, ClientId, DefaultKeepAlivePeriod, true);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, DefaultRetryPeriod * 1000);
+    verifySentToBroker_ConnectMsg(state, handler, ClientId, DefaultKeepAlivePeriod, true);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    static const DataBuf Data2 = {0, 1, 2, 5, 8, 10, 16};
+    state.m_elapsed.push_back(1000);
+    auto pub2 = handler.prepareClientPublish(Data2, TopicId, MsgId + 1, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, mqttsn::protocol::field::QosType::NoGwPublish, false, false);
+    dataFromClient(*session, pub2, "PUBLISH");
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted, false);
+    dataFromBroker(*session, connackMsg, "CONNACK");
+    verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
+    verifySentToBroker_PublishMsg(state, handler, Topic, Data2, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
+    verifyNoOtherEvent(state, handler);
+
+    dataFromClient(*session, pub1, "PUBLISH");
+    verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
+    verifyNoOtherEvent(state, handler);
+}
