@@ -67,12 +67,7 @@ void Asleep::handle(DisconnectMsg_SN& msg)
         return;
     }
 
-    DisconnectMsg_SN respMsg;
-    auto& respFields = respMsg.fields();
-    auto& respDurationField = std::get<decltype(respMsg)::FieldIdx_duration>(respFields);
-    respDurationField.setMode(comms::field::OptionalMode::Missing);
-    sendToClient(respMsg);
-
+    sendDisconnectToClient();
     state().m_connStatus = ConnectionStatus::Asleep;
     m_attempt = 0;
     doPing();

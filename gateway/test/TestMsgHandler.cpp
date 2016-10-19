@@ -194,6 +194,14 @@ TestMsgHandler::UnsubackSnMsgHandlerFunc TestMsgHandler::setUnsubackSnMsgHandler
     return old;
 }
 
+TestMsgHandler::WilltopicrespMsgHandlerFunc TestMsgHandler::setWilltopicrespMsgHandler(
+    WilltopicrespMsgHandlerFunc&& func)
+{
+    WilltopicrespMsgHandlerFunc old(std::move(m_willtopicrespMsgHandler));
+    m_willtopicrespMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -376,6 +384,12 @@ void TestMsgHandler::handle(UnsubackMsg_SN& msg)
 {
     assert(m_unsubackSnMsgHandler);
     m_unsubackSnMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(WilltopicrespMsg_SN& msg)
+{
+    assert(m_willtopicrespMsgHandler);
+    m_willtopicrespMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
@@ -770,6 +784,27 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
 
     msg.refresh();
     assert(topicNameField.getMode() == comms::field::OptionalMode::Exists);
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(
+    const std::string& topic,
+    mqttsn::protocol::field::QosType qos,
+    bool retain)
+{
+    WilltopicupdMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+    auto& flagsMembers = flagsField.field().value();
+    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+    auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+
+    qosField.value() = qos;
+    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
+    topicField.value() = topic;
+
+    msg.refresh();
     return prepareInput(msg);
 }
 

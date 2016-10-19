@@ -64,9 +64,7 @@ private:
     void sendMsgResp(mqttsn::protocol::field::ReturnCodeVal rc);
     void sendResp(mqttsn::protocol::field::ReturnCodeVal rc);
     void sendConnectMsg();
-
-    void doPing();
-    void reqNextTick();
+    void sendFailureAndTerm();
 
     Op m_op = Op::None;
     WillInfo m_will;

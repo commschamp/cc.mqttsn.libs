@@ -53,6 +53,7 @@ public:
     void test20();
     void test21();
     void test22();
+    void test23();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -239,6 +240,12 @@ private:
             [](const UnsubackMsg_SN&)
             {
                 TS_TRACE("(CLIENT) <-- UNSUBACK");
+            });
+
+        handler.setWilltopicrespMsgHandler(
+            [](const WilltopicrespMsg_SN&)
+            {
+                TS_TRACE("(CLIENT) <-- WILLTOPICRESP");
             });
 
         handler.setConnectMsgHandler(
@@ -893,6 +900,37 @@ private:
         handler.setUnsubackSnMsgHandler(std::move(oldCb));
     }
 
+    static void verifySentToClient_WilltopicrespMsg(
+        State& state,
+        TestMsgHandler& handler,
+        mqttsn::protocol::field::ReturnCodeVal rc)
+    {
+        if (state.m_sentToClient.empty()) {
+            TS_FAIL("No data was sent to client");
+            return;
+        }
+
+        bool sent = false;
+        auto oldCb =
+            handler.setWilltopicrespMsgHandler(
+                [&](const WilltopicrespMsg_SN& msg)
+                {
+                    sent = true;
+                    TS_TRACE("(CLIENT) <-- WILLTOPICRESP");
+                    typedef WilltopicrespMsg_SN MsgType;
+                    auto& fields = msg.fields();
+                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
+
+                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                });
+
+        handler.processDataForClient(state.m_sentToClient.front());
+        TS_ASSERT(sent);
+
+        state.m_sentToClient.pop_front();
+        handler.setWilltopicrespMsgHandler(std::move(oldCb));
+    }
+
     static void verifySentToBroker_ConnectMsg(
         State& state,
         TestMsgHandler& handler,
@@ -1421,7 +1459,9 @@ private:
         TestMsgHandler& handler,
         WillInfo* willInfo = nullptr,
         bool cleanSession = true,
-        bool expectReconnect = false)
+        bool expectReconnect = false,
+        const std::string& username = std::string(),
+        const DataBuf& pass = DataBuf())
     {
         bool hasWill = (willInfo != nullptr);
         auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, hasWill, cleanSession);
@@ -1462,7 +1502,7 @@ private:
             doBrokerConnect(session);
         }
 
-        verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, cleanSession, willInfo);
+        verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, cleanSession, willInfo, username, pass);
         verifyNoOtherEvent(state, handler);
 
         auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
@@ -2585,6 +2625,128 @@ void SessionTest::test22()
 
     WillInfo will2;
     doConnect(*session, state, handler, &will2, false, true);
+}
+
+void SessionTest::test23()
+{
+    static const std::string Username = "username";
+    static const DataBuf Pass = {'p', 'a', 's', 's'};
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler, DefaultGwId, &Username, &Pass);
+
+    static const std::string WillTopic1("will/topic/1");
+    static const DataBuf WillData1 = {0, 1, 2};
+    static const auto WillQos1 = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const bool WillRetain1 = true;
+    WillInfo will1;
+    will1.m_topic = WillTopic1;
+    will1.m_msg = WillData1;
+    will1.m_qos = WillQos1;
+    will1.m_retain = WillRetain1;
+
+    doConnect(*session, state, handler, &will1, true, false, Username, Pass);
+    verifyNoOtherEvent(state, handler);
+
+    auto willTopicUpdMsg1 = handler.prepareClientWilltopicupd(WillTopic1, translateQos(WillQos1), WillRetain1);
+    dataFromClient(*session, willTopicUpdMsg1, "WILLTOPICUPD");
+    verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+
+    static const std::string WillTopic2("will/topic/2");
+    auto willTopicUpdMsg2 = handler.prepareClientWilltopicupd(WillTopic2, translateQos(WillQos1), WillRetain1);
+    dataFromClient(*session, willTopicUpdMsg2, "WILLTOPICUPD");
+    verifySentToBroker_DisconnectMsg(state, handler);
+    verifyBrokerReconnectReq(state);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    doBrokerDisconnect(*session);
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    WillInfo updWillInfo;
+    updWillInfo.m_topic = WillTopic2;
+    updWillInfo.m_msg = WillData1;
+    updWillInfo.m_qos = WillQos1;
+    updWillInfo.m_retain = WillRetain1;
+    state.m_elapsed.push_back(1000);
+    doBrokerConnect(*session);
+    verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &updWillInfo, Username, Pass);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto connackMsg1 = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted, true);
+    dataFromBroker(*session, connackMsg1, "CONNACK");
+    verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyNoOtherEvent(state, handler);
+
+    static const auto WillQos2 = mqtt::field::QosType::ExactlyOnceDelivery;
+    auto willTopicUpdMsg3 = handler.prepareClientWilltopicupd(WillTopic2, translateQos(WillQos2), WillRetain1);
+    dataFromClient(*session, willTopicUpdMsg3, "WILLTOPICUPD");
+    verifySentToBroker_DisconnectMsg(state, handler);
+    verifyBrokerReconnectReq(state);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    doBrokerDisconnect(*session);
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    updWillInfo.m_topic = WillTopic2;
+    updWillInfo.m_msg = WillData1;
+    updWillInfo.m_qos = WillQos2;
+    updWillInfo.m_retain = WillRetain1;
+    state.m_elapsed.push_back(1000);
+    doBrokerConnect(*session);
+    verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &updWillInfo, Username, Pass);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto connackMsg2 = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::BadUsernameOrPassword, false);
+    dataFromBroker(*session, connackMsg2, "CONNACK");
+    verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifyTermReq(state);
+    verifyNoOtherEvent(state, handler);
+
+    session = allocSession(state, handler);
+
+    dataFromClient(*session, willTopicUpdMsg1, "WILLTOPICUPD");
+    verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+    verifyNoOtherEvent(state, handler);
+
+    doConnect(*session, state, handler, &will1);
+    verifyNoOtherEvent(state, handler);
+
+    auto willTopicUpdMsg4 = handler.prepareClientWilltopicupd(WillTopic1, translateQos(WillQos1), !WillRetain1);
+    dataFromClient(*session, willTopicUpdMsg4, "WILLTOPICUPD");
+    verifySentToBroker_DisconnectMsg(state, handler);
+    verifyBrokerReconnectReq(state);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    doBrokerDisconnect(*session);
+    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyNoOtherEvent(state, handler);
+
+    updWillInfo = will1;
+    updWillInfo.m_retain = !WillRetain1;
+    state.m_elapsed.push_back(1000);
+    doBrokerConnect(*session);
+    verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &updWillInfo);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, DefaultRetryPeriod * 1000);
+    verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifyTermReq(state);
+    verifyNoOtherEvent(state, handler);
 }
 
 // TODO: test will update

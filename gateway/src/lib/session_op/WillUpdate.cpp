@@ -42,14 +42,7 @@ void WillUpdate::tickImpl()
         return;
     }
 
-    sendResp(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
-    m_op = Op::None;
-
-    if (!state().m_brokerConnected) {
-        sendDisconnectToClient();
-        termRequest();
-        return;
-    }
+    sendFailureAndTerm();
 }
 
 void WillUpdate::brokerConnectionUpdatedImpl()
@@ -108,11 +101,22 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
     auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
     auto& topicField = std::get<MsgType::FieldIdx_willTopic>(fields);
 
-    m_will.m_topic = topicField.value();
-    m_will.m_msg = state().m_will.m_msg;
-    m_will.m_qos = translateQos(qosField.value());
-    m_will.m_retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+    auto qos = translateQos(qosField.value());
+    bool retain =  midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
 
+    auto& st = state();
+    if ((st.m_will.m_topic == topicField.value()) &&
+        (st.m_will.m_qos == qos) &&
+        (st.m_will.m_retain == retain)) {
+        sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        return;
+    }
+
+
+    m_will.m_topic = topicField.value();
+    m_will.m_msg = st.m_will.m_msg;
+    m_will.m_qos = qos;
+    m_will.m_retain = retain;
     startOp(Op::TopicUpd);
 }
 
@@ -137,11 +141,15 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
     auto& msgField = std::get<MsgType::FieldIdx_willMsg>(fields);
 
     auto& st = state();
+    if (st.m_will.m_msg == msgField.value()) {
+        sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        return;
+    }
+
     m_will.m_topic = st.m_will.m_topic;
     m_will.m_msg = msgField.value();
     m_will.m_qos = st.m_will.m_qos;
     m_will.m_retain = st.m_will.m_retain;
-
     startOp(Op::MsgUpd);
 }
 
@@ -153,29 +161,15 @@ void WillUpdate::handle(ConnackMsg& msg)
 
     typedef ConnackMsg MsgType;
     auto& fields = msg.fields();
+    auto& flagsField = std::get<MsgType::FieldIdx_Flags>(fields);
     auto& responseField = std::get<MsgType::FieldIdx_Response>(fields);
-
-    static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
-        /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
-        /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Conjestion,
-        /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
-    };
-
-    static const std::size_t RetCodeMapSize =
-                        std::extent<decltype(RetCodeMap)>::value;
-
-    static_assert(RetCodeMapSize == (std::size_t)mqtt::message::ConnackResponseCode::NumOfValues,
-        "Incorrect map");
-
-    auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
-    if (static_cast<std::size_t>(responseField.value()) < RetCodeMapSize) {
-        retCode = RetCodeMap[static_cast<std::size_t>(responseField.value())];
+    if ((responseField.value() != mqtt::message::ConnackResponseCode::Accepted) ||
+        (!flagsField.getBitValue(0))) {
+        sendFailureAndTerm();
+        return;
     }
 
-    sendResp(retCode);
+    sendResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     cancelOp();
 }
 
@@ -285,6 +279,14 @@ void WillUpdate::sendConnectMsg()
 
     msg.refresh();
     sendToBroker(msg);
+}
+
+void WillUpdate::sendFailureAndTerm()
+{
+    sendResp(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+    cancelOp();
+    sendDisconnectToClient();
+    termRequest();
 }
 
 }  // namespace session_op

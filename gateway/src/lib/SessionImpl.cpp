@@ -29,6 +29,7 @@
 #include "session_op/PubRecv.h"
 #include "session_op/PubSend.h"
 #include "session_op/Forward.h"
+#include "session_op/WillUpdate.h"
 
 namespace mqttsn
 {
@@ -125,6 +126,7 @@ SessionImpl::SessionImpl()
     m_ops.emplace_back(new session_op::PubRecv(m_state));
     m_ops.emplace_back(new session_op::PubSend(m_state));
     m_ops.emplace_back(new session_op::Forward(m_state));
+    m_ops.emplace_back(new session_op::WillUpdate(m_state));
 
     for (auto& op : m_ops) {
         startOp(*op);
@@ -139,8 +141,9 @@ void SessionImpl::tick(unsigned ms)
 
     m_state.m_timerActive = false;
     m_state.m_timestamp += ms;
+
+    auto guard = apiCall();
     updateOps();
-    programNextTimeout();
 }
 
 std::size_t SessionImpl::dataFromClient(const std::uint8_t* buf, std::size_t len)
@@ -284,7 +287,6 @@ void SessionImpl::programNextTimeout()
     for (auto& op : m_ops) {
         delay = std::min(delay, op->nextTick());
     }
-    // TODO: other delays
 
     if (delay == NoTimeout) {
         return;
@@ -305,7 +307,6 @@ void SessionImpl::updateTimestamp()
     m_state.m_timestamp += m_cancelTickCb();
     m_state.m_timerActive = false;
     updateOps();
-    // TODO: check other timers
 }
 
 void SessionImpl::updateOps()

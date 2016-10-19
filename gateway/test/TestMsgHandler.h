@@ -65,10 +65,10 @@ typedef mqttsn::protocol::message::Unsuback<TestMqttsnMessage> UnsubackMsg_SN;
 typedef mqttsn::protocol::message::Pingreq<TestMqttsnMessage> PingreqMsg_SN;
 typedef mqttsn::protocol::message::Pingresp<TestMqttsnMessage> PingrespMsg_SN;
 typedef mqttsn::protocol::message::Disconnect<TestMqttsnMessage> DisconnectMsg_SN;
-typedef mqttsn::protocol::message::Willtopicupd<TestMqttsnMessage> Willtopicupd_SN;
-typedef mqttsn::protocol::message::Willtopicresp<TestMqttsnMessage> Willtopicresp_SN;
-typedef mqttsn::protocol::message::Willmsgupd<TestMqttsnMessage> Willmsgupd_SN;
-typedef mqttsn::protocol::message::Willmsgresp<TestMqttsnMessage> Willmsgresp_SN;
+typedef mqttsn::protocol::message::Willtopicupd<TestMqttsnMessage> WilltopicupdMsg_SN;
+typedef mqttsn::protocol::message::Willtopicresp<TestMqttsnMessage> WilltopicrespMsg_SN;
+typedef mqttsn::protocol::message::Willmsgupd<TestMqttsnMessage> WillmsgupdMsg_SN;
+typedef mqttsn::protocol::message::Willmsgresp<TestMqttsnMessage> WillmsgrespMsg_SN;
 typedef mqttsn::protocol::Stack<TestMqttsnMessage> TestMqttsnProtStack;
 
 typedef mqtt::message::Connect<TestMqttMessage> ConnectMsg;
@@ -156,6 +156,9 @@ public:
     typedef std::function<void (const UnsubackMsg_SN&)> UnsubackSnMsgHandlerFunc;
     UnsubackSnMsgHandlerFunc setUnsubackSnMsgHandler(UnsubackSnMsgHandlerFunc&& func);
 
+    typedef std::function<void (const WilltopicrespMsg_SN&)> WilltopicrespMsgHandlerFunc;
+    WilltopicrespMsgHandlerFunc setWilltopicrespMsgHandler(WilltopicrespMsgHandlerFunc&& func);
+
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
@@ -208,6 +211,7 @@ public:
     virtual void handle(PingrespMsg_SN& msg) override;
     virtual void handle(SubackMsg_SN& msg) override;
     virtual void handle(UnsubackMsg_SN& msg) override;
+    virtual void handle(WilltopicrespMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
@@ -275,6 +279,10 @@ public:
     DataBuf prepareClientUnsubscribe(
         const std::string& topic,
         std::uint16_t msgId);
+    DataBuf prepareClientWilltopicupd(
+        const std::string& topic,
+        mqttsn::protocol::field::QosType qos,
+        bool retain);
 
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
@@ -322,6 +330,7 @@ private:
     PingrespSnMsgHandlerFunc m_pingrespSnMsgHandler;
     SubackSnMsgHandlerFunc m_subackSnMsgHandler;
     UnsubackSnMsgHandlerFunc m_unsubackSnMsgHandler;
+    WilltopicrespMsgHandlerFunc m_willtopicrespMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;

@@ -297,11 +297,7 @@ unsigned PubSend::allocMsgId()
 
 void PubSend::sendDisconnect()
 {
-    DisconnectMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
-    durationField.setMode(comms::field::OptionalMode::Missing);
-    sendToClient(msg);
+    sendDisconnectToClient();
     termRequest();
 }
 
