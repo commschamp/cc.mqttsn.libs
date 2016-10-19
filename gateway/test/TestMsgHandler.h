@@ -159,6 +159,10 @@ public:
     typedef std::function<void (const WilltopicrespMsg_SN&)> WilltopicrespMsgHandlerFunc;
     WilltopicrespMsgHandlerFunc setWilltopicrespMsgHandler(WilltopicrespMsgHandlerFunc&& func);
 
+    typedef std::function<void (const WillmsgrespMsg_SN&)> WillmsgrespMsgHandlerFunc;
+    WillmsgrespMsgHandlerFunc setWillmsgrespMsgHandler(WillmsgrespMsgHandlerFunc&& func);
+
+
     typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
@@ -212,6 +216,7 @@ public:
     virtual void handle(SubackMsg_SN& msg) override;
     virtual void handle(UnsubackMsg_SN& msg) override;
     virtual void handle(WilltopicrespMsg_SN& msg) override;
+    virtual void handle(WillmsgrespMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
@@ -283,6 +288,8 @@ public:
         const std::string& topic,
         mqttsn::protocol::field::QosType qos,
         bool retain);
+    DataBuf prepareClientWillmsgupd(const DataBuf& data);
+
 
 
     DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
@@ -331,6 +338,7 @@ private:
     SubackSnMsgHandlerFunc m_subackSnMsgHandler;
     UnsubackSnMsgHandlerFunc m_unsubackSnMsgHandler;
     WilltopicrespMsgHandlerFunc m_willtopicrespMsgHandler;
+    WillmsgrespMsgHandlerFunc m_willmsgrespMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;

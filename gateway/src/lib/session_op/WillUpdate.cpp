@@ -169,6 +169,7 @@ void WillUpdate::handle(ConnackMsg& msg)
         return;
     }
 
+    state().m_will = m_will;
     sendResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     cancelOp();
 }

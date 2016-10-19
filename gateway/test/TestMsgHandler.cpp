@@ -202,6 +202,14 @@ TestMsgHandler::WilltopicrespMsgHandlerFunc TestMsgHandler::setWilltopicrespMsgH
     return old;
 }
 
+TestMsgHandler::WillmsgrespMsgHandlerFunc TestMsgHandler::setWillmsgrespMsgHandler(
+    WillmsgrespMsgHandlerFunc&& func)
+{
+    WillmsgrespMsgHandlerFunc old(std::move(m_willmsgrespMsgHandler));
+    m_willmsgrespMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -390,6 +398,12 @@ void TestMsgHandler::handle(WilltopicrespMsg_SN& msg)
 {
     assert(m_willtopicrespMsgHandler);
     m_willtopicrespMsgHandler(msg);
+}
+
+void TestMsgHandler::handle(WillmsgrespMsg_SN& msg)
+{
+    assert(m_willmsgrespMsgHandler);
+    m_willmsgrespMsgHandler(msg);
 }
 
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
@@ -805,6 +819,16 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(
     topicField.value() = topic;
 
     msg.refresh();
+    return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsgupd(const DataBuf& data)
+{
+    WillmsgupdMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& msgField = std::get<decltype(msg)::FieldIdx_willMsg>(fields);
+
+    msgField.value() = data;
     return prepareInput(msg);
 }
 
