@@ -57,6 +57,8 @@ private:
 
     typedef std::list<BrokPubInfo> BrokPubInfosList;
 
+    void addPubInfo(PubInfoPtr info);
+
     BrokPubInfosList m_recvMsgs;
 };
 

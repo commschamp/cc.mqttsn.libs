@@ -113,6 +113,11 @@ public:
         m_state.m_retryCount = value;
     }
 
+    void setSleepingClientMsgLimit(std::size_t value)
+    {
+        m_state.m_sleepPubAccLimit = std::min(m_state.m_brokerPubs.max_size(), value);
+    }
+
     bool start()
     {
         if ((m_state.m_running) ||

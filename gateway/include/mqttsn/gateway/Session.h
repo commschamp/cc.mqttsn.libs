@@ -56,6 +56,7 @@ public:
     void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen);
     void setRetryPeriod(unsigned value);
     void setRetryCount(unsigned value);
+    void setSleepingClientMsgLimit(std::size_t value);
 
     bool start();
     void stop();

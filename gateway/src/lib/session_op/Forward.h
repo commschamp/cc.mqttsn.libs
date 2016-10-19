@@ -69,6 +69,11 @@ private:
 
     typedef std::list<SubInfo> SubsInProgressList;
 
+    void sendPubackToClient(
+        std::uint16_t topicId,
+        std::uint16_t msgId,
+        mqttsn::protocol::field::ReturnCodeVal rc);
+
     std::uint16_t m_lastPubTopicId = 0;
     bool m_pingInProgress = false;
     SubsInProgressList m_subs;

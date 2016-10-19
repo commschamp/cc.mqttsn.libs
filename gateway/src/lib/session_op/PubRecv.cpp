@@ -96,7 +96,7 @@ void PubRecv::handle(PublishMsg& msg)
         pubInfo->m_qos = translateQos(qosField.value());
         pubInfo->m_retain = retain;
         pubInfo->m_dup = dup;
-        state().m_brokerPubs.push_back(std::move(pubInfo));
+        addPubInfo(std::move(pubInfo));
         return;
     }
 
@@ -170,7 +170,7 @@ void PubRecv::handle(PubrelMsg& msg)
         pubInfo->m_qos = QoS_ExactlyOnceDelivery;
         pubInfo->m_retain = iter->m_retain;
         pubInfo->m_dup = false;
-        state().m_brokerPubs.push_back(std::move(pubInfo));
+        addPubInfo(std::move(pubInfo));
         m_recvMsgs.erase(iter);
     }
 
@@ -179,6 +179,15 @@ void PubRecv::handle(PubrelMsg& msg)
     auto& respPacketIdField = std::get<decltype(respMsg)::FieldIdx_PacketId>(respFields);
     respPacketIdField.value() = packetIdField.value();
     sendToBroker(respMsg);
+}
+
+void PubRecv::addPubInfo(PubInfoPtr info)
+{
+    auto& st = state();
+    while (st.m_sleepPubAccLimit <= st.m_brokerPubs.size()) {
+        st.m_brokerPubs.pop_front();
+    }
+    st.m_brokerPubs.push_back(std::move(info));
 }
 
 }  // namespace session_op

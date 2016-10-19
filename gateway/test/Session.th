@@ -55,6 +55,7 @@ public:
     void test22();
     void test23();
     void test24();
+    void test25();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -2896,5 +2897,76 @@ void SessionTest::test24()
     verifyNoOtherEvent(state, handler);
 }
 
-// TODO: test limit of pending messages
+void SessionTest::test25()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+    static const std::string Topic("topic");
+    static const std::uint16_t TopicId = 0x1111;
+    session->addPredefinedTopic(Topic, TopicId);
+    session->setSleepingClientMsgLimit(3U);
+
+    doConnect(*session, state, handler);
+
+    static const std::uint16_t SleepDuration = 30 * 60;
+
+    auto disconnectSnMsg = handler.prepareClientDisconnect(SleepDuration);
+    dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
+    verifySentToClient_DisconnectMsg(state, handler);
+    verifySentToBroker_PingreqMsg(state, handler);
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pingrespMsg = handler.prepareBrokerPingresp();
+    dataFromBroker(*session, pingrespMsg, "PINGRESP");
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    verifyTickReq(state, expectedTickReq);
+    verifyNoOtherEvent(state, handler);
+
+    static const DataBuf Data = {0, 1, 2, 3, 4 };
+    static const std::uint16_t MsgId = 1234;
+    static const auto Qos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const bool Retain = false;
+
+    state.m_elapsed.push_back(1000);
+    auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 2000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 3000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 4000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    dataFromBroker(*session, publishMsg, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 5000);
+    verifyNoOtherEvent(state, handler);
+
+    static const DataBuf Data2 = {0, 1, 2, 3, 4, 10};
+    state.m_elapsed.push_back(1000);
+    auto publishMsg2 = handler.prepareBrokerPublish(Topic, Data2, MsgId, Qos, Retain, false);
+    dataFromBroker(*session, publishMsg2, "PUBLISH");
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 6000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    auto pingreqMsg = handler.prepareClientPingreq(DefaultClientId);
+    dataFromClient(*session, pingreqMsg, "PINGREQ");
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PublishMsg(state, handler, TopicId, Data2, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, translateQos(Qos), Retain, false);
+    verifySentToClient_PingrespMsg(state, handler);
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 7000);
+    verifyNoOtherEvent(state, handler);
+}
+
 // TODO: test qos=-1 publishes.

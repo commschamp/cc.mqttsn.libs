@@ -50,18 +50,36 @@ void Forward::handle(PublishMsg_SN& msg)
     auto& dataField = std::get<MsgType::FieldIdx_data>(fields);
 
     auto& st = state();
+
+    if ((qosField.value() == mqttsn::protocol::field::QosType::NoGwPublish) &&
+        (st.m_connStatus != ConnectionStatus::Connected)) {
+        // TODO: special treatment;
+        assert(!"NYI");
+        return;
+    }
+
+    if (st.m_connStatus != ConnectionStatus::Connected) {
+        sendPubackToClient(
+            topicIdField.value(),
+            msgIdField.value(),
+            mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+        return;
+    }
+
+    if (!st.m_brokerConnected) {
+        sendPubackToClient(
+            topicIdField.value(),
+            msgIdField.value(),
+            mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+        return;
+    }
+
     auto& topic = st.m_regMgr.mapTopicId(topicIdField.value());
     if (topic.empty()) {
-        PubackMsg_SN respMsg;
-        auto& respFields = respMsg.fields();
-        auto& respTopicIdField = std::get<decltype(respMsg)::FieldIdx_topicId>(respFields);
-        auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
-        auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
-
-        respTopicIdField.value() = topicIdField.value();
-        respMsgIdField.value() = msgIdField.value();
-        respRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId;
-        sendToClient(respMsg);
+        sendPubackToClient(
+            topicIdField.value(),
+            msgIdField.value(),
+            mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
         return;
     }
 
@@ -284,16 +302,10 @@ void Forward::handle(PubackMsg& msg)
     auto& fields = msg.fields();
     auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
 
-    PubackMsg_SN respMsg;
-    auto& respFields = respMsg.fields();
-    auto& respTopicIdField = std::get<decltype(respMsg)::FieldIdx_topicId>(respFields);
-    auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
-    auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
-
-    respTopicIdField.value() = m_lastPubTopicId;
-    respMsgIdField.value() = packetIdField.value();
-    respRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_Accepted;
-    sendToClient(respMsg);
+    sendPubackToClient(
+        m_lastPubTopicId,
+        packetIdField.value(),
+        mqttsn::protocol::field::ReturnCodeVal_Accepted);
 }
 
 void Forward::handle(PubrecMsg& msg)
@@ -422,6 +434,24 @@ void Forward::handle(UnsubackMsg& msg)
     fwdMsgIdField.value() = packetIdField.value();
     sendToClient(fwdMsg);
 }
+
+void Forward::sendPubackToClient(
+    std::uint16_t topicId,
+    std::uint16_t msgId,
+    mqttsn::protocol::field::ReturnCodeVal rc)
+{
+    PubackMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
+    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
+
+    topicIdField.value() = topicId;
+    msgIdField.value() = msgId;
+    retCodeField.value() = rc;
+    sendToClient(msg);
+}
+
 
 
 }  // namespace session_op

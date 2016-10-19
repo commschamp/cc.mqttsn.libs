@@ -22,6 +22,7 @@
 #include <vector>
 #include <list>
 #include <memory>
+#include <limits>
 
 #include "mqtt/field/QoS.h"
 #include "mqttsn/protocol/field.h"
@@ -136,8 +137,9 @@ struct SessionState
     ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
     std::string m_clientId;
     WillInfo m_will;
-    std::uint8_t m_gwId = 0U;
+    std::size_t m_sleepPubAccLimit = std::numeric_limits<std::size_t>::max();
     std::uint16_t m_keepAlive = 0U;
+    std::uint8_t m_gwId = 0U;
     std::string m_username;
     DataBuf m_password;
 

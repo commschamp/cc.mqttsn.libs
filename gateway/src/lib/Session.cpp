@@ -93,6 +93,11 @@ void Session::setRetryCount(unsigned value)
     m_pImpl->setRetryCount(value);
 }
 
+void Session::setSleepingClientMsgLimit(std::size_t value)
+{
+    m_pImpl->setSleepingClientMsgLimit(value);
+}
+
 bool Session::start()
 {
     return m_pImpl->start();
