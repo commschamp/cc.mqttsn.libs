@@ -142,6 +142,8 @@ class Client : public THandler
         UnsubscribeId,
         Unsubscribe,
         WillUpdate,
+        WillTopicUpdate,
+        WillMsgUpdate,
         Sleep,
         CheckMessages,
         NumOfValues // must be last
@@ -233,6 +235,23 @@ class Client : public THandler
         MqttsnWillUpdateCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         bool m_willTopicAcked = false;
+    };
+
+    struct WillTopicUpdateOp : public OpBase
+    {
+        const char* m_topic = nullptr;
+        MqttsnQoS m_qos;
+        bool m_retain;
+        MqttsnWillTopicUpdateCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+    };
+
+    struct WillMsgUpdateOp : public OpBase
+    {
+        const unsigned char* m_msg = nullptr;
+        unsigned m_msgLen = 0;
+        MqttsnWillMsgUpdateCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
     };
 
     struct SleepOp : public OpBase
@@ -497,6 +516,8 @@ public:
             &Client::unsubscribeIdCancel,
             &Client::unsubscribeCancel,
             &Client::willUpdateCancel,
+            &Client::willTopicUpdateCancel,
+            &Client::willMsgUpdateCancel,
             &Client::sleepCancel,
             &Client::checkMessagesCancel
         };
@@ -887,6 +908,84 @@ public:
         op->m_cbData = data;
 
         bool result = doWillUpdate();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode willTopicUpdate(
+        const char* topic,
+        MqttsnQoS qos,
+        bool retain,
+        MqttsnWillTopicUpdateCompleteReportFn callback,
+        void* data)
+    {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
+        if (m_connectionStatus != ConnectionStatus::Connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        auto guard = apiCall();
+
+        m_currOp = Op::WillTopicUpdate;
+        auto* op = newOp<WillTopicUpdateOp>();
+        op->m_topic = topic;
+        op->m_qos = qos;
+        op->m_retain = retain;
+        op->m_cb = callback;
+        op->m_cbData = data;
+
+        bool result = doWillTopicUpdate();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode willMsgUpdate(
+        const unsigned char* msg,
+        unsigned msgLen,
+        MqttsnWillMsgUpdateCompleteReportFn callback,
+        void* data)
+    {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
+        if (m_connectionStatus != ConnectionStatus::Connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        auto guard = apiCall();
+
+        m_currOp = Op::WillMsgUpdate;
+        auto* op = newOp<WillMsgUpdateOp>();
+        op->m_msg = msg;
+        op->m_msgLen = msgLen;
+        op->m_cb = callback;
+        op->m_cbData = data;
+
+        bool result = doWillMsgUpdate();
         static_cast<void>(result);
         GASSERT(result);
 
@@ -1561,57 +1660,24 @@ public:
 
     virtual void handle(WilltopicrespMsg& msg) override
     {
-        if (m_currOp != Op::WillUpdate) {
-            return;
-        }
-
-        auto* op = opPtr<WillUpdateOp>();
-        if (op->m_willTopicAcked) {
+        if (m_currOp != Op::WillTopicUpdate) {
             return;
         }
 
         auto& fields = msg.fields();
         auto& retCodeField = std::get<WilltopicrespMsg::FieldIdx_returnCode>(fields);
-
-        if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-            finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
-            return;
-        }
-
-
-        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
-            finaliseWillUpdateOp(MqttsnAsyncOpStatus_Successful);
-            return;
-        }
-
-        op->m_lastMsgTimestamp = m_timestamp;
-        op->m_willTopicAcked = true;
-
-        WillmsgupdMsg msgUpdMsg;
-        auto& msgUpdFields = msgUpdMsg.fields();
-        auto& msgBodyField = std::get<WillmsgupdMsg::FieldIdx_willMsg>(msgUpdFields);
-        auto* msgBodyBeg = op->m_willInfo.msg;
-        if (msgBodyBeg != nullptr) {
-            auto* msgBodyEnd = msgBodyBeg + op->m_willInfo.msgLen;
-            msgBodyField.value().assign(msgBodyBeg, msgBodyEnd);
-        }
-        sendMessage(msgUpdMsg);
+        finaliseWillTopicUpdateOp(retCodeToStatus(retCodeField.value()));
     }
 
     virtual void handle(WillmsgrespMsg& msg) override
     {
-        if (m_currOp != Op::WillUpdate) {
-            return;
-        }
-
-        auto* op = opPtr<WillUpdateOp>();
-        if (!op->m_willTopicAcked) {
+        if (m_currOp != Op::WillMsgUpdate) {
             return;
         }
 
         auto& fields = msg.fields();
         auto& retCodeField = std::get<WillmsgrespMsg::FieldIdx_returnCode>(fields);
-        finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
+        finaliseWillMsgUpdateOp(retCodeToStatus(retCodeField.value()));
     }
 
 private:
@@ -1625,8 +1691,13 @@ private:
         SubscribeOp,
         UnsubscribeIdOp,
         UnsubscribeOp,
+        WillUpdateOp,
+        WillTopicUpdateOp,
+        WillMsgUpdateOp,
+        SleepOp,
         CheckMessagesOp
     >::Type OpStorageType;
+
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
@@ -1943,6 +2014,8 @@ private:
             &Client::unsubscribeIdTimeout,
             &Client::unsubscribeTimeout,
             &Client::willUpdateTimeout,
+            &Client::willTopicUpdateTimeout,
+            &Client::willMsgUpdateTimeout,
             &Client::sleepTimeout,
             &Client::checkMessagesTimeout
         };
@@ -2169,6 +2242,44 @@ private:
         GASSERT(m_currOp == Op::WillUpdate);
         finaliseWillUpdateOp(MqttsnAsyncOpStatus_Aborted);
     }
+
+    void willTopicUpdateTimeout()
+    {
+        GASSERT(m_currOp == Op::WillTopicUpdate);
+
+        if (doWillTopicUpdate()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void willTopicUpdateCancel()
+    {
+        GASSERT(m_currOp == Op::WillTopicUpdate);
+        finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
+
+    void willMsgUpdateTimeout()
+    {
+        GASSERT(m_currOp == Op::WillMsgUpdate);
+
+        if (doWillMsgUpdate()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void willMsgUpdateCancel()
+    {
+        GASSERT(m_currOp == Op::WillMsgUpdate);
+        finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
 
     void sleepTimeout()
     {
@@ -2587,6 +2698,61 @@ private:
         return true;
     }
 
+    bool doWillTopicUpdate()
+    {
+        GASSERT (m_currOp == Op::WillTopicUpdate);
+
+        auto* op = opPtr<WillTopicUpdateOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+        WilltopicupdMsg msg;
+        GASSERT(std::get<decltype(msg)::FieldIdx_flags>(msg.fields()).getMode() == comms::field::OptionalMode::Missing);
+        if ((op->m_topic != nullptr) && (op->m_topic[0] != '\0')) {
+            auto& fields = msg.fields();
+            auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+            auto& flagsMembers = flagsField.field().value();
+            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+            auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+
+            qosField.value() = details::translateQosValue(op->m_qos);
+            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_retain);
+            topicField.value() = op->m_topic;
+
+            msg.refresh();
+            GASSERT(flagsField.getMode() == comms::field::OptionalMode::Exists);
+        }
+
+        sendMessage(msg);
+        return true;
+    }
+
+    bool doWillMsgUpdate()
+    {
+        GASSERT (m_currOp == Op::WillMsgUpdate);
+
+        auto* op = opPtr<WillMsgUpdateOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+
+        WillmsgupdMsg msg;
+        auto& fields = msg.fields();
+        auto& msgBodyField = std::get<WillmsgupdMsg::FieldIdx_willMsg>(fields);
+        auto* msgBodyBeg = op->m_msg;
+        if (msgBodyBeg != nullptr) {
+            auto* msgBodyEnd = msgBodyBeg + op->m_msgLen;
+            msgBodyField.value().assign(msgBodyBeg, msgBodyEnd);
+        }
+        sendMessage(msg);
+        return true;
+    }
+
     bool doSleep()
     {
         GASSERT (m_currOp == Op::Sleep);
@@ -2813,6 +2979,32 @@ private:
         auto* cbData = op->m_cbData;
 
         finaliseOp<WillUpdateOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
+    void finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::WillTopicUpdate);
+        auto* op = opPtr<WillTopicUpdateOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<WillTopicUpdateOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
+    void finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::WillMsgUpdate);
+        auto* op = opPtr<WillMsgUpdateOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<WillMsgUpdateOp>();
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
         cb(cbData, status);

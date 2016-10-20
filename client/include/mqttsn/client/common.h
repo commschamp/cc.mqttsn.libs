@@ -115,6 +115,8 @@ typedef void (*MqttsnPublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus st
 typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
 typedef void (*MqttsnUnsubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnWillUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnWillTopicUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnWillMsgUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnSleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnCheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnMessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);

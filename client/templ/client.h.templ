@@ -131,6 +131,23 @@ MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_update(
     void* data
 );
 
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_topic_update(
+    MqttsnClientHandle client,
+    const char* topic,
+    MqttsnQoS qos,
+    bool retain,
+    MqttsnWillTopicUpdateCompleteReportFn callback,
+    void* data
+);
+
+MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_msg_update(
+    MqttsnClientHandle client,
+    const unsigned char* msg,
+    unsigned msgLen,
+    MqttsnWillMsgUpdateCompleteReportFn callback,
+    void* data
+);
+
 MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_sleep(
     MqttsnClientHandle client,
     unsigned short duration,
