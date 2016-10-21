@@ -628,14 +628,21 @@ private:
                 TS_TRACE("<-- WILLTOPIC");
                 auto& fields = msg.fields();
                 auto& flagsField = std::get<WilltopicMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
+                auto& flagsMembers = flagsField.field().value();
                 auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
                 auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
                 auto& topicField = std::get<WilltopicMsg::FieldIdx_willTopic>(fields);
 
-                TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
-                TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), qos);
                 TS_ASSERT_EQUALS(topicField.value(), topic);
+                if (!topic.empty()) {
+                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Exists);
+                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
+                    TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), qos);
+                }
+                else {
+                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Missing);
+                }
+
             });
 
         processOutput(state, dataProc);

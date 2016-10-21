@@ -18,11 +18,7 @@
 
 #pragma once
 
-#include "comms/comms.h"
-#include "mqttsn/protocol/MsgTypeId.h"
-#include "mqttsn/protocol/field.h"
-#include "mqttsn/protocol/ParsedOptions.h"
-
+#include "WilltopicBase.h"
 namespace mqttsn
 {
 
@@ -32,39 +28,11 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase, typename TOptions>
-using WilltopicFields =
-    std::tuple<
-        field::Flags<TFieldBase>,
-        field::WillTopic<TFieldBase, TOptions>
-    >;
-
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic : public
-    comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPIC>,
-        comms::option::FieldsImpl<WilltopicFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willtopic<TMsgBase, TOptions> >
-    >
+class Willtopic :
+    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPIC>,
-        comms::option::FieldsImpl<WilltopicFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willtopic<TMsgBase, TOptions> >
-    > Base;
 
-public:
-    enum FieldIdx
-    {
-        FieldIdx_flags,
-        FieldIdx_willTopic,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
 };
 
 }  // namespace message

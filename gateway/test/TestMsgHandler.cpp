@@ -542,7 +542,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
     WilltopicMsg_SN msg;
     auto& fields = msg.fields();
     auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
+    auto& flagsMembers = flagsField.field().value();
     auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
     auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
     auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
@@ -550,6 +550,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
     qosField.value() = qos;
     midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
     topicField.value() = topic;
+    msg.refresh();
     return prepareInput(msg);
 }
 

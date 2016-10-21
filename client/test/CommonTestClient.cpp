@@ -348,11 +348,16 @@ MqttsnErrorCode CommonTestClient::unsubscribe(MqttsnTopicId topicId)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::willUpdate(const MqttsnWillInfo* willInfo)
+MqttsnErrorCode CommonTestClient::willUpdate(
+    const char* clientId,
+    unsigned short keepAliveSeconds,
+    const MqttsnWillInfo* willInfo)
 {
     assert(m_libFuncs.m_willUpdateFunc != nullptr);
     return (m_libFuncs.m_willUpdateFunc)(
         m_client,
+        clientId,
+        keepAliveSeconds,
         willInfo,
         &CommonTestClient::willUpdateCompleteCallback,
         this);

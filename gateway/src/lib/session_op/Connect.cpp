@@ -115,7 +115,7 @@ void Connect::handle(WilltopicMsg_SN& msg)
     typedef WilltopicMsg_SN MsgType;
     auto& fields = msg.fields();
     auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
+    auto& flagsMembers = flagsField.field().value();
     auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
     auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
     auto& willTopicField = std::get<MsgType::FieldIdx_willTopic>(fields);

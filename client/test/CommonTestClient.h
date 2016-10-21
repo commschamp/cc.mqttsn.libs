@@ -171,7 +171,10 @@ public:
 
     MqttsnErrorCode unsubscribe(MqttsnTopicId topicId);
 
-    MqttsnErrorCode willUpdate(const MqttsnWillInfo* willInfo);
+    MqttsnErrorCode willUpdate(
+        const char* clientId,
+        unsigned short keepAliveSeconds,
+        const MqttsnWillInfo* willInfo);
 
     MqttsnErrorCode willTopicUpdate(
         const std::string& topic,

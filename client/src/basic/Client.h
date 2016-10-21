@@ -229,12 +229,10 @@ class Client : public THandler
         MqttsnTopicId m_topicId = 0U;
     };
 
-    struct WillUpdateOp : public OpBase
+    struct WillUpdateOp : public ConnectOp
     {
-        MqttsnWillInfo m_willInfo = MqttsnWillInfo();
         MqttsnWillUpdateCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
-        bool m_willTopicAcked = false;
     };
 
     struct WillTopicUpdateOp : public OpBase
@@ -877,6 +875,8 @@ public:
     }
 
     MqttsnErrorCode willUpdate(
+        const char* clientId,
+        unsigned short keepAlivePeriod,
         const MqttsnWillInfo* willInfo,
         MqttsnWillUpdateCompleteReportFn callback,
         void* data)
@@ -901,9 +901,13 @@ public:
 
         m_currOp = Op::WillUpdate;
         auto* op = newOp<WillUpdateOp>();
+        op->m_clientId = clientId;
+        op->m_keepAlivePeriod = keepAlivePeriod;
         if (willInfo != nullptr) {
             op->m_willInfo = *willInfo;
         }
+        op->m_hasWill = true;
+        op->m_cleanSession = false;
         op->m_cb = callback;
         op->m_cbData = data;
 
@@ -1113,17 +1117,30 @@ public:
 
     virtual void handle(ConnackMsg& msg) override
     {
-        if (m_currOp != Op::Connect) {
+        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
             return;
         }
 
         auto* op = opPtr<ConnectOp>();
-        bool hasWill = op->m_hasWill && (op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0');
         bool willReported = (op->m_willTopicSent && op->m_willMsgSent);
-        if (hasWill && (!willReported)) {
+        if (op->m_hasWill && (!willReported)) {
             return;
         }
 
+        auto& fields = msg.fields();
+        auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
+
+        if (m_currOp == Op::WillUpdate) {
+            finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
+
+            if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+                m_connectionStatus = ConnectionStatus::Disconnected;
+                m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+            }
+            return;
+        }
+
+        assert(m_currOp == Op::Connect);
         finaliseOp<ConnectOp>();
 
         static_cast<void>(msg);
@@ -1141,9 +1158,7 @@ public:
             "Incorrect map");
 
         MqttsnConnectionStatus status = MqttsnConnectionStatus_Denied;
-        auto& fields = msg.fields();
-        auto& returnCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
-        auto returnCode = returnCodeField.value();
+        auto returnCode = retCodeField.value();
         if (returnCode < StatusMapSize) {
             status = StatusMap[returnCode];
         }
@@ -1160,7 +1175,7 @@ public:
     virtual void handle(WilltopicreqMsg& msg) override
     {
         static_cast<void>(msg);
-        if (m_currOp != Op::Connect) {
+        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
             return;
         }
 
@@ -1170,30 +1185,23 @@ public:
         }
 
         op->m_lastMsgTimestamp = m_timestamp;
-        WilltopicMsg outMsg;
-        auto& fields = outMsg.fields();
-        auto& flagsField = std::get<WilltopicMsg::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-        auto& topicField = std::get<WilltopicMsg::FieldIdx_willTopic>(fields);
-
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_willInfo.retain);
-        qosField.value() = details::translateQosValue(op->m_willInfo.qos);
-        topicField.value() = op->m_willInfo.topic;
         op->m_willTopicSent = true;
-        sendMessage(outMsg);
+        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+            op->m_willMsgSent = true;
+        }
+
+        sendWilltopic(op->m_willInfo.topic, op->m_willInfo.qos, op->m_willInfo.retain);
     }
 
     virtual void handle(WillmsgreqMsg& msg) override
     {
         static_cast<void>(msg);
-        if (m_currOp != Op::Connect) {
+        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
             return;
         }
 
         auto* op = opPtr<ConnectOp>();
-        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+        if (!op->m_willTopicSent) {
             return;
         }
 
@@ -1202,7 +1210,10 @@ public:
         auto& fields = outMsg.fields();
         auto& willMsgField = std::get<WillmsgMsg::FieldIdx_willMsg>(fields);
 
-        willMsgField.value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+        if (op->m_willInfo.msg != nullptr) {
+            willMsgField.value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+        }
+
         op->m_willMsgSent = true;
         sendMessage(outMsg);
     }
@@ -2674,27 +2685,8 @@ private:
         }
 
         ++op->m_attempt;
-        op->m_willTopicAcked = false;
 
-        WilltopicupdMsg msg;
-        GASSERT(std::get<decltype(msg)::FieldIdx_flags>(msg.fields()).getMode() == comms::field::OptionalMode::Missing);
-        if ((op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0')) {
-            auto& fields = msg.fields();
-            auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-            auto& flagsMembers = flagsField.field().value();
-            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-            auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
-
-            qosField.value() = details::translateQosValue(op->m_willInfo.qos);
-            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_willInfo.retain);
-            topicField.value() = op->m_willInfo.topic;
-
-            msg.refresh();
-            GASSERT(flagsField.getMode() == comms::field::OptionalMode::Exists);
-        }
-
-        sendMessage(msg);
+        sendConnect(op->m_clientId, op->m_keepAlivePeriod, false, true);
         return true;
     }
 
@@ -2813,6 +2805,28 @@ private:
 
         durationField.value() = keepAlivePeriod;
         clientIdField.value() = clientId;
+        sendMessage(msg);
+    }
+
+    void sendWilltopic(
+        const char* topic,
+        MqttsnQoS qos,
+        bool retain)
+    {
+        WilltopicMsg msg;
+        if (topic != nullptr) {
+            auto& fields = msg.fields();
+            auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+            auto& flagsMembers = flagsField.field().value();
+            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+            auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+
+            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
+            qosField.value() = details::translateQosValue(qos);
+            topicField.value() = topic;
+        }
+        msg.refresh();
         sendMessage(msg);
     }
 
