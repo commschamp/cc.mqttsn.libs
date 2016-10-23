@@ -126,8 +126,6 @@ MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_unsubscribe(
 
 MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_update(
     MqttsnClientHandle client,
-    const char* clientId,
-    unsigned short keepAliveSeconds,
     const MqttsnWillInfo* willInfo,
     MqttsnWillUpdateCompleteReportFn callback,
     void* data
@@ -159,7 +157,6 @@ MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_sleep(
 
 MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_check_messages(
     MqttsnClientHandle client,
-    const char* clientId,
     MqttsnCheckMessagesCompleteReportFn callback,
     void* data
 );

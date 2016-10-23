@@ -172,8 +172,6 @@ public:
     MqttsnErrorCode unsubscribe(MqttsnTopicId topicId);
 
     MqttsnErrorCode willUpdate(
-        const char* clientId,
-        unsigned short keepAliveSeconds,
         const MqttsnWillInfo* willInfo);
 
     MqttsnErrorCode willTopicUpdate(
@@ -187,7 +185,7 @@ public:
 
     MqttsnErrorCode sleep(std::uint16_t duration);
 
-    MqttsnErrorCode checkMessages(const std::string& clientId);
+    MqttsnErrorCode checkMessages();
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
     static mqttsn::protocol::field::QosType transformQos(MqttsnQoS val);

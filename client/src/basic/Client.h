@@ -261,7 +261,6 @@ class Client : public THandler
 
     struct CheckMessagesOp : public OpBase
     {
-        const char* m_clientId = nullptr;
         MqttsnCheckMessagesCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
     };
@@ -282,6 +281,7 @@ public:
     typedef typename mqttsn::protocol::field::TopicName<FieldBase, TProtOpts>::ValueType TopicNameType;
     typedef typename mqttsn::protocol::field::Data<FieldBase, TProtOpts>::ValueType DataType;
     typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
+    typedef typename mqttsn::protocol::field::ClientId<FieldBase>::ValueType ClientIdType;
 
     struct GwInfo
     {
@@ -554,7 +554,6 @@ public:
 
         bool reportDisconnected = (m_connectionStatus == ConnectionStatus::Asleep);
         m_connectionStatus = ConnectionStatus::Disconnected;
-        m_keepAlivePeriod = keepAlivePeriod * 1000;
         m_currOp = Op::Connect;
 
         auto* connectOp = newOp<ConnectOp>();
@@ -875,8 +874,6 @@ public:
     }
 
     MqttsnErrorCode willUpdate(
-        const char* clientId,
-        unsigned short keepAlivePeriod,
         const MqttsnWillInfo* willInfo,
         MqttsnWillUpdateCompleteReportFn callback,
         void* data)
@@ -901,8 +898,8 @@ public:
 
         m_currOp = Op::WillUpdate;
         auto* op = newOp<WillUpdateOp>();
-        op->m_clientId = clientId;
-        op->m_keepAlivePeriod = keepAlivePeriod;
+        op->m_clientId = m_clientId.c_str();
+        op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
         if (willInfo != nullptr) {
             op->m_willInfo = *willInfo;
         }
@@ -1033,7 +1030,6 @@ public:
     }
 
     MqttsnErrorCode checkMessages(
-        const char* clientId,
         MqttsnCheckMessagesCompleteReportFn callback,
         void* data)
     {
@@ -1049,9 +1045,7 @@ public:
             return MqttsnErrorCode_Busy;
         }
 
-        if ((clientId == nullptr) ||
-            (clientId[0] == '\0') ||
-            (callback == nullptr)) {
+        if ((callback == nullptr)) {
             return MqttsnErrorCode_BadParam;
         }
 
@@ -1059,7 +1053,6 @@ public:
 
         m_currOp = Op::CheckMessages;
         auto* op = newOp<CheckMessagesOp>();
-        op->m_clientId = clientId;
         op->m_cb = callback;
         op->m_cbData = data;
 
@@ -1141,6 +1134,8 @@ public:
         }
 
         assert(m_currOp == Op::Connect);
+        m_clientId = op->m_clientId;
+        m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
         finaliseOp<ConnectOp>();
 
         static_cast<void>(msg);
@@ -2784,7 +2779,7 @@ private:
         auto& fields = msg.fields();
         auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
 
-        clientIdField.value() = op->m_clientId;
+        clientIdField.value() = m_clientId;
         sendMessage(msg);
         return true;
     }
@@ -3106,6 +3101,7 @@ private:
     Timestamp m_lastGwSearchTimestamp = 0;
     Timestamp m_lastMsgTimestamp = 0;
     Timestamp m_lastPingTimestamp = 0;
+    ClientIdType m_clientId;
 
     unsigned m_callStackCount = 0U;
     unsigned m_pingCount = 0;

@@ -349,15 +349,11 @@ MqttsnErrorCode CommonTestClient::unsubscribe(MqttsnTopicId topicId)
 }
 
 MqttsnErrorCode CommonTestClient::willUpdate(
-    const char* clientId,
-    unsigned short keepAliveSeconds,
     const MqttsnWillInfo* willInfo)
 {
     assert(m_libFuncs.m_willUpdateFunc != nullptr);
     return (m_libFuncs.m_willUpdateFunc)(
         m_client,
-        clientId,
-        keepAliveSeconds,
         willInfo,
         &CommonTestClient::willUpdateCompleteCallback,
         this);
@@ -401,12 +397,11 @@ MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::checkMessages(const std::string& clientId)
+MqttsnErrorCode CommonTestClient::checkMessages()
 {
     assert(m_libFuncs.m_checkMessagesFunc != nullptr);
     return (m_libFuncs.m_checkMessagesFunc)(
         m_client,
-        clientId.c_str(),
         &CommonTestClient::checkMessagesCompleteCallback,
         this);
 }

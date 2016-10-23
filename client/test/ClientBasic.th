@@ -3381,7 +3381,7 @@ void ClientBasic::test39()
 
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
-    auto result = client->checkMessages(clientId);
+    auto result = client->checkMessages();
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_NotSleeping);
 
     static const std::uint16_t Duration = 10000;
@@ -3401,7 +3401,7 @@ void ClientBasic::test39()
 
     clearState(state);
     state.m_nextElapsedTicks = 2000;
-    result = client->checkMessages(clientId);
+    result = client->checkMessages();
     verifySent_PingreqMsg(state, dataProc, clientId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
@@ -3468,7 +3468,7 @@ void ClientBasic::test40()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willUpdate(DefaultClientId.c_str(), DefaultKeepAlive, &info);
+    auto result = client->willUpdate(&info);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -3511,7 +3511,7 @@ void ClientBasic::test41()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willUpdate(DefaultClientId.c_str(), DefaultKeepAlive, &info);
+    auto result = client->willUpdate(&info);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
