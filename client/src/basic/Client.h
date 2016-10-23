@@ -1180,13 +1180,16 @@ public:
         }
 
         auto* op = opPtr<ConnectOp>();
-        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+        bool emptyTopic =
+            (op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0');
+
+        if ((m_currOp == Op::Connect) && (emptyTopic)) {
             return;
         }
 
         op->m_lastMsgTimestamp = m_timestamp;
         op->m_willTopicSent = true;
-        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+        if (emptyTopic) {
             op->m_willMsgSent = true;
         }
 

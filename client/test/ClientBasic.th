@@ -72,6 +72,7 @@ public:
     void test38();
     void test39();
     void test40();
+    void test41();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -3490,3 +3491,42 @@ void ClientBasic::test40()
     dataFromGw(*client, connackMsg, "CONNACK");
     verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
 }
+
+void ClientBasic::test41()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test34State;
+    Test34State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state, true);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    auto info = MqttsnWillInfo();
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->willUpdate(DefaultClientId.c_str(), DefaultKeepAlive, &info);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, true);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto topicReqMsg = dataProc.prepareWilltopicreqMsg();
+    dataFromGw(*client, topicReqMsg, "WILLTOPICREQ");
+    verifySent_WilltopicMsg(state, dataProc, std::string(), MqttsnQoS_AtMostOnceDelivery, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, connackMsg, "CONNACK");
+    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
+}
+
