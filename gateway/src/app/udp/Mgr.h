@@ -55,7 +55,7 @@ private slots:
     void newConnection();
 
 private:
-    typedef SessionWrapper::SocketPtr SocketPtr;
+    typedef SessionWrapper::ClientSocketPtr SocketPtr;
     typedef unsigned short PortType;
 
     bool doListen();

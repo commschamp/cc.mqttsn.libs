@@ -28,6 +28,7 @@ CC_DISABLE_WARNINGS()
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 #include <QtNetwork/QUdpSocket>
+#include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QHostAddress>
 CC_ENABLE_WARNINGS()
 
@@ -51,18 +52,22 @@ class SessionWrapper : public QObject
     Q_OBJECT
     typedef QObject Base;
 public:
-    typedef std::unique_ptr<QUdpSocket> SocketPtr;
+    typedef std::unique_ptr<QUdpSocket> ClientSocketPtr;
     typedef unsigned short PortType;
 
-    SessionWrapper(SocketPtr socket, QObject* parent);
+    SessionWrapper(ClientSocketPtr socket, QObject* parent);
     ~SessionWrapper();
 
     bool start();
 
 private slots:
     void tickTimeout();
-    void doRead();
-    void socketErrorOccurred(QAbstractSocket::SocketError err);
+    void readFromClientSocket();
+    void clientSocketErrorOccurred(QAbstractSocket::SocketError err);
+    void brokerConnected();
+    void brokerDisconnected();
+    void readFromBrokerSocket();
+    void brokerSocketErrorOccurred(QAbstractSocket::SocketError err);
 
 private:
     typedef std::vector<std::uint8_t> DataBuf;
@@ -73,11 +78,15 @@ private:
     void sendDataToBroker(const std::uint8_t* buf, std::size_t bufSize);
     void termSession();
     void reconnectBroker();
+    void connectToBroker();
 
-    SocketPtr m_socket;
+    ClientSocketPtr m_clientSocket;
+    QTcpSocket m_brokerSocket;
     mqttsn::gateway::Session m_session;
     QTimer m_timer;
     unsigned m_reqTicks = 0;
+    bool m_reconnectRequested = false;
+    DataBuf m_brokerData;
 };
 
 }  // namespace udp

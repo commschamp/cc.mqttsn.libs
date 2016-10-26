@@ -32,9 +32,17 @@ namespace app
 namespace udp
 {
 
-SessionWrapper::SessionWrapper(SocketPtr socket, QObject* parent)
+namespace
+{
+
+const QString BrokerHost;
+const unsigned short BrokerPort = 1883;
+
+}  // namespace
+
+SessionWrapper::SessionWrapper(ClientSocketPtr socket, QObject* parent)
   : Base(parent),
-    m_socket(std::move(socket))
+    m_clientSocket(std::move(socket))
 {
     m_session.setNextTickProgramReqCb(
         [this](unsigned ms)
@@ -77,6 +85,20 @@ SessionWrapper::SessionWrapper(SocketPtr socket, QObject* parent)
     connect(
         &m_timer, SIGNAL(timeout()),
         this, SLOT(tickTimeout()));
+
+    connect(
+        &m_brokerSocket, SIGNAL(connected()),
+        this, SLOT(brokerConnected()));
+    connect(
+        &m_brokerSocket, SIGNAL(disconnected()),
+        this, SLOT(brokerDisconnected()));
+    connect(
+        &m_brokerSocket, SIGNAL(readyRead()),
+        this, SLOT(readFromBrokerSocket()));
+    connect(
+        &m_brokerSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+        this, SLOT(brokerSocketErrorOccurred(QAbstractSocket::SocketError)));
+
 }
 
 SessionWrapper::~SessionWrapper()
@@ -91,17 +113,16 @@ bool SessionWrapper::start()
         return false;
     }
 
-    // TODO: connect to broker
-
-    doRead();
-
-    connect(
-        m_socket.get(), SIGNAL(readyRead()),
-        this, SLOT(doRead()));
+    connectToBroker();
+    readFromClientSocket();
 
     connect(
-        m_socket.get(), SIGNAL(error(QAbstractSocket::SocketError)),
-        this, SLOT(socketErrorOccurred(QAbstractSocket::SocketError)));
+        m_clientSocket.get(), SIGNAL(readyRead()),
+        this, SLOT(readFromClientSocket()));
+
+    connect(
+        m_clientSocket.get(), SIGNAL(error(QAbstractSocket::SocketError)),
+        this, SLOT(clientSocketErrorOccurred(QAbstractSocket::SocketError)));
 
     return true;
 }
@@ -111,38 +132,86 @@ void SessionWrapper::tickTimeout()
     m_session.tick(m_reqTicks);
 }
 
-void SessionWrapper::doRead()
+void SessionWrapper::readFromClientSocket()
 {
-    assert(m_socket);
+    assert(m_clientSocket);
     DataBuf data;
     QHostAddress senderAddress;
     quint16 senderPort;
 
-    while (m_socket->hasPendingDatagrams()) {
-        data.resize(m_socket->pendingDatagramSize());
-        auto readBytes = m_socket->readDatagram(
+    while (m_clientSocket->hasPendingDatagrams()) {
+        data.resize(m_clientSocket->pendingDatagramSize());
+        auto readBytes = m_clientSocket->readDatagram(
             reinterpret_cast<char*>(&data[0]),
             data.size(),
             &senderAddress,
             &senderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
 
-        if (m_socket->state() != QUdpSocket::ConnectedState) {
-            m_socket->connectToHost(senderAddress, senderPort);
-            m_socket->waitForConnected();
-            assert(m_socket->isOpen());
-            assert(m_socket->state() == QUdpSocket::ConnectedState);
+        if (m_clientSocket->state() != QUdpSocket::ConnectedState) {
+            m_clientSocket->connectToHost(senderAddress, senderPort);
+            m_clientSocket->waitForConnected();
+            assert(m_clientSocket->isOpen());
+            assert(m_clientSocket->state() == QUdpSocket::ConnectedState);
         }
 
         m_session.dataFromClient(&data[0], readBytes);
     }
 }
 
-void SessionWrapper::socketErrorOccurred(QAbstractSocket::SocketError err)
+void SessionWrapper::clientSocketErrorOccurred(QAbstractSocket::SocketError err)
 {
     static_cast<void>(err);
-    assert(m_socket);
-    std::cout << "ERROR: UDP Socket: " << m_socket->errorString().toStdString() << std::endl;
+    assert(m_clientSocket);
+    std::cout << "ERROR: UDP Socket: " << m_clientSocket->errorString().toStdString() << std::endl;
+}
+
+void SessionWrapper::brokerConnected()
+{
+    m_session.setBrokerConnected(true);
+    m_reconnectRequested = false;
+}
+
+void SessionWrapper::brokerDisconnected()
+{
+    m_session.setBrokerConnected(false);
+    if (m_reconnectRequested) {
+        connectToBroker();
+    }
+}
+
+void SessionWrapper::readFromBrokerSocket()
+{
+    auto data = m_brokerSocket.readAll();
+    std::cout << "Received " << data.size() << " bytes from broker" << std::endl;
+
+    auto* buf = reinterpret_cast<const std::uint8_t*>(data.constData());
+    std::size_t bufSize = data.size();
+
+    if (!m_brokerData.empty()) {
+        m_brokerData.insert(m_brokerData.end(), buf, buf + bufSize);
+        buf = &m_brokerData[0];
+        bufSize = m_brokerData.size();
+    }
+
+    std::size_t consumed = m_session.dataFromBroker(buf, bufSize);
+    if (bufSize <= consumed) {
+        m_brokerData.clear();
+        return;
+    }
+
+    if (!m_brokerData.empty()) {
+        m_brokerData.erase(m_brokerData.begin(), m_brokerData.begin() + consumed);
+        return;
+    }
+
+    m_brokerData.assign(buf + consumed, buf + bufSize);
+}
+
+void SessionWrapper::brokerSocketErrorOccurred(QAbstractSocket::SocketError err)
+{
+    static_cast<void>(err);
+    std::cout << "ERROR: TCP Socket: " << m_brokerSocket.errorString().toStdString() << std::endl;
 }
 
 
@@ -171,13 +240,13 @@ unsigned SessionWrapper::cancelTick()
 
 void SessionWrapper::sendDataToClient(const std::uint8_t* buf, std::size_t bufSize)
 {
-    assert(m_socket);
+    assert(m_clientSocket);
     std::cout << "Sending " << bufSize << " bytes to client" << std::endl;
     std::size_t writtenCount = 0;
     while (writtenCount < bufSize) {
         auto remSize = bufSize - writtenCount;
         auto count =
-            m_socket->write(
+            m_clientSocket->write(
                 reinterpret_cast<const char*>(&buf[writtenCount]),
                 remSize);
         if (count < 0) {
@@ -194,20 +263,49 @@ void SessionWrapper::sendDataToBroker(const std::uint8_t* buf, std::size_t bufSi
     static_cast<void>(buf);
     static_cast<void>(bufSize);
     std::cout << "Sending " << bufSize << " bytes to broker" << std::endl;
+
+    std::size_t writtenCount = 0;
+    while (writtenCount < bufSize) {
+        auto remSize = bufSize - writtenCount;
+        auto count =
+            m_brokerSocket.write(
+                reinterpret_cast<const char*>(&buf[writtenCount]),
+                remSize);
+        if (count < 0) {
+            std::cerr << "Failed to write to TCP socket" << std::endl;
+            return;
+        }
+
+        writtenCount += count;
+    }
+
 }
 
 void SessionWrapper::termSession()
 {
     std::cout << "INFO: Termination requested:" << std::endl;
-    assert(m_socket);
-    m_socket->blockSignals(true);
+    assert(m_clientSocket);
+    m_clientSocket->blockSignals(true);
     m_timer.stop();
     deleteLater();
 }
 
 void SessionWrapper::reconnectBroker()
 {
-    assert(!"NYI");
+    m_reconnectRequested = true;
+    assert(m_brokerSocket.state() == QTcpSocket::ConnectedState);
+    m_brokerSocket.disconnectFromHost();
+}
+
+void SessionWrapper::connectToBroker()
+{
+    QString host = BrokerHost;
+
+    if (host.isEmpty()) {
+        host = QHostAddress(QHostAddress::LocalHost).toString();
+    }
+
+    m_brokerSocket.connectToHost(host, BrokerPort);
 }
 
 }  // namespace udp
