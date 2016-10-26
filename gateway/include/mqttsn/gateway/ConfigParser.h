@@ -19,18 +19,16 @@
 #pragma once
 
 #include <memory>
+#include <cstdint>
+#include <map>
+#include <iosfwd>
+#include <vector>
+#include <cstdint>
+#include <string>
 #include <list>
 
-#include "comms/CompileControl.h"
+#include "mqttsn/gateway/Api.h"
 
-CC_DISABLE_WARNINGS()
-#include <QtCore/QObject>
-#include <QtNetwork/QUdpSocket>
-CC_ENABLE_WARNINGS()
-
-#include "mqttsn/gateway/ConfigParser.h"
-#include "GatewayWrapper.h"
-#include "SessionWrapper.h"
 
 namespace mqttsn
 {
@@ -38,43 +36,31 @@ namespace mqttsn
 namespace gateway
 {
 
-namespace app
+class ConfigParserImpl;
+class MQTTSN_GATEWAY_API ConfigParser
 {
-
-namespace udp
-{
-
-class Mgr : public QObject
-{
-    Q_OBJECT
 public:
-    explicit Mgr(const ConfigParser& configParser)
-      : m_configParser(configParser),
-        m_gw(configParser)
-    {
-    }
 
-    bool start();
+    typedef std::multimap<std::string, std::string> ConfigMap;
+    typedef std::vector<std::uint8_t> BinaryData;
 
-private slots:
-    void newConnection();
+    ConfigParser();
+    ~ConfigParser();
+
+    void parseConfig(std::istream& stream);
+    const ConfigMap& configMap() const;
+
+    std::uint8_t gatewayId() const;
+    std::uint16_t advertisePeriod() const;
+    const std::string& username() const;
+    const std::list<std::string>& allUsernames() const;
 
 private:
-    typedef SessionWrapper::ClientSocketPtr SocketPtr;
-    typedef unsigned short PortType;
-
-    bool doListen();
-
-    const ConfigParser& m_configParser;
-    PortType m_port = 0;
-    SocketPtr m_socket;
-    GatewayWrapper m_gw;
+    std::unique_ptr<ConfigParserImpl> m_pImpl;
 };
-
-}  // namespace udp
-
-}  // namespace app
 
 }  // namespace gateway
 
 }  // namespace mqttsn
+
+

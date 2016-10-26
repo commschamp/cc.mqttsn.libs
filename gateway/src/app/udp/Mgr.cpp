@@ -43,8 +43,6 @@ bool Mgr::start()
 
     m_gw.setLocalPort(m_port);
     m_gw.setBroadcastPort(21000);
-    m_gw.setGwId(1);
-    m_gw.setAdvertisePeriod(20);
     return m_gw.start();
 }
 
@@ -55,7 +53,8 @@ void Mgr::newConnection()
         m_socket.get(), SIGNAL(readyRead()),
         this, SLOT(newConnection()));
 
-    std::unique_ptr<SessionWrapper> session(new SessionWrapper(std::move(m_socket), this));
+    std::unique_ptr<SessionWrapper> session(
+        new SessionWrapper(m_configParser, std::move(m_socket), this));
     if (session->start()) {
         session.release();
     }

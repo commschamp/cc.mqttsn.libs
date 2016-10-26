@@ -18,16 +18,9 @@
 
 #pragma once
 
-#include "comms/CompileControl.h"
-
-CC_DISABLE_WARNINGS()
-#include <QtCore/QObject>
-#include <QtCore/QTimer>
-#include <QtNetwork/QUdpSocket>
-CC_ENABLE_WARNINGS()
+#include <iostream>
 
 #include "mqttsn/gateway/ConfigParser.h"
-#include "mqttsn/gateway/Gateway.h"
 
 namespace mqttsn
 {
@@ -35,48 +28,38 @@ namespace mqttsn
 namespace gateway
 {
 
-namespace app
+class ConfigParserImpl
 {
-
-namespace udp
-{
-
-class GatewayWrapper : public QObject
-{
-    Q_OBJECT
 public:
-    typedef unsigned short PortType;
+    typedef ConfigParser::ConfigMap ConfigMap;
 
-    explicit GatewayWrapper(const ConfigParser& configParser);
+    ConfigParserImpl() = default;
+    ~ConfigParserImpl() = default;
 
-    void setLocalPort(PortType value)
+    void parseConfig(std::istream& stream);
+
+    const ConfigMap& configMap() const
     {
-        m_localPort = value;
+        return m_map;
     }
 
-    void setBroadcastPort(PortType value)
-    {
-        m_broadcastPort = value;
-    }
+    std::uint8_t gatewayId() const;
 
-    bool start();
+    std::uint16_t advertisePeriod() const;
 
-private slots:
-    void tickTimeout();
+    const std::list<std::string>& allUsernames() const;
+
 
 private:
-    const ConfigParser& m_configParser;
-    QUdpSocket m_socket;
-    PortType m_localPort = 0;
-    PortType m_broadcastPort = 0;
-    mqttsn::gateway::Gateway m_gw;
-    QTimer m_timer;
+    template <typename T>
+    T numericValue(const std::string& key, T defaultValue = T()) const;
+
+    ConfigMap m_map;
+    mutable std::list<std::string> m_usernames;
 };
-
-}  // namespace udp
-
-}  // namespace app
 
 }  // namespace gateway
 
 }  // namespace mqttsn
+
+

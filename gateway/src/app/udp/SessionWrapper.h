@@ -32,7 +32,7 @@ CC_DISABLE_WARNINGS()
 #include <QtNetwork/QHostAddress>
 CC_ENABLE_WARNINGS()
 
-
+#include "mqttsn/gateway/ConfigParser.h"
 #include "mqttsn/gateway/Session.h"
 
 namespace mqttsn
@@ -55,7 +55,7 @@ public:
     typedef std::unique_ptr<QUdpSocket> ClientSocketPtr;
     typedef unsigned short PortType;
 
-    SessionWrapper(ClientSocketPtr socket, QObject* parent);
+    SessionWrapper(const ConfigParser& configParser, ClientSocketPtr socket, QObject* parent);
     ~SessionWrapper();
 
     bool start();
@@ -80,6 +80,7 @@ private:
     void reconnectBroker();
     void connectToBroker();
 
+    const ConfigParser& m_configParser;
     ClientSocketPtr m_clientSocket;
     QTcpSocket m_brokerSocket;
     mqttsn::gateway::Session m_session;

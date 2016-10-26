@@ -40,8 +40,12 @@ const unsigned short BrokerPort = 1883;
 
 }  // namespace
 
-SessionWrapper::SessionWrapper(ClientSocketPtr socket, QObject* parent)
+SessionWrapper::SessionWrapper(
+    const ConfigParser& configParser,
+    ClientSocketPtr socket,
+    QObject* parent)
   : Base(parent),
+    m_configParser(configParser),
     m_clientSocket(std::move(socket))
 {
     m_session.setNextTickProgramReqCb(

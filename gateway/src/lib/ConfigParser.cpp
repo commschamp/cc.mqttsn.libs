@@ -15,22 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-#pragma once
-
-#include <memory>
-#include <list>
-
-#include "comms/CompileControl.h"
-
-CC_DISABLE_WARNINGS()
-#include <QtCore/QObject>
-#include <QtNetwork/QUdpSocket>
-CC_ENABLE_WARNINGS()
-
 #include "mqttsn/gateway/ConfigParser.h"
-#include "GatewayWrapper.h"
-#include "SessionWrapper.h"
+
+#include "ConfigParserImpl.h"
 
 namespace mqttsn
 {
@@ -38,43 +25,57 @@ namespace mqttsn
 namespace gateway
 {
 
-namespace app
+namespace
 {
 
-namespace udp
-{
+const std::string EmptyStr;
 
-class Mgr : public QObject
+}  // namespace
+
+ConfigParser::ConfigParser()
+  : m_pImpl(new ConfigParserImpl)
 {
-    Q_OBJECT
-public:
-    explicit Mgr(const ConfigParser& configParser)
-      : m_configParser(configParser),
-        m_gw(configParser)
-    {
+}
+
+ConfigParser::~ConfigParser() = default;
+
+void ConfigParser::parseConfig(std::istream& stream)
+{
+    m_pImpl->parseConfig(stream);
+}
+
+const ConfigParser::ConfigMap& ConfigParser::configMap() const
+{
+    return m_pImpl->configMap();
+}
+
+std::uint8_t ConfigParser::gatewayId() const
+{
+    return m_pImpl->gatewayId();
+}
+
+std::uint16_t ConfigParser::advertisePeriod() const
+{
+    return m_pImpl->advertisePeriod();
+}
+
+const std::string& ConfigParser::username() const
+{
+    auto& list = allUsernames();
+    if (list.empty()) {
+        return EmptyStr;
     }
 
-    bool start();
+    return list.front();
+}
 
-private slots:
-    void newConnection();
-
-private:
-    typedef SessionWrapper::ClientSocketPtr SocketPtr;
-    typedef unsigned short PortType;
-
-    bool doListen();
-
-    const ConfigParser& m_configParser;
-    PortType m_port = 0;
-    SocketPtr m_socket;
-    GatewayWrapper m_gw;
-};
-
-}  // namespace udp
-
-}  // namespace app
+const std::list<std::string>& ConfigParser::allUsernames() const
+{
+    return m_pImpl->allUsernames();
+}
 
 }  // namespace gateway
 
 }  // namespace mqttsn
+
+

@@ -31,8 +31,7 @@ bool GatewayImpl::start()
     if ((m_running) ||
         (!m_tickProgramCb) ||
         (!m_sendDataCb) ||
-        (m_advertisePeriod == 0U) ||
-        (m_gwId == 0U)) {
+        (m_advertisePeriod == 0U)) {
         return false;
     }
 
@@ -67,7 +66,6 @@ void GatewayImpl::refresh()
     auto& gwIdField = std::get<decltype(msg)::FieldIdx_gwId>(fields);
     auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
 
-    assert(m_gwId != 0U);
     assert(m_advertisePeriod != 0U);
     gwIdField.value() = m_gwId;
     durationField.value() = m_advertisePeriod;
