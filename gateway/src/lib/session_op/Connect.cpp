@@ -276,6 +276,14 @@ void Connect::doNextStep()
             return;
         }
 
+        if (m_clientId != st.m_clientId) {
+            assert(m_authInfoReqCb);
+            m_authInfo = m_authInfoReqCb(m_clientId);
+        }
+        else {
+            m_authInfo = std::make_pair(st.m_username, st.m_password);
+        }
+
         forwardConnectionReq();
         if (m_internalState.m_pubOnlyClient) {
             nextTickReq(state().m_retryPeriod);
@@ -322,14 +330,16 @@ void Connect::forwardConnectionReq()
         highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain, m_will.m_retain);
     }
 
-    if (!state().m_username.empty()) {
+    auto& username = m_authInfo.first;
+    if (!username.empty()) {
         auto& usernameField = std::get<decltype(msg)::FieldIdx_UserName>(fields);
-        usernameField.field().value() = state().m_username;
+        usernameField.field().value() = username;
         highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_UserNameFlag, true);
 
-        if (!state().m_password.empty()) {
+        auto& password = m_authInfo.second;
+        if (!password.empty()) {
             auto& passwordField = std::get<decltype(msg)::FieldIdx_Password>(fields);
-            passwordField.field().value() = state().m_password;
+            passwordField.field().value() = password;
             highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_PasswordFlag, true);
         }
     }
@@ -381,10 +391,12 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     if (sessionState.m_clientId != m_clientId) {
         sessionState.m_clientConnectionReported = false;
     }
-    sessionState.m_clientId = m_clientId;
+    sessionState.m_clientId = std::move(m_clientId);
     sessionState.m_connStatus = ConnectionStatus::Connected;
     sessionState.m_keepAlive = m_keepAlive;
     sessionState.m_will = m_will;
+    sessionState.m_username = std::move(m_authInfo.first);
+    sessionState.m_password = std::move(m_authInfo.second);
     clearInternalState();
 
     if (m_clean) {
@@ -397,6 +409,8 @@ void Connect::clearConnectionInfo(bool clearClientId)
     auto& sessionState = state();
     if (clearClientId) {
         sessionState.m_clientId.clear();
+        sessionState.m_username.clear();
+        sessionState.m_password.clear();
     }
     sessionState.m_connStatus = ConnectionStatus::Disconnected;
     sessionState.m_keepAlive = 0;
@@ -410,6 +424,7 @@ void Connect::clearInternalState()
     m_will = WillInfo();
     m_keepAlive = 0;
     m_clean = false;
+    m_authInfo = AuthInfo();
 }
 
 }  // namespace session_op

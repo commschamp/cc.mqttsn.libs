@@ -129,7 +129,17 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 
 SessionImpl::SessionImpl()
 {
-    m_ops.emplace_back(new session_op::Connect(m_state));
+    std::unique_ptr<session_op::Connect> connectOp(new session_op::Connect(m_state));
+    connectOp->setAuthInfoReqCb(
+        [this](const std::string& clientId) -> AuthInfo
+        {
+            if (!m_authInfoReqCb) {
+                return AuthInfo();
+            }
+
+            return m_authInfoReqCb(clientId);
+        });
+    m_ops.push_back(std::move(connectOp));
     m_ops.emplace_back(new session_op::Disconnect(m_state));
     m_ops.emplace_back(new session_op::Asleep(m_state));
     m_ops.emplace_back(new session_op::AsleepMonitor(m_state));

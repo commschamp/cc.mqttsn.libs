@@ -97,16 +97,6 @@ private:
         const DataBuf* password = nullptr)
     {
         SessionPtr session(new mqttsn::gateway::Session);
-        if (username != nullptr) {
-            std::size_t passLen = 0;
-            const std::uint8_t* passPtr = nullptr;
-            if (password != nullptr) {
-                passPtr = &((*password)[0]);
-                passLen = password->size();
-            }
-
-            session->setAuthInfo(*username, passPtr, passLen);
-        }
 
         session->setNextTickProgramReqCb(
             [&state](unsigned val) {
@@ -154,6 +144,21 @@ private:
             [&state](const std::string& clientId)
             {
                 state.m_connectedClients.push_back(clientId);
+            });
+
+        session->setAuthInfoReqCb(
+            [username, password](const std::string&) -> mqttsn::gateway::Session::AuthInfo
+            {
+                mqttsn::gateway::Session::AuthInfo info;
+                if (username == nullptr) {
+                    return info;
+                }
+
+                info.first = *username;
+                if (password != nullptr) {
+                    info.second = *password;
+                }
+                return info;
             });
 
         handler.setGwinfoMsgHandler(

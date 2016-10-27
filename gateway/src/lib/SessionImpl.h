@@ -40,12 +40,15 @@ class SessionImpl : public MsgHandler
 {
     typedef MsgHandler Base;
 public:
+    typedef Session::AuthInfo AuthInfo;
+
     typedef Session::NextTickProgramReqCb NextTickProgramReqCb;
     typedef Session::SendDataReqCb SendDataReqCb;
     typedef Session::CancelTickWaitReqCb CancelTickWaitReqCb;
     typedef Session::TerminationReqCb TerminationReqCb;
     typedef Session::BrokerReconnectReqCb BrokerReconnectReqCb;
     typedef Session::ClientConnectedReportCb ClientConnectedReportCb;
+    typedef Session::AuthInfoReqCb AuthInfoReqCb;
 
     SessionImpl();
     ~SessionImpl() = default;
@@ -93,21 +96,15 @@ public:
         m_clientConnectedCb = std::forward<TFunc>(func);
     }
 
+    template  <typename TFunc>
+    void setAuthInfoReqCb(TFunc&& func)
+    {
+        m_authInfoReqCb = std::forward<TFunc>(func);
+    }
+
     void setGatewayId(std::uint8_t value)
     {
         m_state.m_gwId = value;
-    }
-
-    void setAuthInfo(const std::string& username, const std::uint8_t* password, std::size_t passLen)
-    {
-        m_state.m_username = username;
-        m_state.m_password.assign(password, password + passLen);
-    }
-
-    void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen)
-    {
-        m_state.m_username = username;
-        m_state.m_password.assign(password, password + passLen);
     }
 
     void setRetryPeriod(unsigned value)
@@ -208,6 +205,7 @@ private:
     TerminationReqCb m_termReqCb;
     BrokerReconnectReqCb m_brokerReconnectReqCb;
     ClientConnectedReportCb m_clientConnectedCb;
+    AuthInfoReqCb m_authInfoReqCb;
 
     MqttsnProtStack m_mqttsnStack;
     MqttProtStack m_mqttStack;

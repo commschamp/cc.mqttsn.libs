@@ -21,6 +21,7 @@
 #include <memory>
 #include <functional>
 #include <cstdint>
+#include <vector>
 
 #include "mqttsn/gateway/Api.h"
 
@@ -35,12 +36,16 @@ class MQTTSN_GATEWAY_API Session
 {
 public:
 
+    typedef std::vector<std::uint8_t> BinaryData;
+    typedef std::pair<std::string, BinaryData> AuthInfo;
+
     typedef std::function<void (unsigned value)> NextTickProgramReqCb;
     typedef std::function<unsigned ()> CancelTickWaitReqCb;
     typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
     typedef std::function<void ()> TerminationReqCb;
     typedef std::function<void ()> BrokerReconnectReqCb;
     typedef std::function<void (const std::string&)> ClientConnectedReportCb;
+    typedef std::function<AuthInfo (const std::string& clientId)> AuthInfoReqCb;
 
 
     Session();
@@ -53,9 +58,8 @@ public:
     void setTerminationReqCb(TerminationReqCb&& func);
     void setBrokerReconnectReqCb(BrokerReconnectReqCb&& func);
     void setClientConnectedReportCb(ClientConnectedReportCb&& func);
+    void setAuthInfoReqCb(AuthInfoReqCb&& func);
     void setGatewayId(std::uint8_t value);
-    void setAuthInfo(const std::string& username, const std::uint8_t* password, std::size_t passLen);
-    void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen);
     void setRetryPeriod(unsigned value);
     void setRetryCount(unsigned value);
     void setSleepingClientMsgLimit(std::size_t value);

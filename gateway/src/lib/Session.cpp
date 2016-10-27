@@ -67,25 +67,14 @@ void Session::setClientConnectedReportCb(ClientConnectedReportCb&& func)
     m_pImpl->setClientConnectedReportCb(std::move(func));
 }
 
+void Session::setAuthInfoReqCb(AuthInfoReqCb&& func)
+{
+    m_pImpl->setAuthInfoReqCb(std::move(func));
+}
+
 void Session::setGatewayId(std::uint8_t value)
 {
     m_pImpl->setGatewayId(value);
-}
-
-void Session::setAuthInfo(
-    const std::string& username,
-    const std::uint8_t* password,
-    std::size_t passLen)
-{
-    m_pImpl->setAuthInfo(username, password, passLen);
-}
-
-void Session::setAuthInfo(
-    const char* username,
-    const std::uint8_t* password,
-    std::size_t passLen)
-{
-    m_pImpl->setAuthInfo(username, password, passLen);
 }
 
 void Session::setRetryPeriod(unsigned value)

@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "mqttsn/gateway/Session.h"
 #include "SessionOp.h"
 #include "common.h"
 
@@ -35,8 +36,16 @@ class Connect : public SessionOp
     typedef SessionOp Base;
 
 public:
+    typedef Session::AuthInfo AuthInfo;
+    typedef Session::AuthInfoReqCb AuthInfoReqCb;
     Connect(SessionState& sessionState);
     ~Connect();
+
+    template <typename TFunc>
+    void setAuthInfoReqCb(TFunc&& func)
+    {
+        m_authInfoReqCb = std::forward<TFunc>(func);
+    }
 
 protected:
     virtual void tickImpl() override;
@@ -67,10 +76,12 @@ private:
     void clearInternalState();
 
     std::string m_clientId;
+    AuthInfo m_authInfo;
     WillInfo m_will;
     std::uint16_t m_keepAlive = 0;
     bool m_clean = false;
     State m_internalState;
+    AuthInfoReqCb m_authInfoReqCb;
 };
 
 }  // namespace session_op
