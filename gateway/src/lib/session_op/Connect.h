@@ -37,9 +37,18 @@ class Connect : public SessionOp
 
 public:
     typedef Session::AuthInfo AuthInfo;
+
+    typedef Session::ClientConnectedReportCb ClientConnectedReportCb;
     typedef Session::AuthInfoReqCb AuthInfoReqCb;
+
     Connect(SessionState& sessionState);
     ~Connect();
+
+    template <typename TFunc>
+    void setClientConnectedReportCb(TFunc&& func)
+    {
+        m_clientConnectedCb = std::forward<TFunc>(func);
+    }
 
     template <typename TFunc>
     void setAuthInfoReqCb(TFunc&& func)
@@ -81,6 +90,7 @@ private:
     std::uint16_t m_keepAlive = 0;
     bool m_clean = false;
     State m_internalState;
+    ClientConnectedReportCb m_clientConnectedCb;
     AuthInfoReqCb m_authInfoReqCb;
 };
 

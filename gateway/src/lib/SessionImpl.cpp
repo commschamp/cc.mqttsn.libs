@@ -78,16 +78,6 @@ std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t l
             assert(msg);
             m_state.m_lastMsgTimestamp = m_state.m_timestamp;
             msg->dispatch(*this);
-
-            if ((!m_state.m_clientConnectionReported) &&
-                (m_state.m_connStatus == ConnectionStatus::Connected) &&
-                (!m_state.m_clientId.empty())) {
-
-                m_state.m_clientConnectionReported = true;
-                if (m_clientConnectedCb) {
-                    m_clientConnectedCb(m_state.m_clientId);
-                }
-            }
         }
 
         bufTmp = iter;
@@ -130,6 +120,13 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 SessionImpl::SessionImpl()
 {
     std::unique_ptr<session_op::Connect> connectOp(new session_op::Connect(m_state));
+    connectOp->setClientConnectedReportCb(
+        [this](const std::string& clientId)
+        {
+            if (m_clientConnectedCb) {
+                m_clientConnectedCb(clientId);
+            }
+        });
     connectOp->setAuthInfoReqCb(
         [this](const std::string& clientId) -> AuthInfo
         {
@@ -139,6 +136,7 @@ SessionImpl::SessionImpl()
 
             return m_authInfoReqCb(clientId);
         });
+
     m_ops.push_back(std::move(connectOp));
     m_ops.emplace_back(new session_op::Disconnect(m_state));
     m_ops.emplace_back(new session_op::Asleep(m_state));

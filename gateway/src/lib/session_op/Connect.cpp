@@ -389,7 +389,8 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
 
     auto& sessionState = state();
     if (sessionState.m_clientId != m_clientId) {
-        sessionState.m_clientConnectionReported = false;
+        assert(m_clientConnectedCb);
+        m_clientConnectedCb(m_clientId);
     }
     sessionState.m_clientId = std::move(m_clientId);
     sessionState.m_connStatus = ConnectionStatus::Connected;
