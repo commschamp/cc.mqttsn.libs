@@ -45,6 +45,7 @@ public:
     typedef Session::CancelTickWaitReqCb CancelTickWaitReqCb;
     typedef Session::TerminationReqCb TerminationReqCb;
     typedef Session::BrokerReconnectReqCb BrokerReconnectReqCb;
+    typedef Session::ClientConnectedReportCb ClientConnectedReportCb;
 
     SessionImpl();
     ~SessionImpl() = default;
@@ -84,6 +85,12 @@ public:
     void setBrokerReconnectReqCb(TFunc&& func)
     {
         m_brokerReconnectReqCb = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setClientConnectedReportCb(TFunc&& func)
+    {
+        m_clientConnectedCb = std::forward<TFunc>(func);
     }
 
     void setGatewayId(std::uint8_t value)
@@ -200,6 +207,7 @@ private:
     SendDataReqCb m_sendToBrokerCb;
     TerminationReqCb m_termReqCb;
     BrokerReconnectReqCb m_brokerReconnectReqCb;
+    ClientConnectedReportCb m_clientConnectedCb;
 
     MqttsnProtStack m_mqttsnStack;
     MqttProtStack m_mqttStack;

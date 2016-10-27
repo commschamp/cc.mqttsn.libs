@@ -40,6 +40,7 @@ public:
     typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
     typedef std::function<void ()> TerminationReqCb;
     typedef std::function<void ()> BrokerReconnectReqCb;
+    typedef std::function<void (const std::string&)> ClientConnectedReportCb;
 
 
     Session();
@@ -51,6 +52,7 @@ public:
     void setSendDataBrokerReqCb(SendDataReqCb&& func);
     void setTerminationReqCb(TerminationReqCb&& func);
     void setBrokerReconnectReqCb(BrokerReconnectReqCb&& func);
+    void setClientConnectedReportCb(ClientConnectedReportCb&& func);
     void setGatewayId(std::uint8_t value);
     void setAuthInfo(const std::string& username, const std::uint8_t* password, std::size_t passLen);
     void setAuthInfo(const char* username, const std::uint8_t* password, std::size_t passLen);

@@ -145,6 +145,7 @@ struct SessionState
     std::uint8_t m_gwId = 0U;
     std::string m_username;
     DataBuf m_password;
+    bool m_clientConnectionReported = false;
 
     std::list<PubInfoPtr> m_brokerPubs;
     RegMgr m_regMgr;

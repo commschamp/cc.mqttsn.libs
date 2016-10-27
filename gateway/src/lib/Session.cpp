@@ -62,6 +62,11 @@ void Session::setBrokerReconnectReqCb(BrokerReconnectReqCb&& func)
     m_pImpl->setBrokerReconnectReqCb(std::move(func));
 }
 
+void Session::setClientConnectedReportCb(ClientConnectedReportCb&& func)
+{
+    m_pImpl->setClientConnectedReportCb(std::move(func));
+}
+
 void Session::setGatewayId(std::uint8_t value)
 {
     m_pImpl->setGatewayId(value);

@@ -178,7 +178,7 @@ const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
             int base = 10;
             if ((2U < topicIdStr.size()) &&
                 (topicIdStr[0] == '0') &&
-                (topicIdStr[1] == 'x')) {
+                (static_cast<char>(std::tolower(topicIdStr[1])) == 'x')) {
                 base = 16;
             }
 

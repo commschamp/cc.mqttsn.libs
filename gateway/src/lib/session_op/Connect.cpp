@@ -372,12 +372,15 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     }
 
     if (retCode != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-        clearConnectionInfo();
+        clearConnectionInfo(true);
         clearInternalState();
         return;
     }
 
     auto& sessionState = state();
+    if (sessionState.m_clientId != m_clientId) {
+        sessionState.m_clientConnectionReported = false;
+    }
     sessionState.m_clientId = m_clientId;
     sessionState.m_connStatus = ConnectionStatus::Connected;
     sessionState.m_keepAlive = m_keepAlive;
@@ -389,10 +392,12 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     }
 }
 
-void Connect::clearConnectionInfo()
+void Connect::clearConnectionInfo(bool clearClientId)
 {
     auto& sessionState = state();
-    sessionState.m_clientId.clear();
+    if (clearClientId) {
+        sessionState.m_clientId.clear();
+    }
     sessionState.m_connStatus = ConnectionStatus::Disconnected;
     sessionState.m_keepAlive = 0;
     sessionState.m_will = WillInfo();

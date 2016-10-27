@@ -85,6 +85,12 @@ SessionWrapper::SessionWrapper(
             reconnectBroker();
         });
 
+    m_session.setClientConnectedReportCb(
+        [this](const std::string& clientId)
+        {
+            addPredefinedTopicsFor(clientId);
+        });
+
     m_session.setGatewayId(m_config.gatewayId());
     m_session.setRetryPeriod(m_config.retryPeriod());
     m_session.setRetryCount(m_config.retryCount());

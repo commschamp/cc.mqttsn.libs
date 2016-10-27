@@ -78,6 +78,16 @@ std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t l
             assert(msg);
             m_state.m_lastMsgTimestamp = m_state.m_timestamp;
             msg->dispatch(*this);
+
+            if ((!m_state.m_clientConnectionReported) &&
+                (m_state.m_connStatus == ConnectionStatus::Connected) &&
+                (!m_state.m_clientId.empty())) {
+
+                m_state.m_clientConnectionReported = true;
+                if (m_clientConnectedCb) {
+                    m_clientConnectedCb(m_state.m_clientId);
+                }
+            }
         }
 
         bufTmp = iter;

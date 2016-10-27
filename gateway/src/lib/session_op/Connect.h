@@ -63,7 +63,7 @@ private:
     void doNextStep();
     void forwardConnectionReq();
     void processAck(mqtt::message::ConnackResponseCode respCode);
-    void clearConnectionInfo();
+    void clearConnectionInfo(bool clearClientId = false);
     void clearInternalState();
 
     std::string m_clientId;

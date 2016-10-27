@@ -78,6 +78,7 @@ private:
         std::list<unsigned> m_elapsed;
         std::list<bool> m_termRequests;
         std::list<bool> m_brokerReconnectRequests;
+        std::list<std::string> m_connectedClients;
     };
 
     struct WillInfo
@@ -147,6 +148,12 @@ private:
             [&state]()
             {
                 state.m_brokerReconnectRequests.push_back(true);
+            });
+
+        session->setClientConnectedReportCb(
+            [&state](const std::string& clientId)
+            {
+                state.m_connectedClients.push_back(clientId);
             });
 
         handler.setGwinfoMsgHandler(
@@ -1415,6 +1422,18 @@ private:
         state.m_brokerReconnectRequests.pop_front();
     }
 
+    static void verifyConnectedClient(State& state, const std::string& clientId)
+    {
+        if (state.m_connectedClients.empty()) {
+            TS_FAIL("No connected clients recorded");
+            return;
+        }
+
+        TS_TRACE("[Connected client]: " + state.m_connectedClients.front());
+        TS_ASSERT_EQUALS(state.m_connectedClients.front(), clientId);
+        state.m_connectedClients.pop_front();
+    }
+
     static void verifyTermReq(State& state)
     {
         if (state.m_termRequests.empty()) {
@@ -1434,6 +1453,7 @@ private:
         TS_ASSERT(state.m_elapsed.empty());
         TS_ASSERT(state.m_termRequests.empty());
         TS_ASSERT(state.m_brokerReconnectRequests.empty());
+        TS_ASSERT(state.m_connectedClients.empty());
 
         while (!state.m_sentToClient.empty()) {
             handler.processDataForClient(state.m_sentToClient.front());
@@ -1501,6 +1521,7 @@ private:
         WillInfo* willInfo = nullptr,
         bool cleanSession = true,
         bool expectReconnect = false,
+        bool expectClientReport = true,
         const std::string& username = std::string(),
         const DataBuf& pass = DataBuf())
     {
@@ -1549,6 +1570,9 @@ private:
         auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
         dataFromBroker(session, connackMsg, "CONNACK");
         verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        if (expectClientReport) {
+            verifyConnectedClient(state, DefaultClientId);
+        }
         verifyNoOtherEvent(state, handler);
     }
 
@@ -1597,6 +1621,7 @@ void SessionTest::test2()
     auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyConnectedClient(state, ClientId);
     verifyNoOtherEvent(state, handler);
 }
 
@@ -1621,6 +1646,7 @@ void SessionTest::test3()
     auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyConnectedClient(state, ClientId);
     verifyNoOtherEvent(state, handler);
 
     dataFromClient(*session, connectMsg, "CONNECT");
@@ -2665,7 +2691,7 @@ void SessionTest::test22()
     verifyNoOtherEvent(state, handler);
 
     WillInfo will2;
-    doConnect(*session, state, handler, &will2, false, true);
+    doConnect(*session, state, handler, &will2, false, true, false);
 }
 
 void SessionTest::test23()
@@ -2686,7 +2712,7 @@ void SessionTest::test23()
     will1.m_qos = WillQos1;
     will1.m_retain = WillRetain1;
 
-    doConnect(*session, state, handler, &will1, true, false, Username, Pass);
+    doConnect(*session, state, handler, &will1, true, false, true, Username, Pass);
     verifyNoOtherEvent(state, handler);
 
     auto willTopicUpdMsg1 = handler.prepareClientWilltopicupd(WillTopic1, translateQos(WillQos1), WillRetain1);
@@ -2809,7 +2835,7 @@ void SessionTest::test24()
     will.m_qos = WillQos;
     will.m_retain = WillRetain;
 
-    doConnect(*session, state, handler, &will, true, false, Username, Pass);
+    doConnect(*session, state, handler, &will, true, false, true, Username, Pass);
     verifyNoOtherEvent(state, handler);
 
     auto willMsgUpdMsg1 = handler.prepareClientWillmsgupd(WillData1);
@@ -3010,6 +3036,7 @@ void SessionTest::test26()
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
     verifySentToBroker_PublishMsg(state, handler, Topic, Data2, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
+    verifyConnectedClient(state, ClientId);
     verifyNoOtherEvent(state, handler);
 
     dataFromClient(*session, pub1, "PUBLISH");
