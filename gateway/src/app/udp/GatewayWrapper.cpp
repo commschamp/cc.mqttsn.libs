@@ -31,8 +31,8 @@ namespace app
 namespace udp
 {
 
-GatewayWrapper::GatewayWrapper(const ConfigParser& configParser)
-  : m_configParser(configParser)
+GatewayWrapper::GatewayWrapper(const Config& config)
+  : m_config(config)
 {
     connect(
         &m_timer, SIGNAL(timeout()),
@@ -52,8 +52,8 @@ bool GatewayWrapper::start()
         return false;
     }
 
-    m_gw.setAdvertisePeriod(m_configParser.advertisePeriod());
-    m_gw.setGatewayId(m_configParser.gatewayId());
+    m_gw.setAdvertisePeriod(m_config.advertisePeriod());
+    m_gw.setGatewayId(m_config.gatewayId());
     m_gw.setNextTickProgramReqCb(
         [this](unsigned ms)
         {

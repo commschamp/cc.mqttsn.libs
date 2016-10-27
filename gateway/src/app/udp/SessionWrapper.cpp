@@ -37,15 +37,16 @@ namespace
 
 const QString BrokerHost;
 const unsigned short BrokerPort = 1883;
+const std::string WildcardStr("*");
 
 }  // namespace
 
 SessionWrapper::SessionWrapper(
-    const ConfigParser& configParser,
+    const Config& config,
     ClientSocketPtr socket,
     QObject* parent)
   : Base(parent),
-    m_configParser(configParser),
+    m_config(config),
     m_clientSocket(std::move(socket))
 {
     m_session.setNextTickProgramReqCb(
@@ -84,7 +85,13 @@ SessionWrapper::SessionWrapper(
             reconnectBroker();
         });
 
-    m_session.setGatewayId(1U);
+    m_session.setGatewayId(m_config.gatewayId());
+    m_session.setRetryPeriod(m_config.retryPeriod());
+    m_session.setRetryCount(m_config.retryCount());
+    m_session.setPubOnlyClientId(m_config.pubOnlyClientId());
+    m_session.setPubOnlyKeepAlive(m_config.pubOnlyKeepAlive());
+
+    addPredefinedTopicsFor(WildcardStr);
 
     connect(
         &m_timer, SIGNAL(timeout()),
@@ -310,6 +317,16 @@ void SessionWrapper::connectToBroker()
     }
 
     m_brokerSocket.connectToHost(host, BrokerPort);
+}
+
+void SessionWrapper::addPredefinedTopicsFor(const std::string& clientId)
+{
+    auto& predefinedTopics = m_config.predefinedTopics();
+    for (auto& t : predefinedTopics) {
+        if (t.clientId == clientId) {
+            m_session.addPredefinedTopic(t.topic, t.topicId);
+        }
+    }
 }
 
 }  // namespace udp

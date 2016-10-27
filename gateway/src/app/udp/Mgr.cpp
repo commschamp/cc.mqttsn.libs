@@ -43,7 +43,11 @@ bool Mgr::start()
 
     m_gw.setLocalPort(m_port);
     m_gw.setBroadcastPort(21000);
-    return m_gw.start();
+    if (m_config.advertisePeriod() != 0) {
+        return m_gw.start();
+    }
+
+    return true;
 }
 
 void Mgr::newConnection()
@@ -54,7 +58,7 @@ void Mgr::newConnection()
         this, SLOT(newConnection()));
 
     std::unique_ptr<SessionWrapper> session(
-        new SessionWrapper(m_configParser, std::move(m_socket), this));
+        new SessionWrapper(m_config, std::move(m_socket), this));
     if (session->start()) {
         session.release();
     }

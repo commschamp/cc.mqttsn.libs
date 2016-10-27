@@ -118,7 +118,7 @@ typedef std::unique_ptr<PubInfo> PubInfoPtr;
 
 struct SessionState
 {
-    static const unsigned DefaultRetryPeriod = 15 * 1000;
+    static const unsigned DefaultRetryPeriod = 10 * 1000;
     static const unsigned DefaultRetryCount = 3;
     static const Timestamp InitialTimestamp = 1000U;
     static const std::uint16_t DefaultKeepAlive = 60U;

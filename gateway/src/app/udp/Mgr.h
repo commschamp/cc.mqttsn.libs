@@ -28,7 +28,7 @@ CC_DISABLE_WARNINGS()
 #include <QtNetwork/QUdpSocket>
 CC_ENABLE_WARNINGS()
 
-#include "mqttsn/gateway/ConfigParser.h"
+#include "mqttsn/gateway/Config.h"
 #include "GatewayWrapper.h"
 #include "SessionWrapper.h"
 
@@ -48,9 +48,9 @@ class Mgr : public QObject
 {
     Q_OBJECT
 public:
-    explicit Mgr(const ConfigParser& configParser)
-      : m_configParser(configParser),
-        m_gw(configParser)
+    explicit Mgr(const Config& config)
+      : m_config(config),
+        m_gw(config)
     {
     }
 
@@ -65,7 +65,7 @@ private:
 
     bool doListen();
 
-    const ConfigParser& m_configParser;
+    const Config& m_config;
     PortType m_port = 0;
     SocketPtr m_socket;
     GatewayWrapper m_gw;

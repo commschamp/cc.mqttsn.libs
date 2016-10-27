@@ -29,7 +29,7 @@ CC_DISABLE_WARNINGS()
 CC_ENABLE_WARNINGS()
 
 #include "Mgr.h"
-#include "mqttsn/gateway/ConfigParser.h"
+#include "mqttsn/gateway/Config.h"
 
 namespace
 {
@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
     prepareCommandLineOptions(parser);
     parser.process(app);
 
-    mqttsn::gateway::ConfigParser configParser;
-    // TODO: parse configuration file
+    mqttsn::gateway::Config config;
+    // TODO: read configuration file
 
-    mqttsn::gateway::app::udp::Mgr gw(configParser);
+    mqttsn::gateway::app::udp::Mgr gw(config);
     if (!gw.start()) {
         std::cerr << "Failed to start!" << std::endl;
         return -1;

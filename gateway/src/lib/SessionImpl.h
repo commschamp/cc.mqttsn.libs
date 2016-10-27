@@ -131,7 +131,6 @@ public:
     bool start()
     {
         if ((m_state.m_running) ||
-            (m_state.m_gwId == 0U) ||
             (!m_nextTickProgramCb) ||
             (!m_cancelTickCb) ||
             (!m_sendToClientCb) ||

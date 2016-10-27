@@ -4,8 +4,8 @@ function (lib_mqttsn_gateway)
     set (src
         Gateway.cpp
         GatewayImpl.cpp
-        ConfigParser.cpp
-        ConfigParserImpl.cpp
+        Config.cpp
+        ConfigImpl.cpp
         Session.cpp
         SessionImpl.cpp
         RegMgr.cpp

@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <string>
 #include <list>
+#include <utility>
 
 #include "mqttsn/gateway/Api.h"
 
@@ -36,27 +37,41 @@ namespace mqttsn
 namespace gateway
 {
 
-class ConfigParserImpl;
-class MQTTSN_GATEWAY_API ConfigParser
+class ConfigImpl;
+class MQTTSN_GATEWAY_API Config
 {
 public:
 
     typedef std::multimap<std::string, std::string> ConfigMap;
     typedef std::vector<std::uint8_t> BinaryData;
 
-    ConfigParser();
-    ~ConfigParser();
+    struct PredefinedTopicInfo
+    {
+        std::string clientId;
+        std::string topic;
+        std::uint16_t topicId = 0;
+    };
+    typedef std::list<PredefinedTopicInfo> PredefinedTopicsList;
 
-    void parseConfig(std::istream& stream);
+    Config();
+    ~Config();
+
+    void read(std::istream& stream);
     const ConfigMap& configMap() const;
 
     std::uint8_t gatewayId() const;
     std::uint16_t advertisePeriod() const;
+    unsigned retryPeriod() const;
+    unsigned retryCount() const;
+    const std::string& pubOnlyClientId() const;
+    std::uint16_t pubOnlyKeepAlive() const;
+    const PredefinedTopicsList& predefinedTopics() const;
+
     const std::string& username() const;
     const std::list<std::string>& allUsernames() const;
 
 private:
-    std::unique_ptr<ConfigParserImpl> m_pImpl;
+    std::unique_ptr<ConfigImpl> m_pImpl;
 };
 
 }  // namespace gateway

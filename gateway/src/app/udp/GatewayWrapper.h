@@ -26,7 +26,7 @@ CC_DISABLE_WARNINGS()
 #include <QtNetwork/QUdpSocket>
 CC_ENABLE_WARNINGS()
 
-#include "mqttsn/gateway/ConfigParser.h"
+#include "mqttsn/gateway/Config.h"
 #include "mqttsn/gateway/Gateway.h"
 
 namespace mqttsn
@@ -47,7 +47,7 @@ class GatewayWrapper : public QObject
 public:
     typedef unsigned short PortType;
 
-    explicit GatewayWrapper(const ConfigParser& configParser);
+    explicit GatewayWrapper(const Config& config);
 
     void setLocalPort(PortType value)
     {
@@ -65,7 +65,7 @@ private slots:
     void tickTimeout();
 
 private:
-    const ConfigParser& m_configParser;
+    const Config& m_config;
     QUdpSocket m_socket;
     PortType m_localPort = 0;
     PortType m_broadcastPort = 0;

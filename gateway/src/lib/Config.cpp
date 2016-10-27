@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "mqttsn/gateway/ConfigParser.h"
+#include "mqttsn/gateway/Config.h"
 
-#include "ConfigParserImpl.h"
+#include "ConfigImpl.h"
 
 namespace mqttsn
 {
@@ -32,34 +32,59 @@ const std::string EmptyStr;
 
 }  // namespace
 
-ConfigParser::ConfigParser()
-  : m_pImpl(new ConfigParserImpl)
+Config::Config()
+  : m_pImpl(new ConfigImpl)
 {
 }
 
-ConfigParser::~ConfigParser() = default;
+Config::~Config() = default;
 
-void ConfigParser::parseConfig(std::istream& stream)
+void Config::read(std::istream& stream)
 {
-    m_pImpl->parseConfig(stream);
+    m_pImpl->read(stream);
 }
 
-const ConfigParser::ConfigMap& ConfigParser::configMap() const
+const Config::ConfigMap& Config::configMap() const
 {
     return m_pImpl->configMap();
 }
 
-std::uint8_t ConfigParser::gatewayId() const
+std::uint8_t Config::gatewayId() const
 {
     return m_pImpl->gatewayId();
 }
 
-std::uint16_t ConfigParser::advertisePeriod() const
+std::uint16_t Config::advertisePeriod() const
 {
     return m_pImpl->advertisePeriod();
 }
 
-const std::string& ConfigParser::username() const
+unsigned Config::retryPeriod() const
+{
+    return m_pImpl->retryPeriod();
+}
+
+unsigned Config::retryCount() const
+{
+    return m_pImpl->retryCount();
+}
+
+const std::string& Config::pubOnlyClientId() const
+{
+    return m_pImpl->pubOnlyClientId();
+}
+
+std::uint16_t Config::pubOnlyKeepAlive() const
+{
+    return m_pImpl->pubOnlyKeepAlive();
+}
+
+const Config::PredefinedTopicsList& Config::predefinedTopics() const
+{
+    return m_pImpl->predefinedTopics();
+}
+
+const std::string& Config::username() const
 {
     auto& list = allUsernames();
     if (list.empty()) {
@@ -69,7 +94,7 @@ const std::string& ConfigParser::username() const
     return list.front();
 }
 
-const std::list<std::string>& ConfigParser::allUsernames() const
+const std::list<std::string>& Config::allUsernames() const
 {
     return m_pImpl->allUsernames();
 }

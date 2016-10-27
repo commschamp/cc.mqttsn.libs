@@ -57,9 +57,6 @@ void GatewayTests::test1()
 
     static const std::uint16_t AdvPeriod = 10 * 60;
     gw.setAdvertisePeriod(AdvPeriod);
-    TS_ASSERT(!gw.start());
-    TS_ASSERT(data.empty());
-    TS_ASSERT(!tickRequested);
 
     static const std::uint8_t GwId = 5;
     expTickRequest = AdvPeriod * 1000;

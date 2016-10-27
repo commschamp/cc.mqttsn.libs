@@ -20,7 +20,7 @@
 
 #include <iostream>
 
-#include "mqttsn/gateway/ConfigParser.h"
+#include "mqttsn/gateway/Config.h"
 
 namespace mqttsn
 {
@@ -28,15 +28,17 @@ namespace mqttsn
 namespace gateway
 {
 
-class ConfigParserImpl
+class ConfigImpl
 {
 public:
-    typedef ConfigParser::ConfigMap ConfigMap;
+    typedef Config::ConfigMap ConfigMap;
+    typedef Config::PredefinedTopicInfo PredefinedTopicInfo;
+    typedef Config::PredefinedTopicsList PredefinedTopicsList;
 
-    ConfigParserImpl() = default;
-    ~ConfigParserImpl() = default;
+    ConfigImpl() = default;
+    ~ConfigImpl() = default;
 
-    void parseConfig(std::istream& stream);
+    void read(std::istream& stream);
 
     const ConfigMap& configMap() const
     {
@@ -47,6 +49,16 @@ public:
 
     std::uint16_t advertisePeriod() const;
 
+    unsigned retryPeriod() const;
+
+    unsigned retryCount() const;
+
+    const std::string& pubOnlyClientId() const;
+
+    std::uint16_t pubOnlyKeepAlive() const;
+
+    const PredefinedTopicsList& predefinedTopics() const;
+
     const std::list<std::string>& allUsernames() const;
 
 
@@ -54,7 +66,11 @@ private:
     template <typename T>
     T numericValue(const std::string& key, T defaultValue = T()) const;
 
+    const std::string& stringValue(const std::string& key, const std::string& defaultValue) const;
+    const std::string& stringValue(const std::string& key) const;
+
     ConfigMap m_map;
+    mutable PredefinedTopicsList m_topics;
     mutable std::list<std::string> m_usernames;
 };
 
