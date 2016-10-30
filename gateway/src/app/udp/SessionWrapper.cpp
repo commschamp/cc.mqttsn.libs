@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 namespace mqttsn
 {
@@ -91,11 +92,21 @@ SessionWrapper::SessionWrapper(
             addPredefinedTopicsFor(clientId);
         });
 
+    m_session.setAuthInfoReqCb(
+        [this](const std::string& clientId) -> AuthInfo
+        {
+            return getAuthInfoFor(clientId);
+        });
+
     m_session.setGatewayId(m_config.gatewayId());
     m_session.setRetryPeriod(m_config.retryPeriod());
     m_session.setRetryCount(m_config.retryCount());
     m_session.setPubOnlyClientId(m_config.pubOnlyClientId());
     m_session.setPubOnlyKeepAlive(m_config.pubOnlyKeepAlive());
+    m_session.setSleepingClientMsgLimit(m_config.sleepingClientMsgLimit());
+
+    auto topicIdAllocRange = m_config.topicIdAllocRange();
+    m_session.setTopicIdAllocationRange(topicIdAllocRange.first, topicIdAllocRange.second);
 
     addPredefinedTopicsFor(WildcardStr);
 
@@ -328,11 +339,89 @@ void SessionWrapper::connectToBroker()
 void SessionWrapper::addPredefinedTopicsFor(const std::string& clientId)
 {
     auto& predefinedTopics = m_config.predefinedTopics();
-    for (auto& t : predefinedTopics) {
-        if (t.clientId == clientId) {
-            m_session.addPredefinedTopic(t.topic, t.topicId);
+    auto iter = std::lower_bound(
+        predefinedTopics.begin(), predefinedTopics.end(), clientId,
+        [](const Config::PredefinedTopicsList::const_reference elem, const std::string& cId) -> bool
+        {
+            return elem.clientId < cId;
+        });
+
+    while (iter != predefinedTopics.end()) {
+        if (iter->clientId != clientId) {
+            return;
         }
+
+        m_session.addPredefinedTopic(iter->topic, iter->topicId);
+        ++iter;
     }
+}
+
+SessionWrapper::AuthInfo SessionWrapper::getAuthInfoFor(const std::string& clientId)
+{
+    auto& authInfos = m_config.authInfos();
+
+    auto findElemFunc =
+        [&authInfos](const std::string& cId) -> Config::AuthInfosList::const_iterator
+        {
+            return std::lower_bound(
+                authInfos.begin(), authInfos.end(), cId,
+                [](Config::AuthInfosList::const_reference elem, const std::string& val) -> bool
+                {
+                    return elem.clientId < val;
+                });
+        };
+
+    auto iter = findElemFunc(clientId);
+    if ((iter == authInfos.end()) ||
+        (iter->clientId != clientId)) {
+        iter = findElemFunc(WildcardStr);
+    }
+
+    if ((iter == authInfos.end()) ||
+        (iter->clientId != clientId)) {
+        return AuthInfo();
+    }
+
+    typedef decltype(m_session)::BinaryData BinaryData;
+    BinaryData data;
+    data.reserve(iter->password.size());
+
+    unsigned pos;
+    while (pos < iter->password.size()) {
+        auto remSize = iter->password.size() - pos;
+        const char* remStr = &iter->password[pos];
+
+        static const std::string BackSlashStr("\\");
+        if ((BackSlashStr.size() <= remSize) &&
+            (std::equal(BackSlashStr.begin(), BackSlashStr.end(), remStr))) {
+            data.push_back(static_cast<std::uint8_t>('\\'));
+            pos += BackSlashStr.size();
+            continue;
+        }
+
+        static const std::string HexNumStr("\\x");
+        static const std::size_t HexNumSize = HexNumStr.size() + 2;
+        if ((HexNumSize <= remSize) &&
+            (std::equal(HexNumStr.begin(), HexNumStr.end(), remStr))) {
+            try {
+                auto* numStrBegin = &remStr[2];
+                auto* numStrEnd = numStrBegin + 2;
+                std::string numStr(numStrBegin, numStrEnd);
+                auto byte = static_cast<std::uint8_t>(std::stoul(numStr));
+                data.push_back(byte);
+                pos += HexNumSize;
+                continue;
+            }
+            catch (...) {
+                // do nothing, fall through
+            }
+        }
+
+        data.push_back(static_cast<std::uint8_t>(iter->password[pos]));
+        ++pos;
+    }
+
+    return std::make_pair(iter->username, std::move(data));
 }
 
 }  // namespace udp

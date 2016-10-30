@@ -25,13 +25,6 @@ namespace mqttsn
 namespace gateway
 {
 
-namespace
-{
-
-const std::string EmptyStr;
-
-}  // namespace
-
 Config::Config()
   : m_pImpl(new ConfigImpl)
 {
@@ -79,24 +72,24 @@ std::uint16_t Config::pubOnlyKeepAlive() const
     return m_pImpl->pubOnlyKeepAlive();
 }
 
+std::size_t Config::sleepingClientMsgLimit() const
+{
+    return m_pImpl->sleepingClientMsgLimit();
+}
+
 const Config::PredefinedTopicsList& Config::predefinedTopics() const
 {
     return m_pImpl->predefinedTopics();
 }
 
-const std::string& Config::username() const
+const Config::AuthInfosList& Config::authInfos() const
 {
-    auto& list = allUsernames();
-    if (list.empty()) {
-        return EmptyStr;
-    }
-
-    return list.front();
+    return m_pImpl->authInfos();
 }
 
-const std::list<std::string>& Config::allUsernames() const
+Config::TopicIdsRange Config::topicIdAllocRange() const
 {
-    return m_pImpl->allUsernames();
+    return m_pImpl->topicIdAllocRange();
 }
 
 }  // namespace gateway

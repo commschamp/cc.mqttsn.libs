@@ -34,6 +34,10 @@ public:
     typedef Config::ConfigMap ConfigMap;
     typedef Config::PredefinedTopicInfo PredefinedTopicInfo;
     typedef Config::PredefinedTopicsList PredefinedTopicsList;
+    typedef Config::AuthInfo AuthInfo;
+    typedef Config::AuthInfosList AuthInfosList;
+    typedef Config::TopicIdsRange TopicIdsRange;
+
 
     ConfigImpl() = default;
     ~ConfigImpl() = default;
@@ -57,10 +61,12 @@ public:
 
     std::uint16_t pubOnlyKeepAlive() const;
 
+    std::size_t sleepingClientMsgLimit() const;
+
     const PredefinedTopicsList& predefinedTopics() const;
+    const AuthInfosList& authInfos() const;
 
-    const std::list<std::string>& allUsernames() const;
-
+    TopicIdsRange topicIdAllocRange() const;
 
 private:
     template <typename T>
@@ -71,7 +77,7 @@ private:
 
     ConfigMap m_map;
     mutable PredefinedTopicsList m_topics;
-    mutable std::list<std::string> m_usernames;
+    mutable AuthInfosList m_authInfos;
 };
 
 }  // namespace gateway

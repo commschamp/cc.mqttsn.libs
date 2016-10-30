@@ -51,7 +51,19 @@ public:
         std::string topic;
         std::uint16_t topicId = 0;
     };
-    typedef std::list<PredefinedTopicInfo> PredefinedTopicsList;
+    typedef std::vector<PredefinedTopicInfo> PredefinedTopicsList;
+
+    struct AuthInfo
+    {
+        std::string clientId;
+        std::string username;
+        std::string password;
+    };
+
+    typedef std::vector<AuthInfo> AuthInfosList;
+
+    typedef std::pair<std::uint16_t, std::uint16_t> TopicIdsRange;
+
 
     Config();
     ~Config();
@@ -65,10 +77,10 @@ public:
     unsigned retryCount() const;
     const std::string& pubOnlyClientId() const;
     std::uint16_t pubOnlyKeepAlive() const;
+    std::size_t sleepingClientMsgLimit() const;
     const PredefinedTopicsList& predefinedTopics() const;
-
-    const std::string& username() const;
-    const std::list<std::string>& allUsernames() const;
+    const AuthInfosList& authInfos() const;
+    TopicIdsRange topicIdAllocRange() const;
 
 private:
     std::unique_ptr<ConfigImpl> m_pImpl;

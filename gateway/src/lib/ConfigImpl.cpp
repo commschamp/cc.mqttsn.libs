@@ -19,6 +19,9 @@
 
 #include <string>
 #include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <limits>
 
 namespace mqttsn
 {
@@ -37,13 +40,19 @@ const std::string RetryPeriodKey("mqttsn_retry_period");
 const std::string RetryCountKey("mqttsn_retry_count");
 const std::string PubOnlyClientIdKey("mqttsn_pub_only_client_id");
 const std::string PubOnlyKeepAliveKey("mqttsn_pub_only_keep_alive");
+const std::string SleepingClientMsgLimitKey("mqttsn_sleeping_client_msg_limit");
 const std::string PredefinedTopicKey("mqttsn_predefined_topic");
-const std::string UsernameKey("mqttsn_username");
+const std::string AuthKey("mqttsn_auth");
+const std::string TopicIdAllocRangeKey("mqttsn_topic_id_alloc_range");
 
 const std::uint16_t DefaultAdvertise = 15 * 60;
 const unsigned DefaultRetryPeriod = 10;
 const unsigned DefaultRetryCount = 3;
 const std::uint16_t DefaultPubOnlyKeepAlive = 60;
+const std::size_t DefaultMsgLimit = std::numeric_limits<std::size_t>::max();
+const std::uint16_t DefaultMinTopicId = 1;
+const std::uint16_t DefaultMaxTopicId = 0xfffe;
+
 
 }  // namespace
 
@@ -133,6 +142,11 @@ std::uint16_t ConfigImpl::pubOnlyKeepAlive() const
     return numericValue<std::uint16_t>(PubOnlyKeepAliveKey, DefaultPubOnlyKeepAlive);
 }
 
+std::size_t ConfigImpl::sleepingClientMsgLimit() const
+{
+    return numericValue<std::size_t>(SleepingClientMsgLimitKey, DefaultMsgLimit);
+}
+
 const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
 {
     if (!m_topics.empty()) {
@@ -145,6 +159,7 @@ const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
     }
 
     decltype(m_topics) topicsList;
+    topicsList.reserve(std::distance(topics.first, topics.second));
     for (auto iter = topics.first; iter != topics.second; ++iter) {
         try {
             auto& valStr = iter->second;
@@ -199,24 +214,145 @@ const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
         }
     }
 
+    std::sort(
+        topicsList.begin(), topicsList.end(),
+        [this](PredefinedTopicsList::const_reference elem1, PredefinedTopicsList::const_reference elem2) -> bool
+        {
+            return elem1.clientId < elem2.clientId;
+        });
     m_topics.swap(topicsList);
     return m_topics;
 }
 
-const std::list<std::string>& ConfigImpl::allUsernames() const
+const ConfigImpl::AuthInfosList& ConfigImpl::authInfos() const
 {
-    if (!m_usernames.empty()) {
-        return m_usernames;
+    if (!m_authInfos.empty()) {
+        return m_authInfos;
     }
 
-    auto result = m_map.equal_range(UsernameKey);
-    std::transform(
-        result.first, result.second, std::back_inserter(m_usernames),
-        [](ConfigMap::const_reference elem) -> const std::string&
+    auto auth = m_map.equal_range(AuthKey);
+    if (auth.first == auth.second) {
+        return m_authInfos;
+    }
+
+    decltype(m_authInfos) authInfos;
+    authInfos.reserve(std::distance(auth.first, auth.second));
+    for (auto iter = auth.first; iter != auth.second; ++iter) {
+        auto& valStr = iter->second;
+
+        AuthInfo info;
+        do {
+            auto firstSpacePos = valStr.find_first_of(SpaceChars);
+            if (firstSpacePos == std::string::npos) {
+                info.clientId = valStr;
+                break;
+            }
+
+            info.clientId.assign(valStr.begin(), valStr.begin() + firstSpacePos);
+            auto usernamePos = valStr.find_first_not_of(SpaceChars, firstSpacePos + 1);
+            if (usernamePos == std::string::npos) {
+                break;
+            }
+
+            auto secondSpacePos = valStr.find_first_of(SpaceChars, usernamePos + 1);
+            if (secondSpacePos == std::string::npos) {
+                info.username.assign(valStr.begin() + usernamePos, valStr.end());
+                break;
+            }
+
+            info.username.assign(valStr.begin() + usernamePos, valStr.begin() + secondSpacePos);
+
+            auto passwordPos = valStr.find_first_not_of(SpaceChars, secondSpacePos + 1);
+            if (passwordPos == std::string::npos) {
+                break;
+            }
+
+            auto endOfPasswordPos = valStr.find_last_not_of(SpaceChars) + 1;
+            assert(passwordPos < endOfPasswordPos);
+            info.password.assign(valStr.begin() + passwordPos, valStr.begin() + endOfPasswordPos);
+        } while (false);
+
+        if (!info.clientId.empty()) {
+            authInfos.push_back(std::move(info));
+        }
+    }
+
+    std::sort(
+        authInfos.begin(), authInfos.end(),
+        [this](AuthInfosList::const_reference elem1, AuthInfosList::const_reference elem2) -> bool
         {
-            return elem.second;
+            return elem1.clientId < elem2.clientId;
         });
-    return m_usernames;
+
+    m_authInfos.swap(authInfos);
+    return m_authInfos;
+}
+
+ConfigImpl::TopicIdsRange ConfigImpl::topicIdAllocRange() const
+{
+    auto minVal = DefaultMinTopicId;
+    auto maxVal = DefaultMaxTopicId;
+    do {
+        auto iter = m_map.find(TopicIdAllocRangeKey);
+        if (iter == m_map.end()) {
+            break;
+        }
+
+        auto& valStr = iter->second;
+        if (valStr.empty()) {
+            break;
+        }
+
+        std::string minNumStr;
+        auto firstSpacePos = valStr.find_first_of(SpaceChars);
+        if (firstSpacePos == std::string::npos) {
+            minNumStr = valStr;
+        }
+        else {
+            minNumStr.assign(valStr.begin(), valStr.begin() + firstSpacePos);
+        }
+
+        try {
+            minVal = static_cast<decltype(minVal)>(std::stoul(minNumStr));
+        }
+        catch (...) {
+            // Nothing to do
+        }
+
+        if (firstSpacePos == std::string::npos) {
+            break;
+        }
+
+
+        auto maxNumPos = valStr.find_first_not_of(SpaceChars, firstSpacePos + 1);
+        if (maxNumPos == std::string::npos) {
+            break;
+        }
+
+        std::string maxNumStr;
+        auto secondSpacePos = valStr.find_first_of(SpaceChars, maxNumPos + 1);
+        if (secondSpacePos == std::string::npos) {
+            maxNumStr.assign(valStr.begin() + maxNumPos, valStr.end());
+        }
+        else {
+            maxNumStr.assign(valStr.begin() + maxNumPos, valStr.begin() + secondSpacePos);
+        }
+
+        try {
+            maxVal = static_cast<decltype(minVal)>(std::stoul(maxNumStr));
+        }
+        catch (...) {
+            // Nothing to do
+        }
+    } while (false);
+
+    if (maxVal < minVal) {
+        std::swap(minVal, maxVal);
+    }
+
+    minVal = std::max(DefaultMinTopicId, minVal);
+    maxVal = std::min(DefaultMaxTopicId, maxVal);
+    return std::make_pair(minVal, maxVal);
 }
 
 const std::string& ConfigImpl::stringValue(

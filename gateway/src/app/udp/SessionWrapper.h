@@ -54,6 +54,7 @@ class SessionWrapper : public QObject
 public:
     typedef std::unique_ptr<QUdpSocket> ClientSocketPtr;
     typedef unsigned short PortType;
+    typedef mqttsn::gateway::Session::AuthInfo AuthInfo;
 
     SessionWrapper(const Config& config, ClientSocketPtr socket, QObject* parent);
     ~SessionWrapper();
@@ -80,6 +81,7 @@ private:
     void reconnectBroker();
     void connectToBroker();
     void addPredefinedTopicsFor(const std::string& clientId);
+    AuthInfo getAuthInfoFor(const std::string& clientId);
 
     const Config& m_config;
     ClientSocketPtr m_clientSocket;
