@@ -18,6 +18,9 @@
 
 #pragma once
 
+#include <vector>
+#include <cstdint>
+
 #include "comms/CompileControl.h"
 
 CC_DISABLE_WARNINGS()
@@ -59,6 +62,8 @@ public:
         m_broadcastPort = value;
     }
 
+    bool isSelfAdvertise(const std::uint8_t* buf, std::size_t bufLen) const;
+
     bool start();
 
 private slots:
@@ -71,6 +76,7 @@ private:
     PortType m_broadcastPort = 0;
     mqttsn::gateway::Gateway m_gw;
     QTimer m_timer;
+    std::vector<std::uint8_t> m_lastAdvertise;
 };
 
 }  // namespace udp

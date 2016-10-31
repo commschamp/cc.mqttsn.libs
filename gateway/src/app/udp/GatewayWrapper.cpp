@@ -18,6 +18,7 @@
 #include "GatewayWrapper.h"
 
 #include <iostream>
+#include <algorithm>
 
 namespace mqttsn
 {
@@ -37,6 +38,13 @@ GatewayWrapper::GatewayWrapper(const Config& config)
     connect(
         &m_timer, SIGNAL(timeout()),
         this, SLOT(tickTimeout()));
+}
+
+bool GatewayWrapper::isSelfAdvertise(const std::uint8_t* buf, std::size_t bufLen) const
+{
+    return
+        ((m_lastAdvertise.size() == bufLen) &&
+         (std::equal(m_lastAdvertise.begin(), m_lastAdvertise.end(), buf)));
 }
 
 bool GatewayWrapper::start()
@@ -64,6 +72,7 @@ bool GatewayWrapper::start()
     m_gw.setSendDataReqCb(
         [this](const std::uint8_t* buf, std::size_t bufSize)
         {
+            m_lastAdvertise.assign(buf, buf + bufSize);
             PortType broadcastPort = m_broadcastPort;
             if (broadcastPort == 0) {
                 broadcastPort = m_localPort;

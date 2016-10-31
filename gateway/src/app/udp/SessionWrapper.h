@@ -59,7 +59,9 @@ public:
     SessionWrapper(const Config& config, ClientSocketPtr socket, QObject* parent);
     ~SessionWrapper();
 
-    bool start();
+    typedef std::function<bool (const std::uint8_t*, std::size_t)> SelfAdvertiseCheckFunc;
+
+    bool start(const SelfAdvertiseCheckFunc& checkFunc);
 
 private slots:
     void tickTimeout();
@@ -73,6 +75,7 @@ private slots:
 private:
     typedef std::vector<std::uint8_t> DataBuf;
 
+    bool readFromClientSocket(const SelfAdvertiseCheckFunc& checkFunc);
     void programNextTick(unsigned ms);
     unsigned cancelTick();
     void sendDataToClient(const std::uint8_t* buf, std::size_t bufSize);

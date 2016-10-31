@@ -134,15 +134,19 @@ SessionWrapper::~SessionWrapper()
     std::cout << __FUNCTION__ << std::endl;
 }
 
-bool SessionWrapper::start()
+bool SessionWrapper::start(const SelfAdvertiseCheckFunc& checkFunc)
 {
     if (!m_session.start()) {
         std::cerr << "Failed to start new session" << std::endl;
         return false;
     }
 
+    if (!readFromClientSocket(checkFunc)) {
+        std::cout << "Self advertise discovered" << std::endl;
+        return false;
+    }
+
     connectToBroker();
-    readFromClientSocket();
 
     connect(
         m_clientSocket.get(), SIGNAL(readyRead()),
@@ -164,25 +168,13 @@ void SessionWrapper::readFromClientSocket()
 {
     assert(m_clientSocket);
     DataBuf data;
-    QHostAddress senderAddress;
-    quint16 senderPort;
 
     while (m_clientSocket->hasPendingDatagrams()) {
         data.resize(m_clientSocket->pendingDatagramSize());
         auto readBytes = m_clientSocket->readDatagram(
             reinterpret_cast<char*>(&data[0]),
-            data.size(),
-            &senderAddress,
-            &senderPort);
+            data.size());
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
-
-        if (m_clientSocket->state() != QUdpSocket::ConnectedState) {
-            m_clientSocket->connectToHost(senderAddress, senderPort);
-            m_clientSocket->waitForConnected();
-            assert(m_clientSocket->isOpen());
-            assert(m_clientSocket->state() == QUdpSocket::ConnectedState);
-        }
-
         m_session.dataFromClient(&data[0], readBytes);
     }
 }
@@ -242,6 +234,41 @@ void SessionWrapper::brokerSocketErrorOccurred(QAbstractSocket::SocketError err)
     std::cout << "ERROR: TCP Socket: " << m_brokerSocket.errorString().toStdString() << std::endl;
 }
 
+bool SessionWrapper::readFromClientSocket(const SelfAdvertiseCheckFunc& checkFunc)
+{
+    assert(m_clientSocket);
+    DataBuf data;
+    QHostAddress senderAddress;
+    quint16 senderPort;
+
+    bool dispatchedData = false;
+
+    while (m_clientSocket->hasPendingDatagrams()) {
+        data.resize(m_clientSocket->pendingDatagramSize());
+        auto readBytes = m_clientSocket->readDatagram(
+            reinterpret_cast<char*>(&data[0]),
+            data.size(),
+            &senderAddress,
+            &senderPort);
+        assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+
+        if (m_clientSocket->state() != QUdpSocket::ConnectedState) {
+            m_clientSocket->connectToHost(senderAddress, senderPort);
+            m_clientSocket->waitForConnected();
+            assert(m_clientSocket->isOpen());
+            assert(m_clientSocket->state() == QUdpSocket::ConnectedState);
+        }
+
+        if (checkFunc && checkFunc(&data[0], readBytes)) {
+            continue;
+        }
+
+        m_session.dataFromClient(&data[0], readBytes);
+        dispatchedData = true;
+    }
+
+    return dispatchedData;
+}
 
 void SessionWrapper::programNextTick(unsigned ms)
 {

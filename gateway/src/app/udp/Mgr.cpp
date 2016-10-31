@@ -97,9 +97,15 @@ void Mgr::newConnection()
         m_socket.get(), SIGNAL(readyRead()),
         this, SLOT(newConnection()));
 
+    auto selfAdvertiseCheck =
+        [this](const std::uint8_t* buf, std::size_t bufSize) -> bool
+        {
+            return m_gw.isSelfAdvertise(buf, bufSize);
+        };
+
     std::unique_ptr<SessionWrapper> session(
         new SessionWrapper(m_config, std::move(m_socket), this));
-    if (session->start()) {
+    if (session->start(selfAdvertiseCheck)) {
         session.release();
     }
 
