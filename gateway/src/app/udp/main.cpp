@@ -17,6 +17,7 @@
 
 
 #include <iostream>
+#include <fstream>
 
 #include "comms/CompileControl.h"
 
@@ -34,9 +35,19 @@ CC_ENABLE_WARNINGS()
 namespace
 {
 
+const QString ConfigOptStr("config");
+
 void prepareCommandLineOptions(QCommandLineParser& parser)
 {
     parser.addHelpOption();
+
+    QCommandLineOption configOpt(
+        QStringList() << "c" << ConfigOptStr,
+        QCoreApplication::translate("main", "Configuration file."),
+        QCoreApplication::translate("main", "filename")
+    );
+    parser.addOption(configOpt);
+
 }
 
 }  // namespace
@@ -49,7 +60,21 @@ int main(int argc, char *argv[])
     parser.process(app);
 
     mqttsn::gateway::Config config;
-    // TODO: read configuration file
+    do {
+        if (!parser.isSet(ConfigOptStr)) {
+            break;
+        }
+
+        auto configFile = parser.value(ConfigOptStr).toStdString();
+        std::ifstream stream(configFile);
+        if (!stream) {
+            std::cerr << "WARNING: Failed to open configuration file \"" <<
+                configFile << "\", using default configuration." << std::endl;
+            break;
+        }
+
+        config.read(stream);
+    } while (false);
 
     mqttsn::gateway::app::udp::Mgr gw(config);
     if (!gw.start()) {

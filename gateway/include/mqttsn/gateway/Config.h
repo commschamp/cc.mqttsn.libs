@@ -81,6 +81,8 @@ public:
     const PredefinedTopicsList& predefinedTopics() const;
     const AuthInfosList& authInfos() const;
     TopicIdsRange topicIdAllocRange() const;
+    const std::string& brokerTcpHostAddress() const;
+    std::uint16_t brokerTcpHostPort() const;
 
 private:
     std::unique_ptr<ConfigImpl> m_pImpl;

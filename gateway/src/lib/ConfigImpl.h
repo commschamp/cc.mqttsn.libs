@@ -68,16 +68,22 @@ public:
 
     TopicIdsRange topicIdAllocRange() const;
 
+    const std::string& brokerTcpHostAddress() const;
+    std::uint16_t brokerTcpHostPort() const;
+
 private:
     template <typename T>
     T numericValue(const std::string& key, T defaultValue = T()) const;
 
     const std::string& stringValue(const std::string& key, const std::string& defaultValue) const;
     const std::string& stringValue(const std::string& key) const;
+    void readBrokerAddrInfo() const;
 
     ConfigMap m_map;
     mutable PredefinedTopicsList m_topics;
     mutable AuthInfosList m_authInfos;
+    mutable std::string m_brokerAddress;
+    mutable std::uint16_t m_brokerPort = 0;
 };
 
 }  // namespace gateway

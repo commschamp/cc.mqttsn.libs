@@ -204,7 +204,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
                 std::any_of(topic->begin(), topic->end(),
                     [](char ch) -> bool
                     {
-                        return (ch == '*') || (ch == '+');
+                        return (ch == '#') || (ch == '+');
                     });
 
             if (hasWildcards) {

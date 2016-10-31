@@ -32,22 +32,62 @@ namespace app
 namespace udp
 {
 
+namespace
+{
+
+const std::string UdpListenPortKey("udp_listen_port");
+const std::string UdpBroadcastPortKey("udp_broadcast_port");
+const std::string SpaceChars(" \t");
+const std::uint16_t DefaultListenPort = 1883;
+const std::uint16_t DefaultBroadcastPort = 1883;
+
+std::uint16_t getPortInfo(
+    const Config& config,
+    const std::string& key,
+    std::uint16_t defaultValue)
+{
+    auto& map = config.configMap();
+    auto iter = map.find(key);
+    if ((iter == map.end()) ||
+        (iter->second.empty())) {
+        return defaultValue;
+    }
+
+    try {
+        auto& valStr = iter->second;
+        auto spacePos = valStr.find_first_of(SpaceChars);
+        if (spacePos == std::string::npos) {
+            return static_cast<std::uint16_t>(std::stoul(valStr));
+        }
+
+
+        std::string portStr(valStr.begin(), valStr.begin() + spacePos);
+        return static_cast<std::uint16_t>(std::stoul(portStr));
+    }
+    catch (...) {
+        // nothing to do
+    }
+
+    return defaultValue;
+}
+
+}  // namespace
+
 bool Mgr::start()
 {
-    m_port = 20000;
-
+    m_port = getPortInfo(m_config, UdpListenPortKey, DefaultListenPort);
     if (!doListen()) {
         std::cerr << "ERROR: Failed to listen to incomming connections" << std::endl;
         return false;
     }
 
-    m_gw.setLocalPort(m_port);
-    m_gw.setBroadcastPort(21000);
-    if (m_config.advertisePeriod() != 0) {
-        return m_gw.start();
+    if (m_config.advertisePeriod() == 0) {
+        return true;
     }
 
-    return true;
+    m_gw.setLocalPort(m_port);
+    m_gw.setBroadcastPort(getPortInfo(m_config, UdpBroadcastPortKey, DefaultBroadcastPort));
+    return m_gw.start();
 }
 
 void Mgr::newConnection()

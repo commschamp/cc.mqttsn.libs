@@ -44,6 +44,7 @@ const std::string SleepingClientMsgLimitKey("mqttsn_sleeping_client_msg_limit");
 const std::string PredefinedTopicKey("mqttsn_predefined_topic");
 const std::string AuthKey("mqttsn_auth");
 const std::string TopicIdAllocRangeKey("mqttsn_topic_id_alloc_range");
+const std::string BrokerKey("mqttsn_broker");
 
 const std::uint16_t DefaultAdvertise = 15 * 60;
 const unsigned DefaultRetryPeriod = 10;
@@ -52,7 +53,8 @@ const std::uint16_t DefaultPubOnlyKeepAlive = 60;
 const std::size_t DefaultMsgLimit = std::numeric_limits<std::size_t>::max();
 const std::uint16_t DefaultMinTopicId = 1;
 const std::uint16_t DefaultMaxTopicId = 0xfffe;
-
+const std::string DefaultBrokerAddress("127.0.0.1");
+const std::uint16_t DefaultBrokerPort = 1883;
 
 }  // namespace
 
@@ -355,6 +357,26 @@ ConfigImpl::TopicIdsRange ConfigImpl::topicIdAllocRange() const
     return std::make_pair(minVal, maxVal);
 }
 
+const std::string& ConfigImpl::brokerTcpHostAddress() const
+{
+    if (m_brokerAddress.empty()) {
+        readBrokerAddrInfo();
+    }
+
+    assert(!m_brokerAddress.empty());
+    return m_brokerAddress;
+}
+
+std::uint16_t ConfigImpl::brokerTcpHostPort() const
+{
+    if (m_brokerPort == 0) {
+        readBrokerAddrInfo();
+    }
+
+    assert(m_brokerPort != 0);
+    return m_brokerPort;
+}
+
 const std::string& ConfigImpl::stringValue(
     const std::string& key,
     const std::string& defaultValue) const
@@ -372,6 +394,44 @@ const std::string& ConfigImpl::stringValue(
 {
     static const std::string EmptyString;
     return stringValue(key, EmptyString);
+}
+
+void ConfigImpl::readBrokerAddrInfo() const
+{
+    m_brokerAddress = DefaultBrokerAddress;
+    m_brokerPort = DefaultBrokerPort;
+
+    auto iter = m_map.find(BrokerKey);
+    if (iter == m_map.end()) {
+        return;
+    }
+
+    auto& valStr = iter->second;
+    auto firstSpacePos = valStr.find_first_of(SpaceChars);
+    if (firstSpacePos == std::string::npos) {
+        m_brokerAddress = valStr;
+        return;
+    }
+
+    m_brokerAddress.assign(valStr.begin(), valStr.begin() + firstSpacePos);
+
+    auto portPos = valStr.find_first_not_of(SpaceChars, firstSpacePos + 1);
+    if (portPos == std::string::npos) {
+        return;
+    }
+
+    std::string portStr(valStr.begin() + portPos, valStr.end());
+    auto secondSpacePos = valStr.find_first_of(SpaceChars);
+    if (secondSpacePos != std::string::npos) {
+        portStr.assign(valStr.begin() + portPos, valStr.begin() + secondSpacePos);
+    }
+
+    try {
+        m_brokerPort = static_cast<decltype(m_brokerPort)>(std::stoul(portStr));
+    }
+    catch (...) {
+        // Nothing to do
+    }
 }
 
 }  // namespace gateway

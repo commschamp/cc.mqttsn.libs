@@ -92,6 +92,17 @@ Config::TopicIdsRange Config::topicIdAllocRange() const
     return m_pImpl->topicIdAllocRange();
 }
 
+const std::string& Config::brokerTcpHostAddress() const
+{
+    return m_pImpl->brokerTcpHostAddress();
+}
+
+std::uint16_t Config::brokerTcpHostPort() const
+{
+    return m_pImpl->brokerTcpHostPort();
+}
+
+
 }  // namespace gateway
 
 }  // namespace mqttsn

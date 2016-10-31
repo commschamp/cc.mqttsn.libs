@@ -36,8 +36,6 @@ namespace udp
 namespace
 {
 
-const QString BrokerHost;
-const unsigned short BrokerPort = 1883;
 const std::string WildcardStr("*");
 
 }  // namespace
@@ -109,6 +107,8 @@ SessionWrapper::SessionWrapper(
     m_session.setTopicIdAllocationRange(topicIdAllocRange.first, topicIdAllocRange.second);
 
     addPredefinedTopicsFor(WildcardStr);
+
+    // TODO: broker info
 
     connect(
         &m_timer, SIGNAL(timeout()),
@@ -327,13 +327,9 @@ void SessionWrapper::reconnectBroker()
 
 void SessionWrapper::connectToBroker()
 {
-    QString host = BrokerHost;
-
-    if (host.isEmpty()) {
-        host = QHostAddress(QHostAddress::LocalHost).toString();
-    }
-
-    m_brokerSocket.connectToHost(host, BrokerPort);
+    auto host = QString::fromStdString(m_config.brokerTcpHostAddress());
+    auto port = m_config.brokerTcpHostPort();
+    m_brokerSocket.connectToHost(host, port);
 }
 
 void SessionWrapper::addPredefinedTopicsFor(const std::string& clientId)
