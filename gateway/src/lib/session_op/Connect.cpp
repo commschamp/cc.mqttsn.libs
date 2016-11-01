@@ -143,6 +143,9 @@ void Connect::handle(WilltopicMsg_SN& msg)
     if (m_will.m_topic.empty()) {
         m_internalState.m_hasWillMsg = true;
     }
+    else if (state().m_connStatus == ConnectionStatus::Connected) {
+        sendToBroker(PingreqMsg());
+    }
 
     doNextStep();
 }

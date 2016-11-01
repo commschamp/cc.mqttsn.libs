@@ -86,10 +86,12 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
 
     if (m_op == Op::MsgUpd) {
         sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+        sendToBroker(PingreqMsg());
         return;
     }
 
     if (m_op == Op::TopicUpd) {
+        sendToBroker(PingreqMsg());
         return;
     }
 
@@ -109,6 +111,7 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
         (st.m_will.m_qos == qos) &&
         (st.m_will.m_retain == retain)) {
         sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        sendToBroker(PingreqMsg());
         return;
     }
 
@@ -129,10 +132,12 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
 
     if (m_op == Op::TopicUpd) {
         sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+        sendToBroker(PingreqMsg());
         return;
     }
 
     if (m_op == Op::MsgUpd) {
+        sendToBroker(PingreqMsg());
         return;
     }
 
@@ -143,6 +148,7 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
     auto& st = state();
     if (st.m_will.m_msg == msgField.value()) {
         sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        sendToBroker(PingreqMsg());
         return;
     }
 

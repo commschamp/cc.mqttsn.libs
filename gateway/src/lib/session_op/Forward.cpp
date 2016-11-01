@@ -93,6 +93,7 @@ void Forward::handle(PublishMsg_SN& msg)
             topicIdField.value(),
             msgIdField.value(),
             mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+        sendToBroker(PingreqMsg());
         return;
     }
 
@@ -197,6 +198,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
 
             if (topic->empty()) {
                 sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+                sendToBroker(PingreqMsg());
                 return;
             }
 
@@ -226,6 +228,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
         }
 
         sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+        sendToBroker(PingreqMsg());
         return;
     } while (false);
 

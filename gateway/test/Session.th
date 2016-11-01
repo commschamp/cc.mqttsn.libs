@@ -1921,6 +1921,7 @@ void SessionTest::test9()
     auto registerMsg = handler.prepareClientRegister(Topic, MsgId);
     dataFromClient(*session, registerMsg, "REGISTER");
     auto topicId = verifySentToClient_RegackMsg(state, handler, MsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_LESS_THAN_EQUALS(DefaultMinTopicId, topicId);
     TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
     verifyNoOtherEvent(state, handler);
@@ -1928,6 +1929,7 @@ void SessionTest::test9()
     auto registerMsg2 = handler.prepareClientRegister(Topic, MsgId + 1);
     dataFromClient(*session, registerMsg2, "REGISTER");
     auto topicId2 = verifySentToClient_RegackMsg(state, handler, MsgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_EQUALS(topicId, topicId2);
     verifyNoOtherEvent(state, handler);
 }
@@ -1949,6 +1951,7 @@ void SessionTest::test10()
     auto registerMsg = handler.prepareClientRegister(Topic2, MsgId);
     dataFromClient(*session, registerMsg, "REGISTER");
     auto topicId = verifySentToClient_RegackMsg(state, handler, MsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_LESS_THAN_EQUALS(DefaultMinTopicId, topicId);
     TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
     TS_ASSERT_DIFFERS(topicId, TopicId1);
@@ -1957,6 +1960,7 @@ void SessionTest::test10()
     auto registerMsg2 = handler.prepareClientRegister(Topic1, MsgId + 1);
     dataFromClient(*session, registerMsg2, "REGISTER");
     auto topicId2 = verifySentToClient_RegackMsg(state, handler, MsgId + 1, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_EQUALS(topicId2, TopicId1);
     verifyNoOtherEvent(state, handler);
 }
@@ -2331,6 +2335,7 @@ void SessionTest::test17()
     auto registerMsg = handler.prepareClientRegister(Topic, MsgId);
     dataFromClient(*session, registerMsg, "REGISTER");
     auto topicId = verifySentToClient_RegackMsg(state, handler, MsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_LESS_THAN_EQUALS(DefaultMinTopicId, topicId);
     TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
     verifyNoOtherEvent(state, handler);
@@ -2343,6 +2348,7 @@ void SessionTest::test17()
     auto publishMsg = handler.prepareClientPublish(Data, topicId + 1, MsgId, mqttsn::protocol::field::TopicIdTypeVal::Normal, Qos, Retain, false);
     dataFromClient(*session, publishMsg, "PUBLISH");
     verifySentToClient_PubackMsg(state, handler, topicId + 1, MsgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    verifySentToBroker_PingreqMsg(state, handler);
     verifyNoOtherEvent(state, handler);
 
     publishMsg = handler.prepareClientPublish(Data, topicId, MsgId, mqttsn::protocol::field::TopicIdTypeVal::Normal, Qos, Retain, false);
@@ -2379,6 +2385,7 @@ void SessionTest::test17()
 
     dataFromClient(*session, publishMsg, "PUBLISH");
     verifySentToClient_PubackMsg(state, handler, topicId, MsgId, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    verifySentToBroker_PingreqMsg(state, handler);
     verifyNoOtherEvent(state, handler);
 
     publishMsg = handler.prepareClientPublish(Data, PredefinedTopicId, MsgId, mqttsn::protocol::field::TopicIdTypeVal::PreDefined, Qos, Retain, false);
@@ -2404,6 +2411,7 @@ void SessionTest::test18()
     auto registerMsg = handler.prepareClientRegister(Topic, MsgId);
     dataFromClient(*session, registerMsg, "REGISTER");
     auto topicId = verifySentToClient_RegackMsg(state, handler, MsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_LESS_THAN_EQUALS(DefaultMinTopicId, topicId);
     TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
     verifyNoOtherEvent(state, handler);
@@ -2609,12 +2617,14 @@ void SessionTest::test21()
     auto subMsg2 = handler.prepareClientSubscribe(TopicId, SubMsgId2, Qos, false);
     dataFromClient(*session, subMsg2, "SUBSCRIBE");
     verifySentToClient_SubackMsg(state, handler, TopicId, SubMsgId2, Qos, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    verifySentToBroker_PingreqMsg(state, handler);
     verifyNoOtherEvent(state, handler);
 
     static const std::uint16_t RegMsgId = 0x5556;
     auto registerMsg = handler.prepareClientRegister(Topic, RegMsgId);
     dataFromClient(*session, registerMsg, "REGISTER");
     auto topicId = verifySentToClient_RegackMsg(state, handler, RegMsgId, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_LESS_THAN_EQUALS(DefaultMinTopicId, topicId);
     TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
     verifyNoOtherEvent(state, handler);
@@ -2728,6 +2738,7 @@ void SessionTest::test23()
     auto willTopicUpdMsg1 = handler.prepareClientWilltopicupd(WillTopic1, translateQos(WillQos1), WillRetain1);
     dataFromClient(*session, willTopicUpdMsg1, "WILLTOPICUPD");
     verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
 
     static const std::string WillTopic2("will/topic/2");
     auto willTopicUpdMsg2 = handler.prepareClientWilltopicupd(WillTopic2, translateQos(WillQos1), WillRetain1);
@@ -2851,6 +2862,7 @@ void SessionTest::test24()
     auto willMsgUpdMsg1 = handler.prepareClientWillmsgupd(WillData1);
     dataFromClient(*session, willMsgUpdMsg1, "WILLMSGUPD");
     verifySentToClient_WillmsgrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifySentToBroker_PingreqMsg(state, handler);
 
     static const DataBuf WillData2 = {10, 11, 12};
     auto willMsgUpdMsg2 = handler.prepareClientWillmsgupd(WillData2);

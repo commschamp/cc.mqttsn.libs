@@ -209,6 +209,10 @@ void SessionImpl::handle(SearchgwMsg_SN& msg)
     auto& gwIdField = std::get<decltype(respMsg)::FieldIdx_gwId>(fields);
     gwIdField.value() = m_state.m_gwId;
     sendToClient(respMsg);
+
+    if (m_state.m_connStatus != ConnectionStatus::Disconnected) {
+        sendToBroker(PingreqMsg());
+    }
 }
 
 void SessionImpl::handle(RegisterMsg_SN& msg)
@@ -233,6 +237,10 @@ void SessionImpl::handle(RegisterMsg_SN& msg)
         respRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
     }
     sendToClient(respMsg);
+
+    if (m_state.m_connStatus != ConnectionStatus::Disconnected) {
+        sendToBroker(PingreqMsg());
+    }
 }
 
 void SessionImpl::handle(MqttsnMessage& msg)
