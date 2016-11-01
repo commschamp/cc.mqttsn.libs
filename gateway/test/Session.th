@@ -57,6 +57,7 @@ public:
     void test24();
     void test25();
     void test26();
+    void test27();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -3012,7 +3013,7 @@ void SessionTest::test26()
     session->addPredefinedTopic(Topic, TopicId);
 
     static const std::string ClientId("bla-bla");
-    session->setPubOnlyClientId(ClientId);
+    session->setDefaultClientId(ClientId);
     session->setPubOnlyKeepAlive(DefaultKeepAlivePeriod);
 
     static const DataBuf Data1 = {0, 1, 2, 5, 8};
@@ -3048,3 +3049,29 @@ void SessionTest::test26()
     verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
     verifyNoOtherEvent(state, handler);
 }
+
+void SessionTest::test27()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler);
+
+    static const std::string Topic("topic");
+    static const std::uint16_t TopicId = 0x1111;
+    session->addPredefinedTopic(Topic, TopicId);
+
+    static const std::string ClientId("bla-bla");
+    session->setDefaultClientId(ClientId);
+
+    auto connectMsg = handler.prepareClientConnect(std::string(), DefaultKeepAlivePeriod, false, true);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifySentToBroker_ConnectMsg(state, handler, ClientId, DefaultKeepAlivePeriod, true);
+    verifyNoOtherEvent(state, handler);
+
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    dataFromBroker(*session, connackMsg, "CONNACK");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyConnectedClient(state, ClientId);
+    verifyNoOtherEvent(state, handler);
+}
+

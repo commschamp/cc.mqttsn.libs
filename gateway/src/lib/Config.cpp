@@ -62,9 +62,9 @@ unsigned Config::retryCount() const
     return m_pImpl->retryCount();
 }
 
-const std::string& Config::pubOnlyClientId() const
+const std::string& Config::defaultClientId() const
 {
-    return m_pImpl->pubOnlyClientId();
+    return m_pImpl->defaultClientId();
 }
 
 std::uint16_t Config::pubOnlyKeepAlive() const

@@ -137,7 +137,7 @@ struct SessionState
 
     ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
     std::string m_clientId;
-    std::string m_pubOnlyClientId;
+    std::string m_defaultClientId;
     WillInfo m_will;
     std::size_t m_sleepPubAccLimit = std::numeric_limits<std::size_t>::max();
     std::uint16_t m_keepAlive = 0U;

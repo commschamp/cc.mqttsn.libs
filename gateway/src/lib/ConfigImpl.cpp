@@ -38,7 +38,7 @@ const std::string GatewayIdKey("mqttsn_gw_id");
 const std::string AdvertiseKey("mqttsn_advertise");
 const std::string RetryPeriodKey("mqttsn_retry_period");
 const std::string RetryCountKey("mqttsn_retry_count");
-const std::string PubOnlyClientIdKey("mqttsn_pub_only_client_id");
+const std::string DefaultClientIdKey("mqttsn_default_client_id");
 const std::string PubOnlyKeepAliveKey("mqttsn_pub_only_keep_alive");
 const std::string SleepingClientMsgLimitKey("mqttsn_sleeping_client_msg_limit");
 const std::string PredefinedTopicKey("mqttsn_predefined_topic");
@@ -134,9 +134,9 @@ unsigned ConfigImpl::retryCount() const
     return numericValue<unsigned>(RetryCountKey, DefaultRetryCount);
 }
 
-const std::string& ConfigImpl::pubOnlyClientId() const
+const std::string& ConfigImpl::defaultClientId() const
 {
-    return stringValue(PubOnlyClientIdKey);
+    return stringValue(DefaultClientIdKey);
 }
 
 std::uint16_t ConfigImpl::pubOnlyKeepAlive() const

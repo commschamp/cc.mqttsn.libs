@@ -64,8 +64,13 @@ void Connect::handle(ConnectMsg_SN& msg)
     auto& keepAliveField = std::get<MsgType::FieldIdx_duration>(fields);
     auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
 
+    auto* reqClientId = &(clientIdField.value());
+    if (reqClientId->empty()) {
+        reqClientId = &(state().m_defaultClientId);
+    }
+
     if ((state().m_connStatus != ConnectionStatus::Disconnected) &&
-        (clientIdField.value() != state().m_clientId)) {
+        (*reqClientId != state().m_clientId)) {
         assert(!state().m_clientId.empty());
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
@@ -73,14 +78,15 @@ void Connect::handle(ConnectMsg_SN& msg)
         return;
     }
 
-    assert(state().m_clientId.empty() || state().m_clientId == clientIdField.value());
+
+    assert(state().m_clientId.empty() || state().m_clientId == *reqClientId);
     if (m_internalState.m_hasClientId) {
         m_internalState = State();
     }
 
     m_internalState.m_hasClientId = true;
 
-    m_clientId = clientIdField.value();
+    m_clientId = *reqClientId;
     m_keepAlive = keepAliveField.value();
     m_clean = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession);
 
@@ -157,7 +163,7 @@ void Connect::handle(PublishMsg_SN& msg)
         (st.m_pendingClientDisconnect) ||
         (!st.m_clientId.empty()) ||
         (!m_clientId.empty()) ||
-        (st.m_pubOnlyClientId.empty())) {
+        (st.m_defaultClientId.empty())) {
         return;
     }
 
@@ -172,7 +178,7 @@ void Connect::handle(PublishMsg_SN& msg)
     }
 
     clearInternalState();
-    m_clientId = st.m_pubOnlyClientId;
+    m_clientId = st.m_defaultClientId;
     m_keepAlive = st.m_pubOnlyKeepAlive;
     m_clean = true;
 

@@ -60,7 +60,7 @@ void Forward::handle(PublishMsg_SN& msg)
 
         if ((!st.m_brokerConnected) ||
             (st.m_connStatus != ConnectionStatus::Disconnected) ||
-            (st.m_pubOnlyClientId.empty())) {
+            (st.m_defaultClientId.empty())) {
             return;
         }
 

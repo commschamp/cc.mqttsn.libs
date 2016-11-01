@@ -122,9 +122,9 @@ public:
         m_state.m_sleepPubAccLimit = std::min(m_state.m_brokerPubs.max_size(), value);
     }
 
-    void setPubOnlyClientId(const std::string& value)
+    void setDefaultClientId(const std::string& value)
     {
-        m_state.m_pubOnlyClientId = value;
+        m_state.m_defaultClientId = value;
     }
 
     void setPubOnlyKeepAlive(std::uint16_t value)

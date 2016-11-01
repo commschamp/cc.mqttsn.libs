@@ -63,7 +63,7 @@ public:
     void setRetryPeriod(unsigned value);
     void setRetryCount(unsigned value);
     void setSleepingClientMsgLimit(std::size_t value);
-    void setPubOnlyClientId(const std::string& value);
+    void setDefaultClientId(const std::string& value);
     void setPubOnlyKeepAlive(std::uint16_t value);
 
     bool start();

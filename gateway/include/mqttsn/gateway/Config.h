@@ -75,7 +75,7 @@ public:
     std::uint16_t advertisePeriod() const;
     unsigned retryPeriod() const;
     unsigned retryCount() const;
-    const std::string& pubOnlyClientId() const;
+    const std::string& defaultClientId() const;
     std::uint16_t pubOnlyKeepAlive() const;
     std::size_t sleepingClientMsgLimit() const;
     const PredefinedTopicsList& predefinedTopics() const;

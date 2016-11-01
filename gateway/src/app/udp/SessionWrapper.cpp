@@ -99,7 +99,7 @@ SessionWrapper::SessionWrapper(
     m_session.setGatewayId(m_config.gatewayId());
     m_session.setRetryPeriod(m_config.retryPeriod());
     m_session.setRetryCount(m_config.retryCount());
-    m_session.setPubOnlyClientId(m_config.pubOnlyClientId());
+    m_session.setDefaultClientId(m_config.defaultClientId());
     m_session.setPubOnlyKeepAlive(m_config.pubOnlyKeepAlive());
     m_session.setSleepingClientMsgLimit(m_config.sleepingClientMsgLimit());
 
