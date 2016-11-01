@@ -20,6 +20,9 @@
 
 #include <memory>
 #include <list>
+#include <vector>
+#include <cstdint>
+
 
 #include "comms/CompileControl.h"
 
@@ -64,11 +67,14 @@ private:
     typedef unsigned short PortType;
 
     bool doListen();
+    void broadcastAdvertise(const std::uint8_t* buf, std::size_t bufSize);
 
     const Config& m_config;
     PortType m_port = 0;
+    PortType m_broadcastPort = 0;
     SocketPtr m_socket;
     GatewayWrapper m_gw;
+    std::vector<std::uint8_t> m_lastAdvertise;
 };
 
 }  // namespace udp

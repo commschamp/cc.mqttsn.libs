@@ -18,15 +18,11 @@
 
 #pragma once
 
-#include <vector>
-#include <cstdint>
-
 #include "comms/CompileControl.h"
 
 CC_DISABLE_WARNINGS()
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
-#include <QtNetwork/QUdpSocket>
 CC_ENABLE_WARNINGS()
 
 #include "mqttsn/gateway/Config.h"
@@ -52,31 +48,16 @@ public:
 
     explicit GatewayWrapper(const Config& config);
 
-    void setLocalPort(PortType value)
-    {
-        m_localPort = value;
-    }
-
-    void setBroadcastPort(PortType value)
-    {
-        m_broadcastPort = value;
-    }
-
-    bool isSelfAdvertise(const std::uint8_t* buf, std::size_t bufLen) const;
-
-    bool start();
+    typedef mqttsn::gateway::Gateway::SendDataReqCb SendDataReqCb;
+    bool start(SendDataReqCb&& sendCb);
 
 private slots:
     void tickTimeout();
 
 private:
     const Config& m_config;
-    QUdpSocket m_socket;
-    PortType m_localPort = 0;
-    PortType m_broadcastPort = 0;
     mqttsn::gateway::Gateway m_gw;
     QTimer m_timer;
-    std::vector<std::uint8_t> m_lastAdvertise;
 };
 
 }  // namespace udp

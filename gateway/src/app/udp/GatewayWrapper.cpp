@@ -40,26 +40,8 @@ GatewayWrapper::GatewayWrapper(const Config& config)
         this, SLOT(tickTimeout()));
 }
 
-bool GatewayWrapper::isSelfAdvertise(const std::uint8_t* buf, std::size_t bufLen) const
+bool GatewayWrapper::start(SendDataReqCb&& sendCb)
 {
-    return
-        ((m_lastAdvertise.size() == bufLen) &&
-         (std::equal(m_lastAdvertise.begin(), m_lastAdvertise.end(), buf)));
-}
-
-bool GatewayWrapper::start()
-{
-    if ((m_localPort != 0) &&
-        (!m_socket.bind(QHostAddress::AnyIPv4, m_localPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint))) {
-        std::cerr << "ERROR: Failed to bind UDP socket to local port " << m_localPort << std::endl;
-        return false;
-    }
-
-    if (!m_socket.open(QUdpSocket::WriteOnly)) {
-        std::cerr << "ERROR: Failed to open UDP socket" << std::endl;
-        return false;
-    }
-
     m_gw.setAdvertisePeriod(m_config.advertisePeriod());
     m_gw.setGatewayId(m_config.gatewayId());
     m_gw.setNextTickProgramReqCb(
@@ -69,34 +51,7 @@ bool GatewayWrapper::start()
             m_timer.start(ms);
         });
 
-    m_gw.setSendDataReqCb(
-        [this](const std::uint8_t* buf, std::size_t bufSize)
-        {
-            m_lastAdvertise.assign(buf, buf + bufSize);
-            PortType broadcastPort = m_broadcastPort;
-            if (broadcastPort == 0) {
-                broadcastPort = m_localPort;
-            }
-            std::size_t writtenCount = 0;
-            while (writtenCount < bufSize) {
-                auto remSize = bufSize - writtenCount;
-                auto count =
-                    m_socket.writeDatagram(
-                        reinterpret_cast<const char*>(&buf[writtenCount]),
-                        remSize,
-                        QHostAddress::Broadcast,
-                        broadcastPort);
-
-                std::cout << "Broadcasted " << count << " bytes" << std::endl;
-                if (count < 0) {
-                    return;
-                }
-
-                writtenCount += count;
-            }
-
-        });
-
+    m_gw.setSendDataReqCb(std::move(sendCb));
     return m_gw.start();
 }
 

@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 
 namespace mqttsn
 {
@@ -85,9 +86,13 @@ bool Mgr::start()
         return true;
     }
 
-    m_gw.setLocalPort(m_port);
-    m_gw.setBroadcastPort(getPortInfo(m_config, UdpBroadcastPortKey, DefaultBroadcastPort));
-    return m_gw.start();
+    m_broadcastPort = getPortInfo(m_config, UdpBroadcastPortKey, DefaultBroadcastPort);
+    auto broadcastFunc =
+        [this](const std::uint8_t* buf, std::size_t bufSize)
+        {
+            broadcastAdvertise(buf, bufSize);
+        };
+    return m_gw.start(std::move(broadcastFunc));
 }
 
 void Mgr::newConnection()
@@ -98,9 +103,11 @@ void Mgr::newConnection()
         this, SLOT(newConnection()));
 
     auto selfAdvertiseCheck =
-        [this](const std::uint8_t* buf, std::size_t bufSize) -> bool
+        [this](const std::uint8_t* buf, std::size_t bufLen) -> bool
         {
-            return m_gw.isSelfAdvertise(buf, bufSize);
+            return
+                ((m_lastAdvertise.size() == bufLen) &&
+                 (std::equal(m_lastAdvertise.begin(), m_lastAdvertise.end(), buf)));
         };
 
     std::unique_ptr<SessionWrapper> session(
@@ -135,6 +142,28 @@ bool Mgr::doListen()
         m_socket.get(), SIGNAL(readyRead()),
         this, SLOT(newConnection()));
     return true;
+}
+
+void Mgr::broadcastAdvertise(const std::uint8_t* buf, std::size_t bufSize)
+{
+    m_lastAdvertise.assign(buf, buf + bufSize);
+    std::size_t writtenCount = 0;
+    while (writtenCount < bufSize) {
+        auto remSize = bufSize - writtenCount;
+        auto count =
+            m_socket->writeDatagram(
+                reinterpret_cast<const char*>(&buf[writtenCount]),
+                remSize,
+                QHostAddress::Broadcast,
+                m_broadcastPort);
+
+        std::cout << "Broadcasted " << count << " bytes" << std::endl;
+        if (count < 0) {
+            return;
+        }
+
+        writtenCount += count;
+    }
 }
 
 }  // namespace udp
