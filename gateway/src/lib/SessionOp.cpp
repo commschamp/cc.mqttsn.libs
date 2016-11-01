@@ -15,29 +15,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "SessionOp.h"
 
-#pragma once
-
-#include "WilltopicBase.h"
 namespace mqttsn
 {
 
-namespace protocol
+namespace gateway
 {
 
-namespace message
+void SessionOp::sendDisconnectToClient()
 {
+    DisconnectMsg_SN msg;
+    auto& fields = msg.fields();
+    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
+    durationField.setMode(comms::field::OptionalMode::Missing);
+    sendToClient(msg);
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic :
-    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
-{
+}
 
-};
-
-}  // namespace message
-
-}  // namespace protocol
+}  // namespace gateway
 
 }  // namespace mqttsn
 

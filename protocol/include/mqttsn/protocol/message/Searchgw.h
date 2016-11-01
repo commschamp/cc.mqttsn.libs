@@ -56,7 +56,7 @@ class Searchgw : public
 public:
     enum FieldIdx
     {
-        FieldIdx_radus,
+        FieldIdx_radius,
         FieldIdx_numOfValues
     };
 

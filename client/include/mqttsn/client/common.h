@@ -115,9 +115,24 @@ typedef void (*MqttsnPublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus st
 typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
 typedef void (*MqttsnUnsubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnWillUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnWillTopicUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*MqttsnWillMsgUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnSleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnCheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnMessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
+
+#ifdef WIN32
+
+#ifdef MQTTSN_CLIENT_LIB_EXPORT
+#define MQTTSN_CLIENT_API __declspec(dllexport)
+#else // #ifdef MQTTSN_GATEWAY_LIB_EXPORT
+#define MQTTSN_CLIENT_API __declspec(dllimport)
+#endif // #ifdef MQTTSN_GATEWAY_LIB_EXPORT
+
+#else // #ifdef WIN32
+#define MQTTSN_CLIENT_API
+#endif // #ifdef WIN32
+
 
 #ifdef __cplusplus
 }

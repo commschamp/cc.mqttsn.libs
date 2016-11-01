@@ -18,27 +18,52 @@
 
 #pragma once
 
-#include "WilltopicBase.h"
+#include "comms/CompileControl.h"
+
+CC_DISABLE_WARNINGS()
+#include <QtCore/QObject>
+#include <QtCore/QTimer>
+CC_ENABLE_WARNINGS()
+
+#include "mqttsn/gateway/Config.h"
+#include "mqttsn/gateway/Gateway.h"
+
 namespace mqttsn
 {
 
-namespace protocol
+namespace gateway
 {
 
-namespace message
+namespace app
 {
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic :
-    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
+namespace udp
 {
 
+class GatewayWrapper : public QObject
+{
+    Q_OBJECT
+public:
+    typedef unsigned short PortType;
+
+    explicit GatewayWrapper(const Config& config);
+
+    typedef mqttsn::gateway::Gateway::SendDataReqCb SendDataReqCb;
+    bool start(SendDataReqCb&& sendCb);
+
+private slots:
+    void tickTimeout();
+
+private:
+    const Config& m_config;
+    mqttsn::gateway::Gateway m_gw;
+    QTimer m_timer;
 };
 
-}  // namespace message
+}  // namespace udp
 
-}  // namespace protocol
+}  // namespace app
+
+}  // namespace gateway
 
 }  // namespace mqttsn
-
-

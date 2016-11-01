@@ -18,26 +18,53 @@
 
 #pragma once
 
-#include "WilltopicBase.h"
+#include "SessionOp.h"
+#include "common.h"
+
 namespace mqttsn
 {
 
-namespace protocol
+namespace gateway
 {
 
-namespace message
+namespace session_op
 {
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic :
-    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
+class PubRecv : public SessionOp
 {
+    typedef SessionOp Base;
 
+public:
+    PubRecv(SessionState& sessionState);
+    ~PubRecv();
+
+protected:
+
+private:
+    using Base::handle;
+    virtual void handle(PublishMsg& msg) override;
+    virtual void handle(PubrelMsg& msg) override;
+
+    struct BrokPubInfo
+    {
+        std::string m_topic;
+        DataBuf m_msg;
+        bool m_dup = false;
+        bool m_retain = false;
+        std::uint16_t m_packetId = 0U;
+        Timestamp m_timestamp = 0U;
+    };
+
+    typedef std::list<BrokPubInfo> BrokPubInfosList;
+
+    void addPubInfo(PubInfoPtr info);
+
+    BrokPubInfosList m_recvMsgs;
 };
 
-}  // namespace message
+}  // namespace session_op
 
-}  // namespace protocol
+}  // namespace gateway
 
 }  // namespace mqttsn
 

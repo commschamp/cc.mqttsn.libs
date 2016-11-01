@@ -51,6 +51,8 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_unsubscribeIdFunc = &mqttsn_client_unsubscribe_id;
     funcs.m_unsubscribeFunc = &mqttsn_client_unsubscribe;
     funcs.m_willUpdateFunc = &mqttsn_client_will_update;
+    funcs.m_willTopicUpdateFunc = &mqttsn_client_will_topic_update;
+    funcs.m_willMsgUpdateFunc = &mqttsn_client_will_msg_update;
     funcs.m_sleepFunc = &mqttsn_client_sleep;
     funcs.m_checkMessagesFunc = &mqttsn_client_check_messages;
     return funcs;
@@ -143,6 +145,22 @@ CommonTestClient::WillUpdateCompleteCallback CommonTestClient::setWillUpdateComp
 {
     WillUpdateCompleteCallback old(std::move(m_willUpdateCompleteCallback));
     m_willUpdateCompleteCallback = std::move(func);
+    return old;
+}
+
+CommonTestClient::WillTopicUpdateCompleteCallback CommonTestClient::setWillTopicUpdateCompleteCallback(
+    WillTopicUpdateCompleteCallback&& func)
+{
+    WillTopicUpdateCompleteCallback old(std::move(m_willTopicUpdateCompleteCallback));
+    m_willTopicUpdateCompleteCallback = std::move(func);
+    return old;
+}
+
+CommonTestClient::WillMsgUpdateCompleteCallback CommonTestClient::setWillMsgUpdateCompleteCallback(
+    WillMsgUpdateCompleteCallback&& func)
+{
+    WillMsgUpdateCompleteCallback old(std::move(m_willMsgUpdateCompleteCallback));
+    m_willMsgUpdateCompleteCallback = std::move(func);
     return old;
 }
 
@@ -330,13 +348,42 @@ MqttsnErrorCode CommonTestClient::unsubscribe(MqttsnTopicId topicId)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::willUpdate(const MqttsnWillInfo* willInfo)
+MqttsnErrorCode CommonTestClient::willUpdate(
+    const MqttsnWillInfo* willInfo)
 {
     assert(m_libFuncs.m_willUpdateFunc != nullptr);
     return (m_libFuncs.m_willUpdateFunc)(
         m_client,
         willInfo,
         &CommonTestClient::willUpdateCompleteCallback,
+        this);
+}
+
+MqttsnErrorCode CommonTestClient::willTopicUpdate(
+    const std::string& topic,
+    MqttsnQoS qos,
+    bool retain)
+{
+    assert(m_libFuncs.m_willTopicUpdateFunc != nullptr);
+    return (m_libFuncs.m_willTopicUpdateFunc)(
+        m_client,
+        topic.c_str(),
+        qos,
+        retain,
+        &CommonTestClient::willTopicUpdateCompleteCallback,
+        this);
+}
+
+MqttsnErrorCode CommonTestClient::willMsgUpdate(
+    const std::uint8_t* msg,
+    std::size_t msgLen)
+{
+    assert(m_libFuncs.m_willMsgUpdateFunc != nullptr);
+    return (m_libFuncs.m_willMsgUpdateFunc)(
+        m_client,
+        msg,
+        msgLen,
+        &CommonTestClient::willMsgUpdateCompleteCallback,
         this);
 }
 
@@ -350,12 +397,11 @@ MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::checkMessages(const std::string& clientId)
+MqttsnErrorCode CommonTestClient::checkMessages()
 {
     assert(m_libFuncs.m_checkMessagesFunc != nullptr);
     return (m_libFuncs.m_checkMessagesFunc)(
         m_client,
-        clientId.c_str(),
         &CommonTestClient::checkMessagesCompleteCallback,
         this);
 }
@@ -495,6 +541,22 @@ void CommonTestClient::reportWillUpdateComplete(MqttsnAsyncOpStatus status)
     }
 }
 
+void CommonTestClient::reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status)
+{
+    if (m_willTopicUpdateCompleteCallback) {
+        WillTopicUpdateCompleteCallback tmp(m_willTopicUpdateCompleteCallback);
+        tmp(status);
+    }
+}
+
+void CommonTestClient::reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status)
+{
+    if (m_willMsgUpdateCompleteCallback) {
+        WillMsgUpdateCompleteCallback tmp(m_willMsgUpdateCompleteCallback);
+        tmp(status);
+    }
+}
+
 void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
 {
     if (m_sleepCompleteCallback) {
@@ -576,6 +638,18 @@ void CommonTestClient::willUpdateCompleteCallback(void* data, MqttsnAsyncOpStatu
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportWillUpdateComplete(status);
+}
+
+void CommonTestClient::willTopicUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportWillTopicUpdateComplete(status);
+}
+
+void CommonTestClient::willMsgUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportWillMsgUpdateComplete(status);
 }
 
 void CommonTestClient::sleepCompleteCallback(void* data, MqttsnAsyncOpStatus status)

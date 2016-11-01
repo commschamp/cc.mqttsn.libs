@@ -142,6 +142,8 @@ class Client : public THandler
         UnsubscribeId,
         Unsubscribe,
         WillUpdate,
+        WillTopicUpdate,
+        WillMsgUpdate,
         Sleep,
         CheckMessages,
         NumOfValues // must be last
@@ -227,12 +229,27 @@ class Client : public THandler
         MqttsnTopicId m_topicId = 0U;
     };
 
-    struct WillUpdateOp : public OpBase
+    struct WillUpdateOp : public ConnectOp
     {
-        MqttsnWillInfo m_willInfo = MqttsnWillInfo();
         MqttsnWillUpdateCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
-        bool m_willTopicAcked = false;
+    };
+
+    struct WillTopicUpdateOp : public OpBase
+    {
+        const char* m_topic = nullptr;
+        MqttsnQoS m_qos;
+        bool m_retain;
+        MqttsnWillTopicUpdateCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+    };
+
+    struct WillMsgUpdateOp : public OpBase
+    {
+        const unsigned char* m_msg = nullptr;
+        unsigned m_msgLen = 0;
+        MqttsnWillMsgUpdateCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
     };
 
     struct SleepOp : public OpBase
@@ -244,7 +261,6 @@ class Client : public THandler
 
     struct CheckMessagesOp : public OpBase
     {
-        const char* m_clientId = nullptr;
         MqttsnCheckMessagesCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
     };
@@ -265,6 +281,7 @@ public:
     typedef typename mqttsn::protocol::field::TopicName<FieldBase, TProtOpts>::ValueType TopicNameType;
     typedef typename mqttsn::protocol::field::Data<FieldBase, TProtOpts>::ValueType DataType;
     typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
+    typedef typename mqttsn::protocol::field::ClientId<FieldBase>::ValueType ClientIdType;
 
     struct GwInfo
     {
@@ -497,6 +514,8 @@ public:
             &Client::unsubscribeIdCancel,
             &Client::unsubscribeCancel,
             &Client::willUpdateCancel,
+            &Client::willTopicUpdateCancel,
+            &Client::willMsgUpdateCancel,
             &Client::sleepCancel,
             &Client::checkMessagesCancel
         };
@@ -535,7 +554,6 @@ public:
 
         bool reportDisconnected = (m_connectionStatus == ConnectionStatus::Asleep);
         m_connectionStatus = ConnectionStatus::Disconnected;
-        m_keepAlivePeriod = keepAlivePeriod * 1000;
         m_currOp = Op::Connect;
 
         auto* connectOp = newOp<ConnectOp>();
@@ -880,13 +898,95 @@ public:
 
         m_currOp = Op::WillUpdate;
         auto* op = newOp<WillUpdateOp>();
+        op->m_clientId = m_clientId.c_str();
+        op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
         if (willInfo != nullptr) {
             op->m_willInfo = *willInfo;
         }
+        op->m_hasWill = true;
+        op->m_cleanSession = false;
         op->m_cb = callback;
         op->m_cbData = data;
 
         bool result = doWillUpdate();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode willTopicUpdate(
+        const char* topic,
+        MqttsnQoS qos,
+        bool retain,
+        MqttsnWillTopicUpdateCompleteReportFn callback,
+        void* data)
+    {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
+        if (m_connectionStatus != ConnectionStatus::Connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        auto guard = apiCall();
+
+        m_currOp = Op::WillTopicUpdate;
+        auto* op = newOp<WillTopicUpdateOp>();
+        op->m_topic = topic;
+        op->m_qos = qos;
+        op->m_retain = retain;
+        op->m_cb = callback;
+        op->m_cbData = data;
+
+        bool result = doWillTopicUpdate();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        return MqttsnErrorCode_Success;
+    }
+
+    MqttsnErrorCode willMsgUpdate(
+        const unsigned char* msg,
+        unsigned msgLen,
+        MqttsnWillMsgUpdateCompleteReportFn callback,
+        void* data)
+    {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
+        if (m_connectionStatus != ConnectionStatus::Connected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        auto guard = apiCall();
+
+        m_currOp = Op::WillMsgUpdate;
+        auto* op = newOp<WillMsgUpdateOp>();
+        op->m_msg = msg;
+        op->m_msgLen = msgLen;
+        op->m_cb = callback;
+        op->m_cbData = data;
+
+        bool result = doWillMsgUpdate();
         static_cast<void>(result);
         GASSERT(result);
 
@@ -930,7 +1030,6 @@ public:
     }
 
     MqttsnErrorCode checkMessages(
-        const char* clientId,
         MqttsnCheckMessagesCompleteReportFn callback,
         void* data)
     {
@@ -946,9 +1045,7 @@ public:
             return MqttsnErrorCode_Busy;
         }
 
-        if ((clientId == nullptr) ||
-            (clientId[0] == '\0') ||
-            (callback == nullptr)) {
+        if ((callback == nullptr)) {
             return MqttsnErrorCode_BadParam;
         }
 
@@ -956,7 +1053,6 @@ public:
 
         m_currOp = Op::CheckMessages;
         auto* op = newOp<CheckMessagesOp>();
-        op->m_clientId = clientId;
         op->m_cb = callback;
         op->m_cbData = data;
 
@@ -1014,17 +1110,38 @@ public:
 
     virtual void handle(ConnackMsg& msg) override
     {
-        if (m_currOp != Op::Connect) {
+        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
             return;
         }
 
         auto* op = opPtr<ConnectOp>();
-        bool hasWill = op->m_hasWill && (op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0');
         bool willReported = (op->m_willTopicSent && op->m_willMsgSent);
-        if (hasWill && (!willReported)) {
+        if (op->m_hasWill && (!willReported)) {
             return;
         }
 
+        auto& fields = msg.fields();
+        auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
+
+        if (m_currOp == Op::WillUpdate) {
+            finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
+
+            if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+                m_connectionStatus = ConnectionStatus::Disconnected;
+                m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+            }
+            return;
+        }
+
+        assert(m_currOp == Op::Connect);
+        if (op->m_clientId != nullptr) {
+            m_clientId = op->m_clientId;
+        }
+        else {
+            m_clientId.clear();
+        }
+
+        m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
         finaliseOp<ConnectOp>();
 
         static_cast<void>(msg);
@@ -1042,9 +1159,7 @@ public:
             "Incorrect map");
 
         MqttsnConnectionStatus status = MqttsnConnectionStatus_Denied;
-        auto& fields = msg.fields();
-        auto& returnCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
-        auto returnCode = returnCodeField.value();
+        auto returnCode = retCodeField.value();
         if (returnCode < StatusMapSize) {
             status = StatusMap[returnCode];
         }
@@ -1061,40 +1176,36 @@ public:
     virtual void handle(WilltopicreqMsg& msg) override
     {
         static_cast<void>(msg);
-        if (m_currOp != Op::Connect) {
+        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
             return;
         }
 
         auto* op = opPtr<ConnectOp>();
-        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+        bool emptyTopic =
+            (op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0');
+
+        if ((m_currOp == Op::Connect) && (emptyTopic)) {
             return;
         }
 
         op->m_lastMsgTimestamp = m_timestamp;
-        WilltopicMsg outMsg;
-        auto& fields = outMsg.fields();
-        auto& flagsField = std::get<WilltopicMsg::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-        auto& topicField = std::get<WilltopicMsg::FieldIdx_willTopic>(fields);
-
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_willInfo.retain);
-        qosField.value() = details::translateQosValue(op->m_willInfo.qos);
-        topicField.value() = op->m_willInfo.topic;
         op->m_willTopicSent = true;
-        sendMessage(outMsg);
+        if (emptyTopic) {
+            op->m_willMsgSent = true;
+        }
+
+        sendWilltopic(op->m_willInfo.topic, op->m_willInfo.qos, op->m_willInfo.retain);
     }
 
     virtual void handle(WillmsgreqMsg& msg) override
     {
         static_cast<void>(msg);
-        if (m_currOp != Op::Connect) {
+        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
             return;
         }
 
         auto* op = opPtr<ConnectOp>();
-        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
+        if (!op->m_willTopicSent) {
             return;
         }
 
@@ -1103,7 +1214,10 @@ public:
         auto& fields = outMsg.fields();
         auto& willMsgField = std::get<WillmsgMsg::FieldIdx_willMsg>(fields);
 
-        willMsgField.value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+        if (op->m_willInfo.msg != nullptr) {
+            willMsgField.value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+        }
+
         op->m_willMsgSent = true;
         sendMessage(outMsg);
     }
@@ -1205,6 +1319,10 @@ public:
                 {
                     return elem.m_allocated && (elem.m_topicId == topicIdField.value());
                 });
+
+            if (iter == m_regInfos.end()) {
+                sendPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+            }
         }
 
         const char* topicName = nullptr;
@@ -1220,10 +1338,6 @@ public:
                 return;
             }
 
-            if (m_lastInMsg.m_topicId != MqttsnTopicId()) {
-                m_lastInMsg = LastInMsgInfo();
-            }
-
             reportMsgFunc(topicName);
             return;
         }
@@ -1231,38 +1345,32 @@ public:
         if ((iter == m_regInfos.end()) &&
             (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
             m_lastInMsg = LastInMsgInfo();
-            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
             return;
         }
+
+        if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
+            sendPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
+            reportMsgFunc(topicName);
+            return;
+        }
+
+        GASSERT(qosField.value() == mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
 
         bool newMessage =
             ((!dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup)) ||
              (topicIdField.value() != m_lastInMsg.m_topicId) ||
              (msgIdField.value() != m_lastInMsg.m_msgId) ||
-             (!m_lastInMsg.m_reported));
+             (m_lastInMsg.m_reported));
 
         if (newMessage) {
             m_lastInMsg = LastInMsgInfo();
 
             m_lastInMsg.m_topicId = topicIdField.value();
             m_lastInMsg.m_msgId = msgIdField.value();
-            m_lastInMsg.m_qos = details::translateQosValue(qosField.value());
             m_lastInMsg.m_retain =
                 midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
         }
 
-        if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
-            sentPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
-
-            if (!m_lastInMsg.m_reported) {
-                m_lastInMsg.m_reported = true;
-                reportMsgFunc(topicName);
-            }
-
-            return;
-        }
-
-        GASSERT(qosField.value() == mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
         m_lastInMsg.m_msgData = dataField.value();
 
         PubrecMsg recMsg;
@@ -1275,16 +1383,31 @@ public:
 
     virtual void handle(PubackMsg& msg) override
     {
+        auto& fields = msg.fields();
+        auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
+        auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
+        auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
+
+        if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+
+            auto iter = std::find_if(
+                m_regInfos.begin(), m_regInfos.end(),
+                [&topicIdField](typename RegInfosList::const_reference elem) -> bool
+                {
+                    return elem.m_allocated && (elem.m_topicId == topicIdField.value());
+                });
+
+            if (iter != m_regInfos.end()) {
+                dropRegInfo(iter);
+            }
+        }
+
         if ((m_currOp != Op::Publish) && (m_currOp != Op::PublishId)) {
             return;
         }
 
         auto* op = opPtr<PublishOpBase>();
 
-        auto& fields = msg.fields();
-        auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
-        auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
 
         if ((topicIdField.value() != op->m_topicId) ||
             (msgIdField.value() != op->m_msgId)) {
@@ -1298,26 +1421,12 @@ public:
         }
 
         do {
-
             if ((op->m_qos < MqttsnQoS_AtLeastOnceDelivery) ||
                 (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) ||
                 (m_currOp != Op::Publish) ||
                 (opPtr<PublishOp>()->m_didRegistration)) {
                 break;
             }
-
-            auto iter = std::find_if(
-                m_regInfos.begin(), m_regInfos.end(),
-                [op](typename RegInfosList::const_reference elem) -> bool
-                {
-                    return elem.m_allocated && (elem.m_topicId == op->m_topicId);
-                });
-
-            if (iter == m_regInfos.end()) {
-                return;
-            }
-
-            dropRegInfo(iter);
 
             op->m_lastMsgTimestamp = m_timestamp;
             op->m_topicId = 0U;
@@ -1355,8 +1464,7 @@ public:
         auto& fields = msg.fields();
         auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
 
-        if ((m_lastInMsg.m_msgId != msgIdField.value()) ||
-            (m_lastInMsg.m_qos != MqttsnQoS_ExactlyOnceDelivery)) {
+        if (m_lastInMsg.m_msgId != msgIdField.value()) {
             m_lastInMsg = LastInMsgInfo();
             return;
         }
@@ -1384,7 +1492,7 @@ public:
             msgInfo.topicId = m_lastInMsg.m_topicId;
             msgInfo.msg = &(*m_lastInMsg.m_msgData.begin());
             msgInfo.msgLen = m_lastInMsg.m_msgData.size();
-            msgInfo.qos = m_lastInMsg.m_qos;
+            msgInfo.qos = MqttsnQoS_ExactlyOnceDelivery;
             msgInfo.retain = m_lastInMsg.m_retain;
 
             m_lastInMsg.m_reported = true;
@@ -1567,57 +1675,24 @@ public:
 
     virtual void handle(WilltopicrespMsg& msg) override
     {
-        if (m_currOp != Op::WillUpdate) {
-            return;
-        }
-
-        auto* op = opPtr<WillUpdateOp>();
-        if (op->m_willTopicAcked) {
+        if (m_currOp != Op::WillTopicUpdate) {
             return;
         }
 
         auto& fields = msg.fields();
         auto& retCodeField = std::get<WilltopicrespMsg::FieldIdx_returnCode>(fields);
-
-        if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-            finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
-            return;
-        }
-
-
-        if ((op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0')) {
-            finaliseWillUpdateOp(MqttsnAsyncOpStatus_Successful);
-            return;
-        }
-
-        op->m_lastMsgTimestamp = m_timestamp;
-        op->m_willTopicAcked = true;
-
-        WillmsgupdMsg msgUpdMsg;
-        auto& msgUpdFields = msgUpdMsg.fields();
-        auto& msgBodyField = std::get<WillmsgupdMsg::FieldIdx_willMsg>(msgUpdFields);
-        auto* msgBodyBeg = op->m_willInfo.msg;
-        if (msgBodyBeg != nullptr) {
-            auto* msgBodyEnd = msgBodyBeg + op->m_willInfo.msgLen;
-            msgBodyField.value().assign(msgBodyBeg, msgBodyEnd);
-        }
-        sendMessage(msgUpdMsg);
+        finaliseWillTopicUpdateOp(retCodeToStatus(retCodeField.value()));
     }
 
     virtual void handle(WillmsgrespMsg& msg) override
     {
-        if (m_currOp != Op::WillUpdate) {
-            return;
-        }
-
-        auto* op = opPtr<WillUpdateOp>();
-        if (!op->m_willTopicAcked) {
+        if (m_currOp != Op::WillMsgUpdate) {
             return;
         }
 
         auto& fields = msg.fields();
         auto& retCodeField = std::get<WillmsgrespMsg::FieldIdx_returnCode>(fields);
-        finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
+        finaliseWillMsgUpdateOp(retCodeToStatus(retCodeField.value()));
     }
 
 private:
@@ -1631,8 +1706,13 @@ private:
         SubscribeOp,
         UnsubscribeIdOp,
         UnsubscribeOp,
+        WillUpdateOp,
+        WillTopicUpdateOp,
+        WillMsgUpdateOp,
+        SleepOp,
         CheckMessagesOp
     >::Type OpStorageType;
+
 
     typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
@@ -1653,7 +1733,6 @@ private:
         DataType m_msgData;
         MqttsnTopicId m_topicId = 0;
         std::uint16_t m_msgId = 0;
-        MqttsnQoS m_qos = MqttsnQoS_NoGwPublish;
         bool m_retain = false;
         bool m_reported = false;
     };
@@ -1950,6 +2029,8 @@ private:
             &Client::unsubscribeIdTimeout,
             &Client::unsubscribeTimeout,
             &Client::willUpdateTimeout,
+            &Client::willTopicUpdateTimeout,
+            &Client::willMsgUpdateTimeout,
             &Client::sleepTimeout,
             &Client::checkMessagesTimeout
         };
@@ -2000,7 +2081,7 @@ private:
     {
         SearchgwMsg msg;
         auto& fields = msg.fields();
-        auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
+        auto& radiusField = std::get<SearchgwMsg::FieldIdx_radius>(fields);
         radiusField.value() = m_broadcastRadius;
 
         sendMessage(msg, true);
@@ -2177,6 +2258,44 @@ private:
         finaliseWillUpdateOp(MqttsnAsyncOpStatus_Aborted);
     }
 
+    void willTopicUpdateTimeout()
+    {
+        GASSERT(m_currOp == Op::WillTopicUpdate);
+
+        if (doWillTopicUpdate()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void willTopicUpdateCancel()
+    {
+        GASSERT(m_currOp == Op::WillTopicUpdate);
+        finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
+
+    void willMsgUpdateTimeout()
+    {
+        GASSERT(m_currOp == Op::WillMsgUpdate);
+
+        if (doWillMsgUpdate()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void willMsgUpdateCancel()
+    {
+        GASSERT(m_currOp == Op::WillMsgUpdate);
+        finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
+
     void sleepTimeout()
     {
         GASSERT(m_currOp == Op::Sleep);
@@ -2295,6 +2414,13 @@ private:
             op->m_msgId = allocMsgId();
         }
 
+        if ((!firstAttempt) &&
+            (op->m_ackReceived) &&
+            (MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
+            sendPubrel(op->m_msgId);
+            return true;
+        }
+
         sendPublish(
             op->m_topicId,
             op->m_msgId,
@@ -2304,6 +2430,11 @@ private:
             details::translateQosValue(op->m_qos),
             op->m_retain,
             !firstAttempt);
+
+        if (op->m_qos <= MqttsnQoS_AtMostOnceDelivery) {
+            finalisePublishOp(MqttsnAsyncOpStatus_Successful);
+        }
+
         return true;
     }
 
@@ -2349,6 +2480,14 @@ private:
         }
 
         assert(op->m_registered);
+
+        if ((!firstAttempt) &&
+            (op->m_ackReceived) &&
+            (MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
+            sendPubrel(op->m_msgId);
+            return true;
+        }
+
         sendPublish(
             op->m_topicId,
             op->m_msgId,
@@ -2550,11 +2689,24 @@ private:
         }
 
         ++op->m_attempt;
-        op->m_willTopicAcked = false;
 
+        sendConnect(op->m_clientId, op->m_keepAlivePeriod, false, true);
+        return true;
+    }
+
+    bool doWillTopicUpdate()
+    {
+        GASSERT (m_currOp == Op::WillTopicUpdate);
+
+        auto* op = opPtr<WillTopicUpdateOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
         WilltopicupdMsg msg;
         GASSERT(std::get<decltype(msg)::FieldIdx_flags>(msg.fields()).getMode() == comms::field::OptionalMode::Missing);
-        if ((op->m_willInfo.topic != nullptr) && (op->m_willInfo.topic[0] != '\0')) {
+        if ((op->m_topic != nullptr) && (op->m_topic[0] != '\0')) {
             auto& fields = msg.fields();
             auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
             auto& flagsMembers = flagsField.field().value();
@@ -2562,14 +2714,37 @@ private:
             auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
             auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
 
-            qosField.value() = details::translateQosValue(op->m_willInfo.qos);
-            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_willInfo.retain);
-            topicField.value() = op->m_willInfo.topic;
+            qosField.value() = details::translateQosValue(op->m_qos);
+            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_retain);
+            topicField.value() = op->m_topic;
 
             msg.refresh();
             GASSERT(flagsField.getMode() == comms::field::OptionalMode::Exists);
         }
 
+        sendMessage(msg);
+        return true;
+    }
+
+    bool doWillMsgUpdate()
+    {
+        GASSERT (m_currOp == Op::WillMsgUpdate);
+
+        auto* op = opPtr<WillMsgUpdateOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+
+        WillmsgupdMsg msg;
+        auto& fields = msg.fields();
+        auto& msgBodyField = std::get<WillmsgupdMsg::FieldIdx_willMsg>(fields);
+        auto* msgBodyBeg = op->m_msg;
+        if (msgBodyBeg != nullptr) {
+            auto* msgBodyEnd = msgBodyBeg + op->m_msgLen;
+            msgBodyField.value().assign(msgBodyBeg, msgBodyEnd);
+        }
         sendMessage(msg);
         return true;
     }
@@ -2610,7 +2785,7 @@ private:
         auto& fields = msg.fields();
         auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
 
-        clientIdField.value() = op->m_clientId;
+        clientIdField.value() = m_clientId;
         sendMessage(msg);
         return true;
     }
@@ -2633,7 +2808,31 @@ private:
         midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
 
         durationField.value() = keepAlivePeriod;
-        clientIdField.value() = clientId;
+        if (clientId != nullptr) {
+            clientIdField.value() = clientId;
+        }
+        sendMessage(msg);
+    }
+
+    void sendWilltopic(
+        const char* topic,
+        MqttsnQoS qos,
+        bool retain)
+    {
+        WilltopicMsg msg;
+        if (topic != nullptr) {
+            auto& fields = msg.fields();
+            auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
+            auto& flagsMembers = flagsField.field().value();
+            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
+            auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+
+            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
+            qosField.value() = details::translateQosValue(qos);
+            topicField.value() = topic;
+        }
+        msg.refresh();
         sendMessage(msg);
     }
 
@@ -2678,7 +2877,7 @@ private:
         sendMessage(pubMsg);
     }
 
-    void sentPuback(
+    void sendPuback(
         MqttsnTopicId topicId,
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal retCode)
@@ -2805,6 +3004,32 @@ private:
         cb(cbData, status);
     }
 
+    void finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::WillTopicUpdate);
+        auto* op = opPtr<WillTopicUpdateOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<WillTopicUpdateOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
+    void finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::WillMsgUpdate);
+        auto* op = opPtr<WillMsgUpdateOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<WillMsgUpdateOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
     void finaliseSleepOp(MqttsnAsyncOpStatus status)
     {
         GASSERT(m_currOp == Op::Sleep);
@@ -2884,6 +3109,7 @@ private:
     Timestamp m_lastGwSearchTimestamp = 0;
     Timestamp m_lastMsgTimestamp = 0;
     Timestamp m_lastPingTimestamp = 0;
+    ClientIdType m_clientId;
 
     unsigned m_callStackCount = 0U;
     unsigned m_pingCount = 0;

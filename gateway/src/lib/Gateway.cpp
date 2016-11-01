@@ -15,29 +15,59 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "mqttsn/gateway/Gateway.h"
 
-#pragma once
+#include "GatewayImpl.h"
 
-#include "WilltopicBase.h"
 namespace mqttsn
 {
 
-namespace protocol
+namespace gateway
 {
 
-namespace message
+Gateway::Gateway()
+  : m_pImpl(new GatewayImpl)
 {
+}
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic :
-    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
+Gateway::~Gateway() = default;
+
+void Gateway::setNextTickProgramReqCb(NextTickProgramReqCb&& func)
 {
+    m_pImpl->setNextTickProgramReqCb(std::move(func));
+}
 
-};
+void Gateway::setSendDataReqCb(SendDataReqCb&& func)
+{
+    m_pImpl->setSendDataReqCb(std::move(func));
+}
 
-}  // namespace message
+void Gateway::setAdvertisePeriod(std::uint16_t value)
+{
+    m_pImpl->setAdvertisePeriod(value);
+}
 
-}  // namespace protocol
+void Gateway::setGatewayId(std::uint8_t value)
+{
+    m_pImpl->setGatewayId(value);
+}
+
+bool Gateway::start()
+{
+    return m_pImpl->start();
+}
+
+void Gateway::stop()
+{
+    m_pImpl->stop();
+}
+
+void Gateway::tick()
+{
+    m_pImpl->tick();
+}
+
+}  // namespace gateway
 
 }  // namespace mqttsn
 

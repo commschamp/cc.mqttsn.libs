@@ -18,26 +18,41 @@
 
 #pragma once
 
-#include "WilltopicBase.h"
+#include "comms/comms.h"
+#include "mqttsn/protocol/AllMessages.h"
+#include "mqtt/AllMessages.h"
+#include "messages.h"
+
 namespace mqttsn
 {
 
-namespace protocol
+namespace gateway
 {
 
-namespace message
-{
+template<typename TMsgBase>
+using MqttsnMsgHandler = comms::GenericHandler<
+    TMsgBase,
+    mqttsn::protocol::AllMessages<TMsgBase>
+>;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic :
-    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
-{
+template<typename TMsgBase>
+using MqttMsgHandler = comms::GenericHandler<
+    TMsgBase,
+    mqtt::AllMessages<TMsgBase>
+>;
 
+class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler<MqttMessage>
+{
+    typedef MqttsnMsgHandler<MqttsnMessage> MqttsnBase;
+    typedef MqttMsgHandler<MqttMessage> MqttBase;
+
+public:
+    using MqttsnBase::handle;
+    using MqttBase::handle;
 };
 
-}  // namespace message
 
-}  // namespace protocol
+}  // namespace gateway
 
 }  // namespace mqttsn
 

@@ -18,26 +18,48 @@
 
 #pragma once
 
-#include "WilltopicBase.h"
+#include "SessionOp.h"
+#include "common.h"
+
 namespace mqttsn
 {
 
-namespace protocol
+namespace gateway
 {
 
-namespace message
+namespace session_op
 {
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic :
-    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
+class Asleep : public SessionOp
 {
+    typedef SessionOp Base;
 
+public:
+    Asleep(SessionState& sessionState);
+    ~Asleep();
+
+protected:
+    virtual void tickImpl() override;
+    virtual void brokerConnectionUpdatedImpl() override;
+
+private:
+    using Base::handle;
+    virtual void handle(DisconnectMsg_SN& msg) override;
+    virtual void handle(MqttsnMessage& msg) override;
+    virtual void handle(PingrespMsg& msg) override;
+    virtual void handle(MqttMessage& msg) override;
+
+    void doPing();
+    void reqNextTick();
+
+    unsigned m_attempt = 0;
+    Timestamp m_lastReq = 0;
+    Timestamp m_lastResp = 0;
 };
 
-}  // namespace message
+}  // namespace session_op
 
-}  // namespace protocol
+}  // namespace gateway
 
 }  // namespace mqttsn
 

@@ -71,6 +71,9 @@ public:
     void test37();
     void test38();
     void test39();
+    void test40();
+    void test41();
+    void test42();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -101,6 +104,7 @@ private:
 
     typedef mqttsn::protocol::field::TopicIdTypeVal TopicIdTypeVal;
 
+    static const std::string DefaultClientId;
     static const unsigned DefaultAdvertisePeriod = 5 * 60 * 1000;
     static const unsigned DefaultRetryTimeout = 5 * 1000;
     static const unsigned DefaultRetryCount = 3;
@@ -152,6 +156,8 @@ private:
         std::list<std::pair<MqttsnAsyncOpStatus, MqttsnQoS> > m_reportedSubscribes;
         std::list<MqttsnAsyncOpStatus> m_reportedUnsubscribes;
         std::list<MqttsnAsyncOpStatus> m_reportedWillUpdates;
+        std::list<MqttsnAsyncOpStatus> m_reportedWillTopicUpdates;
+        std::list<MqttsnAsyncOpStatus> m_reportedWillMsgUpdates;
         std::list<MqttsnAsyncOpStatus> m_reportedSleeps;
         std::list<MqttsnAsyncOpStatus> m_reportedMessageChecks;
     };
@@ -220,6 +226,24 @@ private:
                 TS_TRACE("Will update complete with status: " + std::to_string((int)val));
                 if (state != nullptr) {
                     state->m_reportedWillUpdates.push_back(val);
+                }
+            });
+
+        ptr->setWillTopicUpdateCompleteCallback(
+            [state](MqttsnAsyncOpStatus val)
+            {
+                TS_TRACE("Will topic update complete with status: " + std::to_string((int)val));
+                if (state != nullptr) {
+                    state->m_reportedWillTopicUpdates.push_back(val);
+                }
+            });
+
+        ptr->setWillMsgUpdateCompleteCallback(
+            [state](MqttsnAsyncOpStatus val)
+            {
+                TS_TRACE("Will msg update complete with status: " + std::to_string((int)val));
+                if (state != nullptr) {
+                    state->m_reportedWillMsgUpdates.push_back(val);
                 }
             });
 
@@ -476,7 +500,7 @@ private:
             willInfo = &WillInfo;
         }
         auto result =
-            client.connect(ClientId.c_str(), DefaultKeepAlive, true, willInfo);
+            client.connect(DefaultClientId.c_str(), DefaultKeepAlive, true, willInfo);
         TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
         verifySent_ConnectMsg(state, dataProc, ClientId, DefaultKeepAlive, true, willInfo != nullptr);
         TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -548,7 +572,7 @@ private:
                 sent = true;
                 TS_TRACE("<-- SEARCHGW");
                 auto& fields = msg.fields();
-                auto& radiusField = std::get<SearchgwMsg::FieldIdx_radus>(fields);
+                auto& radiusField = std::get<SearchgwMsg::FieldIdx_radius>(fields);
                 TS_ASSERT_EQUALS(radiusField.value(), radius);
             });
 
@@ -608,14 +632,21 @@ private:
                 TS_TRACE("<-- WILLTOPIC");
                 auto& fields = msg.fields();
                 auto& flagsField = std::get<WilltopicMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
+                auto& flagsMembers = flagsField.field().value();
                 auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
                 auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
                 auto& topicField = std::get<WilltopicMsg::FieldIdx_willTopic>(fields);
 
-                TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
-                TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), qos);
                 TS_ASSERT_EQUALS(topicField.value(), topic);
+                if (!topic.empty()) {
+                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Exists);
+                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
+                    TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), qos);
+                }
+                else {
+                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Missing);
+                }
+
             });
 
         processOutput(state, dataProc);
@@ -1253,6 +1284,36 @@ private:
         state.m_reportedWillUpdates.pop_front();
     }
 
+    static void verifyCb_ReportedWillTopicUpdate(
+        TestBasicState& state,
+        MqttsnAsyncOpStatus status)
+    {
+        TS_ASSERT(!state.m_reportedWillTopicUpdates.empty());
+        if (state.m_reportedWillTopicUpdates.empty()) {
+            return;
+        }
+
+        auto& elem = state.m_reportedWillTopicUpdates.front();
+
+        TS_ASSERT_EQUALS(elem, status);
+        state.m_reportedWillTopicUpdates.pop_front();
+    }
+
+    static void verifyCb_ReportedWillMsgUpdate(
+        TestBasicState& state,
+        MqttsnAsyncOpStatus status)
+    {
+        TS_ASSERT(!state.m_reportedWillMsgUpdates.empty());
+        if (state.m_reportedWillMsgUpdates.empty()) {
+            return;
+        }
+
+        auto& elem = state.m_reportedWillMsgUpdates.front();
+
+        TS_ASSERT_EQUALS(elem, status);
+        state.m_reportedWillMsgUpdates.pop_front();
+    }
+
     static void verifyCb_ReportedSleep(
         TestBasicState& state,
         MqttsnAsyncOpStatus status)
@@ -1293,6 +1354,8 @@ private:
         return CommonTestClient::transformQos(val);
     }
 };
+
+const std::string ClientBasic::DefaultClientId("test_client");
 
 void ClientBasic::test1()
 {
@@ -1925,20 +1988,12 @@ void ClientBasic::test15()
     auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
     client->tick(nextTicks);
-    auto msgId2 = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, true);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-    TS_ASSERT_EQUALS(msgId, msgId2);
-    TS_ASSERT(state.m_reportedPublishes.empty());
-
-    clearState(state);
-    state.m_nextElapsedTicks = 1000;
-    pubrecMsg = dataProc.preparePubrecMsg(msgId);
-    dataFromGw(*client, pubrecMsg, "PUBREC");
     verifySent_PubrelMsg(state, dataProc, msgId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
 
     clearState(state);
+    state.m_nextElapsedTicks = 1000;
     auto pubcompMsg = dataProc.preparePubcompMsg(msgId);
     dataFromGw(*client, pubcompMsg, "PUBCOMP");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
@@ -2479,6 +2534,14 @@ void ClientBasic::test24()
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain);
     TS_ASSERT(state.m_nextOutput.empty());
+    TS_ASSERT(state.m_reportedMsgs.empty());
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    publishMsg = dataProc.preparePublishMsg(TopicId + 1, MsgId + 2, Data, TopicIdTypeVal::Normal, Qos, Retain, false);
+    dataFromGw(*client, publishMsg, "PUBLISH");
+    verifySent_PubackMsg(state, dataProc, TopicId + 1, MsgId + 2, mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+    TS_ASSERT(state.m_reportedMsgs.empty());
 }
 
 void ClientBasic::test25()
@@ -2525,7 +2588,7 @@ void ClientBasic::test25()
     publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);
-    TS_ASSERT(state.m_reportedMsgs.empty()); // Duplicated mustn't be reported
+    verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain); // Duplicate is reported for Qos 1
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
@@ -2594,7 +2657,8 @@ void ClientBasic::test26()
     pubrelMsg = dataProc.preparePubrelMsg(expectedMsgId);
     dataFromGw(*client, pubrelMsg, "PUBREL");
     verifySent_PubcompMsg(state, dataProc, expectedMsgId);
-    TS_ASSERT(state.m_reportedMsgs.empty()); // Duplicate not reported
+    // Although marked as duplicate, it is considered to be a new message
+    verifyCb_ReportedMessage(state, Topic, TopicId, Data, transformQos(Qos), Retain);
 
     clearState(state);
     ++expectedMsgId;
@@ -3035,20 +3099,12 @@ void ClientBasic::test34()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const std::string WillTopic("will/topic");
-    static const DataSeq Data = {0x0, 0x2, 0x3};
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = true;
 
-    auto willInfo = MqttsnWillInfo();
-    willInfo.topic = WillTopic.c_str();
-    willInfo.msg = &Data[0];
-    willInfo.msgLen = Data.size();
-    willInfo.qos = Qos;
-    willInfo.retain = Retain;
-
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willUpdate(&willInfo);
+    auto result = client->willTopicUpdate(WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -3058,18 +3114,33 @@ void ClientBasic::test34()
     auto msgRespMsg = dataProc.prepareWillmsgrespMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, msgRespMsg, "WILLMSGRESP");
     TS_ASSERT(state.m_nextOutput.empty());
-    TS_ASSERT(state.m_reportedWillUpdates.empty());
+    TS_ASSERT(state.m_reportedWillTopicUpdates.empty());
+    TS_ASSERT(state.m_reportedWillMsgUpdates.empty());
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     auto topicRespMsg = dataProc.prepareWilltopicrespMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
+    verifyCb_ReportedWillTopicUpdate(state, MqttsnAsyncOpStatus_Successful);
+
+    static const DataSeq Data = {0x0, 0x2, 0x3};
+    result = client->willMsgUpdate(&Data[0], Data.size());
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WillmsgupdMsg(state, dataProc, Data);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
+    TS_ASSERT(state.m_nextOutput.empty());
+    TS_ASSERT(state.m_reportedWillMsgUpdates.empty());
+    TS_ASSERT(state.m_reportedWillMsgUpdates.empty());
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout - 1000);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     dataFromGw(*client, msgRespMsg, "WILLMSGRESP");
-    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
+    verifyCb_ReportedWillMsgUpdate(state, MqttsnAsyncOpStatus_Successful);
 }
 
 void ClientBasic::test35()
@@ -3088,18 +3159,12 @@ void ClientBasic::test35()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
     static const std::string WillTopic("will/topic");
-    static const DataSeq Data = {0x0, 0x2, 0x3};
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = true;
 
-    auto willInfo = MqttsnWillInfo();
-    willInfo.topic = WillTopic.c_str();
-    willInfo.qos = Qos;
-    willInfo.retain = Retain;
-
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willUpdate(&willInfo);
+    auto result = client->willTopicUpdate(WillTopic.c_str(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -3118,7 +3183,7 @@ void ClientBasic::test35()
 
     clearState(state);
     client->tick(DefaultRetryTimeout);
-    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_NoResponse);
+    verifyCb_ReportedWillTopicUpdate(state, MqttsnAsyncOpStatus_NoResponse);
 }
 
 void ClientBasic::test36()
@@ -3141,14 +3206,9 @@ void ClientBasic::test36()
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = true;
 
-    auto willInfo = MqttsnWillInfo();
-    willInfo.topic = WillTopic.c_str();
-    willInfo.qos = Qos;
-    willInfo.retain = Retain;
-
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willUpdate(&willInfo);
+    auto result = client->willTopicUpdate(WillTopic.c_str(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -3157,36 +3217,28 @@ void ClientBasic::test36()
     state.m_nextElapsedTicks = 1000;
     auto topicRespMsg = dataProc.prepareWilltopicrespMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
+    verifyCb_ReportedWillTopicUpdate(state, MqttsnAsyncOpStatus_Successful);
+
+    result = client->willMsgUpdate(nullptr, 0);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WillmsgupdMsg(state, dataProc, Data);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
     client->tick(DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedWillUpdates.empty());
-    verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-
-    clearState(state);
-    state.m_nextElapsedTicks = 1000;
-    dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
     verifySent_WillmsgupdMsg(state, dataProc, Data);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
     client->tick(DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedWillUpdates.empty());
-    verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-
-    clearState(state);
-    state.m_nextElapsedTicks = 1000;
-    dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
     verifySent_WillmsgupdMsg(state, dataProc, Data);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
     client->tick(DefaultRetryTimeout);
-    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_NoResponse);
+    verifyCb_ReportedWillMsgUpdate(state, MqttsnAsyncOpStatus_NoResponse);
 }
 
 void ClientBasic::test37()
@@ -3209,14 +3261,9 @@ void ClientBasic::test37()
     static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
     static const bool Retain = true;
 
-    auto willInfo = MqttsnWillInfo();
-    willInfo.topic = WillTopic.c_str();
-    willInfo.qos = Qos;
-    willInfo.retain = Retain;
-
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willUpdate(&willInfo);
+    auto result = client->willTopicUpdate(WillTopic.c_str(), Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -3224,26 +3271,19 @@ void ClientBasic::test37()
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     client->cancel();
-    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Aborted);
+    verifyCb_ReportedWillTopicUpdate(state, MqttsnAsyncOpStatus_Aborted);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    result = client->willUpdate(&willInfo);
+    result = client->willMsgUpdate(nullptr, 0);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-
-    clearState(state);
-    state.m_nextElapsedTicks = 1000;
-    auto topicRespMsg = dataProc.prepareWilltopicrespMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
-    dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
     verifySent_WillmsgupdMsg(state, dataProc, Data);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     client->cancel();
-    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Aborted);
+    verifyCb_ReportedWillMsgUpdate(state, MqttsnAsyncOpStatus_Aborted);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
@@ -3342,7 +3382,7 @@ void ClientBasic::test39()
 
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
 
-    auto result = client->checkMessages(clientId);
+    auto result = client->checkMessages();
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_NotSleeping);
 
     static const std::uint16_t Duration = 10000;
@@ -3362,7 +3402,7 @@ void ClientBasic::test39()
 
     clearState(state);
     state.m_nextElapsedTicks = 2000;
-    result = client->checkMessages(clientId);
+    result = client->checkMessages();
     verifySent_PingreqMsg(state, dataProc, clientId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
@@ -3400,3 +3440,129 @@ void ClientBasic::test39()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
 }
 
+void ClientBasic::test40()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test34State;
+    Test34State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state, true);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    static const std::string WillTopic("will/topic/upd");
+    static const DataBuf WillData = {1, 1, 1, 1};
+    static const MqttsnQoS Qos = MqttsnQoS_AtLeastOnceDelivery;
+    static const bool Retain = true;
+
+    auto info = MqttsnWillInfo();
+    info.topic = WillTopic.c_str();
+    info.msg = &WillData[0];
+    info.msgLen = WillData.size();
+    info.qos = Qos;
+    info.retain = Retain;
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->willUpdate(&info);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, true);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto topicReqMsg = dataProc.prepareWilltopicreqMsg();
+    dataFromGw(*client, topicReqMsg, "WILLTOPICREQ");
+    verifySent_WilltopicMsg(state, dataProc, WillTopic, Qos, Retain);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto msgReqMsg = dataProc.prepareWillmsgreqMsg();
+    dataFromGw(*client, msgReqMsg, "WILLMSGREQ");
+    verifySent_WillmsgMsg(state, dataProc, WillData);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, connackMsg, "CONNACK");
+    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
+}
+
+void ClientBasic::test41()
+{
+    DataProcessor dataProc;
+    typedef TestBasicState Test34State;
+    Test34State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+    doConnect(*client, dataProc, state, true);
+
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
+
+    auto info = MqttsnWillInfo();
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto result = client->willUpdate(&info);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, true);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto topicReqMsg = dataProc.prepareWilltopicreqMsg();
+    dataFromGw(*client, topicReqMsg, "WILLTOPICREQ");
+    verifySent_WilltopicMsg(state, dataProc, std::string(), MqttsnQoS_AtMostOnceDelivery, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, connackMsg, "CONNACK");
+    verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
+}
+
+void ClientBasic::test42()
+{
+    // Connect with will
+    DataProcessor dataProc;
+    typedef TestBasicState Test42State;
+
+    Test42State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+
+    static const unsigned short KeepAlive = 60;
+
+    TS_TRACE("Connecting...");
+
+    state.m_nextElapsedTicks = 0;
+    auto result =
+        client->connect(nullptr, KeepAlive, true, nullptr);
+
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_ConnectMsg(state, dataProc, std::string(), KeepAlive, true, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, connackMsg, "CONNACK");
+
+    // check connected
+    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Connected);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, KeepAlive * 1000);
+}

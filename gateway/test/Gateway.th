@@ -1,0 +1,111 @@
+//
+// Copyright 2016 (C). Alex Robenko. All rights reserved.
+//
+
+// This file is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+#pragma once
+
+#include "comms/comms.h"
+#include "mqttsn/gateway/Gateway.h"
+
+CC_DISABLE_WARNINGS()
+#include "cxxtest/TestSuite.h"
+CC_ENABLE_WARNINGS()
+
+class GatewayTests : public CxxTest::TestSuite
+{
+public:
+    void test1();
+};
+
+void GatewayTests::test1()
+{
+    mqttsn::gateway::Gateway gw;
+
+    TS_ASSERT(!gw.start());
+
+    bool tickRequested = false;
+    unsigned expTickRequest = 0;
+    gw.setNextTickProgramReqCb(
+        [&tickRequested, &expTickRequest](unsigned tick)
+        {
+            TS_ASSERT_EQUALS(expTickRequest, tick);
+            tickRequested = true;
+        });
+
+    std::vector<std::uint8_t> data;
+    gw.setSendDataReqCb(
+        [&data](const std::uint8_t* buf, std::size_t bufLen)
+        {
+            data.assign(buf, buf + bufLen);
+        });
+
+    TS_ASSERT(!gw.start());
+
+    static const std::uint16_t AdvPeriod = 10 * 60;
+    gw.setAdvertisePeriod(AdvPeriod);
+
+    static const std::uint8_t GwId = 5;
+    expTickRequest = AdvPeriod * 1000;
+    gw.setGatewayId(GwId);
+    TS_ASSERT(gw.start());
+    TS_ASSERT(tickRequested);
+    TS_ASSERT(!data.empty());
+
+    static const std::vector<std::uint8_t> ExpMsg = {
+        0x5, 0x0, GwId, std::uint8_t(AdvPeriod >> 8), static_cast<std::uint8_t>(AdvPeriod)
+    };
+
+    TS_ASSERT_EQUALS(data, ExpMsg);
+
+    tickRequested = false;
+    data.clear();
+    gw.tick();
+    TS_ASSERT(tickRequested);
+    TS_ASSERT(!data.empty());
+    TS_ASSERT_EQUALS(data, ExpMsg);
+
+    static const std::uint8_t GwId2 = 10;
+    gw.setGatewayId(GwId2);
+    tickRequested = false;
+    data.clear();
+    gw.tick();
+    TS_ASSERT(tickRequested);
+    TS_ASSERT(!data.empty());
+
+    static const std::vector<std::uint8_t> ExpMsg2 = {
+        0x5, 0x0, GwId2, std::uint8_t(AdvPeriod >> 8), static_cast<std::uint8_t>(AdvPeriod)
+    };
+
+    TS_ASSERT_EQUALS(data, ExpMsg2);
+
+
+    static const std::uint16_t AdvPeriod2 = 15 * 60;
+    gw.setAdvertisePeriod(AdvPeriod2);
+    expTickRequest = AdvPeriod2 * 1000;
+    tickRequested = false;
+    data.clear();
+    gw.tick();
+    TS_ASSERT(tickRequested);
+    TS_ASSERT(!data.empty());
+
+    static const std::vector<std::uint8_t> ExpMsg3 = {
+        0x5, 0x0, GwId2, std::uint8_t(AdvPeriod2 >> 8), static_cast<std::uint8_t>(AdvPeriod2)
+    };
+
+    TS_ASSERT_EQUALS(data, ExpMsg3);
+}
+

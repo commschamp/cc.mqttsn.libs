@@ -18,26 +18,42 @@
 
 #pragma once
 
-#include "WilltopicBase.h"
+#include <memory>
+#include <cstdint>
+#include <functional>
+
+#include "mqttsn/gateway/Api.h"
+
 namespace mqttsn
 {
 
-namespace protocol
+namespace gateway
 {
 
-namespace message
+class GatewayImpl;
+class MQTTSN_GATEWAY_API Gateway
 {
+public:
+    Gateway();
+    ~Gateway();
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willtopic :
-    public WilltopicBase<TMsgBase, MsgTypeId_WILLTOPIC, Willtopic<TMsgBase, TOptions>, TOptions>
-{
+    typedef std::function<void (unsigned value)> NextTickProgramReqCb;
+    typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
 
+    void setNextTickProgramReqCb(NextTickProgramReqCb&& func);
+    void setSendDataReqCb(SendDataReqCb&& func);
+
+    void setAdvertisePeriod(std::uint16_t value);
+    void setGatewayId(std::uint8_t value);
+    bool start();
+    void stop();
+    void tick();
+
+private:
+    std::unique_ptr<GatewayImpl> m_pImpl;
 };
 
-}  // namespace message
-
-}  // namespace protocol
+}  // namespace gateway
 
 }  // namespace mqttsn
 

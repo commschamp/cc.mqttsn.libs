@@ -57,7 +57,7 @@ function (cc_plugin_mqttsn_client_filter)
     
     add_library (${name} SHARED ${src} ${moc} ${ui} ${resources})
     target_link_libraries (${name} ${DEFAULT_CLIENT_LIB_TGT} ${CC_PLUGIN_LIBRARIES})
-    qt5_use_modules(${name} Core)
+    qt5_use_modules(${name} Widgets Core)
     
     install (
         TARGETS ${name}
