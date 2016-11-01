@@ -73,6 +73,7 @@ public:
     void test39();
     void test40();
     void test41();
+    void test42();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -3530,3 +3531,38 @@ void ClientBasic::test41()
     verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
 }
 
+void ClientBasic::test42()
+{
+    // Connect with will
+    DataProcessor dataProc;
+    typedef TestBasicState Test42State;
+
+    Test42State state;
+
+    auto client = allocClient(&state, &dataProc);
+    startClient(*client);
+
+    doGwInfo(*client, dataProc, state);
+    clearState(state);
+
+    static const unsigned short KeepAlive = 60;
+
+    TS_TRACE("Connecting...");
+
+    state.m_nextElapsedTicks = 0;
+    auto result =
+        client->connect(nullptr, KeepAlive, true, nullptr);
+
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
+    verifySent_ConnectMsg(state, dataProc, std::string(), KeepAlive, true, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+
+    clearState(state);
+    state.m_nextElapsedTicks = 1000;
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, connackMsg, "CONNACK");
+
+    // check connected
+    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Connected);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, KeepAlive * 1000);
+}

@@ -1134,7 +1134,13 @@ public:
         }
 
         assert(m_currOp == Op::Connect);
-        m_clientId = op->m_clientId;
+        if (op->m_clientId != nullptr) {
+            m_clientId = op->m_clientId;
+        }
+        else {
+            m_clientId.clear();
+        }
+
         m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
         finaliseOp<ConnectOp>();
 
@@ -2802,7 +2808,9 @@ private:
         midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
 
         durationField.value() = keepAlivePeriod;
-        clientIdField.value() = clientId;
+        if (clientId != nullptr) {
+            clientIdField.value() = clientId;
+        }
         sendMessage(msg);
     }
 
