@@ -97,7 +97,6 @@ bool Mgr::start()
 
 void Mgr::newConnection()
 {
-    std::cout << "New connection" << std::endl;
     disconnect(
         m_socket.get(), SIGNAL(readyRead()),
         this, SLOT(newConnection()));
@@ -157,7 +156,6 @@ void Mgr::broadcastAdvertise(const std::uint8_t* buf, std::size_t bufSize)
                 QHostAddress::Broadcast,
                 m_broadcastPort);
 
-        std::cout << "Broadcasted " << count << " bytes" << std::endl;
         if (count < 0) {
             return;
         }

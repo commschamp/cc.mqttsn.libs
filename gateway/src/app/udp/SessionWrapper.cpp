@@ -129,10 +129,7 @@ SessionWrapper::SessionWrapper(
 
 }
 
-SessionWrapper::~SessionWrapper()
-{
-    std::cout << __FUNCTION__ << std::endl;
-}
+SessionWrapper::~SessionWrapper() = default;
 
 bool SessionWrapper::start(const SelfAdvertiseCheckFunc& checkFunc)
 {
@@ -142,7 +139,7 @@ bool SessionWrapper::start(const SelfAdvertiseCheckFunc& checkFunc)
     }
 
     if (!readFromClientSocket(checkFunc)) {
-        std::cout << "Self advertise discovered" << std::endl;
+        // Self advertise discovered, ingoring...
         return false;
     }
 
@@ -183,7 +180,7 @@ void SessionWrapper::clientSocketErrorOccurred(QAbstractSocket::SocketError err)
 {
     static_cast<void>(err);
     assert(m_clientSocket);
-    std::cout << "ERROR: UDP Socket: " << m_clientSocket->errorString().toStdString() << std::endl;
+    std::cerr << "ERROR: UDP Socket: " << m_clientSocket->errorString().toStdString() << std::endl;
 }
 
 void SessionWrapper::brokerConnected()
@@ -203,7 +200,6 @@ void SessionWrapper::brokerDisconnected()
 void SessionWrapper::readFromBrokerSocket()
 {
     auto data = m_brokerSocket.readAll();
-    std::cout << "Received " << data.size() << " bytes from broker" << std::endl;
 
     auto* buf = reinterpret_cast<const std::uint8_t*>(data.constData());
     std::size_t bufSize = data.size();
@@ -231,7 +227,7 @@ void SessionWrapper::readFromBrokerSocket()
 void SessionWrapper::brokerSocketErrorOccurred(QAbstractSocket::SocketError err)
 {
     static_cast<void>(err);
-    std::cout << "ERROR: TCP Socket: " << m_brokerSocket.errorString().toStdString() << std::endl;
+    std::cerr << "ERROR: TCP Socket: " << m_brokerSocket.errorString().toStdString() << std::endl;
 }
 
 bool SessionWrapper::readFromClientSocket(const SelfAdvertiseCheckFunc& checkFunc)
@@ -296,7 +292,6 @@ unsigned SessionWrapper::cancelTick()
 void SessionWrapper::sendDataToClient(const std::uint8_t* buf, std::size_t bufSize)
 {
     assert(m_clientSocket);
-    std::cout << "Sending " << bufSize << " bytes to client" << std::endl;
     std::size_t writtenCount = 0;
     while (writtenCount < bufSize) {
         auto remSize = bufSize - writtenCount;
@@ -305,7 +300,7 @@ void SessionWrapper::sendDataToClient(const std::uint8_t* buf, std::size_t bufSi
                 reinterpret_cast<const char*>(&buf[writtenCount]),
                 remSize);
         if (count < 0) {
-            std::cerr << "Failed to write to UDP socket" << std::endl;
+            std::cerr << "ERROR: Failed to write to UDP socket" << std::endl;
             return;
         }
 
@@ -315,10 +310,6 @@ void SessionWrapper::sendDataToClient(const std::uint8_t* buf, std::size_t bufSi
 
 void SessionWrapper::sendDataToBroker(const std::uint8_t* buf, std::size_t bufSize)
 {
-    static_cast<void>(buf);
-    static_cast<void>(bufSize);
-    std::cout << "Sending " << bufSize << " bytes to broker" << std::endl;
-
     std::size_t writtenCount = 0;
     while (writtenCount < bufSize) {
         auto remSize = bufSize - writtenCount;
@@ -338,7 +329,6 @@ void SessionWrapper::sendDataToBroker(const std::uint8_t* buf, std::size_t bufSi
 
 void SessionWrapper::termSession()
 {
-    std::cout << "INFO: Termination requested:" << std::endl;
     assert(m_clientSocket);
     m_clientSocket->blockSignals(true);
     m_timer.stop();
