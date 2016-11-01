@@ -64,13 +64,14 @@ void Connect::handle(ConnectMsg_SN& msg)
     auto& keepAliveField = std::get<MsgType::FieldIdx_duration>(fields);
     auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
 
+    auto& st = state();
     auto* reqClientId = &(clientIdField.value());
     if (reqClientId->empty()) {
-        reqClientId = &(state().m_defaultClientId);
+        reqClientId = &(st.m_defaultClientId);
     }
 
-    if ((state().m_connStatus != ConnectionStatus::Disconnected) &&
-        (*reqClientId != state().m_clientId)) {
+    if ((st.m_connStatus != ConnectionStatus::Disconnected) &&
+        (*reqClientId != st.m_clientId)) {
         assert(!state().m_clientId.empty());
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
@@ -79,7 +80,7 @@ void Connect::handle(ConnectMsg_SN& msg)
     }
 
 
-    assert(state().m_clientId.empty() || state().m_clientId == *reqClientId);
+    assert(st.m_clientId.empty() || st.m_clientId == *reqClientId);
     if (m_internalState.m_hasClientId) {
         m_internalState = State();
     }
@@ -105,6 +106,15 @@ void Connect::handle(ConnectMsg_SN& msg)
 
         m_will = state().m_will;
     } while (false);
+
+    if ((st.m_connStatus == ConnectionStatus::Disconnected) &&
+        (!st.m_brokerConnected) &&
+        (!m_internalState.m_waitingForReconnect) &&
+        (!st.m_pendingClientDisconnect)) {
+        m_internalState.m_waitingForReconnect = true;
+        nextTickReq(st.m_retryPeriod);
+        return;
+    }
 
     doNextStep();
 }

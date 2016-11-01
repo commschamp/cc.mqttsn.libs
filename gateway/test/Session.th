@@ -58,6 +58,7 @@ public:
     void test25();
     void test26();
     void test27();
+    void test28();
 
 private:
     typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
@@ -95,7 +96,8 @@ private:
         TestMsgHandler& handler,
         const std::uint8_t gwId = DefaultGwId,
         const std::string* username = nullptr,
-        const DataBuf* password = nullptr)
+        const DataBuf* password = nullptr,
+        bool connectToBroker = true)
     {
         SessionPtr session(new mqttsn::gateway::Session);
 
@@ -342,7 +344,9 @@ private:
         session->setGatewayId(gwId);
         session->setTopicIdAllocationRange(DefaultMinTopicId, DefaultMaxTopicId);
         bool result = session->start();
-        session->setBrokerConnected(true);
+        if (connectToBroker) {
+            session->setBrokerConnected(true);
+        }
         TS_ASSERT(result);
         TS_ASSERT(session->isRunning());
         TS_ASSERT(state.m_sentToClient.empty());
@@ -3075,3 +3079,36 @@ void SessionTest::test27()
     verifyNoOtherEvent(state, handler);
 }
 
+void SessionTest::test28()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler, DefaultGwId, nullptr, nullptr, false);
+    verifyNoOtherEvent(state, handler);
+
+    auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, false, true);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    doTick(state, *session, DefaultRetryPeriod * 1000);
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+    verifyTermReq(state);
+    verifyNoOtherEvent(state, handler);
+
+    session = allocSession(state, handler, DefaultGwId, nullptr, nullptr, false);
+    dataFromClient(*session, connectMsg, "CONNECT");
+    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyNoOtherEvent(state, handler);
+
+    state.m_elapsed.push_back(1000);
+    session->setBrokerConnected(true);
+    verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, true);
+    verifyNoOtherEvent(state, handler);
+
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    dataFromBroker(*session, connackMsg, "CONNACK");
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    verifyConnectedClient(state, DefaultClientId);
+    verifyNoOtherEvent(state, handler);
+}
