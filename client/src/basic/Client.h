@@ -401,6 +401,11 @@ public:
         m_msgReportData = data;
     }
 
+    void setGwSearchMode(MqttsnSearchgwMode value)
+    {
+        m_gwSearchMode = value;
+    }
+
     MqttsnErrorCode start()
     {
         if (m_running) {
@@ -1872,7 +1877,12 @@ private:
 
     unsigned calcSearchGwSendTimeout()
     {
-        if ((!m_gwInfos.empty()) || (m_connectionStatus == ConnectionStatus::Asleep)) {
+        if ((m_gwSearchMode == MqttsnSearchgwMode_Disabled) ||
+            (m_connectionStatus == ConnectionStatus::Asleep)) {
+            return NoTimeout;
+        }
+
+        if ((m_gwSearchMode == MqttsnSearchgwMode_UntilFirstGw) && (!m_gwInfos.empty())) {
             return NoTimeout;
         }
 
@@ -3118,6 +3128,7 @@ private:
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_keepAlivePeriod = 0;
     ConnectionStatus m_connectionStatus = ConnectionStatus::Disconnected;
+    MqttsnSearchgwMode m_gwSearchMode = MqttsnSearchgwMode_UntilFirstGw;
     std::uint16_t m_msgId = 0;
     std::uint8_t m_broadcastRadius = DefaultBroadcastRadius;
 

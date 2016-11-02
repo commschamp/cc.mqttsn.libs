@@ -28,6 +28,13 @@ if (NOT CMAKE_CROSSCOMPILING)
     endif ()
 endif ()
 
+if (UNIX)
+    find_program(CCACHE_FOUND ccache)
+    if(CCACHE_FOUND)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+    endif(CCACHE_FOUND)
+endif ()    
 
 option (MQTTSN_INSTALL_PROTOCOL_HEADERS "Install headers for MQTT-SN protocol implementation library. " OFF)
 option (MQTTSN_CC_PLUGINS "Build and install pluginS for CommsChampion." ON)

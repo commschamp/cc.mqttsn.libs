@@ -74,6 +74,7 @@ public:
     void test40();
     void test41();
     void test42();
+    void test43();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -3443,8 +3444,8 @@ void ClientBasic::test39()
 void ClientBasic::test40()
 {
     DataProcessor dataProc;
-    typedef TestBasicState Test34State;
-    Test34State state;
+    typedef TestBasicState Test40State;
+    Test40State state;
 
     auto client = allocClient(&state, &dataProc);
     startClient(*client);
@@ -3566,3 +3567,17 @@ void ClientBasic::test42()
     verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Connected);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, KeepAlive * 1000);
 }
+
+void ClientBasic::test43()
+{
+    // Connect with will
+    DataProcessor dataProc;
+    typedef TestBasicState Test42State;
+
+    Test42State state;
+
+    auto client = allocClient(&state, &dataProc);
+    client->setSearchgwMode(MqttsnSearchgwMode_Disabled);
+    TS_ASSERT(state.m_nextOutput.empty());
+}
+

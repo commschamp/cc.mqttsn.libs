@@ -84,6 +84,13 @@ enum MqttsnAsyncOpStatus
     MqttsnAsyncOpStatus_Aborted,
 };
 
+enum MqttsnSearchgwMode
+{
+    MqttsnSearchgwMode_UntilFirstGw,
+    MqttsnSearchgwMode_Always,
+    MqttsnSearchgwMode_Disabled,
+};
+
 typedef void* MqttsnClientHandle;
 typedef unsigned short MqttsnTopicId;
 

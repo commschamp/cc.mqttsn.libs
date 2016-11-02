@@ -42,6 +42,7 @@ typedef decltype(&mqttsn_client_set_gw_advertise_period) SetGwAdvertisePeriodFun
 typedef decltype(&mqttsn_client_set_retry_period) SetRetryPeriodFunc;
 typedef decltype(&mqttsn_client_set_retry_count) SetRetryCountFunc;
 typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
+typedef decltype(&mqttsn_client_set_searchgw_mode) SetSearchgwModeFunc;
 typedef decltype(&mqttsn_client_cancel) CancelFunc;
 typedef decltype(&mqttsn_client_connect) ConnectFunc;
 typedef decltype(&mqttsn_client_disconnect) DisconnectFunc;
@@ -75,6 +76,7 @@ struct ClientLibFuncs
     SetRetryPeriodFunc m_setRetryPeriodFunc = nullptr;
     SetRetryCountFunc m_setRetryCountFunc = nullptr;
     SetBroadcastRadiusFunc m_setBroadcastRadius = nullptr;
+    SetSearchgwModeFunc m_setSearchgwModeFunc = nullptr;
     CancelFunc m_cancelFunc = nullptr;
     ConnectFunc m_connectFunc = nullptr;
     DisconnectFunc m_disconnectFunc = nullptr;
@@ -135,6 +137,7 @@ public:
     void setRetryPeriod(unsigned ms);
     void setRetryCount(unsigned value);
     void setBroadcastRadius(unsigned char val);
+    void setSearchgwMode(MqttsnSearchgwMode value);
 
     bool cancel();
     MqttsnErrorCode connect(
