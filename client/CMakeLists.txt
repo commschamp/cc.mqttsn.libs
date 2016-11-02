@@ -2,6 +2,7 @@ set (HEADER_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.h.templ)
 set (SRC_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.cpp.templ)
 set (TEMPL_PROCESS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/script/ProcessTemplate.cmake)
 set (DEFAULT_CLIENT_NAME "")
+set (MQTTSN_CLIENT_LIB_NAME "mqttsn_client")
 
 ######################################################################
 
@@ -77,23 +78,6 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst)
             DESTINATION ${LIB_INSTALL_DIR}
         )
     endif ()
-endfunction()
-
-######################################################################
-
-function (lib_mqttsn_client)
-    set (name "${MQTTSN_CLIENT_LIB_NAME}")
-    
-    set (src
-        src/client.cpp
-    )
-    
-    add_library (${name} STATIC ${src})
-    
-    install (
-        TARGETS ${name}
-        DESTINATION ${LIB_INSTALL_DIR})
-
 endfunction()
 
 ######################################################################
