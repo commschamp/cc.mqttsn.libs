@@ -38,12 +38,20 @@ namespace
 
 const QString GwOpt("gateway");
 const QString GwShortOpt("G");
-const QString GwIdOpt("gateway_id");
+const QString GwIdOpt("gateway-id");
 const QString GwIdShortOpt("g");
 const QString PortOpt("port");
 const QString PortShortOpt("p");
 const unsigned short DefaultPort = 1883;
 const QString DefaultPortStr = QString("%1").arg(DefaultPort);
+const QString ClientIdOpt("client-id");
+const QString ClientIdShortOpt("i");
+const QString KeepAliveOpt("keep-alive");
+const QString KeepAliveShortOpt("keep-alive");
+const unsigned short DefaultKeepAlivePeriod = 60;
+const QString DefaultKeepAlivePeriodStr = QString("%1").arg(DefaultKeepAlivePeriod);
+const QString NoCleanOpt("no-clean");
+const QString NoCleanShortOpt("c");
 
 void prepareCommandLineOptions(QCommandLineParser& parser)
 {
@@ -75,6 +83,29 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
         QCoreApplication::translate("main", "value")
     );
     parser.addOption(portOpt);
+
+    QCommandLineOption idOpt(
+        QStringList() << ClientIdShortOpt << ClientIdOpt,
+        "Client ID.",
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(idOpt);
+
+    QCommandLineOption keepAliveOpt(
+        QStringList() << KeepAliveShortOpt << KeepAliveOpt,
+        "Keep alive period in seconds. Defaults to " + DefaultKeepAlivePeriodStr + '.',
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(keepAliveOpt);
+
+
+    QCommandLineOption noCleanOpt(
+        QStringList() << NoCleanShortOpt << NoCleanOpt,
+        "Connect to GW with 'clean session' bit cleared, i.e. preserve previous subscriptions.",
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(noCleanOpt);
+
 }
 
 }  // namespace
@@ -141,12 +172,31 @@ int main(int argc, char *argv[])
         port = portTmp;
     } while (false);
 
+    auto keepAlive = DefaultKeepAlivePeriod;
+    do {
+        auto keepAliveStr = parser.value(KeepAliveOpt);
+        if (keepAliveStr.isEmpty()) {
+            break;
+        }
+
+        bool ok = false;
+        auto keepAliveTmp = keepAliveStr.toUInt(&ok);
+        if ((!ok) || (keepAliveTmp == 0) || (0xffff < keepAliveTmp)) {
+            break;
+        }
+
+        keepAlive = keepAliveTmp;
+    } while (false);
+
     mqttsn::client::app::sub::udp::Sub sub;
 
     sub.setGwAddr(gwAddr);
     sub.setGwPort(gwPort);
     sub.setGwId(gwId);
     sub.setLocalPort(port);
+    sub.setClientId(parser.value(ClientIdOpt).toStdString());
+    sub.setKeepAlive(keepAlive);
+    sub.setCleanSession(!parser.isSet(NoCleanOpt));
 
     if (!sub.start()) {
         std::cerr << "ERROR: Failed to start" << std::endl;

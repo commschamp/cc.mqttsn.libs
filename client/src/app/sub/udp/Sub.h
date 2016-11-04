@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <type_traits>
+#include <string>
 
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
@@ -69,6 +70,21 @@ public:
         m_localPort = value;
     }
 
+    void setClientId(const std::string& value)
+    {
+        m_clientId = value;
+    }
+
+    void setKeepAlive(unsigned short value)
+    {
+        m_keepAlive = value;
+    }
+
+    void setCleanSession(bool value)
+    {
+        m_cleanSession = value;
+    }
+
     bool start();
 
 private slots:
@@ -108,7 +124,8 @@ private:
     void messageReport(const MqttsnMessageInfo* msgInfo);
     static void messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo);
 
-    void doConnect();
+    void doConnect(bool reconnecting = false);
+    void doSubscribe();
     bool bindLocalPort();
     bool openSocket();
     bool connectToGw();
@@ -125,7 +142,9 @@ private:
     QUdpSocket m_socket;
     QHostAddress m_lastSenderAddress;
     quint16 m_lastSenderPort;
-
+    std::string m_clientId;
+    unsigned short m_keepAlive = 0;
+    bool m_cleanSession = true;
 };
 
 }  // namespace udp

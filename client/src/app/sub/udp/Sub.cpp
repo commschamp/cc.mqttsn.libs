@@ -168,9 +168,6 @@ void Sub::sendData(const unsigned char* buf, unsigned bufLen, bool broadcast)
     }
 
     sendDataConnected(buf, bufLen);
-
-    assert(!"NYI");
-    // TODO
 }
 
 void Sub::sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool broadcast)
@@ -211,9 +208,22 @@ void Sub::gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status
 
 void Sub::connectionStatusReport(MqttsnConnectionStatus status)
 {
-    static_cast<void>(status);
-    assert(!"NYI");
-    // TODO
+    if (status == MqttsnConnectionStatus_Connected) {
+        doSubscribe();
+        return;
+    }
+
+    if (status == MqttsnConnectionStatus_Disconnected) {
+        std::cerr << "WARNING: Disconnected from GW, reconnecting..." << std::endl;
+        doConnect(true);
+        return;
+    }
+
+    if (status == MqttsnConnectionStatus_Conjestion) {
+        std::cerr << "WARNING: Conjestion reported, reconnecting..." << std::endl;
+        doConnect();
+        return;
+    }
 }
 
 void Sub::connectionStatusReportCb(void* obj, MqttsnConnectionStatus status)
@@ -236,10 +246,23 @@ void Sub::messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo)
     reinterpret_cast<Sub*>(obj)->messageReport(msgInfo);
 }
 
-void Sub::doConnect()
+void Sub::doConnect(bool reconnecting)
 {
-    // TODO: send connect message
-    assert(!"Connecting");
+    bool cleanSession = m_cleanSession;
+    if (reconnecting) {
+        cleanSession = false;
+    }
+
+    auto result = mqttsn_client_connect(m_client.get(), m_clientId.c_str(), m_keepAlive, cleanSession, nullptr);
+    if (result != MqttsnErrorCode_Success) {
+        std::cerr << "ERROR: Failed to connect to the gateway" << std::endl;
+    }
+}
+
+void Sub::doSubscribe()
+{
+    // TODO:
+    assert(!"Subscribing");
 }
 
 bool Sub::bindLocalPort()
