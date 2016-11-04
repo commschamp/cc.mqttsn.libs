@@ -436,7 +436,7 @@ public:
         m_currOp = Op::None;
         m_timerActive = false;
 
-        sendGwSearchReq();
+        checkGwSearchReq();
         programNextTimeout();
         return MqttsnErrorCode_Success;
     }
@@ -1981,8 +1981,21 @@ private:
 
     void checkGwSearchReq()
     {
-        if (m_gwInfos.empty() &&
-            ((m_lastGwSearchTimestamp + m_retryPeriod) <= m_timestamp)) {
+        if ((m_gwSearchMode == MqttsnSearchgwMode_Disabled) ||
+            (m_connectionStatus == ConnectionStatus::Asleep)) {
+            return;
+        }
+
+        if ((m_gwSearchMode == MqttsnSearchgwMode_UntilFirstGw) &&
+            (!m_gwInfos.empty())) {
+            return;
+        }
+
+        bool sendEnabled = m_gwInfos.empty() || (m_gwSearchMode == MqttsnSearchgwMode_Always);
+        bool needToSend =
+            (m_lastGwSearchTimestamp == 0) ||
+            ((m_lastGwSearchTimestamp + m_retryPeriod) <= m_timestamp);
+        if (sendEnabled && needToSend) {
             sendGwSearchReq();
         }
     }

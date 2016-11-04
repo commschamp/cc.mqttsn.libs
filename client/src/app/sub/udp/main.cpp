@@ -18,6 +18,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <limits>
+#include <cstdint>
 
 #include "comms/CompileControl.h"
 
@@ -29,14 +31,50 @@ CC_DISABLE_WARNINGS()
 #include <QtCore/QStringList>
 CC_ENABLE_WARNINGS()
 
+#include "Sub.h"
 
 namespace
 {
+
+const QString GwOpt("gateway");
+const QString GwShortOpt("G");
+const QString GwIdOpt("gateway_id");
+const QString GwIdShortOpt("g");
+const QString PortOpt("port");
+const QString PortShortOpt("p");
+const unsigned short DefaultPort = 1883;
+const QString DefaultPortStr = QString("%1").arg(DefaultPort);
 
 void prepareCommandLineOptions(QCommandLineParser& parser)
 {
     parser.addHelpOption();
 
+    QCommandLineOption gwOpt(
+        QStringList() << GwShortOpt << GwOpt,
+        "Gateway address. Expected to be in <address>:<port> format. "
+        "Port is optional, if not provided defaults to " + DefaultPortStr +
+        ". If this option is used, no SEARCHGW messages are sent to the gateway, and -" +
+        GwIdShortOpt + " option is ignored." ,
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(gwOpt);
+
+    QCommandLineOption gwIdOpt(
+        QStringList() << GwIdShortOpt << GwIdOpt,
+        QCoreApplication::translate("main",
+            "Gateway ID to connect to when discovered. "
+            "If not provided, the first gateway, that responds to SEARCHGW message, "
+            "will be chosen."),
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(gwIdOpt);
+
+    QCommandLineOption portOpt(
+        QStringList() << PortShortOpt << PortOpt,
+        "Local network port. Defaults to " + DefaultPortStr + " in case -" + GwShortOpt + " option is NOT used.",
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(portOpt);
 }
 
 }  // namespace
@@ -47,6 +85,75 @@ int main(int argc, char *argv[])
     QCommandLineParser parser;
     prepareCommandLineOptions(parser);
     parser.process(app);
+
+    auto gwUrl = parser.value(GwOpt);
+    auto gwAddr = gwUrl;
+    auto gwPort = DefaultPort;
+    auto colonIdx = gwUrl.indexOf(QChar(':'));
+    if (0 < colonIdx) {
+        gwAddr = gwUrl.left(colonIdx);
+        auto gwPortStr = gwUrl.right(gwUrl.size() - (colonIdx + 1));
+        bool ok = false;
+        auto gwPortTmp = gwPortStr.toUInt(&ok);
+        if (ok && (0 < gwPortTmp) && (gwPortTmp <= std::numeric_limits<std::uint16_t>::max())) {
+            gwPort = static_cast<decltype(gwPort)>(gwPortTmp);
+        }
+    }
+
+    int gwId = -1;
+    do {
+        if (!gwAddr.isEmpty()) {
+            break;
+        }
+
+        auto gwIdStr = parser.value(GwIdOpt);
+        if (gwIdStr.isEmpty()) {
+            break;
+        }
+
+        bool ok = false;
+        auto gwIdTmp = gwIdStr.toInt(&ok);
+        if ((!ok) || (gwIdTmp < 0) || (0xffff < gwIdTmp)) {
+            break;
+        }
+
+        gwId = gwIdTmp;
+    } while (false);
+
+    unsigned short port = DefaultPort;
+    do {
+        if (!gwAddr.isEmpty()) {
+            port = 0;
+            break;
+        }
+
+        auto portStr = parser.value(PortOpt);
+        if (portStr.isEmpty()) {
+            break;
+        }
+
+        bool ok = false;
+        auto portTmp = portStr.toUInt(&ok);
+        if ((!ok) || (0xffff < portTmp)) {
+            break;
+        }
+
+        port = portTmp;
+    } while (false);
+
+    mqttsn::client::app::sub::udp::Sub sub;
+
+    sub.setGwAddr(gwAddr);
+    sub.setGwPort(gwPort);
+    sub.setGwId(gwId);
+    sub.setLocalPort(port);
+
+    if (!sub.start()) {
+        std::cerr << "ERROR: Failed to start" << std::endl;
+        return -1;
+    }
+
+
 
 //    mqttsn::gateway::Config config;
 //    do {

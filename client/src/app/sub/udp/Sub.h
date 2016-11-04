@@ -23,6 +23,8 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
+#include <QtNetwork/QUdpSocket>
+#include <QtNetwork/QHostAddress>
 
 #include "client.h"
 
@@ -47,8 +49,32 @@ class Sub : public QObject
 public:
     Sub();
 
+    void setGwAddr(const QString& value)
+    {
+        m_gwAddr = value;
+    }
+
+    void setGwPort(unsigned short value)
+    {
+        m_gwPort = value;
+    }
+
+    void setGwId(int value)
+    {
+        m_gwId = value;
+    }
+
+    void setLocalPort(unsigned short value)
+    {
+        m_localPort = value;
+    }
+
+    bool start();
+
 private slots:
     void tick();
+    void readFromSocket();
+    void socketErrorOccurred(QAbstractSocket::SocketError err);
 
 private:
     struct ClientDeleter
@@ -82,9 +108,24 @@ private:
     void messageReport(const MqttsnMessageInfo* msgInfo);
     static void messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo);
 
+    void doConnect();
+    bool bindLocalPort();
+    bool openSocket();
+    bool connectToGw();
+    void broadcastData(const unsigned char* buf, unsigned bufLen);
+    void sendDataConnected(const unsigned char* buf, unsigned bufLen);
+
     ClientPtr m_client;
     QTimer m_timer;
     unsigned m_reqTimeout = 0;
+    QString m_gwAddr;
+    unsigned short m_gwPort = 0;
+    int m_gwId = -1;
+    unsigned short m_localPort = 0;
+    QUdpSocket m_socket;
+    QHostAddress m_lastSenderAddress;
+    quint16 m_lastSenderPort;
+
 };
 
 }  // namespace udp

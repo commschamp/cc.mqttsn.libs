@@ -3578,6 +3578,7 @@ void ClientBasic::test43()
 
     auto client = allocClient(&state, &dataProc);
     client->setSearchgwMode(MqttsnSearchgwMode_Disabled);
+    startClient(*client);
     TS_ASSERT(state.m_nextOutput.empty());
 }
 

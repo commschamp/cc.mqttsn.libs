@@ -18,6 +18,9 @@
 #include "Sub.h"
 
 #include <cassert>
+#include <iostream>
+#include <vector>
+#include <cstdint>
 
 namespace mqttsn
 {
@@ -33,6 +36,13 @@ namespace sub
 
 namespace udp
 {
+
+namespace
+{
+
+typedef std::vector<std::uint8_t> DataBuf;
+
+}  // namespace
 
 Sub::Sub()
   : m_client(mqttsn_client_new())
@@ -59,6 +69,30 @@ Sub::Sub()
     connect(
         &m_timer, SIGNAL(timeout()),
         this, SLOT(tick()));
+
+    connect(
+        &m_socket, SIGNAL(readyRead()),
+        this, SLOT(readFromSocket()));
+
+    connect(
+        &m_socket, SIGNAL(error(QAbstractSocket::SocketError)),
+        this, SLOT(socketErrorOccurred(QAbstractSocket::SocketError)));
+
+}
+
+bool Sub::start()
+{
+    bool result =
+        bindLocalPort() &&
+        openSocket() &&
+        connectToGw() &&
+        mqttsn_client_start(m_client.get()) == MqttsnErrorCode_Success;
+
+
+    if (result && (m_socket.state() == QUdpSocket::ConnectedState)) {
+        doConnect();
+    }
+    return result;
 }
 
 void Sub::tick()
@@ -67,6 +101,29 @@ void Sub::tick()
     m_reqTimeout = 0;
     mqttsn_client_tick(m_client.get(), ms);
 }
+
+void Sub::readFromSocket()
+{
+    DataBuf data;
+
+    while (m_socket.hasPendingDatagrams()) {
+        data.resize(m_socket.pendingDatagramSize());
+        auto readBytes = m_socket.readDatagram(
+            reinterpret_cast<char*>(&data[0]),
+            data.size(),
+            &m_lastSenderAddress,
+            &m_lastSenderPort);
+        assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+        mqttsn_client_process_data(m_client.get(), &data[0], data.size());
+    }
+}
+
+void Sub::socketErrorOccurred(QAbstractSocket::SocketError err)
+{
+    static_cast<void>(err);
+    std::cerr << "ERROR: UDP Socket: " << m_socket.errorString().toStdString() << std::endl;
+}
+
 
 void Sub::nextTickProgram(unsigned ms)
 {
@@ -101,9 +158,17 @@ unsigned Sub::caneclTickCb(void* obj)
 
 void Sub::sendData(const unsigned char* buf, unsigned bufLen, bool broadcast)
 {
-    static_cast<void>(buf);
-    static_cast<void>(bufLen);
-    static_cast<void>(broadcast);
+    if (broadcast) {
+        broadcastData(buf, bufLen);
+        return;
+    }
+
+    if (m_socket.state() != QUdpSocket::ConnectedState) {
+        return;
+    }
+
+    sendDataConnected(buf, bufLen);
+
     assert(!"NYI");
     // TODO
 }
@@ -116,10 +181,26 @@ void Sub::sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool 
 
 void Sub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
 {
-    static_cast<void>(gwId);
-    static_cast<void>(status);
-    assert(!"NYI");
-    // TODO
+    if (status != MqttsnGwStatus_Available) {
+        return;
+    }
+
+    if ((0 <= m_gwId) && (gwId != m_gwId)) {
+        return;
+    }
+
+    if (m_socket.state() != QUdpSocket::ConnectedState) {
+        m_socket.connectToHost(m_lastSenderAddress, m_lastSenderPort);
+        if (!m_socket.waitForConnected(2000)) {
+            std::cerr << "ERROR: Failed to connect UDP socket" << std::endl;
+            return;
+        }
+
+        assert(m_socket.isOpen());
+        assert(m_socket.state() == QUdpSocket::ConnectedState);
+    }
+
+    doConnect();
 }
 
 void Sub::gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status)
@@ -154,6 +235,103 @@ void Sub::messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo)
     assert(obj != nullptr);
     reinterpret_cast<Sub*>(obj)->messageReport(msgInfo);
 }
+
+void Sub::doConnect()
+{
+    // TODO: send connect message
+    assert(!"Connecting");
+}
+
+bool Sub::bindLocalPort()
+{
+    if (m_localPort == 0) {
+        return true;
+    }
+
+    bool result =
+        m_socket.bind(QHostAddress::AnyIPv4, m_localPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
+    if (!result) {
+        std::cerr << "ERROR: Failed to bind UDP socket to local port " << m_localPort << std::endl;
+    }
+    return result;
+}
+
+bool Sub::openSocket()
+{
+    if (m_socket.isOpen()) {
+        return true;
+    }
+
+    bool result = m_socket.open(QUdpSocket::ReadWrite);
+    if (!result) {
+        std::cerr << "ERROR: Failed to open UDP socket" << std::endl;
+    }
+    return result;
+}
+
+bool Sub::connectToGw()
+{
+    if ((m_gwAddr.isEmpty()) || (m_gwPort == 0)) {
+        return true;
+    }
+
+    m_socket.connectToHost(m_gwAddr, m_gwPort);
+    if (!m_socket.waitForConnected(2000)) {
+        std::cerr << "ERROR: Failed to connect UDP socket" << std::endl;
+        return false;
+    }
+
+    assert(m_socket.isOpen());
+    assert(m_socket.state() == QUdpSocket::ConnectedState);
+
+    mqttsn_client_set_searchgw_mode(m_client.get(), MqttsnSearchgwMode_Disabled);
+    return true;
+}
+
+void Sub::broadcastData(const unsigned char* buf, unsigned bufLen)
+{
+    if (m_gwPort == 0) {
+        return;
+    }
+
+    std::size_t writtenCount = 0;
+    while (writtenCount < bufLen) {
+        auto remSize = bufLen - writtenCount;
+        auto count =
+            m_socket.writeDatagram(
+                reinterpret_cast<const char*>(&buf[writtenCount]),
+                remSize,
+                QHostAddress::Broadcast,
+                m_gwPort);
+
+        if (count < 0) {
+            std::cerr << "ERROR: Failed to broadcast data" << std::endl;
+            return;
+        }
+
+        writtenCount += count;
+    }
+
+}
+
+void Sub::sendDataConnected(const unsigned char* buf, unsigned bufLen)
+{
+    std::size_t writtenCount = 0;
+    while (writtenCount < bufLen) {
+        auto remSize = bufLen - writtenCount;
+        auto count =
+            m_socket.write(
+                reinterpret_cast<const char*>(&buf[writtenCount]),
+                remSize);
+        if (count < 0) {
+            std::cerr << "ERROR: Failed to write to UDP socket" << std::endl;
+            return;
+        }
+
+        writtenCount += count;
+    }
+}
+
 
 }  // namespace udp
 
