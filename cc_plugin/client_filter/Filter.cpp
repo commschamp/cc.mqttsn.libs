@@ -237,7 +237,7 @@ void Filter::publishComplete(MqttsnAsyncOpStatus status)
 {
     assert(!m_pendingPubs.isEmpty());
 
-    if (status == MqttsnAsyncOpStatus_Conjestion) {
+    if (status == MqttsnAsyncOpStatus_Congestion) {
         doPublish();
         return;
     }
@@ -324,7 +324,7 @@ void Filter::subscribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos)
     static_cast<void>(qos);
     assert(!m_subs.isEmpty());
 
-    if (status == MqttsnAsyncOpStatus_Conjestion) {
+    if (status == MqttsnAsyncOpStatus_Congestion) {
         doSubscribe();
         return;
     }

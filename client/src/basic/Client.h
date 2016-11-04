@@ -1152,7 +1152,7 @@ public:
         static_cast<void>(msg);
         static const MqttsnConnectionStatus StatusMap[] = {
             /* ReturnCodeVal_Accepted */ MqttsnConnectionStatus_Connected,
-            /* ReturnCodeVal_Conjestion */ MqttsnConnectionStatus_Conjestion,
+            /* ReturnCodeVal_Congestion */ MqttsnConnectionStatus_Congestion,
             /* ReturnCodeVal_InvalidTopicId */ MqttsnConnectionStatus_Denied,
             /* ReturnCodeVal_NotSupported */ MqttsnConnectionStatus_Denied
         };
@@ -3083,7 +3083,7 @@ private:
     {
         static const MqttsnAsyncOpStatus Map[] = {
             /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
-            /* ReturnCodeVal_Conjestion */ MqttsnAsyncOpStatus_Conjestion,
+            /* ReturnCodeVal_Congestion */ MqttsnAsyncOpStatus_Congestion,
             /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
             /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
         };

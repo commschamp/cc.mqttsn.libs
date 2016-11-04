@@ -20,6 +20,8 @@
 #include <fstream>
 #include <limits>
 #include <cstdint>
+#include <tuple>
+#include <algorithm>
 
 #include "comms/CompileControl.h"
 
@@ -47,11 +49,15 @@ const QString DefaultPortStr = QString("%1").arg(DefaultPort);
 const QString ClientIdOpt("client-id");
 const QString ClientIdShortOpt("i");
 const QString KeepAliveOpt("keep-alive");
-const QString KeepAliveShortOpt("keep-alive");
+const QString KeepAliveShortOpt("k");
 const unsigned short DefaultKeepAlivePeriod = 60;
 const QString DefaultKeepAlivePeriodStr = QString("%1").arg(DefaultKeepAlivePeriod);
 const QString NoCleanOpt("no-clean");
 const QString NoCleanShortOpt("c");
+const QString TopicOpt("topic");
+const QString TopicShortOpt("t");
+const QString TopicIdOpt("topic-id");
+const QString TopicIdShortOpt("T");
 
 void prepareCommandLineOptions(QCommandLineParser& parser)
 {
@@ -106,17 +112,23 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
     );
     parser.addOption(noCleanOpt);
 
+    QCommandLineOption topicOpt(
+        QStringList() << TopicShortOpt << TopicOpt,
+        "Topic to subscribe to, may be repeated multiple times",
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(topicOpt);
+
+    QCommandLineOption topicIdOpt(
+        QStringList() << TopicIdShortOpt << TopicIdOpt,
+        "Predefined topic ID to subscribe to, may be repeated multiple times",
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(topicIdOpt);
 }
 
-}  // namespace
-
-int main(int argc, char *argv[])
+std::tuple<QString, unsigned short> splitGwAddr(const QCommandLineParser& parser)
 {
-    QCoreApplication app(argc, argv);
-    QCommandLineParser parser;
-    prepareCommandLineOptions(parser);
-    parser.process(app);
-
     auto gwUrl = parser.value(GwOpt);
     auto gwAddr = gwUrl;
     auto gwPort = DefaultPort;
@@ -131,6 +143,11 @@ int main(int argc, char *argv[])
         }
     }
 
+    return std::make_tuple(gwAddr, gwPort);
+}
+
+int getGwId(const QCommandLineParser& parser, const QString& gwAddr)
+{
     int gwId = -1;
     do {
         if (!gwAddr.isEmpty()) {
@@ -150,7 +167,11 @@ int main(int argc, char *argv[])
 
         gwId = gwIdTmp;
     } while (false);
+    return gwId;
+}
 
+unsigned short getLocalPort(const QCommandLineParser& parser, const QString& gwAddr)
+{
     unsigned short port = DefaultPort;
     do {
         if (!gwAddr.isEmpty()) {
@@ -171,7 +192,11 @@ int main(int argc, char *argv[])
 
         port = portTmp;
     } while (false);
+    return port;
+}
 
+unsigned short getKeepAlive(const QCommandLineParser& parser)
+{
     auto keepAlive = DefaultKeepAlivePeriod;
     do {
         auto keepAliveStr = parser.value(KeepAliveOpt);
@@ -187,6 +212,72 @@ int main(int argc, char *argv[])
 
         keepAlive = keepAliveTmp;
     } while (false);
+    return keepAlive;
+}
+
+mqttsn::client::app::sub::udp::Sub::TopicsList getTopics(const QCommandLineParser& parser)
+{
+    auto topicStrings = parser.values(TopicOpt);
+    std::vector<std::string> topics;
+    topics.reserve(topicStrings.size());
+    std::transform(
+        topicStrings.begin(), topicStrings.end(), std::back_inserter(topics),
+        [](const QString& s) -> std::string
+        {
+            return s.toStdString();
+        });
+
+    std::sort(topics.begin(), topics.end());
+    topics.erase(
+        std::unique(topics.begin(), topics.end()),
+        topics.end());
+    return mqttsn::client::app::sub::udp::Sub::TopicsList(topics.begin(), topics.end());
+}
+
+mqttsn::client::app::sub::udp::Sub::TopicIdsList getTopicIds(const QCommandLineParser& parser)
+{
+    auto topicStrings = parser.values(TopicIdOpt);
+    std::vector<std::uint16_t> topics;
+    topics.reserve(topicStrings.size());
+    std::transform(
+        topicStrings.begin(), topicStrings.end(), std::back_inserter(topics),
+        [](const QString& s) -> std::uint16_t
+        {
+            return static_cast<std::uint16_t>(s.toUInt());
+        });
+
+    topics.erase(
+        std::remove_if(
+            topics.begin(), topics.end(),
+            [](std::uint16_t value) -> bool
+            {
+                return value == 0;
+            }),
+        topics.end());
+
+    std::sort(topics.begin(), topics.end());
+    topics.erase(
+        std::unique(topics.begin(), topics.end()),
+        topics.end());
+
+    return mqttsn::client::app::sub::udp::Sub::TopicIdsList(topics.begin(), topics.end());
+}
+
+}  // namespace
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication app(argc, argv);
+    QCommandLineParser parser;
+    prepareCommandLineOptions(parser);
+    parser.process(app);
+
+    QString gwAddr;
+    unsigned short gwPort = 0;
+    std::tie(gwAddr, gwPort) = splitGwAddr(parser);
+    int gwId = getGwId(parser, gwAddr);
+    unsigned short port = getLocalPort(parser, gwAddr);
+    auto keepAlive = getKeepAlive(parser);
 
     mqttsn::client::app::sub::udp::Sub sub;
 
@@ -197,36 +288,13 @@ int main(int argc, char *argv[])
     sub.setClientId(parser.value(ClientIdOpt).toStdString());
     sub.setKeepAlive(keepAlive);
     sub.setCleanSession(!parser.isSet(NoCleanOpt));
+    sub.setTopics(getTopics(parser));
+    sub.setTopicIds(getTopicIds(parser));
 
     if (!sub.start()) {
         std::cerr << "ERROR: Failed to start" << std::endl;
         return -1;
     }
-
-
-
-//    mqttsn::gateway::Config config;
-//    do {
-//        if (!parser.isSet(ConfigOptStr)) {
-//            break;
-//        }
-//
-//        auto configFile = parser.value(ConfigOptStr).toStdString();
-//        std::ifstream stream(configFile);
-//        if (!stream) {
-//            std::cerr << "WARNING: Failed to open configuration file \"" <<
-//                configFile << "\", using default configuration." << std::endl;
-//            break;
-//        }
-//
-//        config.read(stream);
-//    } while (false);
-//
-//    mqttsn::gateway::app::udp::Mgr gw(config);
-//    if (!gw.start()) {
-//        std::cerr << "Failed to start!" << std::endl;
-//        return -1;
-//    }
 
     return app.exec();
 }

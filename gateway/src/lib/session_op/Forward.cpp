@@ -83,7 +83,7 @@ void Forward::handle(PublishMsg_SN& msg)
         sendPubackToClient(
             topicIdField.value(),
             msgIdField.value(),
-            mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+            mqttsn::protocol::field::ReturnCodeVal_Congestion);
         return;
     }
 

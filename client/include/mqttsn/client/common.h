@@ -46,7 +46,7 @@ enum MqttsnConnectionStatus
     MqttsnConnectionStatus_Invalid,
     MqttsnConnectionStatus_Connected,
     MqttsnConnectionStatus_Denied,
-    MqttsnConnectionStatus_Conjestion,
+    MqttsnConnectionStatus_Congestion,
     MqttsnConnectionStatus_Timeout,
     MqttsnConnectionStatus_Disconnected,
     MqttsnConnectionStatus_DisconnectedAsleep,
@@ -77,7 +77,7 @@ enum MqttsnAsyncOpStatus
 {
     MqttsnAsyncOpStatus_Invalid,
     MqttsnAsyncOpStatus_Successful,
-    MqttsnAsyncOpStatus_Conjestion,
+    MqttsnAsyncOpStatus_Congestion,
     MqttsnAsyncOpStatus_InvalidId,
     MqttsnAsyncOpStatus_NotSupported,
     MqttsnAsyncOpStatus_NoResponse,

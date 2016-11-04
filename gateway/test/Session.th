@@ -3104,7 +3104,7 @@ void SessionTest::test28()
     verifyNoOtherEvent(state, handler);
 
     doTick(state, *session, DefaultRetryPeriod * 1000);
-    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+    verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Congestion);
     verifyTermReq(state);
     verifyNoOtherEvent(state, handler);
 

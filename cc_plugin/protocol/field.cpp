@@ -154,7 +154,7 @@ QVariantMap createProps_returnCode()
     cc::property::field::ForField<Field> props;
     props.name("ReturnCode")
          .add("Accepted")
-         .add("Conjestion")
+         .add("Congestion")
          .add("Invalid Topic ID")
          .add("Not Supported");
     assert(props.values().size() == (int)mqttsn::protocol::field::ReturnCodeVal_NumOfValues);

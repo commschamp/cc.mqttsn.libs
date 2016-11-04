@@ -373,7 +373,7 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
         /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
         /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
         /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Conjestion,
+        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Congestion,
         /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
         /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
     };

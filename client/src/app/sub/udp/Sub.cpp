@@ -21,6 +21,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdint>
+#include <iterator>
 
 namespace mqttsn
 {
@@ -114,6 +115,11 @@ void Sub::readFromSocket()
             &m_lastSenderAddress,
             &m_lastSenderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+
+        std::cout << "--> " << std::hex;
+        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));
+        std::cout << std::dec << std::endl;
+
         mqttsn_client_process_data(m_client.get(), &data[0], data.size());
     }
 }
@@ -127,6 +133,7 @@ void Sub::socketErrorOccurred(QAbstractSocket::SocketError err)
 
 void Sub::nextTickProgram(unsigned ms)
 {
+    std::cout << "Tick req: " << ms << std::endl;
     m_reqTimeout = ms;
     m_timer.setSingleShot(true);
     m_timer.start(ms);
@@ -158,6 +165,10 @@ unsigned Sub::caneclTickCb(void* obj)
 
 void Sub::sendData(const unsigned char* buf, unsigned bufLen, bool broadcast)
 {
+    std::cout << "<-- " << std::hex;
+    std::copy_n(buf, bufLen, std::ostream_iterator<unsigned>(std::cout, " "));
+    std::cout << std::dec << std::endl;
+
     if (broadcast) {
         broadcastData(buf, bufLen);
         return;
@@ -219,8 +230,8 @@ void Sub::connectionStatusReport(MqttsnConnectionStatus status)
         return;
     }
 
-    if (status == MqttsnConnectionStatus_Conjestion) {
-        std::cerr << "WARNING: Conjestion reported, reconnecting..." << std::endl;
+    if (status == MqttsnConnectionStatus_Congestion) {
+        std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
         doConnect();
         return;
     }
@@ -261,8 +272,74 @@ void Sub::doConnect(bool reconnecting)
 
 void Sub::doSubscribe()
 {
-    // TODO:
-    assert(!"Subscribing");
+    if (!m_topics.empty()) {
+        auto result =
+            mqttsn_client_subscribe(
+                m_client.get(),
+                m_topics.front().c_str(),
+                m_qos,
+                &Sub::subscribeCompleteCb,
+                this);
+        if (result != MqttsnErrorCode_Success) {
+            std::cerr << "ERROR: Failed to initiate subscribe for topic " << m_topics.front() << std::endl;
+            m_topics.pop_front();
+            doSubscribe();
+        }
+        return;
+    }
+
+    if (!m_topicIds.empty()) {
+        auto result =
+            mqttsn_client_subscribe_id(
+                m_client.get(),
+                m_topicIds.front(),
+                m_qos,
+                &Sub::subscribeCompleteCb,
+                this);
+
+        if (result != MqttsnErrorCode_Success) {
+            std::cerr << "ERROR: Failed to initiate subscribe for topic ID " << m_topicIds.front() << std::endl;
+            m_topicIds.pop_front();
+            doSubscribe();
+        }
+        return;
+    }
+}
+
+void Sub::subscribeComplete(MqttsnAsyncOpStatus status)
+{
+    if (status == MqttsnAsyncOpStatus_Congestion) {
+        std::cerr << "WARNING: Failed to subscribe due to congestion, retrying..." << std::endl;
+        doSubscribe();
+        return;
+    }
+
+    if (status != MqttsnAsyncOpStatus_Successful) {
+        std::cerr << "WARNING: Failed to subscribe to topic ";
+        if (!m_topics.empty()) {
+            std::cerr << m_topics.front();
+        }
+        else if (!m_topicIds.empty()) {
+            std::cerr << "ID " << m_topicIds.front();
+        }
+        std::cerr << std::endl;
+    }
+
+    if (!m_topics.empty()) {
+        m_topics.pop_front();
+    }
+    else if (!m_topicIds.empty()) {
+        m_topicIds.pop_front();
+    }
+
+    doSubscribe();
+}
+
+void Sub::subscribeCompleteCb(void* obj, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+{
+    static_cast<void>(qos);
+    assert(obj != nullptr);
+    reinterpret_cast<Sub*>(obj)->subscribeComplete(status);
 }
 
 bool Sub::bindLocalPort()

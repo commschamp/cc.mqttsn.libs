@@ -21,6 +21,7 @@
 #include <memory>
 #include <type_traits>
 #include <string>
+#include <list>
 
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
@@ -85,6 +86,18 @@ public:
         m_cleanSession = value;
     }
 
+    typedef std::list<std::string> TopicsList;
+    void setTopics(const TopicsList& topics)
+    {
+        m_topics = topics;
+    }
+
+    typedef std::list<std::uint16_t> TopicIdsList;
+    void setTopicIds(const TopicIdsList& topicIds)
+    {
+        m_topicIds = topicIds;
+    }
+
     bool start();
 
 private slots:
@@ -126,6 +139,8 @@ private:
 
     void doConnect(bool reconnecting = false);
     void doSubscribe();
+    void subscribeComplete(MqttsnAsyncOpStatus status);
+    static void subscribeCompleteCb(void* obj, MqttsnAsyncOpStatus status, MqttsnQoS qos);
     bool bindLocalPort();
     bool openSocket();
     bool connectToGw();
@@ -145,6 +160,9 @@ private:
     std::string m_clientId;
     unsigned short m_keepAlive = 0;
     bool m_cleanSession = true;
+    TopicsList m_topics;
+    TopicIdsList m_topicIds;
+    MqttsnQoS m_qos = MqttsnQoS_ExactlyOnceDelivery;
 };
 
 }  // namespace udp
