@@ -22,6 +22,7 @@
 #include <vector>
 #include <cstdint>
 #include <iterator>
+#include <iomanip>
 
 namespace mqttsn
 {
@@ -116,9 +117,9 @@ void Sub::readFromSocket()
             &m_lastSenderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
 
-        std::cout << "--> " << std::hex;
-        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));
-        std::cout << std::dec << std::endl;
+//        std::cout << "--> " << std::hex;
+//        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));
+//        std::cout << std::dec << std::endl;
 
         mqttsn_client_process_data(m_client.get(), &data[0], data.size());
     }
@@ -133,7 +134,7 @@ void Sub::socketErrorOccurred(QAbstractSocket::SocketError err)
 
 void Sub::nextTickProgram(unsigned ms)
 {
-    std::cout << "Tick req: " << ms << std::endl;
+//    std::cout << "Tick req: " << ms << std::endl;
     m_reqTimeout = ms;
     m_timer.setSingleShot(true);
     m_timer.start(ms);
@@ -165,9 +166,9 @@ unsigned Sub::caneclTickCb(void* obj)
 
 void Sub::sendData(const unsigned char* buf, unsigned bufLen, bool broadcast)
 {
-    std::cout << "<-- " << std::hex;
-    std::copy_n(buf, bufLen, std::ostream_iterator<unsigned>(std::cout, " "));
-    std::cout << std::dec << std::endl;
+//    std::cout << "<-- " << std::hex;
+//    std::copy_n(buf, bufLen, std::ostream_iterator<unsigned>(std::cout, " "));
+//    std::cout << std::dec << std::endl;
 
     if (broadcast) {
         broadcastData(buf, bufLen);
@@ -246,9 +247,38 @@ void Sub::connectionStatusReportCb(void* obj, MqttsnConnectionStatus status)
 void Sub::messageReport(const MqttsnMessageInfo* msgInfo)
 {
     assert(msgInfo != nullptr);
-    static_cast<void>(msgInfo);
-    assert(!"NYI");
-    // TODO
+    if (msgInfo->retain && m_noRetain) {
+        return;
+    }
+
+    if (m_verbose) {
+        if (msgInfo->topic != nullptr) {
+            std::cout << msgInfo->topic;
+        }
+        else {
+            std::cout << msgInfo->topicId;
+        }
+        std::cout << " (qos=" << static_cast<unsigned>(msgInfo->qos);
+        if (msgInfo->retain) {
+            std::cout << " retained";
+        }
+        std::cout << ") : ";
+    }
+
+    if (!m_hexOutput) {
+        std::copy_n(msgInfo->msg, msgInfo->msgLen, std::ostream_iterator<char>(std::cout));
+        std::cout << std::endl;
+        return;
+    }
+
+    std::cout << std::hex;
+    for (auto idx = 0U; idx < msgInfo->msgLen; ++idx) {
+        if (0U < idx) {
+            std::cout << ' ';
+        }
+        std::cout << std::setw(2) << std::setfill('0') << static_cast<unsigned>(msgInfo->msg[idx]);
+    }
+    std::cout << std::dec << std::endl;
 }
 
 void Sub::messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo)

@@ -98,6 +98,26 @@ public:
         m_topicIds = topicIds;
     }
 
+    void setQos(MqttsnQoS value)
+    {
+        m_qos = value;
+    }
+
+    void setVerbose(bool value)
+    {
+        m_verbose = value;
+    }
+
+    void setNoRetain(bool value)
+    {
+        m_noRetain = value;
+    }
+
+    void setHexOutput(bool value)
+    {
+        m_hexOutput = value;
+    }
+
     bool start();
 
 private slots:
@@ -160,6 +180,9 @@ private:
     std::string m_clientId;
     unsigned short m_keepAlive = 0;
     bool m_cleanSession = true;
+    bool m_verbose = false;
+    bool m_noRetain = false;
+    bool m_hexOutput = false;
     TopicsList m_topics;
     TopicIdsList m_topicIds;
     MqttsnQoS m_qos = MqttsnQoS_ExactlyOnceDelivery;

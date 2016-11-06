@@ -58,6 +58,18 @@ const QString TopicOpt("topic");
 const QString TopicShortOpt("t");
 const QString TopicIdOpt("topic-id");
 const QString TopicIdShortOpt("T");
+const QString QosOpt("qos");
+const QString QosShortOpt("q");
+const QString VerboseOpt("verbose");
+const QString VerboseShortOpt("v");
+const QString NoRetainOpt("no-retained");
+const QString NoRetainShortOpt("R");
+const QString HexOpt("hex-output");
+const QString HexShortOpt("x");
+
+
+const int DefaultQos = 2;
+const QString DefaultQosStr = QString("%1").arg(DefaultQos);
 
 void prepareCommandLineOptions(QCommandLineParser& parser)
 {
@@ -104,11 +116,9 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
     );
     parser.addOption(keepAliveOpt);
 
-
     QCommandLineOption noCleanOpt(
         QStringList() << NoCleanShortOpt << NoCleanOpt,
-        "Connect to GW with 'clean session' bit cleared, i.e. preserve previous subscriptions.",
-        QCoreApplication::translate("main", "value")
+        "Connect to GW with 'clean session' bit cleared, i.e. preserve previous subscriptions."
     );
     parser.addOption(noCleanOpt);
 
@@ -125,6 +135,31 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
         QCoreApplication::translate("main", "value")
     );
     parser.addOption(topicIdOpt);
+
+    QCommandLineOption qosOpt(
+        QStringList() << QosShortOpt << QosOpt,
+        "Max quality of service to use for subscription. Defaults to " + DefaultQosStr + '.',
+        QCoreApplication::translate("main", "value")
+    );
+    parser.addOption(qosOpt);
+
+    QCommandLineOption verboseOpt(
+        QStringList() << VerboseShortOpt << VerboseOpt,
+        "Verbose print of published messages."
+    );
+    parser.addOption(verboseOpt);
+
+    QCommandLineOption noRetainOpt(
+        QStringList() << NoRetainShortOpt << NoRetainOpt,
+        "Do NOT print retained messages."
+    );
+    parser.addOption(noRetainOpt);
+
+    QCommandLineOption hexOpt(
+        QStringList() << HexShortOpt << HexOpt,
+        "Print message body in hexadecimal byte values."
+    );
+    parser.addOption(hexOpt);
 }
 
 std::tuple<QString, unsigned short> splitGwAddr(const QCommandLineParser& parser)
@@ -263,6 +298,27 @@ mqttsn::client::app::sub::udp::Sub::TopicIdsList getTopicIds(const QCommandLineP
     return mqttsn::client::app::sub::udp::Sub::TopicIdsList(topics.begin(), topics.end());
 }
 
+MqttsnQoS getQos(const QCommandLineParser& parser)
+{
+    auto value = DefaultQos;
+    do {
+        auto qosStr = parser.value(QosOpt);
+        if (qosStr.isEmpty()) {
+            break;
+        }
+
+        bool ok = false;
+        auto valueTmp = qosStr.toInt(&ok);
+        if ((!ok) || (valueTmp < 0)) {
+            break;
+        }
+
+        value = std::min(value, valueTmp);
+    } while (false);
+    return static_cast<MqttsnQoS>(value);
+}
+
+
 }  // namespace
 
 int main(int argc, char *argv[])
@@ -290,6 +346,10 @@ int main(int argc, char *argv[])
     sub.setCleanSession(!parser.isSet(NoCleanOpt));
     sub.setTopics(getTopics(parser));
     sub.setTopicIds(getTopicIds(parser));
+    sub.setQos(getQos(parser));
+    sub.setVerbose(parser.isSet(VerboseOpt));
+    sub.setNoRetain(parser.isSet(NoRetainOpt));
+    sub.setHexOutput(parser.isSet(HexOpt));
 
     if (!sub.start()) {
         std::cerr << "ERROR: Failed to start" << std::endl;
