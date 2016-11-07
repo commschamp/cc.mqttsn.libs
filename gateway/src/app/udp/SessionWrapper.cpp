@@ -42,11 +42,9 @@ const std::string WildcardStr("*");
 
 SessionWrapper::SessionWrapper(
     const Config& config,
-    ClientSocketPtr socket,
     QObject* parent)
   : Base(parent),
-    m_config(config),
-    m_clientSocket(std::move(socket))
+    m_config(config)
 {
     m_session.setNextTickProgramReqCb(
         [this](unsigned ms)
@@ -58,12 +56,6 @@ SessionWrapper::SessionWrapper(
         [this]() -> unsigned
         {
             return cancelTick();
-        });
-
-    m_session.setSendDataClientReqCb(
-        [this](const std::uint8_t* buf, std::size_t bufSize)
-        {
-            sendDataToClient(buf, bufSize);
         });
 
     m_session.setSendDataBrokerReqCb(
@@ -108,8 +100,6 @@ SessionWrapper::SessionWrapper(
 
     addPredefinedTopicsFor(WildcardStr);
 
-    // TODO: broker info
-
     connect(
         &m_timer, SIGNAL(timeout()),
         this, SLOT(tickTimeout()));
@@ -131,56 +121,20 @@ SessionWrapper::SessionWrapper(
 
 SessionWrapper::~SessionWrapper() = default;
 
-bool SessionWrapper::start(const SelfAdvertiseCheckFunc& checkFunc)
+bool SessionWrapper::start()
 {
     if (!m_session.start()) {
         std::cerr << "Failed to start new session" << std::endl;
         return false;
     }
 
-    if (!readFromClientSocket(checkFunc)) {
-        // Self advertise discovered, ingoring...
-        return false;
-    }
-
     connectToBroker();
-
-    connect(
-        m_clientSocket.get(), SIGNAL(readyRead()),
-        this, SLOT(readFromClientSocket()));
-
-    connect(
-        m_clientSocket.get(), SIGNAL(error(QAbstractSocket::SocketError)),
-        this, SLOT(clientSocketErrorOccurred(QAbstractSocket::SocketError)));
-
     return true;
 }
 
 void SessionWrapper::tickTimeout()
 {
     m_session.tick(m_reqTicks);
-}
-
-void SessionWrapper::readFromClientSocket()
-{
-    assert(m_clientSocket);
-    DataBuf data;
-
-    while (m_clientSocket->hasPendingDatagrams()) {
-        data.resize(m_clientSocket->pendingDatagramSize());
-        auto readBytes = m_clientSocket->readDatagram(
-            reinterpret_cast<char*>(&data[0]),
-            data.size());
-        assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
-        m_session.dataFromClient(&data[0], readBytes);
-    }
-}
-
-void SessionWrapper::clientSocketErrorOccurred(QAbstractSocket::SocketError err)
-{
-    static_cast<void>(err);
-    assert(m_clientSocket);
-    std::cerr << "ERROR: UDP Socket: " << m_clientSocket->errorString().toStdString() << std::endl;
 }
 
 void SessionWrapper::brokerConnected()
@@ -230,42 +184,6 @@ void SessionWrapper::brokerSocketErrorOccurred(QAbstractSocket::SocketError err)
     std::cerr << "ERROR: TCP Socket: " << m_brokerSocket.errorString().toStdString() << std::endl;
 }
 
-bool SessionWrapper::readFromClientSocket(const SelfAdvertiseCheckFunc& checkFunc)
-{
-    assert(m_clientSocket);
-    DataBuf data;
-    QHostAddress senderAddress;
-    quint16 senderPort;
-
-    bool dispatchedData = false;
-
-    while (m_clientSocket->hasPendingDatagrams()) {
-        data.resize(m_clientSocket->pendingDatagramSize());
-        auto readBytes = m_clientSocket->readDatagram(
-            reinterpret_cast<char*>(&data[0]),
-            data.size(),
-            &senderAddress,
-            &senderPort);
-        assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
-
-        if (m_clientSocket->state() != QUdpSocket::ConnectedState) {
-            m_clientSocket->connectToHost(senderAddress, senderPort);
-            m_clientSocket->waitForConnected();
-            assert(m_clientSocket->isOpen());
-            assert(m_clientSocket->state() == QUdpSocket::ConnectedState);
-        }
-
-        if (checkFunc && checkFunc(&data[0], readBytes)) {
-            continue;
-        }
-
-        m_session.dataFromClient(&data[0], readBytes);
-        dispatchedData = true;
-    }
-
-    return dispatchedData;
-}
-
 void SessionWrapper::programNextTick(unsigned ms)
 {
     m_reqTicks = ms;
@@ -289,25 +207,6 @@ unsigned SessionWrapper::cancelTick()
     return result;
 }
 
-void SessionWrapper::sendDataToClient(const std::uint8_t* buf, std::size_t bufSize)
-{
-    assert(m_clientSocket);
-    std::size_t writtenCount = 0;
-    while (writtenCount < bufSize) {
-        auto remSize = bufSize - writtenCount;
-        auto count =
-            m_clientSocket->write(
-                reinterpret_cast<const char*>(&buf[writtenCount]),
-                remSize);
-        if (count < 0) {
-            std::cerr << "ERROR: Failed to write to UDP socket" << std::endl;
-            return;
-        }
-
-        writtenCount += count;
-    }
-}
-
 void SessionWrapper::sendDataToBroker(const std::uint8_t* buf, std::size_t bufSize)
 {
     std::size_t writtenCount = 0;
@@ -324,14 +223,15 @@ void SessionWrapper::sendDataToBroker(const std::uint8_t* buf, std::size_t bufSi
 
         writtenCount += count;
     }
-
 }
 
 void SessionWrapper::termSession()
 {
-    assert(m_clientSocket);
-    m_clientSocket->blockSignals(true);
     m_timer.stop();
+    m_brokerSocket.blockSignals(true);
+    m_brokerSocket.disconnectFromHost();
+    assert(m_termNotifyCb);
+    m_termNotifyCb(*this);
     deleteLater();
 }
 

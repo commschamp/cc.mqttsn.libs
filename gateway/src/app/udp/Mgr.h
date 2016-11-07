@@ -51,30 +51,31 @@ class Mgr : public QObject
 {
     Q_OBJECT
 public:
-    explicit Mgr(const Config& config)
-      : m_config(config),
-        m_gw(config)
-    {
-    }
-
+    explicit Mgr(const Config& config);
     bool start();
 
 private slots:
-    void newConnection();
+    void readClientData();
+    void socketErrorOccurred(QAbstractSocket::SocketError err);
 
 private:
-    typedef SessionWrapper::ClientSocketPtr SocketPtr;
     typedef unsigned short PortType;
+    typedef std::map<QString, SessionWrapper*> SessionMap;
 
     bool doListen();
+    void sendToClient(
+        const SessionWrapper& session,
+        const std::uint8_t* buf,
+        std::size_t bufSize);
     void broadcastAdvertise(const std::uint8_t* buf, std::size_t bufSize);
 
     const Config& m_config;
     PortType m_port = 0;
     PortType m_broadcastPort = 0;
-    SocketPtr m_socket;
+    QUdpSocket m_socket;
     GatewayWrapper m_gw;
     std::vector<std::uint8_t> m_lastAdvertise;
+    SessionMap m_sessions;
 };
 
 }  // namespace udp
