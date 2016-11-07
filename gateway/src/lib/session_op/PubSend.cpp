@@ -95,6 +95,10 @@ void PubSend::handle(PubackMsg_SN& msg)
     auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
     auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
 
+    if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+        state().m_regMgr.discardRegistration(topicIdField.value());
+    }
+
     if ((!m_currPub) ||
         (topicIdField.value() != m_currTopicInfo.m_topicId) ||
         (msgIdField.value() != m_currMsgId)) {
@@ -108,7 +112,6 @@ void PubSend::handle(PubackMsg_SN& msg)
 
     cancelTick();
     if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
-        state().m_regMgr.discardRegistration(m_currTopicInfo.m_topicId);
         sendCurrent();
         return;
     }
