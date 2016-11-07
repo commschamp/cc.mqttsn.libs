@@ -72,7 +72,6 @@ void Connect::handle(ConnectMsg_SN& msg)
 
     if ((st.m_connStatus != ConnectionStatus::Disconnected) &&
         (*reqClientId != st.m_clientId)) {
-        assert(!state().m_clientId.empty());
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
         termRequest();
@@ -295,7 +294,8 @@ void Connect::doNextStep()
             return;
         }
 
-        if (m_clientId != st.m_clientId) {
+        if ((m_clientId != st.m_clientId) ||
+            (st.m_clientId.empty() && (!st.m_clientConnectReported))) {
             assert(m_authInfoReqCb);
             m_authInfo = m_authInfoReqCb(m_clientId);
         }
@@ -407,7 +407,8 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     }
 
     auto& sessionState = state();
-    if (sessionState.m_clientId != m_clientId) {
+    if (!sessionState.m_clientConnectReported) {
+        sessionState.m_clientConnectReported = true;
         assert(m_clientConnectedCb);
         m_clientConnectedCb(m_clientId);
     }

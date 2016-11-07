@@ -131,6 +131,7 @@ struct SessionState
     bool m_terminating = false;
     bool m_timerActive = false;
     bool m_pendingClientDisconnect = false;
+    bool m_clientConnectReported = false;
     Timestamp m_timestamp = InitialTimestamp;
     Timestamp m_lastMsgTimestamp = InitialTimestamp;
     unsigned m_callStackCount = 0U;
