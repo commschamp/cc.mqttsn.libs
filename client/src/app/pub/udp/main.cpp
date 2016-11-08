@@ -33,7 +33,7 @@ CC_DISABLE_WARNINGS()
 #include <QtCore/QStringList>
 CC_ENABLE_WARNINGS()
 
-#include "Sub.h"
+#include "Pub.h"
 
 namespace
 {
@@ -60,15 +60,11 @@ const QString TopicIdOpt("topic-id");
 const QString TopicIdShortOpt("T");
 const QString QosOpt("qos");
 const QString QosShortOpt("q");
-const QString VerboseOpt("verbose");
-const QString VerboseShortOpt("v");
-const QString NoRetainOpt("no-retained");
-const QString NoRetainShortOpt("R");
-const QString HexOpt("hex-output");
-const QString HexShortOpt("x");
-
-
-const int DefaultQos = 2;
+const QString RetainOpt("retain");
+const QString RetainShortOpt("r");
+const QString MessageOpt("message");
+const QString MessageShortOpt("m");
+const int DefaultQos = 0;
 const QString DefaultQosStr = QString("%1").arg(DefaultQos);
 
 void prepareCommandLineOptions(QCommandLineParser& parser)
@@ -124,42 +120,38 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
 
     QCommandLineOption topicOpt(
         QStringList() << TopicShortOpt << TopicOpt,
-        "Topic to subscribe to, may be repeated multiple times",
+        "Topic to publish.",
         QCoreApplication::translate("main", "value")
     );
     parser.addOption(topicOpt);
 
     QCommandLineOption topicIdOpt(
         QStringList() << TopicIdShortOpt << TopicIdOpt,
-        "Predefined topic ID to subscribe to, may be repeated multiple times",
+        "Predefined topic ID to publish.",
         QCoreApplication::translate("main", "value")
     );
     parser.addOption(topicIdOpt);
 
     QCommandLineOption qosOpt(
         QStringList() << QosShortOpt << QosOpt,
-        "Max quality of service to use for subscription. Defaults to " + DefaultQosStr + '.',
+        "Quality of service to publish with. Defaults to " + DefaultQosStr + '.',
         QCoreApplication::translate("main", "value")
     );
     parser.addOption(qosOpt);
 
-    QCommandLineOption verboseOpt(
-        QStringList() << VerboseShortOpt << VerboseOpt,
-        "Verbose print of published messages."
+    QCommandLineOption retainOpt(
+        QStringList() << RetainShortOpt << RetainOpt,
+        "Published message must be retained."
     );
-    parser.addOption(verboseOpt);
+    parser.addOption(retainOpt);
 
-    QCommandLineOption noRetainOpt(
-        QStringList() << NoRetainShortOpt << NoRetainOpt,
-        "Do NOT print retained messages."
+    QCommandLineOption msgOpt(
+        QStringList() << MessageShortOpt << MessageOpt,
+        "Message to publish. Treated as ascii string, binary data can be provided using \\x prefix prior to each byte.",
+        QCoreApplication::translate("main", "value")
     );
-    parser.addOption(noRetainOpt);
+    parser.addOption(msgOpt);
 
-    QCommandLineOption hexOpt(
-        QStringList() << HexShortOpt << HexOpt,
-        "Print message body in hexadecimal byte values."
-    );
-    parser.addOption(hexOpt);
 }
 
 std::tuple<QString, unsigned short> splitGwAddr(const QCommandLineParser& parser)
@@ -250,52 +242,24 @@ unsigned short getKeepAlive(const QCommandLineParser& parser)
     return keepAlive;
 }
 
-mqttsn::client::app::sub::udp::Sub::TopicsList getTopics(const QCommandLineParser& parser)
+std::uint16_t getTopicId(const QCommandLineParser& parser)
 {
-    auto topicStrings = parser.values(TopicOpt);
-    std::vector<std::string> topics;
-    topics.reserve(topicStrings.size());
-    std::transform(
-        topicStrings.begin(), topicStrings.end(), std::back_inserter(topics),
-        [](const QString& s) -> std::string
-        {
-            return s.toStdString();
-        });
+    auto topicId = 0;
+    do {
+        auto topicIdStr = parser.value(TopicIdOpt);
+        if (topicIdStr.isEmpty()) {
+            break;
+        }
 
-    std::sort(topics.begin(), topics.end());
-    topics.erase(
-        std::unique(topics.begin(), topics.end()),
-        topics.end());
-    return mqttsn::client::app::sub::udp::Sub::TopicsList(topics.begin(), topics.end());
-}
+        bool ok = false;
+        auto topicIdTmp = topicIdStr.toUInt(&ok);
+        if ((!ok) || (topicIdTmp == 0) || (0xffff <= topicIdTmp)) {
+            break;
+        }
 
-mqttsn::client::app::sub::udp::Sub::TopicIdsList getTopicIds(const QCommandLineParser& parser)
-{
-    auto topicStrings = parser.values(TopicIdOpt);
-    std::vector<std::uint16_t> topics;
-    topics.reserve(topicStrings.size());
-    std::transform(
-        topicStrings.begin(), topicStrings.end(), std::back_inserter(topics),
-        [](const QString& s) -> std::uint16_t
-        {
-            return static_cast<std::uint16_t>(s.toUInt());
-        });
-
-    topics.erase(
-        std::remove_if(
-            topics.begin(), topics.end(),
-            [](std::uint16_t value) -> bool
-            {
-                return value == 0;
-            }),
-        topics.end());
-
-    std::sort(topics.begin(), topics.end());
-    topics.erase(
-        std::unique(topics.begin(), topics.end()),
-        topics.end());
-
-    return mqttsn::client::app::sub::udp::Sub::TopicIdsList(topics.begin(), topics.end());
+        topicId = topicIdTmp;
+    } while (false);
+    return topicId;
 }
 
 MqttsnQoS getQos(const QCommandLineParser& parser)
@@ -309,15 +273,54 @@ MqttsnQoS getQos(const QCommandLineParser& parser)
 
         bool ok = false;
         auto valueTmp = qosStr.toInt(&ok);
-        if ((!ok) || (valueTmp < 0)) {
+        if (!ok) {
             break;
         }
 
-        value = std::min(value, valueTmp);
+        value = std::max(-1, std::min(2, valueTmp));
     } while (false);
     return static_cast<MqttsnQoS>(value);
 }
 
+std::vector<std::uint8_t> getMessage(const QCommandLineParser& parser)
+{
+    auto msgStr = parser.value(MessageOpt);
+    std::vector<std::uint8_t> result;
+    result.reserve(msgStr.size());
+    int idx = 0;
+    while (idx < msgStr.size()) {
+        int remSize = msgStr.size() - idx;
+        if ((2 <= remSize) &&
+            (msgStr[idx] == '\\') &&
+            (msgStr[idx + 1] == '\\')) {
+            result.push_back(static_cast<std::uint8_t>('\\'));
+            idx += 2;
+            continue;
+        }
+
+        if ((4 <= remSize) &&
+            (msgStr[idx] == '\\') &&
+            (msgStr[idx + 1] == 'x')) {
+            auto hexNumStr = msgStr.mid(idx + 2, 2);
+            bool ok = false;
+            auto byteVal = msgStr.toUInt(&ok, 16);
+            if (!ok) {
+                result.push_back(static_cast<std::uint8_t>(msgStr[idx].toLatin1()));
+                ++idx;
+                continue;
+            }
+
+            result.push_back(static_cast<std::uint8_t>(byteVal));
+            idx += 4;
+            continue;
+        }
+
+        result.push_back(static_cast<std::uint8_t>(msgStr[idx].toLatin1()));
+        ++idx;
+    }
+
+    return result;
+}
 
 }  // namespace
 
@@ -335,23 +338,22 @@ int main(int argc, char *argv[])
     unsigned short port = getLocalPort(parser, gwAddr);
     auto keepAlive = getKeepAlive(parser);
 
-    mqttsn::client::app::sub::udp::Sub sub;
+    mqttsn::client::app::sub::udp::Pub pub;
 
-    sub.setGwAddr(gwAddr);
-    sub.setGwPort(gwPort);
-    sub.setGwId(gwId);
-    sub.setLocalPort(port);
-    sub.setClientId(parser.value(ClientIdOpt).toStdString());
-    sub.setKeepAlive(keepAlive);
-    sub.setCleanSession(!parser.isSet(NoCleanOpt));
-    sub.setTopics(getTopics(parser));
-    sub.setTopicIds(getTopicIds(parser));
-    sub.setQos(getQos(parser));
-    sub.setVerbose(parser.isSet(VerboseOpt));
-    sub.setNoRetain(parser.isSet(NoRetainOpt));
-    sub.setHexOutput(parser.isSet(HexOpt));
+    pub.setGwAddr(gwAddr);
+    pub.setGwPort(gwPort);
+    pub.setGwId(gwId);
+    pub.setLocalPort(port);
+    pub.setClientId(parser.value(ClientIdOpt).toStdString());
+    pub.setKeepAlive(keepAlive);
+    pub.setCleanSession(!parser.isSet(NoCleanOpt));
+    pub.setTopic(parser.value(TopicOpt).toStdString());
+    pub.setTopicId(getTopicId(parser));
+    pub.setQos(getQos(parser));
+    pub.setRetain(parser.isSet(RetainOpt));
+    pub.setMessage(getMessage(parser));
 
-    if (!sub.start()) {
+    if (!pub.start()) {
         std::cerr << "ERROR: Failed to start" << std::endl;
         return -1;
     }
