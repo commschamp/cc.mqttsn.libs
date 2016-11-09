@@ -87,6 +87,11 @@ Mgr::Mgr(const Config& config)
 
 }
 
+Mgr::~Mgr()
+{
+    m_socket.blockSignals(true);
+    m_socket.flush();
+}
 
 bool Mgr::start()
 {
@@ -160,16 +165,19 @@ void Mgr::readClientData()
                     return;
                 }
 
+                m_socket.flush();
                 m_sessions.erase(it);
             });
 
-        if (!session->start()) {
+        m_sessions.insert(std::make_pair(url, session.get()));
+        auto sessionPtr = session.release();
+
+        if (!sessionPtr->start()) {
             assert(!"Unexpected error");
             continue;
         }
 
-        session->dataFromClient(&data[0], data.size());
-        m_sessions.insert(std::make_pair(url, session.release()));
+        sessionPtr->dataFromClient(&data[0], data.size());
     }
 }
 

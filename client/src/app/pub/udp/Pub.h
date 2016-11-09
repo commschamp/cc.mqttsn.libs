@@ -112,6 +112,11 @@ public:
         m_msg = value;
     }
 
+    void setDebug(bool value)
+    {
+        m_debug = value;
+    }
+
     bool start();
 
 private slots:
@@ -178,6 +183,8 @@ private:
     std::uint16_t m_topicId;
     MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
     DataBuf m_msg;
+    bool m_debug = false;
+    bool m_disconnecting = false;
 };
 
 }  // namespace udp

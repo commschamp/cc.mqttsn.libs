@@ -155,6 +155,10 @@ void SessionWrapper::readFromBrokerSocket()
 {
     auto data = m_brokerSocket.readAll();
 
+    if (m_terminating) {
+        return;
+    }
+
     auto* buf = reinterpret_cast<const std::uint8_t*>(data.constData());
     std::size_t bufSize = data.size();
 
@@ -186,6 +190,7 @@ void SessionWrapper::brokerSocketErrorOccurred(QAbstractSocket::SocketError err)
 
 void SessionWrapper::programNextTick(unsigned ms)
 {
+    assert(!m_terminating);
     m_reqTicks = ms;
     m_timer.setSingleShot(true);
     m_timer.start(ms);
@@ -227,8 +232,14 @@ void SessionWrapper::sendDataToBroker(const std::uint8_t* buf, std::size_t bufSi
 
 void SessionWrapper::termSession()
 {
+    if (m_terminating) {
+        return;
+    }
+
+    m_terminating = true;
     m_timer.stop();
     m_brokerSocket.blockSignals(true);
+    m_brokerSocket.flush();
     m_brokerSocket.disconnectFromHost();
     assert(m_termNotifyCb);
     m_termNotifyCb(*this);

@@ -52,6 +52,7 @@ class Mgr : public QObject
     Q_OBJECT
 public:
     explicit Mgr(const Config& config);
+    ~Mgr();
     bool start();
 
 private slots:

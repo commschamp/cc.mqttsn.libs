@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <tuple>
 #include <algorithm>
+#include <random>
 
 #include "comms/CompileControl.h"
 
@@ -48,6 +49,8 @@ const unsigned short DefaultPort = 1883;
 const QString DefaultPortStr = QString("%1").arg(DefaultPort);
 const QString ClientIdOpt("client-id");
 const QString ClientIdShortOpt("i");
+const QString EmptyClientIdOpt("empty-client-id");
+const QString EmptyClientIdShortOpt("I");
 const QString KeepAliveOpt("keep-alive");
 const QString KeepAliveShortOpt("k");
 const unsigned short DefaultKeepAlivePeriod = 60;
@@ -66,6 +69,8 @@ const QString MessageOpt("message");
 const QString MessageShortOpt("m");
 const int DefaultQos = 0;
 const QString DefaultQosStr = QString("%1").arg(DefaultQos);
+const QString DebugOpt("debug");
+const QString DebugShortOpt("d");
 
 void prepareCommandLineOptions(QCommandLineParser& parser)
 {
@@ -100,10 +105,16 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
 
     QCommandLineOption idOpt(
         QStringList() << ClientIdShortOpt << ClientIdOpt,
-        "Client ID.",
+        "Client ID. If not provided, the client ID is randomised. If provided suppresses usage of -" + EmptyClientIdShortOpt + " option.",
         QCoreApplication::translate("main", "value")
     );
     parser.addOption(idOpt);
+
+    QCommandLineOption emptyIdOpt(
+        QStringList() << EmptyClientIdShortOpt << EmptyClientIdOpt,
+        "Use empty client ID."
+    );
+    parser.addOption(emptyIdOpt);
 
     QCommandLineOption keepAliveOpt(
         QStringList() << KeepAliveShortOpt << KeepAliveOpt,
@@ -152,6 +163,11 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
     );
     parser.addOption(msgOpt);
 
+    QCommandLineOption debugOpt(
+        QStringList() << DebugShortOpt << DebugOpt,
+        "Enable debug output."
+    );
+    parser.addOption(debugOpt);
 }
 
 std::tuple<QString, unsigned short> splitGwAddr(const QCommandLineParser& parser)
@@ -195,6 +211,33 @@ int getGwId(const QCommandLineParser& parser, const QString& gwAddr)
         gwId = gwIdTmp;
     } while (false);
     return gwId;
+}
+
+QString getClientId(const QCommandLineParser& parser)
+{
+    QString clientId = parser.value(ClientIdOpt);
+    if (!clientId.isEmpty()) {
+        return clientId;
+    }
+
+    if (parser.isSet(EmptyClientIdOpt)) {
+        return clientId;
+    }
+
+    clientId = "mqttsn_pub_";
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    static const QString Map =
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    std::uniform_int_distribution<> dis(0, Map.size());
+
+    static const unsigned GenCount = 10;
+    for (auto c = 0U; c < GenCount; ++c) {
+        clientId.append(Map[dis(gen)]);
+    }
+    return clientId;
 }
 
 unsigned short getLocalPort(const QCommandLineParser& parser, const QString& gwAddr)
@@ -344,7 +387,7 @@ int main(int argc, char *argv[])
     pub.setGwPort(gwPort);
     pub.setGwId(gwId);
     pub.setLocalPort(port);
-    pub.setClientId(parser.value(ClientIdOpt).toStdString());
+    pub.setClientId(getClientId(parser).toStdString());
     pub.setKeepAlive(keepAlive);
     pub.setCleanSession(!parser.isSet(NoCleanOpt));
     pub.setTopic(parser.value(TopicOpt).toStdString());
@@ -352,6 +395,7 @@ int main(int argc, char *argv[])
     pub.setQos(getQos(parser));
     pub.setRetain(parser.isSet(RetainOpt));
     pub.setMessage(getMessage(parser));
+    pub.setDebug(parser.isSet(DebugOpt));
 
     if (!pub.start()) {
         std::cerr << "ERROR: Failed to start" << std::endl;

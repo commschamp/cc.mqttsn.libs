@@ -128,9 +128,13 @@ void Pub::readFromSocket()
             &m_lastSenderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
 
-//        std::cout << "--> " << std::hex;
-//        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));
-//        std::cout << std::dec << std::endl;
+        if (m_debug) {
+            std::cout << "[DEBUG]: --> " << std::hex;
+            for (auto byte : data) {
+                std::cout << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << ' ';
+            }
+            std::cout << std::dec << std::endl;
+        }
 
         mqttsn_client_process_data(m_client.get(), &data[0], data.size());
     }
@@ -177,9 +181,13 @@ unsigned Pub::caneclTickCb(void* obj)
 
 void Pub::sendData(const unsigned char* buf, unsigned bufLen, bool broadcast)
 {
-//    std::cout << "<-- " << std::hex;
-//    std::copy_n(buf, bufLen, std::ostream_iterator<unsigned>(std::cout, " "));
-//    std::cout << std::dec << std::endl;
+    if (m_debug) {
+        std::cout << "[DEBUG]: <-- " << std::hex;
+        for (auto idx = 0U; idx < bufLen; ++idx) {
+            std::cout << std::setw(2) << std::setfill('0') << static_cast<unsigned>(buf[idx]) << ' ';
+        }
+        std::cout << std::dec << std::endl;
+    }
 
     if (broadcast) {
         broadcastData(buf, bufLen);
@@ -241,8 +249,13 @@ void Pub::connectionStatusReport(MqttsnConnectionStatus status)
     }
 
     if (status == MqttsnConnectionStatus_Disconnected) {
+        if (m_disconnecting) {
+            qApp->quit();
+            return;
+        }
+
         std::cerr << "WARNING: Disconnected from GW, reconnecting..." << std::endl;
-        doConnect(true);
+        doConnect();
         return;
     }
 
@@ -317,7 +330,8 @@ void Pub::doPublish()
         return;
     }
 
-    qApp->quit();
+    m_disconnecting = true;
+    mqttsn_client_disconnect(m_client.get());
 }
 
 void Pub::publishComplete(MqttsnAsyncOpStatus status)
@@ -339,7 +353,8 @@ void Pub::publishComplete(MqttsnAsyncOpStatus status)
         std::cerr << std::endl;
     }
 
-    qApp->quit();
+    m_disconnecting = true;
+    mqttsn_client_disconnect(m_client.get());
 }
 
 void Pub::publishCompleteCb(void* obj, MqttsnAsyncOpStatus status)

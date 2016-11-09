@@ -421,7 +421,7 @@ void ConfigImpl::readBrokerAddrInfo() const
     }
 
     std::string portStr(valStr.begin() + portPos, valStr.end());
-    auto secondSpacePos = valStr.find_first_of(SpaceChars);
+    auto secondSpacePos = valStr.find_first_of(SpaceChars, portPos + 1);
     if (secondSpacePos != std::string::npos) {
         portStr.assign(valStr.begin() + portPos, valStr.begin() + secondSpacePos);
     }

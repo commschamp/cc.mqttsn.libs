@@ -127,6 +127,7 @@ private:
     TermNotifyCb m_termNotifyCb;
     QString m_clientAddr;
     PortType m_clientPort = 0;
+    bool m_terminating = false;
 };
 
 }  // namespace udp
