@@ -58,9 +58,7 @@ void Forward::handle(PublishMsg_SN& msg)
             break;
         }
 
-        if ((!st.m_brokerConnected) ||
-            (st.m_connStatus != ConnectionStatus::Disconnected) ||
-            (st.m_defaultClientId.empty())) {
+        if (st.m_connStatus != ConnectionStatus::Disconnected) {
             return;
         }
 

@@ -231,7 +231,7 @@ QString getClientId(const QCommandLineParser& parser)
         "abcdefghijklmnopqrstuvwxyz"
         "0123456789"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    std::uniform_int_distribution<> dis(0, Map.size());
+    std::uniform_int_distribution<> dis(0, Map.size() - 1);
 
     static const unsigned GenCount = 10;
     for (auto c = 0U; c < GenCount; ++c) {

@@ -164,6 +164,7 @@ private:
     bool connectToGw();
     void broadcastData(const unsigned char* buf, unsigned bufLen);
     void sendDataConnected(const unsigned char* buf, unsigned bufLen);
+    static void quitApp();
 
     ClientPtr m_client;
     QTimer m_timer;

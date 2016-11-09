@@ -250,7 +250,7 @@ void Pub::connectionStatusReport(MqttsnConnectionStatus status)
 
     if (status == MqttsnConnectionStatus_Disconnected) {
         if (m_disconnecting) {
-            qApp->quit();
+            quitApp();
             return;
         }
 
@@ -306,7 +306,7 @@ void Pub::doPublish()
                 this);
         if (result != MqttsnErrorCode_Success) {
             std::cerr << "ERROR: Failed to initiate publish of topic " << m_topic << std::endl;
-            qApp->quit();
+            quitApp();
         }
         return;
     }
@@ -325,8 +325,13 @@ void Pub::doPublish()
 
         if (result != MqttsnErrorCode_Success) {
             std::cerr << "ERROR: Failed to initiate subscribe for topic ID " << m_topicId << std::endl;
-            qApp->quit();
+            quitApp();
         }
+        return;
+    }
+
+    if (m_qos == MqttsnQoS_NoGwPublish) {
+        quitApp();
         return;
     }
 
@@ -351,6 +356,12 @@ void Pub::publishComplete(MqttsnAsyncOpStatus status)
             std::cerr << "ID " << m_topicId;
         }
         std::cerr << std::endl;
+    }
+
+    if (m_qos == MqttsnQoS_NoGwPublish) {
+        m_socket.flush();
+        quitApp();
+        return;
     }
 
     m_disconnecting = true;
@@ -453,6 +464,10 @@ void Pub::sendDataConnected(const unsigned char* buf, unsigned bufLen)
     }
 }
 
+void Pub::quitApp()
+{
+    QTimer::singleShot(10, qApp, SLOT(quit()));
+}
 
 }  // namespace udp
 

@@ -20,6 +20,7 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <iomanip>
 
 namespace mqttsn
 {
@@ -154,6 +155,12 @@ void SessionWrapper::brokerDisconnected()
 void SessionWrapper::readFromBrokerSocket()
 {
     auto data = m_brokerSocket.readAll();
+
+//    std::cout << "(BROKER) --> " << std::hex;
+//    for (auto byte : data) {
+//        std::cout << std::setw(2) << std::setfill('0') << (unsigned)byte << ' ';
+//    }
+//    std::cout << std::dec << std::endl;
 
     if (m_terminating) {
         return;

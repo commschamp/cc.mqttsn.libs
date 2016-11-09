@@ -48,6 +48,8 @@ const unsigned short DefaultPort = 1883;
 const QString DefaultPortStr = QString("%1").arg(DefaultPort);
 const QString ClientIdOpt("client-id");
 const QString ClientIdShortOpt("i");
+const QString EmptyClientIdOpt("empty-client-id");
+const QString EmptyClientIdShortOpt("I");
 const QString KeepAliveOpt("keep-alive");
 const QString KeepAliveShortOpt("k");
 const unsigned short DefaultKeepAlivePeriod = 60;
@@ -104,10 +106,16 @@ void prepareCommandLineOptions(QCommandLineParser& parser)
 
     QCommandLineOption idOpt(
         QStringList() << ClientIdShortOpt << ClientIdOpt,
-        "Client ID.",
+        "Client ID. If not provided, the client ID is randomised. If provided suppresses usage of -" + EmptyClientIdShortOpt + " option.",
         QCoreApplication::translate("main", "value")
     );
     parser.addOption(idOpt);
+
+    QCommandLineOption emptyIdOpt(
+        QStringList() << EmptyClientIdShortOpt << EmptyClientIdOpt,
+        "Use empty client ID."
+    );
+    parser.addOption(emptyIdOpt);
 
     QCommandLineOption keepAliveOpt(
         QStringList() << KeepAliveShortOpt << KeepAliveOpt,
@@ -203,6 +211,33 @@ int getGwId(const QCommandLineParser& parser, const QString& gwAddr)
         gwId = gwIdTmp;
     } while (false);
     return gwId;
+}
+
+QString getClientId(const QCommandLineParser& parser)
+{
+    QString clientId = parser.value(ClientIdOpt);
+    if (!clientId.isEmpty()) {
+        return clientId;
+    }
+
+    if (parser.isSet(EmptyClientIdOpt)) {
+        return clientId;
+    }
+
+    clientId = "mqttsn_pub_";
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    static const QString Map =
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    std::uniform_int_distribution<> dis(0, Map.size() - 1);
+
+    static const unsigned GenCount = 10;
+    for (auto c = 0U; c < GenCount; ++c) {
+        clientId.append(Map[dis(gen)]);
+    }
+    return clientId;
 }
 
 unsigned short getLocalPort(const QCommandLineParser& parser, const QString& gwAddr)
@@ -341,7 +376,7 @@ int main(int argc, char *argv[])
     sub.setGwPort(gwPort);
     sub.setGwId(gwId);
     sub.setLocalPort(port);
-    sub.setClientId(parser.value(ClientIdOpt).toStdString());
+    sub.setClientId(getClientId(parser).toStdString());
     sub.setKeepAlive(keepAlive);
     sub.setCleanSession(!parser.isSet(NoCleanOpt));
     sub.setTopics(getTopics(parser));

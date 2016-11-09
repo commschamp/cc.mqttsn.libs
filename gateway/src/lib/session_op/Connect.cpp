@@ -174,8 +174,7 @@ void Connect::handle(PublishMsg_SN& msg)
     if ((st.m_connStatus != ConnectionStatus::Disconnected) ||
         (st.m_pendingClientDisconnect) ||
         (!st.m_clientId.empty()) ||
-        (!m_clientId.empty()) ||
-        (st.m_defaultClientId.empty())) {
+        (!m_clientId.empty())) {
         return;
     }
 
@@ -199,7 +198,13 @@ void Connect::handle(PublishMsg_SN& msg)
     m_internalState.m_hasWillMsg = true;
     m_internalState.m_pubOnlyClient = true;
 
-    doNextStep();
+    if (st.m_brokerConnected) {
+        doNextStep();
+        return;
+    }
+
+    m_internalState.m_waitingForReconnect = true;
+    nextTickReq(st.m_retryPeriod);
 }
 
 void Connect::handle(ConnackMsg& msg)
