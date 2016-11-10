@@ -18,7 +18,7 @@
 #include "##NAME##client.h"
 #include "mqttsn/protocol/option.h"
 #include "mqttsn/protocol/ParsedOptions.h"
-#include "Client.h"
+#include "BasicClient.h"
 #include "ClientMgr.h"
 #include "Message.h"
 #include "option.h"
@@ -63,7 +63,7 @@ class MsgHandler : public comms::GenericHandler<Message, AllMsgs>
 namespace
 {
 
-typedef mqttsn::client::Client<mqttsn::client::MsgHandler, ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
+typedef mqttsn::client::BasicClient<mqttsn::client::MsgHandler, ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
 typedef mqttsn::client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
 
 MqttsnClientMgr& getClientMgr()

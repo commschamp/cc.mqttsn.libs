@@ -124,7 +124,7 @@ template <
     typename THandler,
     typename TClientOpts,
     typename TProtOpts>
-class Client : public THandler
+class BasicClient : public THandler
 {
     typedef THandler Base;
 
@@ -323,8 +323,8 @@ public:
     typedef mqttsn::protocol::message::Willmsgupd<Message, TProtOpts> WillmsgupdMsg;
     typedef mqttsn::protocol::message::Willmsgresp<Message> WillmsgrespMsg;
 
-    Client() = default;
-    virtual ~Client() = default;
+    BasicClient() = default;
+    virtual ~BasicClient() = default;
 
     typedef Message::ReadIterator ReadIterator;
 
@@ -499,22 +499,22 @@ public:
         GASSERT(m_running);
         auto guard = apiCall();
 
-        typedef void (Client<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
+        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
         static const CancelFunc OpCancelFuncMap[] =
         {
-            &Client::connectCancel,
-            &Client::disconnectCancel,
-            &Client::publishIdCancel,
-            &Client::publishCancel,
-            &Client::subscribeIdCancel,
-            &Client::subscribeCancel,
-            &Client::unsubscribeIdCancel,
-            &Client::unsubscribeCancel,
-            &Client::willUpdateCancel,
-            &Client::willTopicUpdateCancel,
-            &Client::willMsgUpdateCancel,
-            &Client::sleepCancel,
-            &Client::checkMessagesCancel
+            &BasicClient::connectCancel,
+            &BasicClient::disconnectCancel,
+            &BasicClient::publishIdCancel,
+            &BasicClient::publishCancel,
+            &BasicClient::subscribeIdCancel,
+            &BasicClient::subscribeCancel,
+            &BasicClient::unsubscribeIdCancel,
+            &BasicClient::unsubscribeCancel,
+            &BasicClient::willUpdateCancel,
+            &BasicClient::willTopicUpdateCancel,
+            &BasicClient::willMsgUpdateCancel,
+            &BasicClient::sleepCancel,
+            &BasicClient::checkMessagesCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -2023,22 +2023,22 @@ private:
             return;
         }
 
-        typedef void (Client<THandler, TClientOpts, TProtOpts>::*TimeoutFunc)();
+        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*TimeoutFunc)();
         static const TimeoutFunc OpTimeoutFuncMap[] =
         {
-            &Client::connectTimeout,
-            &Client::disconnectTimeout,
-            &Client::publishIdTimeout,
-            &Client::publishTimeout,
-            &Client::subscribeIdTimeout,
-            &Client::subscribeTimeout,
-            &Client::unsubscribeIdTimeout,
-            &Client::unsubscribeTimeout,
-            &Client::willUpdateTimeout,
-            &Client::willTopicUpdateTimeout,
-            &Client::willMsgUpdateTimeout,
-            &Client::sleepTimeout,
-            &Client::checkMessagesTimeout
+            &BasicClient::connectTimeout,
+            &BasicClient::disconnectTimeout,
+            &BasicClient::publishIdTimeout,
+            &BasicClient::publishTimeout,
+            &BasicClient::subscribeIdTimeout,
+            &BasicClient::subscribeTimeout,
+            &BasicClient::unsubscribeIdTimeout,
+            &BasicClient::unsubscribeTimeout,
+            &BasicClient::willUpdateTimeout,
+            &BasicClient::willTopicUpdateTimeout,
+            &BasicClient::willMsgUpdateTimeout,
+            &BasicClient::sleepTimeout,
+            &BasicClient::checkMessagesTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -3093,7 +3093,12 @@ private:
         }
     }
 
-    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&Client<THandler, TClientOpts, TProtOpts>::apiCallExit, this)))
+#ifdef _MSC_VER
+    // VC compiler
+    auto apiCall()
+#else
+    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&BasicClient<THandler, TClientOpts, TProtOpts>::apiCallExit, this)))
+#endif
     {
         ++m_callStackCount;
         if (m_callStackCount == 1U) {
@@ -3103,7 +3108,7 @@ private:
         return
             comms::util::makeScopeGuard(
                 std::bind(
-                    &Client<THandler, TClientOpts, TProtOpts>::apiCallExit,
+                    &BasicClient<THandler, TClientOpts, TProtOpts>::apiCallExit,
                     this));
     }
 
