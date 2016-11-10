@@ -40,6 +40,10 @@ endfunction ()
 
 ###########################################################
 
+if (NOT "${MQTTSN_QT_DIR}" STREQUAL "")
+    list (APPEND CMAKE_PREFIX_PATH ${MQTTSN_QT_DIR})
+endif ()
+
 find_package(Qt5Core)
 find_package(Qt5Network)
 
