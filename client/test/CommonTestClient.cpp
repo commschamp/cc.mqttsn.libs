@@ -41,7 +41,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_setRetryPeriodFunc = &mqttsn_client_set_retry_period;
     funcs.m_setRetryCountFunc = &mqttsn_client_set_retry_count;
     funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
-    funcs.m_setSearchgwModeFunc = &mqttsn_client_set_searchgw_mode;
+    funcs.m_setSearchgwEnabledFunc = &mqttsn_client_set_searchgw_enabled;
     funcs.m_cancelFunc = &mqttsn_client_cancel;
     funcs.m_connectFunc = &mqttsn_client_connect;
     funcs.m_disconnectFunc = &mqttsn_client_disconnect;
@@ -236,10 +236,10 @@ void CommonTestClient::setBroadcastRadius(unsigned char val)
     (m_libFuncs.m_setBroadcastRadius)(m_client, val);
 }
 
-void CommonTestClient::setSearchgwMode(MqttsnSearchgwMode value)
+void CommonTestClient::setSearchgwEnabled(bool value)
 {
-    assert(m_libFuncs.m_setSearchgwModeFunc != nullptr);
-    (m_libFuncs.m_setSearchgwModeFunc)(m_client, value);
+    assert(m_libFuncs.m_setSearchgwEnabledFunc != nullptr);
+    (m_libFuncs.m_setSearchgwEnabledFunc)(m_client, value);
 }
 
 MqttsnErrorCode CommonTestClient::connect(

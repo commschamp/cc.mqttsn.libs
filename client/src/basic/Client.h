@@ -401,9 +401,9 @@ public:
         m_msgReportData = data;
     }
 
-    void setGwSearchMode(MqttsnSearchgwMode value)
+    void setSearchgwEnabled(bool value)
     {
-        m_gwSearchMode = value;
+        m_searchgwEnabled = value;
     }
 
     MqttsnErrorCode start()
@@ -424,7 +424,6 @@ public:
 
         m_gwInfos.clear();
         m_regInfos.clear();
-        m_timestamp = 0;
         m_nextTimeoutTimestamp = 0;
         m_lastGwSearchTimestamp = 0;
         m_lastMsgTimestamp = 0;
@@ -1877,18 +1876,19 @@ private:
 
     unsigned calcSearchGwSendTimeout()
     {
-        if ((m_gwSearchMode == MqttsnSearchgwMode_Disabled) ||
+        if ((!m_searchgwEnabled) ||
+            (!m_gwInfos.empty()) ||
             (m_connectionStatus == ConnectionStatus::Asleep)) {
             return NoTimeout;
         }
 
-        if ((m_gwSearchMode == MqttsnSearchgwMode_UntilFirstGw) && (!m_gwInfos.empty())) {
-            return NoTimeout;
+        if (m_lastGwSearchTimestamp == 0) {
+            return 0U;
         }
 
         auto nextSearchTimestamp = m_lastGwSearchTimestamp + m_retryPeriod;
         if (nextSearchTimestamp <= m_timestamp) {
-            return 1U;
+            return 0U;
         }
 
         return static_cast<unsigned>(nextSearchTimestamp - m_timestamp);
@@ -1935,7 +1935,7 @@ private:
 
         unsigned delay = NoTimeout;
         delay = std::min(delay, calcGwReleaseTimeout());
-        delay = std::min(delay, calcSearchGwSendTimeout());
+        delay = std::min(delay, std::max(1U, calcSearchGwSendTimeout()));
         delay = std::min(delay, calcCurrentOpTimeout());
         delay = std::min(delay, calcPingTimeout());
 
@@ -1958,17 +1958,16 @@ private:
                 return ((elem.m_timestamp + elem.m_duration) <= m_timestamp);
             };
 
-        bool mustRemove = false;
-        auto iter = m_gwInfos.begin();
-        while (iter != m_gwInfos.end()) {
-            if (checkMustRemoveFunc(*iter)) {
-                mustRemove = true;
-                reportGwStatus(iter->m_id, MqttsnGwStatus_TimedOut);
+        typedef details::GwInfoStorageTypeT<std::uint16_t, TClientOpts> GwIdStorage;
+        GwIdStorage idsToRemove;
+
+        for (auto& info : m_gwInfos) {
+            if (checkMustRemoveFunc(info)) {
+                idsToRemove.push_back(info.m_id);
             }
-            ++iter;
         }
 
-        if (!mustRemove) {
+        if (idsToRemove.empty()) {
             return;
         }
 
@@ -1977,25 +1976,15 @@ private:
                 m_gwInfos.begin(), m_gwInfos.end(),
                 checkMustRemoveFunc),
             m_gwInfos.end());
+
+        for (auto id : idsToRemove) {
+            reportGwStatus(id, MqttsnGwStatus_TimedOut);
+        }
     }
 
     void checkGwSearchReq()
     {
-        if ((m_gwSearchMode == MqttsnSearchgwMode_Disabled) ||
-            (m_connectionStatus == ConnectionStatus::Asleep)) {
-            return;
-        }
-
-        if ((m_gwSearchMode == MqttsnSearchgwMode_UntilFirstGw) &&
-            (!m_gwInfos.empty())) {
-            return;
-        }
-
-        bool sendEnabled = m_gwInfos.empty() || (m_gwSearchMode == MqttsnSearchgwMode_Always);
-        bool needToSend =
-            (m_lastGwSearchTimestamp == 0) ||
-            ((m_lastGwSearchTimestamp + m_retryPeriod) <= m_timestamp);
-        if (sendEnabled && needToSend) {
+        if (calcSearchGwSendTimeout() == 0) {
             sendGwSearchReq();
         }
     }
@@ -3127,7 +3116,7 @@ private:
 
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;
-    Timestamp m_timestamp = 0;
+    Timestamp m_timestamp = DefaultStartTimestamp;
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
     Timestamp m_lastMsgTimestamp = 0;
@@ -3141,12 +3130,12 @@ private:
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_keepAlivePeriod = 0;
     ConnectionStatus m_connectionStatus = ConnectionStatus::Disconnected;
-    MqttsnSearchgwMode m_gwSearchMode = MqttsnSearchgwMode_UntilFirstGw;
     std::uint16_t m_msgId = 0;
     std::uint8_t m_broadcastRadius = DefaultBroadcastRadius;
 
     bool m_running = false;
     bool m_timerActive = false;
+    bool m_searchgwEnabled = true;
 
     Op m_currOp = Op::None;
     OpStorageType m_opStorage;
@@ -3179,6 +3168,7 @@ private:
     static const std::uint8_t DefaultBroadcastRadius = 0U;
 
     static const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
+    static const Timestamp DefaultStartTimestamp = 100;
 };
 
 }  // namespace client

@@ -414,7 +414,7 @@ bool Sub::connectToGw()
     assert(m_socket.isOpen());
     assert(m_socket.state() == QUdpSocket::ConnectedState);
 
-    mqttsn_client_set_searchgw_mode(m_client.get(), MqttsnSearchgwMode_Disabled);
+    mqttsn_client_set_searchgw_enabled(m_client.get(), false);
     return true;
 }
 

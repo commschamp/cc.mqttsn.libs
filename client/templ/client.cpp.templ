@@ -188,12 +188,12 @@ void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsig
     clientObj->setBroadcastRadius(value);
 }
 
-void mqttsn_##NAME##client_set_searchgw_mode(
+void mqttsn_##NAME##client_set_searchgw_enabled(
     MqttsnClientHandle client, 
-    MqttsnSearchgwMode value)
+    bool value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->setGwSearchMode(value);
+    clientObj->setSearchgwEnabled(value);
 }    
 
 bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client)

@@ -60,7 +60,7 @@ void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_gw_advertise_period(MqttsnClien
 void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value);
 void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned value);
 void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsigned char value);
-void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_searchgw_mode(MqttsnClientHandle client, MqttsnSearchgwMode value);
+void MQTTSN_CLIENT_API mqttsn_##NAME##client_set_searchgw_enabled(MqttsnClientHandle client, bool value);
 
 bool MQTTSN_CLIENT_API mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 

@@ -1382,8 +1382,6 @@ void ClientBasic::test2()
     client->tick(DefaultRetryTimeout);
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-    verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
     static const std::uint8_t GwId = 5U;
@@ -3577,7 +3575,7 @@ void ClientBasic::test43()
     Test42State state;
 
     auto client = allocClient(&state, &dataProc);
-    client->setSearchgwMode(MqttsnSearchgwMode_Disabled);
+    client->setSearchgwEnabled(false);
     startClient(*client);
     TS_ASSERT(state.m_nextOutput.empty());
 }
