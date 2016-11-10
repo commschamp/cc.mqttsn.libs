@@ -37,7 +37,6 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_startFunc = &mqttsn_client_start;
     funcs.m_processDataFunc = &mqttsn_client_process_data;
     funcs.m_tickFunc = &mqttsn_client_tick;
-    funcs.m_setGwAdvertisePeriodFunc = &mqttsn_client_set_gw_advertise_period;
     funcs.m_setRetryPeriodFunc = &mqttsn_client_set_retry_period;
     funcs.m_setRetryCountFunc = &mqttsn_client_set_retry_count;
     funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
@@ -210,12 +209,6 @@ void CommonTestClient::tick(unsigned ms)
 {
     assert(m_libFuncs.m_tickFunc != nullptr);
     (m_libFuncs.m_tickFunc)(m_client, ms);
-}
-
-void CommonTestClient::setGwAdvertisePeriod(unsigned ms)
-{
-    assert(m_libFuncs.m_setGwAdvertisePeriodFunc != nullptr);
-    (m_libFuncs.m_setGwAdvertisePeriodFunc)(m_client, ms);
 }
 
 void CommonTestClient::setRetryPeriod(unsigned ms)

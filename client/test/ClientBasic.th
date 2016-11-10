@@ -107,6 +107,7 @@ private:
 
     static const std::string DefaultClientId;
     static const unsigned DefaultAdvertisePeriod = 5 * 60 * 1000;
+    static const unsigned MaxPeriod = std::numeric_limits<std::uint16_t>::max() * 1000;
     static const unsigned DefaultRetryTimeout = 5 * 1000;
     static const unsigned DefaultRetryCount = 3;
     static const unsigned char DefaultBroadcastRadius = 0;
@@ -182,7 +183,6 @@ private:
     {
         auto ptr = CommonTestClient::alloc();
         assert(ptr);
-        ptr->setGwAdvertisePeriod(DefaultAdvertisePeriod / 1000);
         ptr->setRetryPeriod(DefaultRetryTimeout / 1000);
         ptr->setRetryCount(DefaultRetryCount);
         ptr->setBroadcastRadius(DefaultBroadcastRadius);
@@ -1393,10 +1393,10 @@ void ClientBasic::test2()
     dataFromGw(*client, gwInfoData, "GWINFO");
 
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_Available);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultAdvertisePeriod);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, MaxPeriod);
 
     clearState(state);
-    client->tick(DefaultAdvertisePeriod);
+    client->tick(MaxPeriod);
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_TimedOut);
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);

@@ -333,13 +333,6 @@ public:
         return m_gwInfos;
     }
 
-    void setGwAdvertisePeriod(unsigned val)
-    {
-        static const auto MaxVal =
-            std::numeric_limits<decltype(m_advertisePeriod)>::max() / 1000;
-        m_advertisePeriod = std::min(val * 1000, MaxVal);
-    }
-
     void setRetryPeriod(unsigned val)
     {
         static const auto MaxVal =
@@ -1076,7 +1069,7 @@ public:
         auto iter = findGwInfo(idField.value());
         if (iter != m_gwInfos.end()) {
             iter->m_timestamp = m_timestamp;
-            iter->m_duration = durationField.value();
+            iter->m_duration = durationField.value() * 1000U;
             return;
         }
 
@@ -1094,13 +1087,14 @@ public:
         //auto& addrField = std::get<GwinfoMsg::FieldIdx_gwAdd>(fields);
         auto iter = findGwInfo(idField.value());
         if (iter != m_gwInfos.end()) {
+            iter->m_timestamp = m_timestamp;
 //            if (!addrField.value().empty()) {
 //                iter->m_addr = addrField.value();
 //            }
             return;
         }
 
-        if (!addNewGw(idField.value(), m_advertisePeriod)) {
+        if (!addNewGw(idField.value(), std::numeric_limits<std::uint16_t>::max() * 1000)) {
             return;
         }
 
@@ -3125,7 +3119,6 @@ private:
 
     unsigned m_callStackCount = 0U;
     unsigned m_pingCount = 0;
-    unsigned m_advertisePeriod = DefaultAdvertisePeriod;
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_keepAlivePeriod = 0;

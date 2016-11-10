@@ -40,12 +40,10 @@ FilterConfigWidget::FilterConfigWidget(Filter& filter)
     m_ui.m_layout->insertWidget(m_ui.m_layout->count() - 1, new SubListWidget(m_filter.subInfos()));
 
     static const int MaxDuration = std::numeric_limits<std::uint16_t>::max();
-    m_ui.m_advertiseSpinBox->setRange(0, MaxDuration);
     m_ui.m_keepAliveSpinBox->setRange(0, MaxDuration);
     m_ui.m_retryDurationSpinBox->setRange(0, MaxDuration);
 
     m_ui.m_clientIdLineEdit->setText(m_filter.clientId().c_str());
-    m_ui.m_advertiseSpinBox->setValue(m_filter.advertisePeriod());
     m_ui.m_keepAliveSpinBox->setValue(m_filter.keepAlivePeriod());
     m_ui.m_retryDurationSpinBox->setValue(m_filter.retryPeriod());
     m_ui.m_retryCountSpinBox->setValue(m_filter.retryCount());
@@ -53,9 +51,6 @@ FilterConfigWidget::FilterConfigWidget(Filter& filter)
     connect(
         m_ui.m_clientIdLineEdit, SIGNAL(textChanged(const QString&)),
         this, SLOT(clientIdChanged(const QString&)));
-    connect(
-        m_ui.m_advertiseSpinBox, SIGNAL(valueChanged(int)),
-        this, SLOT(advertiseChanged(int)));
     connect(
         m_ui.m_keepAliveSpinBox, SIGNAL(valueChanged(int)),
         this, SLOT(keepAliveChanged(int)));
@@ -72,11 +67,6 @@ FilterConfigWidget::~FilterConfigWidget() = default;
 void FilterConfigWidget::clientIdChanged(const QString& val)
 {
     m_filter.clientId() = val.toStdString();
-}
-
-void FilterConfigWidget::advertiseChanged(int val)
-{
-    m_filter.advertisePeriod() = val;
 }
 
 void FilterConfigWidget::keepAliveChanged(int val)

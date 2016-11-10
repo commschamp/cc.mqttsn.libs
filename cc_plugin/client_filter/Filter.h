@@ -68,11 +68,6 @@ public:
         return m_clientId;
     }
 
-    int& advertisePeriod()
-    {
-        return m_advertisePeriod;
-    }
-
     int& retryPeriod()
     {
         return m_retryPeriod;
@@ -148,7 +143,6 @@ private:
 
     ClientPtr m_client;
     std::string m_clientId = "cc_filter";
-    int m_advertisePeriod = 15 * 60;
     int m_retryPeriod = 5;
     int m_retryCount = 3;
     KeepAliveType m_keepAlivePeriod = 60;
