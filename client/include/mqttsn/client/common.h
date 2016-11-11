@@ -70,7 +70,8 @@ enum MqttsnGwStatus
 {
     MqttsnGwStatus_Invalid,
     MqttsnGwStatus_Available,
-    MqttsnGwStatus_TimedOut
+    MqttsnGwStatus_TimedOut,
+    MqttsnGwStatus_Discarded
 };
 
 enum MqttsnAsyncOpStatus

@@ -399,6 +399,55 @@ public:
         m_searchgwEnabled = value;
     }
 
+    void sendSearchGw()
+    {
+        sendGwSearchReq();
+    }
+
+    void discardGw(std::uint8_t gwId)
+    {
+        auto guard = apiCall();
+        auto iter =
+            std::find_if(
+                m_gwInfos.begin(), m_gwInfos.end(),
+                [gwId](typename GwInfoStorage::const_reference elem) -> bool
+                {
+                    return elem.m_id == gwId;
+                });
+
+        if (iter == m_gwInfos.end()) {
+            return;
+        }
+
+        m_gwInfos.erase(iter);
+        reportGwStatus(gwId, MqttsnGwStatus_Discarded);
+    }
+
+    void discardAllGw()
+    {
+        auto guard = apiCall();
+
+        if (m_gwStatusReportFn == nullptr) {
+            m_gwInfos.clear();
+            return;
+        }
+
+        typedef details::GwInfoStorageTypeT<std::uint8_t, TClientOpts> GwIdStorage;
+        GwIdStorage ids;
+        ids.reserve(m_gwInfos.size());
+        std::transform(
+            m_gwInfos.begin(), m_gwInfos.end(), std::back_inserter(ids),
+            [](typename GwInfoStorage::const_reference elem) -> std::uint8_t
+            {
+                return elem.m_id;
+            });
+
+        m_gwInfos.clear();
+        for (auto gwId : ids) {
+            reportGwStatus(gwId, MqttsnGwStatus_Discarded);
+        }
+    }
+
     MqttsnErrorCode start()
     {
         if (m_running) {
