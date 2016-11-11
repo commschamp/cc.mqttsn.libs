@@ -31,10 +31,6 @@ endfunction()
 
 ######################################################################
 
-add_definitions(
-    -DMQTTSN_GATEWAY_LIB_EXPORT
-)
-
 include_directories(
     BEFORE
     ${CMAKE_CURRENT_SOURCE_DIR}

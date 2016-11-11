@@ -22,8 +22,6 @@
 #include <cstdint>
 #include <functional>
 
-#include "mqttsn/gateway/Api.h"
-
 namespace mqttsn
 {
 

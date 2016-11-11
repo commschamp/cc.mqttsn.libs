@@ -28,9 +28,6 @@
 #include <list>
 #include <utility>
 
-#include "mqttsn/gateway/Api.h"
-
-
 namespace mqttsn
 {
 
