@@ -243,7 +243,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
 
     packetIdField.value() = msgIdField.value();
     auto& payloadContainer = payloadField.value();
-    typedef typename std::decay<decltype(payloadContainer)>::type ContainerType;
+    typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type SubElemBundle;
 
     SubElemBundle subElem;
@@ -301,7 +301,7 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
 
     packetIdField.value() = msgIdField.value();
     auto& payloadContainer = payloadField.value();
-    typedef typename std::decay<decltype(payloadContainer)>::type ContainerType;
+    typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type UnsubString;
 
     UnsubString unsubStr;

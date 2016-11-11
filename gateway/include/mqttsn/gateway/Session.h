@@ -32,7 +32,7 @@ namespace gateway
 {
 
 class SessionImpl;
-class MQTTSN_GATEWAY_API Session
+class Session
 {
 public:
 

@@ -1952,7 +1952,7 @@ private:
                 return ((elem.m_timestamp + elem.m_duration) <= m_timestamp);
             };
 
-        typedef details::GwInfoStorageTypeT<std::uint16_t, TClientOpts> GwIdStorage;
+        typedef details::GwInfoStorageTypeT<std::uint8_t, TClientOpts> GwIdStorage;
         GwIdStorage idsToRemove;
 
         for (auto& info : m_gwInfos) {

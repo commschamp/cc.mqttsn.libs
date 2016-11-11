@@ -305,7 +305,7 @@ MqttsnErrorCode mqttsn_##NAME##client_will_update(
     return clientObj->willUpdate(willInfo, callback, data);
 }
 
-MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_topic_update(
+MqttsnErrorCode mqttsn_##NAME##client_will_topic_update(
     MqttsnClientHandle client,
     const char* topic,
     MqttsnQoS qos,
@@ -318,7 +318,7 @@ MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_topic_update(
     return clientObj->willTopicUpdate(topic, qos, retain, callback, data);
 }
 
-MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_msg_update(
+MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
     MqttsnClientHandle client,
     const unsigned char* msg,
     unsigned msgLen,

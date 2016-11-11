@@ -22,6 +22,7 @@
 #include <cassert>
 #include <iterator>
 #include <limits>
+#include <cctype>
 
 namespace mqttsn
 {

@@ -128,7 +128,7 @@ public:
     CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
-    bool start();
+    MqttsnErrorCode start();
     void inputData(const std::uint8_t* buf, std::size_t bufLen);
     void tick(unsigned ms);
     void setRetryPeriod(unsigned ms);

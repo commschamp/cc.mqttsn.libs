@@ -38,7 +38,7 @@ namespace gateway
 {
 
 class ConfigImpl;
-class MQTTSN_GATEWAY_API Config
+class Config
 {
 public:
 

@@ -185,7 +185,7 @@ CommonTestClient::Ptr CommonTestClient::alloc(const ClientLibFuncs& libFuncs)
     return Ptr(new CommonTestClient(libFuncs));
 }
 
-bool CommonTestClient::start()
+MqttsnErrorCode CommonTestClient::start()
 {
     assert(m_libFuncs.m_startFunc != nullptr);
     return (m_libFuncs.m_startFunc)(m_client);

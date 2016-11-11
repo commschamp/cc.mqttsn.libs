@@ -67,7 +67,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst)
     set_target_properties(
         ${lib_name} PROPERTIES 
         POSITION_INDEPENDENT_CODE TRUE
-        COMPILE_DEFINITIONS MQTTSN_CLIENT_LIB_EXPORT)
+    )
     add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})    
     
     if (inst)

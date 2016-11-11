@@ -31,7 +31,7 @@ namespace gateway
 {
 
 class GatewayImpl;
-class MQTTSN_GATEWAY_API Gateway
+class Gateway
 {
 public:
     Gateway();

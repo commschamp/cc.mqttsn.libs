@@ -196,7 +196,13 @@ private:
     void updateTimestamp();
     void updateOps();
     void apiCallExit();
+
+#ifdef _MSC_VER
+    typedef std::function<void ()> ApiCallGuard;
+    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::declval<ApiCallGuard>()));
+#else
     auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&SessionImpl::apiCallExit, this)));
+#endif
 
     NextTickProgramReqCb m_nextTickProgramCb;
     CancelTickWaitReqCb m_cancelTickCb;

@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <tuple>
 #include <algorithm>
+#include <random>
 
 #include "comms/CompileControl.h"
 
