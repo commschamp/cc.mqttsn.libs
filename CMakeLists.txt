@@ -28,7 +28,7 @@ if (NOT CMAKE_CROSSCOMPILING)
     endif ()
 endif ()
 
-if (UNIX)
+if (UNIX AND (NOT CC_MQTTSN_NO_CCACHE))
     find_program(CCACHE_FOUND ccache)
     if(CCACHE_FOUND)
         set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
@@ -65,6 +65,10 @@ set (INC_INSTALL_DIR ${INSTALL_DIR}/include)
 set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/plugin)
 
 set (DEFAULT_CLIENT_LIB_TGT "mqttsn_client")
+
+if (NOT "${MQTTSN_QT_DIR}" STREQUAL "")
+    list (APPEND CMAKE_PREFIX_PATH ${MQTTSN_QT_DIR})
+endif ()
 
 add_subdirectory(protocol)
 add_subdirectory(client)

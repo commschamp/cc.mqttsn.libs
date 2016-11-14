@@ -61,7 +61,7 @@ void mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned v
 void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsigned char value);
 void mqttsn_##NAME##client_set_searchgw_enabled(MqttsnClientHandle client, bool value);
 void mqttsn_##NAME##client_set_search_gw(MqttsnClientHandle client);
-void mqttsn_##NAME##client_set_discard_gw(MqttsnClientHandle client, unsigned short gwId);
+void mqttsn_##NAME##client_set_discard_gw(MqttsnClientHandle client, unsigned char gwId);
 void mqttsn_##NAME##client_set_discard_all_gw(MqttsnClientHandle client);
 
 bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);

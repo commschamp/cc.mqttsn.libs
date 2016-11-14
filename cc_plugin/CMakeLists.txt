@@ -6,10 +6,6 @@ if (NOT MQTTSN_CC_PLUGINS)
     return()
 endif ()    
 
-if (NOT "${MQTTSN_QT_DIR}" STREQUAL "")
-    list (APPEND CMAKE_PREFIX_PATH ${MQTTSN_QT_DIR})
-endif ()
-
 find_package(Qt5Core REQUIRED)
 
 if (NOT "${MQTTSN_CC_INSTALL_PATH}" STREQUAL "")

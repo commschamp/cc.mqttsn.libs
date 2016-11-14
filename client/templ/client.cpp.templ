@@ -200,7 +200,7 @@ void mqttsn_##NAME##client_set_search_gw(MqttsnClientHandle client)
 
 void mqttsn_##NAME##client_set_discard_gw(
     MqttsnClientHandle client, 
-    unsigned short gwId)
+    unsigned char gwId)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->discardGw(gwId);
