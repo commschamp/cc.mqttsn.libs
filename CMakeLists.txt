@@ -36,10 +36,8 @@ if (UNIX AND (NOT CC_MQTTSN_NO_CCACHE))
     endif(CCACHE_FOUND)
 endif ()    
 
-option (MQTTSN_INSTALL_PROTOCOL_HEADERS "Install headers for MQTT-SN protocol implementation library. " OFF)
-option (MQTTSN_CC_PLUGINS "Build and install pluginS for CommsChampion." ON)
-option (MQTTSN_CC_PLUGIN_COPY_TO_CC_INSTALL_PATH "Copy plugins for CommsChampion to the install path of the latter." ON)
-option (MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
+option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
+option (CC_MQTTSN_FULL_SOLUTION "Build and install full solution, including CommsChampion sources." OFF)
 
 if (CMAKE_COMPILER_IS_GNUCC)
     set (extra_flags_list
@@ -59,6 +57,10 @@ elseif (MSVC)
 endif ()
 
 set (INSTALL_DIR ${CMAKE_BINARY_DIR}/install)
+if (NOT "${CC_MQTTSN_INSTALL_DIR}" STREQUAL "")
+    set (INSTALL_DIR "${CC_MQTTSN_INSTALL_DIR}")
+endif ()
+
 set (LIB_INSTALL_DIR ${INSTALL_DIR}/lib)
 set (BIN_INSTALL_DIR ${INSTALL_DIR}/bin)
 set (INC_INSTALL_DIR ${INSTALL_DIR}/include)
@@ -66,12 +68,86 @@ set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/plugin)
 
 set (DEFAULT_CLIENT_LIB_TGT "mqttsn_client")
 
-if (NOT "${MQTTSN_QT_DIR}" STREQUAL "")
-    list (APPEND CMAKE_PREFIX_PATH ${MQTTSN_QT_DIR})
+if (NOT "${CC_MQTTSN_QT_DIR}" STREQUAL "")
+    list (APPEND CMAKE_PREFIX_PATH ${CC_MQTTSN_QT_DIR})
+endif ()
+
+set (CC_EXTERNAL_TGT "comms_champion_external")
+set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
+if (CC_MQTTSN_FULL_SOLUTION)
+    include(ExternalProject)
+    
+    set (cc_branch "develop")
+    set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
+    set (cc_src_dir "${cc_main_dir}/src")
+    set (cc_bin_dir "${cc_main_dir}/build")
+    set (cc_mqtt_main_dir "${CMAKE_BINARY_DIR}/mqtt")
+    set (cc_mqtt_src_dir "${cc_mqtt_main_dir}/src")
+    set (cc_mqtt_bin_dir "${cc_mqtt_main_dir}/build")
+    
+    if (NOT "${CC_MQTTSN_QT_DIR}" STREQUAL "")
+        set (extra_cc_args "-DCC_QT_DIR=${CC_MQTTSN_QT_DIR}")
+        set (extra_cc_mqtt_args "-DCC_QT_DIR=${CC_MQTTSN_QT_DIR}")
+    endif ()
+
+    ExternalProject_Add(
+        "${CC_EXTERNAL_TGT}"
+        PREFIX "${cc_bin_dir}"
+        STAMP_DIR "${cc_bin_dir}"    
+        GIT_REPOSITORY "https://github.com/arobenko/comms_champion.git"
+        GIT_TAG "${cc_branch}"
+        SOURCE_DIR "${cc_src_dir}"
+        CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_INSTALL_DIR=${INSTALL_DIR} ${extra_cc_args}
+        BINARY_DIR "${cc_bin_dir}"
+    )
+    
+    ExternalProject_Add(
+        "${CC_MQTT_EXTERNAL_TGT}"
+        PREFIX "${cc_mqtt_bin_dir}"
+        STAMP_DIR "${cc_mqtt_bin_dir}"    
+        GIT_REPOSITORY "https://github.com/arobenko/mqtt.git"
+        GIT_TAG "${cc_branch}"
+        SOURCE_DIR "${cc_mqtt_src_dir}"
+        CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_MQTT_INSTALL_DIR=${INSTALL_DIR} -DCC_MQTT_LIB_ONLY=ON ${extra_cc_mqtt_args}
+        BINARY_DIR "${cc_mqtt_bin_dir}"
+    )
+    
+    add_dependencies(${CC_MQTT_EXTERNAL_TGT} ${CC_EXTERNAL_TGT})
+        
+    include_directories("${INSTALL_DIR}/include")
+    link_directories("${INSTALL_DIR}/lib")
+    set (CC_PLUGIN_LIBRARIES "comms_champion")
+    set (CC_COMMS_FOUND TRUE)
+    set (CC_COMMS_CHAMPION_FOUND TRUE)
+    set (CC_MQTT_FOUND TRUE)
+else ()
+    if (EXISTS "${INSTALL_DIR}/cmake/CommsChampionConfig.cmake")
+        list (APPEND CMAKE_PREFIX_PATH "${INSTALL_DIR}/cmake")
+    endif ()
+    
+    if (NOT "${CC_MAIN_INSTALL_DIR}" STREQUAL "")
+        list (APPEND CMAKE_PREFIX_PATH "${CC_MAIN_INSTALL_DIR}/cmake")
+    endif ()
+    
+    if (NOT "${CC_MQTT_INSTALL_DIR}" STREQUAL "")
+        list (APPEND CMAKE_PREFIX_PATH "${CC_MQTT_INSTALL_DIR}/cmake")
+    endif ()
+    
+    find_package(CommsChampion)
+    
+    if (CC_COMMS_CHAMPION_FOUND)
+        include_directories(${CC_INCLUDE_DIRS})
+        link_directories(${CC_PLUGIN_LIBRARY_DIRS})
+    endif ()
+    
+    find_package(CC_Mqtt)
+    
+    if (CC_MQTT_FOUND)
+        include_directories(${CC_MQTT_INCLUDE_DIRS})
+    endif ()
 endif ()
 
 add_subdirectory(protocol)
 add_subdirectory(client)
 add_subdirectory(gateway)
 add_subdirectory(cc_plugin)
-

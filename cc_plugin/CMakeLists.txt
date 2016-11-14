@@ -2,28 +2,17 @@ if (CMAKE_CROSSCOMPILING)
     return()
 endif ()
 
-if (NOT MQTTSN_CC_PLUGINS)
-    return()
-endif ()    
+find_package(Qt5Core)
 
-find_package(Qt5Core REQUIRED)
-
-if (NOT "${MQTTSN_CC_INSTALL_PATH}" STREQUAL "")
-    list (APPEND CMAKE_PREFIX_PATH "${MQTTSN_CC_INSTALL_PATH}/cmake")
+if (NOT Qt5Core_FOUND)
+    message (WARNING "Can NOT compile commsChampion plugins due to missing QT5 Core library")
+    return ()
 endif ()
-
-find_package(CommsChampion)
 
 if (NOT CC_COMMS_CHAMPION_FOUND)
-    message (FATAL_ERROR "CommsChampion wasn't found!. Please set MQTTSN_CC_INSTALL_PATH to its installation path.")
+    message (WARNING "Can NOT compile mqtt protocol plugins due to missing CommsChampion library")
+    return ()
 endif ()
-
-include_directories("${CC_INCLUDE_DIRS}")
-link_directories("${CC_PLUGIN_LIBRARY_DIRS}")
-
-if (CMAKE_COMPILER_IS_GNUCC)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
-endif ()
-
+    
 add_subdirectory (protocol)
 add_subdirectory (client_filter)

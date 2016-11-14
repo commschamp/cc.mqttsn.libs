@@ -1,11 +1,9 @@
+set (THIS_PLUGIN_NAME "mqttsn_client_filter")
+
+######################################################################
 
 function (cc_plugin_mqttsn_client_filter)
-    set (name "mqttsn_client_filter")
-    
-    if (NOT Qt5Core_FOUND)
-        message(WARNING "Can NOT build ${name} due to missing Qt5Core library")
-        return()
-    endif ()
+    set (name "${THIS_PLUGIN_NAME}")
     
     if (NOT Qt5Widgets_FOUND)
         message(WARNING "Can NOT build ${name} due to missing Qt5Widgets library")
@@ -63,17 +61,10 @@ function (cc_plugin_mqttsn_client_filter)
         TARGETS ${name}
         DESTINATION ${PLUGIN_INSTALL_DIR})
 
-    if (MQTTSN_CC_PLUGIN_COPY_TO_CC_INSTALL_PATH)        
-        install (
-            TARGETS ${name}
-            DESTINATION ${CC_PLUGIN_DIR})
-     endif ()
-    
 endfunction()
 
 ######################################################################
 
-find_package(Qt5Core)
 find_package(Qt5Widgets)
 
 include_directories(
@@ -84,3 +75,7 @@ include_directories(
 )
 
 cc_plugin_mqttsn_client_filter ()
+
+if (CC_MQTTSN_FULL_SOLUTION)
+    add_dependencies(${THIS_PLUGIN_NAME} ${CC_EXTERNAL_TGT})
+endif ()

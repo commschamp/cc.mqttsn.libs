@@ -68,7 +68,11 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst)
         ${lib_name} PROPERTIES 
         POSITION_INDEPENDENT_CODE TRUE
     )
-    add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})    
+    add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})
+    
+    if (CC_MQTTSN_FULL_SOLUTION)
+        add_dependencies(${lib_name} ${CC_EXTERNAL_TGT})
+    endif ()
     
     if (inst)
         install (
@@ -85,17 +89,10 @@ endfunction()
 
 ######################################################################
 
-if (NOT "${MQTTSN_CC_INSTALL_PATH}" STREQUAL "")
-    list (APPEND CMAKE_PREFIX_PATH "${MQTTSN_CC_INSTALL_PATH}/cmake")
-endif ()
-
-find_package(CommsChampion)
-
 if (NOT CC_COMMS_FOUND)
-    message (FATAL_ERROR "Comms library wasn't found!. Please set MQTTSN_CC_INSTALL_PATH to its installation path.")
+    message (WARNING "Comms library wasn't found!, cannot compile client library and/or application.")
+    return ()
 endif ()
-
-include_directories("${CC_INCLUDE_DIRS}")
 
 if (CMAKE_COMPILER_IS_GNUCC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")

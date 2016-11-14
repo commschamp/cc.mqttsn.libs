@@ -1,7 +1,3 @@
-if (NOT MQTTSN_INSTALL_PROTOCOL_HEADERS)
-    return ()
-endif ()
-
 install (
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/mqttsn
     DESTINATION ${INC_INSTALL_DIR}

@@ -3163,7 +3163,7 @@ void ClientBasic::test35()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willTopicUpdate(WillTopic.c_str(), Qos, Retain);
+    auto result = client->willTopicUpdate(WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);

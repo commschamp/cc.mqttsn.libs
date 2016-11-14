@@ -14,7 +14,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if (MQTTSN_CLIENT_DEFAULT_LIB)
+if (CC_MQTTSN_CLIENT_DEFAULT_LIB)
     gen_lib_mqttsn_client("${DEFAULT_CLIENT_NAME}" "" "" TRUE)
 endif ()    
 
