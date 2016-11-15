@@ -1,7 +1,3 @@
-if (CMAKE_CROSSCOMPILING)
-    return()
-endif ()
-
 if (NOT CC_COMMS_FOUND)
     message (WARNING "Comms library wasn't found, cannot build gateway library and/or application.")
     return ()

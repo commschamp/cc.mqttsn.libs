@@ -3,9 +3,6 @@ project ("mqttsn")
 
 if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
-    if(NOT DEFINED CMAKE_CROSSCOMPILING)
-        message(FATAL_ERROR "Toolchain file is expected to define CMAKE_SYSTEM_NAME, typically: set (CMAKE_SYSTEM_NAME \"Generic\")")
-    endif()
 endif()
 
 set (EXTERNALS_DIR "${CMAKE_SOURCE_DIR}/external")
