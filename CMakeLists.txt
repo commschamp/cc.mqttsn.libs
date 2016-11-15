@@ -63,6 +63,7 @@ endif ()
 
 set (LIB_INSTALL_DIR ${INSTALL_DIR}/lib)
 set (BIN_INSTALL_DIR ${INSTALL_DIR}/bin)
+set (ETC_INSTALL_DIR ${INSTALL_DIR}/etc)
 set (INC_INSTALL_DIR ${INSTALL_DIR}/include)
 set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/plugin)
 
@@ -77,7 +78,7 @@ set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
 if (CC_MQTTSN_FULL_SOLUTION)
     include(ExternalProject)
     
-    set (cc_branch "develop")
+    set (cc_branch "master")
     set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
     set (cc_src_dir "${cc_main_dir}/src")
     set (cc_bin_dir "${cc_main_dir}/build")

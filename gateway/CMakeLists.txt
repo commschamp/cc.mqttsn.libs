@@ -30,3 +30,8 @@ install (
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/mqttsn
     DESTINATION ${INC_INSTALL_DIR}
 )
+
+install (
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/etc/
+    DESTINATION ${ETC_INSTALL_DIR}/mqttsn/
+)
