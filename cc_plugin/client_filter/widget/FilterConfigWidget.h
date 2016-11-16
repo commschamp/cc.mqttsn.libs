@@ -47,7 +47,6 @@ public:
 
 private slots:
     void clientIdChanged(const QString& val);
-    void advertiseChanged(int val);
     void keepAliveChanged(int val);
     void retryDurationChanged(int val);
     void retryCountChanged(int val);

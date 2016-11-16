@@ -16,6 +16,7 @@ function (lib_common_test_session)
         "TestMsgHandler.cpp"
     )
     add_library (${COMMON_TEST_SESSION_LIB} STATIC ${src})
+    add_dependencies (${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME})
 endfunction ()
 
 #################################################################

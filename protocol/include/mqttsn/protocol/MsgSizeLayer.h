@@ -254,7 +254,7 @@ private:
         auto& longLengthField = std::get<LengthFieldIdx_Long>(members);
 
         do {
-            if (writeLength <= (std::numeric_limits<std::uint8_t>::max() - 1)) {
+            if (writeLength <= static_cast<decltype(writeLength)>(std::numeric_limits<std::uint8_t>::max() - 1)) {
                 typedef typename std::decay<decltype(shortLengthField)>::type ShortField;
                 typedef typename ShortField::ValueType ShortFieldValueType;
                 shortLengthField.value() = static_cast<ShortFieldValueType>(writeLength);

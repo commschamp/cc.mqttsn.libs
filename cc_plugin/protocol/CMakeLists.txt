@@ -1,6 +1,9 @@
+set (THIS_PLUGIN_NAME "mqttsn_protocol")
+
+######################################################################
 
 function (cc_plugin_mqttsn_protocol)
-    set (name "mqttsn_protocol")
+    set (name "${THIS_PLUGIN_NAME}")
     
     set (meta_file "${CMAKE_CURRENT_SOURCE_DIR}/mqttsn.json")
     set (stamp_file "${CMAKE_CURRENT_BINARY_DIR}/refresh_stamp.txt")
@@ -66,12 +69,6 @@ function (cc_plugin_mqttsn_protocol)
         TARGETS ${name}
         DESTINATION ${PLUGIN_INSTALL_DIR})
 
-    if (MQTTSN_CC_PLUGIN_COPY_TO_CC_INSTALL_PATH)        
-        install (
-            TARGETS ${name}
-            DESTINATION ${CC_PLUGIN_DIR})
-     endif ()
-    
 endfunction()
 
 ######################################################################
@@ -79,4 +76,12 @@ endfunction()
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/protocol/include)
 
+if (CMAKE_COMPILER_IS_GNUCC)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
+endif ()
+
 cc_plugin_mqttsn_protocol ()
+
+if (CC_MQTTSN_FULL_SOLUTION)
+    add_dependencies(${THIS_PLUGIN_NAME} ${CC_EXTERNAL_TGT})
+endif ()

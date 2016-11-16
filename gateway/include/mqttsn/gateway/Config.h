@@ -28,9 +28,6 @@
 #include <list>
 #include <utility>
 
-#include "mqttsn/gateway/Api.h"
-
-
 namespace mqttsn
 {
 
@@ -38,7 +35,7 @@ namespace gateway
 {
 
 class ConfigImpl;
-class MQTTSN_GATEWAY_API Config
+class Config
 {
 public:
 

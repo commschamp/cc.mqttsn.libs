@@ -38,10 +38,10 @@ typedef decltype(&mqttsn_client_set_message_report_callback) MessageReportCallba
 typedef decltype(&mqttsn_client_start) StartFunc;
 typedef decltype(&mqttsn_client_process_data) ProcessDataFunc;
 typedef decltype(&mqttsn_client_tick) TickFunc;
-typedef decltype(&mqttsn_client_set_gw_advertise_period) SetGwAdvertisePeriodFunc;
 typedef decltype(&mqttsn_client_set_retry_period) SetRetryPeriodFunc;
 typedef decltype(&mqttsn_client_set_retry_count) SetRetryCountFunc;
 typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
+typedef decltype(&mqttsn_client_set_searchgw_enabled) SetSearchgwEnabledFunc;
 typedef decltype(&mqttsn_client_cancel) CancelFunc;
 typedef decltype(&mqttsn_client_connect) ConnectFunc;
 typedef decltype(&mqttsn_client_disconnect) DisconnectFunc;
@@ -71,10 +71,10 @@ struct ClientLibFuncs
     StartFunc m_startFunc = nullptr;
     ProcessDataFunc m_processDataFunc = nullptr;
     TickFunc m_tickFunc = nullptr;
-    SetGwAdvertisePeriodFunc m_setGwAdvertisePeriodFunc = nullptr;
     SetRetryPeriodFunc m_setRetryPeriodFunc = nullptr;
     SetRetryCountFunc m_setRetryCountFunc = nullptr;
     SetBroadcastRadiusFunc m_setBroadcastRadius = nullptr;
+    SetSearchgwEnabledFunc m_setSearchgwEnabledFunc = nullptr;
     CancelFunc m_cancelFunc = nullptr;
     ConnectFunc m_connectFunc = nullptr;
     DisconnectFunc m_disconnectFunc = nullptr;
@@ -128,13 +128,13 @@ public:
     CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
-    bool start();
+    MqttsnErrorCode start();
     void inputData(const std::uint8_t* buf, std::size_t bufLen);
     void tick(unsigned ms);
-    void setGwAdvertisePeriod(unsigned ms);
     void setRetryPeriod(unsigned ms);
     void setRetryCount(unsigned value);
     void setBroadcastRadius(unsigned char val);
+    void setSearchgwEnabled(bool value);
 
     bool cancel();
     MqttsnErrorCode connect(

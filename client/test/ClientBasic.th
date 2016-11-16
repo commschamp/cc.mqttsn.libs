@@ -74,6 +74,7 @@ public:
     void test40();
     void test41();
     void test42();
+    void test43();
 
 private:
     typedef DataProcessor::DataBuf DataBuf;
@@ -106,6 +107,7 @@ private:
 
     static const std::string DefaultClientId;
     static const unsigned DefaultAdvertisePeriod = 5 * 60 * 1000;
+    static const unsigned MaxPeriod = std::numeric_limits<std::uint16_t>::max() * 1000;
     static const unsigned DefaultRetryTimeout = 5 * 1000;
     static const unsigned DefaultRetryCount = 3;
     static const unsigned char DefaultBroadcastRadius = 0;
@@ -181,7 +183,6 @@ private:
     {
         auto ptr = CommonTestClient::alloc();
         assert(ptr);
-        ptr->setGwAdvertisePeriod(DefaultAdvertisePeriod / 1000);
         ptr->setRetryPeriod(DefaultRetryTimeout / 1000);
         ptr->setRetryCount(DefaultRetryCount);
         ptr->setBroadcastRadius(DefaultBroadcastRadius);
@@ -1381,8 +1382,6 @@ void ClientBasic::test2()
     client->tick(DefaultRetryTimeout);
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-    verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     clearState(state);
     static const std::uint8_t GwId = 5U;
@@ -1394,10 +1393,10 @@ void ClientBasic::test2()
     dataFromGw(*client, gwInfoData, "GWINFO");
 
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_Available);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultAdvertisePeriod);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, MaxPeriod);
 
     clearState(state);
-    client->tick(DefaultAdvertisePeriod);
+    client->tick(MaxPeriod);
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_TimedOut);
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -2758,9 +2757,9 @@ void ClientBasic::test28()
     static const MqttsnTopicId TopicId = 0x1111;
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::protocol::field::ReturnCodeVal_Congestion);
     dataFromGw(*client, subackMsg, "SUBACK");
-    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Conjestion, Qos2);
+    verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Congestion, Qos2);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
@@ -3164,7 +3163,7 @@ void ClientBasic::test35()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto result = client->willTopicUpdate(WillTopic.c_str(), Qos, Retain);
+    auto result = client->willTopicUpdate(WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -3443,8 +3442,8 @@ void ClientBasic::test39()
 void ClientBasic::test40()
 {
     DataProcessor dataProc;
-    typedef TestBasicState Test34State;
-    Test34State state;
+    typedef TestBasicState Test40State;
+    Test40State state;
 
     auto client = allocClient(&state, &dataProc);
     startClient(*client);
@@ -3566,3 +3565,18 @@ void ClientBasic::test42()
     verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Connected);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, KeepAlive * 1000);
 }
+
+void ClientBasic::test43()
+{
+    // Connect with will
+    DataProcessor dataProc;
+    typedef TestBasicState Test42State;
+
+    Test42State state;
+
+    auto client = allocClient(&state, &dataProc);
+    client->setSearchgwEnabled(false);
+    startClient(*client);
+    TS_ASSERT(state.m_nextOutput.empty());
+}
+

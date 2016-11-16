@@ -31,13 +31,14 @@ endfunction()
 
 ######################################################################
 
-add_definitions(
-    -DMQTTSN_GATEWAY_LIB_EXPORT
-)
-
 include_directories(
     BEFORE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 lib_mqttsn_gateway ()
+
+if (CC_MQTTSN_FULL_SOLUTION)
+    add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_EXTERNAL_TGT})
+    add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_MQTT_EXTERNAL_TGT})
+endif ()

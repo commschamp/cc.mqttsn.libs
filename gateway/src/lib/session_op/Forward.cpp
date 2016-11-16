@@ -58,9 +58,7 @@ void Forward::handle(PublishMsg_SN& msg)
             break;
         }
 
-        if ((!st.m_brokerConnected) ||
-            (st.m_connStatus != ConnectionStatus::Disconnected) ||
-            (st.m_defaultClientId.empty())) {
+        if (st.m_connStatus != ConnectionStatus::Disconnected) {
             return;
         }
 
@@ -83,7 +81,7 @@ void Forward::handle(PublishMsg_SN& msg)
         sendPubackToClient(
             topicIdField.value(),
             msgIdField.value(),
-            mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+            mqttsn::protocol::field::ReturnCodeVal_Congestion);
         return;
     }
 
@@ -245,7 +243,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
 
     packetIdField.value() = msgIdField.value();
     auto& payloadContainer = payloadField.value();
-    typedef typename std::decay<decltype(payloadContainer)>::type ContainerType;
+    typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type SubElemBundle;
 
     SubElemBundle subElem;
@@ -303,7 +301,7 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
 
     packetIdField.value() = msgIdField.value();
     auto& payloadContainer = payloadField.value();
-    typedef typename std::decay<decltype(payloadContainer)>::type ContainerType;
+    typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type UnsubString;
 
     UnsubString unsubStr;

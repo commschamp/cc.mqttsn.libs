@@ -74,6 +74,25 @@ std::uint16_t getPortInfo(
 
 }  // namespace
 
+Mgr::Mgr(const Config& config)
+  : m_config(config),
+    m_gw(config)
+{
+    connect(
+        &m_socket, SIGNAL(readyRead()),
+        this, SLOT(readClientData()));
+    connect(
+        &m_socket, SIGNAL(error(QAbstractSocket::SocketError)),
+        this, SLOT(socketErrorOccurred(QAbstractSocket::SocketError)));
+
+}
+
+Mgr::~Mgr()
+{
+    m_socket.blockSignals(true);
+    m_socket.flush();
+}
+
 bool Mgr::start()
 {
     m_port = getPortInfo(m_config, UdpListenPortKey, DefaultListenPort);
@@ -95,52 +114,120 @@ bool Mgr::start()
     return m_gw.start(std::move(broadcastFunc));
 }
 
-void Mgr::newConnection()
+void Mgr::readClientData()
 {
-    disconnect(
-        m_socket.get(), SIGNAL(readyRead()),
-        this, SLOT(newConnection()));
+    typedef std::vector<std::uint8_t> DataBuf;
 
-    auto selfAdvertiseCheck =
-        [this](const std::uint8_t* buf, std::size_t bufLen) -> bool
-        {
-            return
-                ((m_lastAdvertise.size() == bufLen) &&
-                 (std::equal(m_lastAdvertise.begin(), m_lastAdvertise.end(), buf)));
-        };
+    DataBuf data;
+    QHostAddress senderAddress;
+    quint16 senderPort;
 
-    std::unique_ptr<SessionWrapper> session(
-        new SessionWrapper(m_config, std::move(m_socket), this));
-    if (session->start(selfAdvertiseCheck)) {
-        session.release();
+    while (m_socket.hasPendingDatagrams()) {
+        data.resize(m_socket.pendingDatagramSize());
+        auto readBytes = m_socket.readDatagram(
+            reinterpret_cast<char*>(&data[0]),
+            data.size(),
+            &senderAddress,
+            &senderPort);
+        assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+
+        if (data == m_lastAdvertise) {
+            continue;
+        }
+
+        auto addrStr = senderAddress.toString();
+        auto url = QString("%1:%2").arg(addrStr).arg(senderPort);
+        auto iter = m_sessions.find(url);
+        if (iter != m_sessions.end()) {
+            assert(iter->second != nullptr);
+            iter->second->dataFromClient(&data[0], data.size());
+            continue;
+        }
+
+        std::unique_ptr<SessionWrapper> session(new SessionWrapper(m_config, this));
+        session->setClientAddr(addrStr);
+        session->setClientPort(senderPort);
+
+        auto& sessionRef = *session;
+        session->setSendDataReqCb(
+            [this, &sessionRef](const std::uint8_t* buf, const std::size_t bufLen)
+            {
+                sendToClient(sessionRef, buf, bufLen);
+            });
+
+        session->setTermNotifyCb(
+            [this](const SessionWrapper& s)
+            {
+                auto key = QString("%1:%2").arg(s.getClientAddr()).arg(s.getClientPort());
+                auto it = m_sessions.find(key);
+                if (it == m_sessions.end()) {
+                    assert(!"The session wasn't found");
+                    return;
+                }
+
+                m_socket.flush();
+                m_sessions.erase(it);
+            });
+
+        m_sessions.insert(std::make_pair(url, session.get()));
+        auto sessionPtr = session.release();
+
+        if (!sessionPtr->start()) {
+            assert(!"Unexpected error");
+            continue;
+        }
+
+        sessionPtr->dataFromClient(&data[0], data.size());
     }
+}
 
-    doListen();
+void Mgr::socketErrorOccurred(QAbstractSocket::SocketError err)
+{
+    static_cast<void>(err);
+    std::cerr << "ERROR: UDP Socket: " << m_socket.errorString().toStdString() << std::endl;
 }
 
 bool Mgr::doListen()
 {
-    assert(!m_socket);
-
     if (m_port == 0) {
         return false;
     }
 
-    m_socket.reset(new QUdpSocket());
-    if (!m_socket->bind(QHostAddress::AnyIPv4, m_port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
+    if (!m_socket.bind(QHostAddress::AnyIPv4, m_port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint)) {
         std::cerr << "ERROR: Failed to bind UDP socket to local port " << m_port << std::endl;
         return false;
     }
 
-    if (!m_socket->open(QUdpSocket::ReadWrite)) {
+    if (!m_socket.open(QUdpSocket::ReadWrite)) {
         std::cerr << "ERROR: Failed to open UDP socket" << std::endl;
         return false;
     }
 
-    connect(
-        m_socket.get(), SIGNAL(readyRead()),
-        this, SLOT(newConnection()));
     return true;
+}
+
+void Mgr::sendToClient(
+    const SessionWrapper& session,
+    const std::uint8_t* buf,
+    std::size_t bufSize)
+{
+    std::size_t writtenCount = 0;
+    while (writtenCount < bufSize) {
+        auto remSize = bufSize - writtenCount;
+        auto count =
+            m_socket.writeDatagram(
+                reinterpret_cast<const char*>(&buf[writtenCount]),
+                remSize,
+                QHostAddress(session.getClientAddr()),
+                session.getClientPort());
+
+        if (count < 0) {
+            std::cerr << "ERROR: Failed to write to UDP socket!" << std::endl;
+            return;
+        }
+
+        writtenCount += count;
+    }
 }
 
 void Mgr::broadcastAdvertise(const std::uint8_t* buf, std::size_t bufSize)
@@ -150,13 +237,14 @@ void Mgr::broadcastAdvertise(const std::uint8_t* buf, std::size_t bufSize)
     while (writtenCount < bufSize) {
         auto remSize = bufSize - writtenCount;
         auto count =
-            m_socket->writeDatagram(
+            m_socket.writeDatagram(
                 reinterpret_cast<const char*>(&buf[writtenCount]),
                 remSize,
                 QHostAddress::Broadcast,
                 m_broadcastPort);
 
         if (count < 0) {
+            std::cerr << "ERROR: Failed to broadcast advertise data!" << std::endl;
             return;
         }
 

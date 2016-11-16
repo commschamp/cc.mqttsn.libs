@@ -17,11 +17,13 @@
 
 #include "##NAME##client.h"
 #include "mqttsn/protocol/option.h"
-#include "Client.h"
+#include "mqttsn/protocol/ParsedOptions.h"
+#include "BasicClient.h"
 #include "ClientMgr.h"
 #include "Message.h"
 #include "option.h"
 #include "ParsedOptions.h"
+#include "AllMessages.h"
 
 namespace
 {
@@ -61,7 +63,7 @@ class MsgHandler : public comms::GenericHandler<Message, AllMsgs>
 namespace
 {
 
-typedef mqttsn::client::Client<mqttsn::client::MsgHandler, ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
+typedef mqttsn::client::BasicClient<mqttsn::client::MsgHandler, ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
 typedef mqttsn::client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
 
 MqttsnClientMgr& getClientMgr()
@@ -164,12 +166,6 @@ void mqttsn_##NAME##client_tick(void* client, unsigned ms)
     clientObj->tick(ms);
 }
 
-void mqttsn_##NAME##client_set_gw_advertise_period(MqttsnClientHandle client, unsigned value)
-{
-    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->setGwAdvertisePeriod(value);
-}
-
 void mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
@@ -187,6 +183,34 @@ void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsig
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->setBroadcastRadius(value);
 }
+
+void mqttsn_##NAME##client_set_searchgw_enabled(
+    MqttsnClientHandle client, 
+    bool value)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->setSearchgwEnabled(value);
+}   
+
+void mqttsn_##NAME##client_set_search_gw(MqttsnClientHandle client)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->sendSearchGw();
+} 
+
+void mqttsn_##NAME##client_set_discard_gw(
+    MqttsnClientHandle client, 
+    unsigned char gwId)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->discardGw(gwId);
+}    
+    
+void mqttsn_##NAME##client_set_discard_all_gw(MqttsnClientHandle client)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    clientObj->discardAllGw();
+}    
 
 bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client)
 {
@@ -301,7 +325,7 @@ MqttsnErrorCode mqttsn_##NAME##client_will_update(
     return clientObj->willUpdate(willInfo, callback, data);
 }
 
-MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_topic_update(
+MqttsnErrorCode mqttsn_##NAME##client_will_topic_update(
     MqttsnClientHandle client,
     const char* topic,
     MqttsnQoS qos,
@@ -314,7 +338,7 @@ MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_topic_update(
     return clientObj->willTopicUpdate(topic, qos, retain, callback, data);
 }
 
-MqttsnErrorCode MQTTSN_CLIENT_API mqttsn_##NAME##client_will_msg_update(
+MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
     MqttsnClientHandle client,
     const unsigned char* msg,
     unsigned msgLen,

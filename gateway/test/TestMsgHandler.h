@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include "comms/comms.h"
 #include "mqttsn/protocol/Stack.h"
 #include "mqtt/Message.h"

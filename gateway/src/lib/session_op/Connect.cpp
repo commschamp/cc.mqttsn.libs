@@ -72,7 +72,6 @@ void Connect::handle(ConnectMsg_SN& msg)
 
     if ((st.m_connStatus != ConnectionStatus::Disconnected) &&
         (*reqClientId != st.m_clientId)) {
-        assert(!state().m_clientId.empty());
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
         termRequest();
@@ -175,8 +174,7 @@ void Connect::handle(PublishMsg_SN& msg)
     if ((st.m_connStatus != ConnectionStatus::Disconnected) ||
         (st.m_pendingClientDisconnect) ||
         (!st.m_clientId.empty()) ||
-        (!m_clientId.empty()) ||
-        (st.m_defaultClientId.empty())) {
+        (!m_clientId.empty())) {
         return;
     }
 
@@ -200,7 +198,13 @@ void Connect::handle(PublishMsg_SN& msg)
     m_internalState.m_hasWillMsg = true;
     m_internalState.m_pubOnlyClient = true;
 
-    doNextStep();
+    if (st.m_brokerConnected) {
+        doNextStep();
+        return;
+    }
+
+    m_internalState.m_waitingForReconnect = true;
+    nextTickReq(st.m_retryPeriod);
 }
 
 void Connect::handle(ConnackMsg& msg)
@@ -295,7 +299,8 @@ void Connect::doNextStep()
             return;
         }
 
-        if (m_clientId != st.m_clientId) {
+        if ((m_clientId != st.m_clientId) ||
+            (st.m_clientId.empty() && (!st.m_clientConnectReported))) {
             assert(m_authInfoReqCb);
             m_authInfo = m_authInfoReqCb(m_clientId);
         }
@@ -373,7 +378,7 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
         /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
         /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
         /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Conjestion,
+        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Congestion,
         /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
         /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
     };
@@ -407,7 +412,8 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     }
 
     auto& sessionState = state();
-    if (sessionState.m_clientId != m_clientId) {
+    if (!sessionState.m_clientConnectReported) {
+        sessionState.m_clientConnectReported = true;
         assert(m_clientConnectedCb);
         m_clientConnectedCb(m_clientId);
     }

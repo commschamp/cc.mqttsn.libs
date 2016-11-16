@@ -942,8 +942,8 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerSuback(
     auto& payloadField = std::get<decltype(msg)::FieldIdx_Payload>(fields);
 
     packetIdField.value() = packetId;
-    typedef typename std::decay<decltype(payloadField.value())>::type PayloadListType;
-    typedef typename PayloadListType::value_type RcElemType;
+    typedef std::decay<decltype(payloadField.value())>::type PayloadListType;
+    typedef PayloadListType::value_type RcElemType;
     RcElemType rcElem;
     rcElem.value() = rc;
     payloadField.value().push_back(rcElem);

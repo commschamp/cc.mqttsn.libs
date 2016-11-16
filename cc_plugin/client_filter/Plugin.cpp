@@ -38,7 +38,6 @@ namespace
 
 const QString MainConfigKey("mqttsn_client_filter");
 const QString ClientIdKey("client_id");
-const QString AdvertiseKey("advertise");
 const QString KeepAliveKey("keep_alive");
 const QString RetryDurationKey("retry_duration");
 const QString RetryCountKey("retry_count");
@@ -80,7 +79,6 @@ void Plugin::getCurrentConfigImpl(QVariantMap& config)
 
     QVariantMap subConfig;
     subConfig.insert(ClientIdKey, QString::fromStdString(m_filter->clientId()));
-    subConfig.insert(AdvertiseKey, m_filter->advertisePeriod());
     subConfig.insert(KeepAliveKey, m_filter->keepAlivePeriod());
     subConfig.insert(RetryDurationKey, m_filter->retryPeriod());
     subConfig.insert(RetryCountKey, m_filter->retryCount());
@@ -140,11 +138,6 @@ void Plugin::reconfigureImpl(const QVariantMap& config)
     if (clientIdVar.isValid() && clientIdVar.canConvert<QString>()) {
         auto clientId = clientIdVar.value<QString>();
         m_filter->clientId() = clientId.toStdString();
-    }
-
-    auto advertiseVar = subConfig.value(AdvertiseKey);
-    if (advertiseVar.isValid() && advertiseVar.canConvert<int>()) {
-        m_filter->advertisePeriod() = advertiseVar.value<int>();
     }
 
     auto keepAliveVar = subConfig.value(KeepAliveKey);

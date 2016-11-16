@@ -27,7 +27,6 @@
 CC_DISABLE_WARNINGS()
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
-#include <QtNetwork/QUdpSocket>
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QHostAddress>
 CC_ENABLE_WARNINGS()
@@ -52,21 +51,55 @@ class SessionWrapper : public QObject
     Q_OBJECT
     typedef QObject Base;
 public:
-    typedef std::unique_ptr<QUdpSocket> ClientSocketPtr;
     typedef unsigned short PortType;
     typedef mqttsn::gateway::Session::AuthInfo AuthInfo;
 
-    SessionWrapper(const Config& config, ClientSocketPtr socket, QObject* parent);
+    SessionWrapper(const Config& config, QObject* parent);
     ~SessionWrapper();
 
-    typedef std::function<bool (const std::uint8_t*, std::size_t)> SelfAdvertiseCheckFunc;
 
-    bool start(const SelfAdvertiseCheckFunc& checkFunc);
+    typedef std::function<void (const SessionWrapper&)> TermNotifyCb;
+    template <typename TFunc>
+    void setTermNotifyCb(TFunc&& cb)
+    {
+        m_termNotifyCb = std::forward<TFunc>(cb);
+    }
+
+    template <typename TFunc>
+    void setSendDataReqCb(TFunc&& cb)
+    {
+        m_session.setSendDataClientReqCb(std::forward<TFunc>(cb));
+    }
+
+    bool start();
+
+    void dataFromClient(const std::uint8_t* buf, const std::size_t bufLen)
+    {
+        m_session.dataFromClient(buf, bufLen);
+    }
+
+    void setClientAddr(const QString& value)
+    {
+        m_clientAddr = value;
+    }
+
+    const QString& getClientAddr() const
+    {
+        return m_clientAddr;
+    }
+
+    void setClientPort(PortType value)
+    {
+        m_clientPort = value;
+    }
+
+    PortType getClientPort() const
+    {
+        return m_clientPort;
+    }
 
 private slots:
     void tickTimeout();
-    void readFromClientSocket();
-    void clientSocketErrorOccurred(QAbstractSocket::SocketError err);
     void brokerConnected();
     void brokerDisconnected();
     void readFromBrokerSocket();
@@ -75,10 +108,8 @@ private slots:
 private:
     typedef std::vector<std::uint8_t> DataBuf;
 
-    bool readFromClientSocket(const SelfAdvertiseCheckFunc& checkFunc);
     void programNextTick(unsigned ms);
     unsigned cancelTick();
-    void sendDataToClient(const std::uint8_t* buf, std::size_t bufSize);
     void sendDataToBroker(const std::uint8_t* buf, std::size_t bufSize);
     void termSession();
     void reconnectBroker();
@@ -87,13 +118,16 @@ private:
     AuthInfo getAuthInfoFor(const std::string& clientId);
 
     const Config& m_config;
-    ClientSocketPtr m_clientSocket;
     QTcpSocket m_brokerSocket;
     mqttsn::gateway::Session m_session;
     QTimer m_timer;
     unsigned m_reqTicks = 0;
     bool m_reconnectRequested = false;
     DataBuf m_brokerData;
+    TermNotifyCb m_termNotifyCb;
+    QString m_clientAddr;
+    PortType m_clientPort = 0;
+    bool m_terminating = false;
 };
 
 }  // namespace udp

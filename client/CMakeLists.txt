@@ -2,10 +2,11 @@ set (HEADER_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.h.templ)
 set (SRC_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.cpp.templ)
 set (TEMPL_PROCESS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/script/ProcessTemplate.cmake)
 set (DEFAULT_CLIENT_NAME "")
+set (MQTTSN_CLIENT_LIB_NAME "mqttsn_client")
 
 ######################################################################
 
-function (gen_lib_mqttsn_client name prot_opts client_opts inst)
+function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
     if (NOT ${name} STREQUAL "")
         set (name "${name}_")
     endif ()
@@ -63,8 +64,36 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst)
     
     add_library (${lib_name} STATIC ${src_output})
     target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-    set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
-    add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})    
+    set_target_properties(
+        ${lib_name} PROPERTIES 
+        POSITION_INDEPENDENT_CODE TRUE
+    )
+    add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})
+    
+    if (CMAKE_COMPILER_IS_GNUCC)
+        list (APPEND extra_flags
+            "-ftemplate-backtrace-limit=0"
+            "-fno-rtti" 
+            "-fno-exceptions" 
+            "-fno-unwind-tables" 
+            "-fno-threadsafe-statics"
+        )
+        
+    endif ()
+    
+    if (NOT "${extra_flags}" STREQUAL "")
+        string(REPLACE ";" " " extra_flags "${extra_flags}")
+    
+        set_target_properties(
+            ${lib_name} PROPERTIES 
+            COMPILE_FLAGS ${extra_flags}
+        )
+    endif ()
+    
+    
+    if (CC_MQTTSN_FULL_SOLUTION)
+        add_dependencies(${lib_name} ${CC_EXTERNAL_TGT})
+    endif ()
     
     if (inst)
         install (
@@ -81,37 +110,9 @@ endfunction()
 
 ######################################################################
 
-function (lib_mqttsn_client)
-    set (name "${MQTTSN_CLIENT_LIB_NAME}")
-    
-    set (src
-        src/client.cpp
-    )
-    
-    add_library (${name} STATIC ${src})
-    
-    install (
-        TARGETS ${name}
-        DESTINATION ${LIB_INSTALL_DIR})
-
-endfunction()
-
-######################################################################
-
-if (NOT "${MQTTSN_CC_INSTALL_PATH}" STREQUAL "")
-    list (APPEND CMAKE_PREFIX_PATH "${MQTTSN_CC_INSTALL_PATH}/cmake")
-endif ()
-
-find_package(CommsChampion)
-
 if (NOT CC_COMMS_FOUND)
-    message (FATAL_ERROR "Comms library wasn't found!. Please set MQTTSN_CC_INSTALL_PATH to its installation path.")
-endif ()
-
-include_directories("${CC_INCLUDE_DIRS}")
-
-if (CMAKE_COMPILER_IS_GNUCC)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
+    message (WARNING "Comms library wasn't found!, cannot compile client library and/or application.")
+    return ()
 endif ()
 
 include_directories(

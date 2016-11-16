@@ -88,7 +88,7 @@ public:
             return 1U;
         }
 
-        return m_nextTickTimestamp - m_state.m_timestamp;
+        return static_cast<unsigned>(m_nextTickTimestamp - m_state.m_timestamp);
     }
 
     void start()

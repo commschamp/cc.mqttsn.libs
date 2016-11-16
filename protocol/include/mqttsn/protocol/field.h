@@ -261,7 +261,7 @@ using Radius = comms::field::IntValue<TFieldBase, std::uint8_t>;
 enum ReturnCodeVal : std::uint8_t
 {
     ReturnCodeVal_Accepted,
-    ReturnCodeVal_Conjestion,
+    ReturnCodeVal_Congestion,
     ReturnCodeVal_InvalidTopicId,
     ReturnCodeVal_NotSupported,
     ReturnCodeVal_NumOfValues

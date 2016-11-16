@@ -23,8 +23,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "mqttsn/gateway/Api.h"
-
 namespace mqttsn
 {
 
@@ -32,7 +30,7 @@ namespace gateway
 {
 
 class SessionImpl;
-class MQTTSN_GATEWAY_API Session
+class Session
 {
 public:
 

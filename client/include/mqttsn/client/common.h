@@ -46,7 +46,7 @@ enum MqttsnConnectionStatus
     MqttsnConnectionStatus_Invalid,
     MqttsnConnectionStatus_Connected,
     MqttsnConnectionStatus_Denied,
-    MqttsnConnectionStatus_Conjestion,
+    MqttsnConnectionStatus_Congestion,
     MqttsnConnectionStatus_Timeout,
     MqttsnConnectionStatus_Disconnected,
     MqttsnConnectionStatus_DisconnectedAsleep,
@@ -70,14 +70,15 @@ enum MqttsnGwStatus
 {
     MqttsnGwStatus_Invalid,
     MqttsnGwStatus_Available,
-    MqttsnGwStatus_TimedOut
+    MqttsnGwStatus_TimedOut,
+    MqttsnGwStatus_Discarded
 };
 
 enum MqttsnAsyncOpStatus
 {
     MqttsnAsyncOpStatus_Invalid,
     MqttsnAsyncOpStatus_Successful,
-    MqttsnAsyncOpStatus_Conjestion,
+    MqttsnAsyncOpStatus_Congestion,
     MqttsnAsyncOpStatus_InvalidId,
     MqttsnAsyncOpStatus_NotSupported,
     MqttsnAsyncOpStatus_NoResponse,
@@ -120,19 +121,6 @@ typedef void (*MqttsnWillMsgUpdateCompleteReportFn)(void* data, MqttsnAsyncOpSta
 typedef void (*MqttsnSleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnCheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnMessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
-
-#ifdef WIN32
-
-#ifdef MQTTSN_CLIENT_LIB_EXPORT
-#define MQTTSN_CLIENT_API __declspec(dllexport)
-#else // #ifdef MQTTSN_GATEWAY_LIB_EXPORT
-#define MQTTSN_CLIENT_API __declspec(dllimport)
-#endif // #ifdef MQTTSN_GATEWAY_LIB_EXPORT
-
-#else // #ifdef WIN32
-#define MQTTSN_CLIENT_API
-#endif // #ifdef WIN32
-
 
 #ifdef __cplusplus
 }

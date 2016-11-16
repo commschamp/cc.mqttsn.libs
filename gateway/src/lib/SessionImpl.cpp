@@ -358,6 +358,25 @@ void SessionImpl::apiCallExit()
     }
 }
 
+#ifdef _MSC_VER
+// VS compiler
+auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::declval<ApiCallGuard>()))
+{
+    ++m_state.m_callStackCount;
+    if (m_state.m_callStackCount == 1U) {
+        updateTimestamp();
+    }
+
+    return
+        comms::util::makeScopeGuard(
+            ApiCallGuard(
+                [this]()
+                {
+                    apiCallExit();
+                }));
+}
+
+#else // #ifdef _MSC_VER
 auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&SessionImpl::apiCallExit, this)))
 {
     ++m_state.m_callStackCount;
@@ -372,6 +391,7 @@ auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&S
                 this));
 }
 
+#endif // #ifdef _MSC_VER
 
 
 }  // namespace gateway

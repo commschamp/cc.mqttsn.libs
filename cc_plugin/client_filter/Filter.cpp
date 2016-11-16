@@ -45,7 +45,6 @@ Filter::~Filter() = default;
 bool Filter::startImpl()
 {
     m_client.reset(mqttsn_client_new());
-    mqttsn_client_set_gw_advertise_period(m_client.get(), m_advertisePeriod);
     mqttsn_client_set_retry_period(m_client.get(), m_retryPeriod);
     mqttsn_client_set_retry_count(m_client.get(), m_retryCount);
     mqttsn_client_set_message_report_callback(m_client.get(), &Filter::messageArrivedCb, this);
@@ -237,7 +236,7 @@ void Filter::publishComplete(MqttsnAsyncOpStatus status)
 {
     assert(!m_pendingPubs.isEmpty());
 
-    if (status == MqttsnAsyncOpStatus_Conjestion) {
+    if (status == MqttsnAsyncOpStatus_Congestion) {
         doPublish();
         return;
     }
@@ -324,7 +323,7 @@ void Filter::subscribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos)
     static_cast<void>(qos);
     assert(!m_subs.isEmpty());
 
-    if (status == MqttsnAsyncOpStatus_Conjestion) {
+    if (status == MqttsnAsyncOpStatus_Congestion) {
         doSubscribe();
         return;
     }

@@ -22,8 +22,6 @@
 #include <cstdint>
 #include <functional>
 
-#include "mqttsn/gateway/Api.h"
-
 namespace mqttsn
 {
 
@@ -31,7 +29,7 @@ namespace gateway
 {
 
 class GatewayImpl;
-class MQTTSN_GATEWAY_API Gateway
+class Gateway
 {
 public:
     Gateway();

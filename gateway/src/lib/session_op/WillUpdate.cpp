@@ -85,7 +85,7 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
     }
 
     if (m_op == Op::MsgUpd) {
-        sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+        sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Congestion);
         sendToBroker(PingreqMsg());
         return;
     }
@@ -131,7 +131,7 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
     }
 
     if (m_op == Op::TopicUpd) {
-        sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Conjestion);
+        sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Congestion);
         sendToBroker(PingreqMsg());
         return;
     }

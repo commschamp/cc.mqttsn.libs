@@ -21,6 +21,7 @@
 #include <cassert>
 #include <vector>
 #include <cstdint>
+#include <functional>
 
 #include "comms/comms.h"
 #include "mqttsn/protocol/Stack.h"

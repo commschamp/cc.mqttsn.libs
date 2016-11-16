@@ -37,10 +37,10 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_startFunc = &mqttsn_client_start;
     funcs.m_processDataFunc = &mqttsn_client_process_data;
     funcs.m_tickFunc = &mqttsn_client_tick;
-    funcs.m_setGwAdvertisePeriodFunc = &mqttsn_client_set_gw_advertise_period;
     funcs.m_setRetryPeriodFunc = &mqttsn_client_set_retry_period;
     funcs.m_setRetryCountFunc = &mqttsn_client_set_retry_count;
     funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
+    funcs.m_setSearchgwEnabledFunc = &mqttsn_client_set_searchgw_enabled;
     funcs.m_cancelFunc = &mqttsn_client_cancel;
     funcs.m_connectFunc = &mqttsn_client_connect;
     funcs.m_disconnectFunc = &mqttsn_client_disconnect;
@@ -185,7 +185,7 @@ CommonTestClient::Ptr CommonTestClient::alloc(const ClientLibFuncs& libFuncs)
     return Ptr(new CommonTestClient(libFuncs));
 }
 
-bool CommonTestClient::start()
+MqttsnErrorCode CommonTestClient::start()
 {
     assert(m_libFuncs.m_startFunc != nullptr);
     return (m_libFuncs.m_startFunc)(m_client);
@@ -211,12 +211,6 @@ void CommonTestClient::tick(unsigned ms)
     (m_libFuncs.m_tickFunc)(m_client, ms);
 }
 
-void CommonTestClient::setGwAdvertisePeriod(unsigned ms)
-{
-    assert(m_libFuncs.m_setGwAdvertisePeriodFunc != nullptr);
-    (m_libFuncs.m_setGwAdvertisePeriodFunc)(m_client, ms);
-}
-
 void CommonTestClient::setRetryPeriod(unsigned ms)
 {
     assert(m_libFuncs.m_setRetryPeriodFunc != nullptr);
@@ -233,6 +227,12 @@ void CommonTestClient::setBroadcastRadius(unsigned char val)
 {
     assert(m_libFuncs.m_setBroadcastRadius != nullptr);
     (m_libFuncs.m_setBroadcastRadius)(m_client, val);
+}
+
+void CommonTestClient::setSearchgwEnabled(bool value)
+{
+    assert(m_libFuncs.m_setSearchgwEnabledFunc != nullptr);
+    (m_libFuncs.m_setSearchgwEnabledFunc)(m_client, value);
 }
 
 MqttsnErrorCode CommonTestClient::connect(

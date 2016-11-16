@@ -124,7 +124,7 @@ template <
     typename THandler,
     typename TClientOpts,
     typename TProtOpts>
-class Client : public THandler
+class BasicClient : public THandler
 {
     typedef THandler Base;
 
@@ -281,7 +281,7 @@ public:
     typedef typename mqttsn::protocol::field::TopicName<FieldBase, TProtOpts>::ValueType TopicNameType;
     typedef typename mqttsn::protocol::field::Data<FieldBase, TProtOpts>::ValueType DataType;
     typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
-    typedef typename mqttsn::protocol::field::ClientId<FieldBase>::ValueType ClientIdType;
+    typedef typename mqttsn::protocol::field::ClientId<FieldBase, TProtOpts>::ValueType ClientIdType;
 
     struct GwInfo
     {
@@ -323,21 +323,14 @@ public:
     typedef mqttsn::protocol::message::Willmsgupd<Message, TProtOpts> WillmsgupdMsg;
     typedef mqttsn::protocol::message::Willmsgresp<Message> WillmsgrespMsg;
 
-    Client() = default;
-    virtual ~Client() = default;
+    BasicClient() = default;
+    virtual ~BasicClient() = default;
 
     typedef Message::ReadIterator ReadIterator;
 
     const GwInfoStorage& gwInfos() const
     {
         return m_gwInfos;
-    }
-
-    void setGwAdvertisePeriod(unsigned val)
-    {
-        static const auto MaxVal =
-            std::numeric_limits<decltype(m_advertisePeriod)>::max() / 1000;
-        m_advertisePeriod = std::min(val * 1000, MaxVal);
     }
 
     void setRetryPeriod(unsigned val)
@@ -401,6 +394,60 @@ public:
         m_msgReportData = data;
     }
 
+    void setSearchgwEnabled(bool value)
+    {
+        m_searchgwEnabled = value;
+    }
+
+    void sendSearchGw()
+    {
+        sendGwSearchReq();
+    }
+
+    void discardGw(std::uint8_t gwId)
+    {
+        auto guard = apiCall();
+        auto iter =
+            std::find_if(
+                m_gwInfos.begin(), m_gwInfos.end(),
+                [gwId](typename GwInfoStorage::const_reference elem) -> bool
+                {
+                    return elem.m_id == gwId;
+                });
+
+        if (iter == m_gwInfos.end()) {
+            return;
+        }
+
+        m_gwInfos.erase(iter);
+        reportGwStatus(gwId, MqttsnGwStatus_Discarded);
+    }
+
+    void discardAllGw()
+    {
+        auto guard = apiCall();
+
+        if (m_gwStatusReportFn == nullptr) {
+            m_gwInfos.clear();
+            return;
+        }
+
+        typedef details::GwInfoStorageTypeT<std::uint8_t, TClientOpts> GwIdStorage;
+        GwIdStorage ids;
+        ids.reserve(m_gwInfos.size());
+        std::transform(
+            m_gwInfos.begin(), m_gwInfos.end(), std::back_inserter(ids),
+            [](typename GwInfoStorage::const_reference elem) -> std::uint8_t
+            {
+                return elem.m_id;
+            });
+
+        m_gwInfos.clear();
+        for (auto gwId : ids) {
+            reportGwStatus(gwId, MqttsnGwStatus_Discarded);
+        }
+    }
+
     MqttsnErrorCode start()
     {
         if (m_running) {
@@ -419,7 +466,6 @@ public:
 
         m_gwInfos.clear();
         m_regInfos.clear();
-        m_timestamp = 0;
         m_nextTimeoutTimestamp = 0;
         m_lastGwSearchTimestamp = 0;
         m_lastMsgTimestamp = 0;
@@ -431,7 +477,7 @@ public:
         m_currOp = Op::None;
         m_timerActive = false;
 
-        sendGwSearchReq();
+        checkGwSearchReq();
         programNextTimeout();
         return MqttsnErrorCode_Success;
     }
@@ -502,22 +548,22 @@ public:
         GASSERT(m_running);
         auto guard = apiCall();
 
-        typedef void (Client<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
+        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
         static const CancelFunc OpCancelFuncMap[] =
         {
-            &Client::connectCancel,
-            &Client::disconnectCancel,
-            &Client::publishIdCancel,
-            &Client::publishCancel,
-            &Client::subscribeIdCancel,
-            &Client::subscribeCancel,
-            &Client::unsubscribeIdCancel,
-            &Client::unsubscribeCancel,
-            &Client::willUpdateCancel,
-            &Client::willTopicUpdateCancel,
-            &Client::willMsgUpdateCancel,
-            &Client::sleepCancel,
-            &Client::checkMessagesCancel
+            &BasicClient::connectCancel,
+            &BasicClient::disconnectCancel,
+            &BasicClient::publishIdCancel,
+            &BasicClient::publishCancel,
+            &BasicClient::subscribeIdCancel,
+            &BasicClient::subscribeCancel,
+            &BasicClient::unsubscribeIdCancel,
+            &BasicClient::unsubscribeCancel,
+            &BasicClient::willUpdateCancel,
+            &BasicClient::willTopicUpdateCancel,
+            &BasicClient::willMsgUpdateCancel,
+            &BasicClient::sleepCancel,
+            &BasicClient::checkMessagesCancel
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -1072,7 +1118,7 @@ public:
         auto iter = findGwInfo(idField.value());
         if (iter != m_gwInfos.end()) {
             iter->m_timestamp = m_timestamp;
-            iter->m_duration = durationField.value();
+            iter->m_duration = durationField.value() * 1000U;
             return;
         }
 
@@ -1090,13 +1136,14 @@ public:
         //auto& addrField = std::get<GwinfoMsg::FieldIdx_gwAdd>(fields);
         auto iter = findGwInfo(idField.value());
         if (iter != m_gwInfos.end()) {
+            iter->m_timestamp = m_timestamp;
 //            if (!addrField.value().empty()) {
 //                iter->m_addr = addrField.value();
 //            }
             return;
         }
 
-        if (!addNewGw(idField.value(), m_advertisePeriod)) {
+        if (!addNewGw(idField.value(), std::numeric_limits<std::uint16_t>::max() * 1000)) {
             return;
         }
 
@@ -1133,7 +1180,7 @@ public:
             return;
         }
 
-        assert(m_currOp == Op::Connect);
+        GASSERT(m_currOp == Op::Connect);
         if (op->m_clientId != nullptr) {
             m_clientId = op->m_clientId;
         }
@@ -1147,7 +1194,7 @@ public:
         static_cast<void>(msg);
         static const MqttsnConnectionStatus StatusMap[] = {
             /* ReturnCodeVal_Accepted */ MqttsnConnectionStatus_Connected,
-            /* ReturnCodeVal_Conjestion */ MqttsnConnectionStatus_Conjestion,
+            /* ReturnCodeVal_Congestion */ MqttsnConnectionStatus_Congestion,
             /* ReturnCodeVal_InvalidTopicId */ MqttsnConnectionStatus_Denied,
             /* ReturnCodeVal_NotSupported */ MqttsnConnectionStatus_Denied
         };
@@ -1277,7 +1324,7 @@ public:
         updateRegInfo(op->m_topic, op->m_topicId);
         bool result = doPublish();
         static_cast<void>(result);
-        assert(result);
+        GASSERT(result);
     }
 
     virtual void handle(PublishMsg& msg) override
@@ -1307,7 +1354,7 @@ public:
                 msgInfo.qos = details::translateQosValue(qosField.value());
                 msgInfo.retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
 
-                assert(m_msgReportFn != nullptr);
+                GASSERT(m_msgReportFn != nullptr);
                 m_msgReportFn(m_msgReportData, &msgInfo);
             };
 
@@ -1497,7 +1544,7 @@ public:
 
             m_lastInMsg.m_reported = true;
 
-            assert(m_msgReportFn != nullptr);
+            GASSERT(m_msgReportFn != nullptr);
             m_msgReportFn(m_msgReportData, &msgInfo);
         }
     }
@@ -1872,13 +1919,19 @@ private:
 
     unsigned calcSearchGwSendTimeout()
     {
-        if ((!m_gwInfos.empty()) || (m_connectionStatus == ConnectionStatus::Asleep)) {
+        if ((!m_searchgwEnabled) ||
+            (!m_gwInfos.empty()) ||
+            (m_connectionStatus == ConnectionStatus::Asleep)) {
             return NoTimeout;
+        }
+
+        if (m_lastGwSearchTimestamp == 0) {
+            return 0U;
         }
 
         auto nextSearchTimestamp = m_lastGwSearchTimestamp + m_retryPeriod;
         if (nextSearchTimestamp <= m_timestamp) {
-            return 1U;
+            return 0U;
         }
 
         return static_cast<unsigned>(nextSearchTimestamp - m_timestamp);
@@ -1925,7 +1978,7 @@ private:
 
         unsigned delay = NoTimeout;
         delay = std::min(delay, calcGwReleaseTimeout());
-        delay = std::min(delay, calcSearchGwSendTimeout());
+        delay = std::min(delay, std::max(1U, calcSearchGwSendTimeout()));
         delay = std::min(delay, calcCurrentOpTimeout());
         delay = std::min(delay, calcPingTimeout());
 
@@ -1948,17 +2001,16 @@ private:
                 return ((elem.m_timestamp + elem.m_duration) <= m_timestamp);
             };
 
-        bool mustRemove = false;
-        auto iter = m_gwInfos.begin();
-        while (iter != m_gwInfos.end()) {
-            if (checkMustRemoveFunc(*iter)) {
-                mustRemove = true;
-                reportGwStatus(iter->m_id, MqttsnGwStatus_TimedOut);
+        typedef details::GwInfoStorageTypeT<std::uint8_t, TClientOpts> GwIdStorage;
+        GwIdStorage idsToRemove;
+
+        for (auto& info : m_gwInfos) {
+            if (checkMustRemoveFunc(info)) {
+                idsToRemove.push_back(info.m_id);
             }
-            ++iter;
         }
 
-        if (!mustRemove) {
+        if (idsToRemove.empty()) {
             return;
         }
 
@@ -1967,12 +2019,15 @@ private:
                 m_gwInfos.begin(), m_gwInfos.end(),
                 checkMustRemoveFunc),
             m_gwInfos.end());
+
+        for (auto id : idsToRemove) {
+            reportGwStatus(id, MqttsnGwStatus_TimedOut);
+        }
     }
 
     void checkGwSearchReq()
     {
-        if (m_gwInfos.empty() &&
-            ((m_lastGwSearchTimestamp + m_retryPeriod) <= m_timestamp)) {
+        if (calcSearchGwSendTimeout() == 0) {
             sendGwSearchReq();
         }
     }
@@ -2017,22 +2072,22 @@ private:
             return;
         }
 
-        typedef void (Client<THandler, TClientOpts, TProtOpts>::*TimeoutFunc)();
+        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*TimeoutFunc)();
         static const TimeoutFunc OpTimeoutFuncMap[] =
         {
-            &Client::connectTimeout,
-            &Client::disconnectTimeout,
-            &Client::publishIdTimeout,
-            &Client::publishTimeout,
-            &Client::subscribeIdTimeout,
-            &Client::subscribeTimeout,
-            &Client::unsubscribeIdTimeout,
-            &Client::unsubscribeTimeout,
-            &Client::willUpdateTimeout,
-            &Client::willTopicUpdateTimeout,
-            &Client::willMsgUpdateTimeout,
-            &Client::sleepTimeout,
-            &Client::checkMessagesTimeout
+            &BasicClient::connectTimeout,
+            &BasicClient::disconnectTimeout,
+            &BasicClient::publishIdTimeout,
+            &BasicClient::publishTimeout,
+            &BasicClient::subscribeIdTimeout,
+            &BasicClient::subscribeTimeout,
+            &BasicClient::unsubscribeIdTimeout,
+            &BasicClient::unsubscribeTimeout,
+            &BasicClient::willUpdateTimeout,
+            &BasicClient::willTopicUpdateTimeout,
+            &BasicClient::willMsgUpdateTimeout,
+            &BasicClient::sleepTimeout,
+            &BasicClient::checkMessagesTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -2479,7 +2534,7 @@ private:
             op->m_msgId = allocMsgId();
         }
 
-        assert(op->m_registered);
+        GASSERT(op->m_registered);
 
         if ((!firstAttempt) &&
             (op->m_ackReceived) &&
@@ -3060,7 +3115,7 @@ private:
     {
         static const MqttsnAsyncOpStatus Map[] = {
             /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
-            /* ReturnCodeVal_Conjestion */ MqttsnAsyncOpStatus_Conjestion,
+            /* ReturnCodeVal_Congestion */ MqttsnAsyncOpStatus_Congestion,
             /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
             /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
         };
@@ -3087,7 +3142,12 @@ private:
         }
     }
 
-    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&Client<THandler, TClientOpts, TProtOpts>::apiCallExit, this)))
+#ifdef _MSC_VER
+    // VC compiler
+    auto apiCall()
+#else
+    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&BasicClient<THandler, TClientOpts, TProtOpts>::apiCallExit, this)))
+#endif
     {
         ++m_callStackCount;
         if (m_callStackCount == 1U) {
@@ -3097,14 +3157,14 @@ private:
         return
             comms::util::makeScopeGuard(
                 std::bind(
-                    &Client<THandler, TClientOpts, TProtOpts>::apiCallExit,
+                    &BasicClient<THandler, TClientOpts, TProtOpts>::apiCallExit,
                     this));
     }
 
 
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;
-    Timestamp m_timestamp = 0;
+    Timestamp m_timestamp = DefaultStartTimestamp;
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
     Timestamp m_lastMsgTimestamp = 0;
@@ -3113,7 +3173,6 @@ private:
 
     unsigned m_callStackCount = 0U;
     unsigned m_pingCount = 0;
-    unsigned m_advertisePeriod = DefaultAdvertisePeriod;
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_keepAlivePeriod = 0;
@@ -3123,6 +3182,7 @@ private:
 
     bool m_running = false;
     bool m_timerActive = false;
+    bool m_searchgwEnabled = true;
 
     Op m_currOp = Op::None;
     OpStorageType m_opStorage;
@@ -3155,6 +3215,7 @@ private:
     static const std::uint8_t DefaultBroadcastRadius = 0U;
 
     static const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
+    static const Timestamp DefaultStartTimestamp = 100;
 };
 
 }  // namespace client
