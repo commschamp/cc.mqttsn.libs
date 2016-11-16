@@ -281,7 +281,7 @@ public:
     typedef typename mqttsn::protocol::field::TopicName<FieldBase, TProtOpts>::ValueType TopicNameType;
     typedef typename mqttsn::protocol::field::Data<FieldBase, TProtOpts>::ValueType DataType;
     typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
-    typedef typename mqttsn::protocol::field::ClientId<FieldBase>::ValueType ClientIdType;
+    typedef typename mqttsn::protocol::field::ClientId<FieldBase, TProtOpts>::ValueType ClientIdType;
 
     struct GwInfo
     {
@@ -1180,7 +1180,7 @@ public:
             return;
         }
 
-        assert(m_currOp == Op::Connect);
+        GASSERT(m_currOp == Op::Connect);
         if (op->m_clientId != nullptr) {
             m_clientId = op->m_clientId;
         }
@@ -1324,7 +1324,7 @@ public:
         updateRegInfo(op->m_topic, op->m_topicId);
         bool result = doPublish();
         static_cast<void>(result);
-        assert(result);
+        GASSERT(result);
     }
 
     virtual void handle(PublishMsg& msg) override
@@ -1354,7 +1354,7 @@ public:
                 msgInfo.qos = details::translateQosValue(qosField.value());
                 msgInfo.retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
 
-                assert(m_msgReportFn != nullptr);
+                GASSERT(m_msgReportFn != nullptr);
                 m_msgReportFn(m_msgReportData, &msgInfo);
             };
 
@@ -1544,7 +1544,7 @@ public:
 
             m_lastInMsg.m_reported = true;
 
-            assert(m_msgReportFn != nullptr);
+            GASSERT(m_msgReportFn != nullptr);
             m_msgReportFn(m_msgReportData, &msgInfo);
         }
     }
@@ -2534,7 +2534,7 @@ private:
             op->m_msgId = allocMsgId();
         }
 
-        assert(op->m_registered);
+        GASSERT(op->m_registered);
 
         if ((!firstAttempt) &&
             (op->m_ackReceived) &&

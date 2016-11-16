@@ -78,7 +78,6 @@ int main(int argc, const char** argv)
     static_cast<void>(argv);
 
     auto* client = mqttsn_test_bare_metal_client_new();
-    mqttsn_test_bare_metal_client_set_gw_advertise_period(client, 15 * 60 * 1000);
     mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
     mqttsn_test_bare_metal_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
     mqttsn_test_bare_metal_client_set_send_output_data_callback(client, &sendOutputData, nullptr);
@@ -155,7 +154,6 @@ int main(int argc, const char** argv)
 
     mqttsn_test_bare_metal_client_check_messages(
         client,
-        "my_id",
         &unsubscribeCallback,
         nullptr);
 

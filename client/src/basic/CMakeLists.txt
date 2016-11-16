@@ -15,7 +15,7 @@ include_directories(
 )
 
 if (CC_MQTTSN_CLIENT_DEFAULT_LIB)
-    gen_lib_mqttsn_client("${DEFAULT_CLIENT_NAME}" "" "" TRUE)
+    gen_lib_mqttsn_client("${DEFAULT_CLIENT_NAME}" "" "" TRUE "")
 endif ()    
 
 foreach (f in ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
@@ -73,8 +73,14 @@ foreach (f in ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
         "mqttsn::client::option::RegisteredTopicsLimit"
         "${MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT}"
     )
+
+    set (extra_flags)    
+    if (CMAKE_COMPILER_IS_GNUCC AND MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
+        set (extra_flags "-nostdlib")
+    endif ()
     
-    gen_lib_mqttsn_client("${MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_protocol_opts}" "${mqttsn_library_opts}" TRUE)
+    
+    gen_lib_mqttsn_client("${MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_protocol_opts}" "${mqttsn_library_opts}" TRUE "${extra_flags}")
     
     if (MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
         target_compile_definitions("mqttsn_${MQTTSN_CUSTOM_CLIENT_NAME}_client" PRIVATE "-DNOSTDLIB")

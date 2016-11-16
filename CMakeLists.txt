@@ -35,6 +35,7 @@ endif ()
 
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 option (CC_MQTTSN_FULL_SOLUTION "Build and install full solution, including CommsChampion sources." OFF)
+option (CC_NO_GATEWAY_CROSSCOMPILE "When cross compiling, disable build of gateway library and apps." ON)
 
 if (CMAKE_COMPILER_IS_GNUCC)
     set (extra_flags_list
