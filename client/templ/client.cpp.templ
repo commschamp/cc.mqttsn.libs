@@ -192,13 +192,13 @@ void mqttsn_##NAME##client_set_searchgw_enabled(
     clientObj->setSearchgwEnabled(value);
 }   
 
-void mqttsn_##NAME##client_set_search_gw(MqttsnClientHandle client)
+void mqttsn_##NAME##client_search_gw(MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->sendSearchGw();
 } 
 
-void mqttsn_##NAME##client_set_discard_gw(
+void mqttsn_##NAME##client_discard_gw(
     MqttsnClientHandle client, 
     unsigned char gwId)
 {
@@ -206,7 +206,7 @@ void mqttsn_##NAME##client_set_discard_gw(
     clientObj->discardGw(gwId);
 }    
     
-void mqttsn_##NAME##client_set_discard_all_gw(MqttsnClientHandle client)
+void mqttsn_##NAME##client_discard_all_gw(MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     clientObj->discardAllGw();

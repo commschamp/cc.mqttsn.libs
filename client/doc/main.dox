@@ -1,0 +1,7 @@
+/// @mainpage MQTT-SN Client Library
+/// @tableofcontents
+/// The main 
+/// Qos: @ref MqttsnQoS
+/// Func: mqttsn_client_new()
+///
+

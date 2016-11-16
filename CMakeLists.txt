@@ -62,8 +62,10 @@ endif ()
 set (LIB_INSTALL_DIR ${INSTALL_DIR}/lib)
 set (BIN_INSTALL_DIR ${INSTALL_DIR}/bin)
 set (ETC_INSTALL_DIR ${INSTALL_DIR}/etc)
+set (DOC_INSTALL_DIR ${INSTALL_DIR}/doc)
 set (INC_INSTALL_DIR ${INSTALL_DIR}/include)
 set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/plugin)
+
 
 set (DEFAULT_CLIENT_LIB_TGT "mqttsn_client")
 

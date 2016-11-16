@@ -33,25 +33,27 @@ extern "C" {
 
 #endif // #ifdef __cplusplus
 
+/// @brief Quality of Service
 enum MqttsnQoS
 {
-    MqttsnQoS_NoGwPublish = -1,
-    MqttsnQoS_AtMostOnceDelivery,
-    MqttsnQoS_AtLeastOnceDelivery,
-    MqttsnQoS_ExactlyOnceDelivery
+    MqttsnQoS_NoGwPublish = -1, ///< QoS=-1. No gateway publish, used by publish only clients.
+    MqttsnQoS_AtMostOnceDelivery, ///< QoS=0. At most once delivery.
+    MqttsnQoS_AtLeastOnceDelivery, ///< QoS=1. At least once delivery.
+    MqttsnQoS_ExactlyOnceDelivery ///< QoS=2. Exactly once delivery.
 };
 
+/// @brief Connection status to the gateway
 enum MqttsnConnectionStatus
 {
-    MqttsnConnectionStatus_Invalid,
-    MqttsnConnectionStatus_Connected,
-    MqttsnConnectionStatus_Denied,
-    MqttsnConnectionStatus_Congestion,
-    MqttsnConnectionStatus_Timeout,
-    MqttsnConnectionStatus_Disconnected,
-    MqttsnConnectionStatus_DisconnectedAsleep,
-    MqttsnConnectionStatus_ConnectAborted,
-    MqttsnConnectionStatus_NumOfValues
+    MqttsnConnectionStatus_Invalid, ///< Invalid value, should not be used
+    MqttsnConnectionStatus_Connected, ///< The client is connected to the gateway
+    MqttsnConnectionStatus_Denied, ///< The gateway or broker has rejected the connection attempt
+    MqttsnConnectionStatus_Congestion, ///< The gateway is busy doing something else, retry later
+    MqttsnConnectionStatus_Timeout, ///< The connection request timed out
+    MqttsnConnectionStatus_Disconnected, ///< The gateway has disconnected.
+    MqttsnConnectionStatus_DisconnectedAsleep, ///< The gateway acknowledged client's ASLEEP state.
+    MqttsnConnectionStatus_ConnectAborted, ///< The connection attempt has been aborted using mqttsn_client_cancel() call.
+    MqttsnConnectionStatus_NumOfValues ///< Number of available enumeration values, must be last
 };
 
 enum MqttsnErrorCode
@@ -66,12 +68,13 @@ enum MqttsnErrorCode
     MqttsnErrorCode_BadParam,
 };
 
+/// @brief Status of the gateway
 enum MqttsnGwStatus
 {
-    MqttsnGwStatus_Invalid,
-    MqttsnGwStatus_Available,
-    MqttsnGwStatus_TimedOut,
-    MqttsnGwStatus_Discarded
+    MqttsnGwStatus_Invalid, ///< Invalid value, should never be used
+    MqttsnGwStatus_Available, ///< The gateway is available.
+    MqttsnGwStatus_TimedOut, ///< The gateway hasn't advertised its presence in time, assumed disconnected.
+    MqttsnGwStatus_Discarded ///< The gateway info was discarded using mqttsn_client_discard_gw() or mqttsn_client_discard_all_gw().
 };
 
 enum MqttsnAsyncOpStatus
@@ -85,7 +88,11 @@ enum MqttsnAsyncOpStatus
     MqttsnAsyncOpStatus_Aborted,
 };
 
+/// @brief Handler used to access client specific data structures.
+/// @details Returned by mqttsn_client_new() function.
 typedef void* MqttsnClientHandle;
+
+/// @brief Type used to hold Topic ID value.
 typedef unsigned short MqttsnTopicId;
 
 struct MqttsnWillInfo
@@ -107,10 +114,43 @@ struct MqttsnMessageInfo
     bool retain;
 };
 
+/// @brief Callback used to request time measurement.
+/// @details The callback is set using
+///     mqttsn_client_set_next_tick_program_callback() function.
+/// @param[in] data Pointer to user data object, passed as last parameter to
+///     mqttsn_client_set_next_tick_program_callback() function.
+/// @param[in] duration Time duration in milliseconds. After the requested
+///     time expires, the mqttsn_client_tick() function is expected to be invoked.
 typedef void (*MqttsnNextTickProgramFn)(void* data, unsigned duration);
+
+/// @brief Callback used to request termination of existing time measurement.
+/// @details The callback is set using
+///     mqttsn_client_set_cancel_next_tick_wait_callback() function.
+/// @param[in] data Pointer to user data object, passed as last parameter to
+///     mqttsn_client_set_cancel_next_tick_wait_callback() function.
+/// @return Number of elapsed milliseconds since last time measurement request.
 typedef unsigned (*MqttsnCancelNextTickWaitFn)(void* data);
+
+/// @brief Callback used to request to send data to the gateway.
+/// @details The callback is set using
+///     mqttsn_client_set_send_output_data_callback() function.
+/// @param[in] data Pointer to user data object, passed as last parameter to
+///     mqttsn_client_set_send_output_data_callback() function.
+/// @param[in] buf Pointer to the buffer containing data to send
+/// @param[in] bufLen Number of bytes to send
+/// @param[in] broadcast Indication whether data needs to be broadcasted or
+///     sent directly to the gateway.
 typedef void (*MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
+
+/// @brief Callback used to report gateway status.
+/// @details The callback is set using
+///     mqttsn_client_set_gw_status_report_callback() function.
+/// @param[in] data Pointer to user data object, passed as last parameter to
+///     mqttsn_client_set_gw_status_report_callback() function.
+/// @param[in] gwId ID of the gateway.
+/// @param[in] status Status of the gateway.
 typedef void (*MqttsnGwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
+
 typedef void (*MqttsnConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
 typedef void (*MqttsnPublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);

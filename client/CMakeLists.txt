@@ -3,6 +3,7 @@ set (SRC_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.cpp.templ)
 set (TEMPL_PROCESS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/script/ProcessTemplate.cmake)
 set (DEFAULT_CLIENT_NAME "")
 set (MQTTSN_CLIENT_LIB_NAME "mqttsn_client")
+set (MQTTSN_CLIENT_HEADER_TGT "client.h.tgt")
 
 ######################################################################
 
@@ -127,3 +128,37 @@ install (
 
 add_subdirectory (src) 
 add_subdirectory (test)
+
+######################################################################
+
+find_package (Doxygen)
+if (DOXYGEN_FOUND)
+    set (doc_output_dir "${DOC_INSTALL_DIR}/mqttsn/client")
+    make_directory (${doc_output_dir})
+    
+    set (match_str "OUTPUT_DIRECTORY[^\n]*")
+    set (replacement_str "OUTPUT_DIRECTORY = ${doc_output_dir}")
+    set (output_file "${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf")
+
+    set (config_file "${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen.conf")
+    file (READ ${config_file} config_text)
+    string (REGEX REPLACE "${match_str}" "${replacement_str}" modified_config_text "${config_text}")
+    file (WRITE "${output_file}" "${modified_config_text}")
+    
+    set (interface_doc_dir "${CMAKE_CURRENT_BINARY_DIR}/interface_doc")
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${interface_doc_dir})
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E copy 
+        ${CMAKE_CURRENT_SOURCE_DIR}/doc/main.dox 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/mqttsn/client/common.h 
+        ${interface_doc_dir}/)
+    
+    add_custom_target ("doc_mqttsn_client"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/src/basic/client.h" ${interface_doc_dir}/ 
+            COMMAND ${DOXYGEN_EXECUTABLE} ${output_file}
+            WORKING_DIRECTORY ${interface_doc_dir})
+            
+    add_dependencies("doc_mqttsn_client" ${MQTTSN_CLIENT_HEADER_TGT})           
+endif ()
+
