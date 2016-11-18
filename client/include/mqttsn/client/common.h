@@ -210,6 +210,14 @@ typedef void (*MqttsnWillMsgUpdateCompleteReportFn)(void* data, MqttsnAsyncOpSta
 /// @param[in] status Status of the operation.
 typedef void (*MqttsnSleepCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 
+/// @brief Callback used to report completion of the wakeup operation.
+/// @details If @ref MqttsnAsyncOpStatus_Successful status is reported, the
+///     client is properly connected to the gateway again.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the sleep request.
+/// @param[in] status Status of the operation.
+typedef void (*MqttsnWakeupCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+
 /// @brief Callback used to report completion of the check pending messages operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the check messages request.

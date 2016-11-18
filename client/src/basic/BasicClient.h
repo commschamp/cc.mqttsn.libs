@@ -3,7 +3,7 @@
 //
 
 // This file is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
+// it under the terms of the GNU General Public License as ed by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
@@ -145,6 +145,7 @@ class BasicClient : public THandler
         WillTopicUpdate,
         WillMsgUpdate,
         Sleep,
+        Wakeup,
         CheckMessages,
         NumOfValues // must be last
     };
@@ -257,6 +258,12 @@ class BasicClient : public THandler
         MqttsnSleepCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         std::uint16_t m_duration = 0;
+    };
+
+    struct WakeupOp : public ConnectOp
+    {
+        MqttsnWakeupCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
     };
 
     struct CheckMessagesOp : public OpBase
@@ -563,6 +570,7 @@ public:
             &BasicClient::willTopicUpdateCancel,
             &BasicClient::willMsgUpdateCancel,
             &BasicClient::sleepCancel,
+            &BasicClient::wakeupCancel,
             &BasicClient::checkMessagesCancel
         };
         static const std::size_t OpCancelFuncMapSize =
@@ -1075,6 +1083,44 @@ public:
         return MqttsnErrorCode_Success;
     }
 
+    MqttsnErrorCode wakeup(
+        MqttsnWakeupCompleteReportFn callback,
+        void* data)
+    {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
+        if (m_connectionStatus != ConnectionStatus::Asleep) {
+            return MqttsnErrorCode_NotSleeping;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        auto guard = apiCall();
+
+        m_currOp = Op::Wakeup;
+        auto* op = newOp<WakeupOp>();
+        op->m_clientId = m_clientId.c_str();
+        op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
+        op->m_hasWill = false;
+        op->m_cleanSession = false;
+        op->m_cb = callback;
+        op->m_cbData = data;
+
+        bool result = doWakeup();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        return MqttsnErrorCode_Success;
+    }
+
     MqttsnErrorCode checkMessages(
         MqttsnCheckMessagesCompleteReportFn callback,
         void* data)
@@ -1157,7 +1203,9 @@ public:
 
     virtual void handle(ConnackMsg& msg) override
     {
-        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
+        if ((m_currOp != Op::Connect) &&
+            (m_currOp != Op::WillUpdate) &&
+            (m_currOp != Op::Wakeup)) {
             return;
         }
 
@@ -1177,6 +1225,21 @@ public:
                 m_connectionStatus = ConnectionStatus::Disconnected;
                 m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
             }
+            return;
+        }
+
+        if (m_currOp == Op::Wakeup) {
+            finaliseWakeupOp(retCodeToStatus(retCodeField.value()));
+
+            if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+                m_connectionStatus = ConnectionStatus::Disconnected;
+                m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+            }
+            else {
+                m_connectionStatus = ConnectionStatus::Connected;
+                m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Connected);
+            }
+
             return;
         }
 
@@ -1757,6 +1820,7 @@ private:
         WillTopicUpdateOp,
         WillMsgUpdateOp,
         SleepOp,
+        WakeupOp,
         CheckMessagesOp
     >::Type OpStorageType;
 
@@ -2087,6 +2151,7 @@ private:
             &BasicClient::willTopicUpdateTimeout,
             &BasicClient::willMsgUpdateTimeout,
             &BasicClient::sleepTimeout,
+            &BasicClient::wakeupTimeout,
             &BasicClient::checkMessagesTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
@@ -2368,6 +2433,25 @@ private:
         GASSERT(m_currOp == Op::Sleep);
         finaliseSleepOp(MqttsnAsyncOpStatus_Aborted);
     }
+
+    void wakeupTimeout()
+    {
+        GASSERT(m_currOp == Op::Wakeup);
+
+        if (doWakeup()) {
+            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        finaliseWakeupOp(MqttsnAsyncOpStatus_NoResponse);
+    }
+
+    void wakeupCancel()
+    {
+        GASSERT(m_currOp == Op::Wakeup);
+        finaliseWakeupOp(MqttsnAsyncOpStatus_Aborted);
+    }
+
 
     void checkMessagesTimeout()
     {
@@ -2825,6 +2909,21 @@ private:
         return true;
     }
 
+    bool doWakeup()
+    {
+        GASSERT (m_currOp == Op::Wakeup);
+
+        auto* op = opPtr<WakeupOp>();
+        if (m_retryCount <= op->m_attempt) {
+            return false;
+        }
+
+        ++op->m_attempt;
+
+        sendConnect(op->m_clientId, op->m_keepAlivePeriod, false, false);
+        return true;
+    }
+
     bool doCheckMessages()
     {
         GASSERT (m_currOp == Op::CheckMessages);
@@ -3093,6 +3192,19 @@ private:
         auto* cbData = op->m_cbData;
 
         finaliseOp<SleepOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
+    void finaliseWakeupOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::Wakeup);
+        auto* op = opPtr<WakeupOp>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<WakeupOp>();
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
         cb(cbData, status);

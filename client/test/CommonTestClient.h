@@ -55,6 +55,7 @@ typedef decltype(&mqttsn_client_will_update) WillUpdateFunc;
 typedef decltype(&mqttsn_client_will_topic_update) WillTopicUpdateFunc;
 typedef decltype(&mqttsn_client_will_msg_update) WillMsgUpdateFunc;
 typedef decltype(&mqttsn_client_sleep) SleepFunc;
+typedef decltype(&mqttsn_client_wakeup) WakeupFunc;
 typedef decltype(&mqttsn_client_check_messages) CheckMessagesFunc;
 
 
@@ -88,6 +89,7 @@ struct ClientLibFuncs
     WillTopicUpdateFunc m_willTopicUpdateFunc = nullptr;
     WillMsgUpdateFunc m_willMsgUpdateFunc = nullptr;
     SleepFunc m_sleepFunc = nullptr;
+    WakeupFunc m_wakeupFunc = nullptr;
     CheckMessagesFunc m_checkMessagesFunc = nullptr;
 };
 
@@ -108,6 +110,7 @@ public:
     typedef std::function<void (MqttsnAsyncOpStatus status)> WillTopicUpdateCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> WillMsgUpdateCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> SleepCompleteCallback;
+    typedef std::function<void (MqttsnAsyncOpStatus status)> WakeupCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> CheckMessagesCompleteCallback;
 
     ~CommonTestClient();
@@ -125,6 +128,7 @@ public:
     WillTopicUpdateCompleteCallback setWillTopicUpdateCompleteCallback(WillTopicUpdateCompleteCallback&& func);
     WillMsgUpdateCompleteCallback setWillMsgUpdateCompleteCallback(WillMsgUpdateCompleteCallback&& func);
     SleepCompleteCallback setSleepCompleteCallback(SleepCompleteCallback&& func);
+    WakeupCompleteCallback setWakeupCompleteCallback(WakeupCompleteCallback&& func);
     CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
@@ -185,6 +189,8 @@ public:
 
     MqttsnErrorCode sleep(std::uint16_t duration);
 
+    MqttsnErrorCode wakeup();
+
     MqttsnErrorCode checkMessages();
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
@@ -208,6 +214,7 @@ private:
     void reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status);
     void reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status);
     void reportSleepComplete(MqttsnAsyncOpStatus status);
+    void reportWakeupComplete(MqttsnAsyncOpStatus status);
     void reportCheckMessagesComplete(MqttsnAsyncOpStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
@@ -223,6 +230,7 @@ private:
     static void willTopicUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void willMsgUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void sleepCompleteCallback(void* data, MqttsnAsyncOpStatus status);
+    static void wakeupCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status);
 
     ClientLibFuncs m_libFuncs;
@@ -242,6 +250,7 @@ private:
     WillTopicUpdateCompleteCallback m_willTopicUpdateCompleteCallback;
     WillMsgUpdateCompleteCallback m_willMsgUpdateCompleteCallback;
     SleepCompleteCallback m_sleepCompleteCallback;
+    WakeupCompleteCallback m_wakeupCompleteCallback;
     CheckMessagesCompleteCallback m_checkMessagesCompleteCallback;
 
     static const ClientLibFuncs DefaultFuncs;

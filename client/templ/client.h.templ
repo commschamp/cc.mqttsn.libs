@@ -492,6 +492,22 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
     void* data
 );
 
+/// @brief Notify gateway about waking up from the sleep state.
+/// @details When the operation is complete, the provided callback
+///     will be invoked. If successful completion is reported, the client
+///     is properly connected to the gateway again.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
+MqttsnErrorCode mqttsn_##NAME##client_wakeup(
+    MqttsnClientHandle client,
+    MqttsnWakeupCompleteReportFn callback,
+    void* data
+);
+
 /// @brief Check for accumulated pending messages the gateway has to report.
 /// @details According to MQTT-SN protocol specification, this function will
 ///     force sending @b PINGREQ message to the gateway. The gateway then will
