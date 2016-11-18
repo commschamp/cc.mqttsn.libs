@@ -42,7 +42,7 @@ void mqttsn_##NAME##client_free(MqttsnClientHandle client);
 /// @details The MQTT-SN client may require to measure time. When such 
 ///     measurement is required, the provided callback will be invoked with
 ///     the timeout duration in milliseconds. After requested time expires,
-//      the mqttsn_##NAME##client_tick() function must be invoked.
+///     the mqttsn_##NAME##client_tick() function must be invoked.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
@@ -89,31 +89,171 @@ void mqttsn_##NAME##client_set_gw_status_report_callback(
     MqttsnClientHandle client,
     MqttsnGwStatusReportFn fn,
     void* data);
-    
+
+/// @brief Set callback to report current connection status to the gateway.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] fn Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
 void mqttsn_##NAME##client_set_connection_status_report_callback(
     MqttsnClientHandle client,
     MqttsnConnectionStatusReportFn fn,
     void* data);
 
+/// @brief Set callback to report incoming messages.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] fn Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
 void mqttsn_##NAME##client_set_message_report_callback(
     MqttsnClientHandle client,
     MqttsnMessageReportFn fn,
     void* data);
     
+/// @brief Start the library's operation.
+/// @details The function will check whether all necessary callback functions
+///     were set. In not @ref MqttsnErrorCode_BadParam will be returned.
+///     If search for gateways is enabled (see description of 
+///     mqttsn_##NAME##client_set_searchgw_enabled()), the library may
+///     send @b SEARCHGW message by invoking the callback, set by
+///     mqttsn_##NAME##client_set_send_output_data_callback().
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_start(MqttsnClientHandle client);
+
+/// @brief Stop the library's operation.
+/// @details The operation may be resumed using mqttsn_##NAME##client_start(). 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @return Error code indicating success/failure status of the operation
 MqttsnErrorCode mqttsn_##NAME##client_stop(MqttsnClientHandle client);
+
+/// @brief Provide data, received over I/O link, to the library for processing.
+/// @details This call may cause invocation of some callbacks, such as 
+///     request to cancel the currently running time, send some messages to
+///     the gateway, report incoming application message, and (re)start time
+///     measurement.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] from Pointer to the buffer of data to process.
+/// @param[in] len Number of bytes in the data buffer.
+/// @return Number of processed bytes.
+/// @note The function returns number of bytes that were actually consumed, and
+///     can be removed from the holding buffer.
 unsigned mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const unsigned char* from, unsigned len);
+
+/// @brief Notify client library about amount of elapsed milliseconds.
+/// @details The reported amount of milliseconds needs to be from the 
+///     last request to program timer via callback (set by
+///     mqttsn_##NAME##client_set_next_tick_program_callback()).
+///     It can be less than actually requested via the callback. If this
+///     function is called, the library assumes that previously requested
+///     timeout measurement is not in progress any more, and will request
+///     new measurement if needed.
+///     This call may cause invocation of some other callbacks, such as a request
+///     to send new data to the gateway.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] ms Number of elapsed @b milliseconds.
 void mqttsn_##NAME##client_tick(MqttsnClientHandle client, unsigned ms);
+
+/// @brief Set retry period to wait between resending unacknowledged message to the gateway.
+/// @details Some messages, sent to the gateway, may require acknowledgement by 
+///     the latter. The delay (in seconds) between such attempts to resend the
+///     message may be specified using this function. The default value is
+///     15 seconds.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] value Number of @b seconds to wait before making an attempt to resend.
 void mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value);
+
+/// @brief Set number of retry attempts to perform before reporting unsuccessful result of the operation.
+/// @details Some messages, sent to the gateway, may require acknowledgement by 
+///     the latter. The amount of retry attempts before reporting unsucessful result
+///     of the operation may be specified using this function. The default value
+///     is 3.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] value Number of retry attempts.
 void mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned value);
+
+/// @brief Set broadcast radius.
+/// @details When searching for gateways, the client library broadcasts @b SEARCHGW
+///     messages. It contains the broadcast radius value. This value can be
+///     set using this function. Default radius value is 0.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] value Broadcast radius.
 void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsigned char value);
+
+/// @brief Enable/Disable search for gateways.
+/// @details According to @b MQTT-SN protocol specification the client may 
+///     search for the gateways by broadcasting @b SEARCHGW message. 
+///     If address of the gateway is known (such as known UDP host), there may
+///     be no need to send these messages. To enable/disable search for available
+///     gateways can be done using this function. By default the search for
+///     the gateway is enabled.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] value @b true to enable, and @false to disable.
 void mqttsn_##NAME##client_set_searchgw_enabled(MqttsnClientHandle client, bool value);
+
+/// @brief Send @b SEARCHGW message.
+/// @details This function performs one send of @b SEARCHGW message regardless
+///     of whether the search for gateways is enabled or disabled. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 void mqttsn_##NAME##client_search_gw(MqttsnClientHandle client);
+
+/// @brief Discard information about the gateway.
+/// @details The client library maintains the list of gateways that either
+///     advertised their presence or replied to previously sent @b SEARCHGW
+///     messages. This function causes information about specified gateway
+///     to be dropped. If such information exists, the callback, set
+///     using mqttsn_##NAME##client_set_gw_status_report_callback() function,
+///     will be invoked reporting @ref MqttsnGwStatus_Discarded as status value.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] gwId ID of the gateway.
 void mqttsn_##NAME##client_discard_gw(MqttsnClientHandle client, unsigned char gwId);
+
+/// @brief Discard information about all gateways.
+/// @details The client library maintains the list of gateways that either
+///     advertised their presence or replied to previously sent @b SEARCHGW
+///     messages. This function causes the callback, set
+///     using mqttsn_##NAME##client_set_gw_status_report_callback() function,
+///     to be invoked reporting @ref MqttsnGwStatus_Discarded as status value for
+///     all the recorded gateways.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 void mqttsn_##NAME##client_discard_all_gw(MqttsnClientHandle client);
 
+/// @brief Cancel current asynchronous operation.
+/// @details The library provides support for multiple asynchronous operations,
+///     which report their completion via provided callback. The library also
+///     doesn't support start of the new operation before previous one completed.
+///     This function provides an ability to cancel existing operation to allow
+///     issue of the new request. When successfully cancelled the callback of 
+///     the asyncrhonous operation will report @ref MqttsnAsyncOpStatus_Aborted
+///     as operation result status. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 
+/// @brief Issue the connect request to the gateway.
+/// @details This function needs to be called to connect to the gateway. The
+///     result of the connection will be reported via connection status report 
+///     callback, set using mqttsn_##NAME##client_set_connection_status_report_callback()
+///     function. Note, that the function cannot be successfully called when
+///     client is already connected to the gateway. In order to change the
+///     will information use mqttsn_##NAME##client_will_update() function.
+///     In order to change client ID and/or "keep alive" value disconnect
+///     first and then try to connect again. 
+///
+///     @b IMPORTANT : The buffers containing client ID string, as well as
+///     will topic and message (if such exist) must be preserved intact
+///     until the connect operation is complete (connection status report
+///     callback is invoked). The @b MqttsnWillInfo structure passed as
+///     @b willInfo parameter may reside on the stack and be destructed 
+///     immediately after this function returns. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client ID Client ID string.
+/// @param[in] keepAliveSeconds Maximum number of seconds allowed between the 
+///     messages sent to the gateway. If no publish is performed during this
+///     timeframe, the library will generate @b PINGREQ message and send to the
+///     gateway.
+/// @param[in] cleanSession Request to establish clean session.
+/// @param[in] willInfo Requested will information, can be NULL.
+/// @return Error code indicating success/failure status of the operation 
 MqttsnErrorCode mqttsn_##NAME##client_connect(
     MqttsnClientHandle client,
     const char* clientId,
@@ -121,8 +261,30 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     bool cleanSession,
     const MqttsnWillInfo* willInfo);
 
+/// @brief Disconnect from the gateway.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 MqttsnErrorCode mqttsn_##NAME##client_disconnect(MqttsnClientHandle client);
 
+/// @brief Publish message with predefined topic ID.
+/// @details When publish operation is complete, the provided callback
+///     will be invoked to notify that the operation is complete. Note, that
+///     the callback will be invoked immediately for publish operation with
+///     QoS=-1 or QoS=0.
+///
+///     @b IMPORTANT : The buffer containing message data must be preserved
+///     intact until the end of the operation (provided callback is invoked).
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topicId Predefined topic ID.
+/// @param[in] msg Pointer to buffer containing data to be published.
+/// @param[in] msgLen Size of the buffer containing data to be published.
+/// @param[in] qos Quality of service level.
+/// @param[in] retain Retain flag.
+/// @param[in] callback Callback to be invoked when operation is complete.
+///     It can be NULL for publish requests with QoS=-1 or QoS=0. Such publish
+///     requests do not require acknowledgement from the gateway and report
+///     their completion immediatelly.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
 MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
@@ -134,6 +296,24 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     void* data
 );
 
+/// @brief Publish message with topic string.
+/// @details When publish operation is complete, the provided callback
+///     will be invoked to notify that the operation is complete. Note, that
+///     the callback MAY be invoked immediately for publish operation with
+///     QoS=0 if requested topic is already registered.
+///
+///     @b IMPORTANT : The buffer containing message data must be preserved
+///     intact until the end of the operation (provided callback is invoked).
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topic Topic string.
+/// @param[in] msg Pointer to buffer containing data to be published.
+/// @param[in] msgLen Size of the buffer containing data to be published.
+/// @param[in] qos Quality of service level.
+/// @param[in] retain Retain flag.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
 MqttsnErrorCode mqttsn_##NAME##client_publish(
     MqttsnClientHandle client,
     const char* topic,
@@ -145,6 +325,16 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
     void* data
 );
 
+/// @brief Subscribe to topic having predefined topic ID.
+/// @details When publish operation is complete, the provided callback
+///     will be invoked to notify that the operation is complete. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topicId Predefined topic ID.
+/// @param[in] qos Maximum level of quality of service the messages are sent to this client.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
 MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
@@ -153,6 +343,19 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
     void* data
 );
 
+/// @brief Subscribe to topic.
+/// @details When publish operation is complete, the provided callback
+///     will be invoked to notify that the operation is complete. 
+///
+///     @b IMPORTANT : The buffer containing topic string must be preserved
+///     intact until the end of the operation (provided callback is invoked).
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topic Topic string.
+/// @param[in] qos Maximum level of quality of service the messages are sent to this client.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
 MqttsnErrorCode mqttsn_##NAME##client_subscribe(
     MqttsnClientHandle client,
     const char* topic,
