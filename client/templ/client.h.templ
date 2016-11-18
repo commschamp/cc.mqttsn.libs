@@ -253,7 +253,7 @@ bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 ///     gateway.
 /// @param[in] cleanSession Request to establish clean session.
 /// @param[in] willInfo Requested will information, can be NULL.
-/// @return Error code indicating success/failure status of the operation 
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_connect(
     MqttsnClientHandle client,
     const char* clientId,
@@ -262,12 +262,16 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     const MqttsnWillInfo* willInfo);
 
 /// @brief Disconnect from the gateway.
+/// @details The result of the connection will be reported via connection status report 
+///     callback, set using mqttsn_##NAME##client_set_connection_status_report_callback()
+///     function.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_disconnect(MqttsnClientHandle client);
 
 /// @brief Publish message with predefined topic ID.
 /// @details When publish operation is complete, the provided callback
-///     will be invoked to notify that the operation is complete. Note, that
+///     will be invoked. Note, that
 ///     the callback will be invoked immediately for publish operation with
 ///     QoS=-1 or QoS=0.
 ///
@@ -285,6 +289,7 @@ MqttsnErrorCode mqttsn_##NAME##client_disconnect(MqttsnClientHandle client);
 ///     their completion immediatelly.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
@@ -298,7 +303,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
 
 /// @brief Publish message with topic string.
 /// @details When publish operation is complete, the provided callback
-///     will be invoked to notify that the operation is complete. Note, that
+///     will be invoked. Note, that
 ///     the callback MAY be invoked immediately for publish operation with
 ///     QoS=0 if requested topic is already registered.
 ///
@@ -314,6 +319,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_publish(
     MqttsnClientHandle client,
     const char* topic,
@@ -326,8 +332,8 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
 );
 
 /// @brief Subscribe to topic having predefined topic ID.
-/// @details When publish operation is complete, the provided callback
-///     will be invoked to notify that the operation is complete. 
+/// @details When subscribe operation is complete, the provided callback
+///     will be invoked. 
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] topicId Predefined topic ID.
 /// @param[in] qos Maximum level of quality of service the messages are sent to this client.
@@ -335,6 +341,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
@@ -344,8 +351,8 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
 );
 
 /// @brief Subscribe to topic.
-/// @details When publish operation is complete, the provided callback
-///     will be invoked to notify that the operation is complete. 
+/// @details When subscribe operation is complete, the provided callback
+///     will be invoked. 
 ///
 ///     @b IMPORTANT : The buffer containing topic string must be preserved
 ///     intact until the end of the operation (provided callback is invoked).
@@ -356,6 +363,7 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_subscribe(
     MqttsnClientHandle client,
     const char* topic,
@@ -364,6 +372,16 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe(
     void* data
 );
 
+/// @brief Unsubscribe from messages having predefined topic ID.
+/// @details When unsubscribe operation is complete, the provided callback
+///     will be invoked. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topicId Predefined topic ID.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
@@ -371,6 +389,16 @@ MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
     void* data
 );
 
+/// @brief Unsubscribe from messages having specified topic.
+/// @details When unsubscribe operation is complete, the provided callback
+///     will be invoked. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topic Topic string.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
     MqttsnClientHandle client,
     const char* topic,
@@ -378,6 +406,19 @@ MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
     void* data
 );
 
+/// @brief Update will recorded with the gateway/broker.
+/// @details When the operation is complete, the provided callback
+///     will be invoked. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] willInfo New will full information. The parameter can be NULL
+///     or the @b topic data member of the @ref MqttsnWillInfo struct may be
+///     null. In this case the request means erase current will information
+///     recorded with the gateway/broker.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_will_update(
     MqttsnClientHandle client,
     const MqttsnWillInfo* willInfo,
@@ -385,6 +426,20 @@ MqttsnErrorCode mqttsn_##NAME##client_will_update(
     void* data
 );
 
+/// @brief Update topic of the will recorded with the gateway/broker.
+/// @details When the operation is complete, the provided callback
+///     will be invoked. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topic New will topic string. The parameter can be NULL.
+///     In this case the request means erase current will information
+///     recorded with the gateway/broker.
+/// @param[in] qos Quality of service for the will.
+/// @param[in] retain Retain flag.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_will_topic_update(
     MqttsnClientHandle client,
     const char* topic,
@@ -394,6 +449,18 @@ MqttsnErrorCode mqttsn_##NAME##client_will_topic_update(
     void* data
 );
 
+/// @brief Update will message body recorded with the gateway/broker.
+/// @details When the operation is complete, the provided callback
+///     will be invoked. 
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] topic New will topic string. The parameter can be NULL.
+///     In this case the request means erase current will information
+///     recorded with the gateway/broker.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
     MqttsnClientHandle client,
     const unsigned char* msg,
@@ -402,6 +469,22 @@ MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
     void* data
 );
 
+/// @brief Notify gateway about entering the sleep state.
+/// @details When the operation is complete, the provided callback
+///     will be invoked. The connection status report callback
+///     (set with mqttsn_##NAME##client_set_connection_status_report_callback())
+///     will also be invoked to report the "Asleep" state in case the operation
+///     is successful.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] duration Muximal number of seconds the client will remain in
+///     the sleep state until next check of accumulated pending messages 
+///     (use mqttsn_##NAME##client_check_messages() for this purpose) or
+///     full wake up (use mqttsn_##NAME##client_check_wakeup() for this purpose).
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_sleep(
     MqttsnClientHandle client,
     unsigned short duration,
@@ -409,6 +492,23 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
     void* data
 );
 
+/// @brief Check for accumulated pending messages the gateway has to report.
+/// @details According to MQTT-SN protocol specification, this function will
+///     force sending @b PINGREQ message to the gateway. The gateway then will
+///     deliver all the pending messages, which may cause multiple invocation
+///     of message report callback (set with
+///     mqttsn_##NAME##client_set_message_report_callback()). After gateway
+///     reports all accumulated messages, it will send @b PINGRESP message,
+///     which will case invocation of the provided callback. After the
+///     callback is invoked, the client may return to "asleep" state and will
+///     be required to check messages again or wake up after number of seconds
+///     provided in mqttsn_##NAME##client_sleep() call.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_check_messages(
     MqttsnClientHandle client,
     MqttsnCheckMessagesCompleteReportFn callback,
