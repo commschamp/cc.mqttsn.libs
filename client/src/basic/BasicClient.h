@@ -176,7 +176,7 @@ class BasicClient : public THandler
 
     typedef AsyncOpBase DisconnectOp;
 
-    struct PublishOpBase : public OpBase
+    struct PublishOpBase : public AsyncOpBase
     {
         MqttsnTopicId m_topicId = 0U;
         std::uint16_t m_msgId = 0U;
@@ -184,8 +184,6 @@ class BasicClient : public THandler
         std::size_t m_msgLen = 0;
         MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
         bool m_retain = false;
-        MqttsnPublishCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
         bool m_ackReceived = false;
     };
 
@@ -680,7 +678,7 @@ public:
         std::size_t msgLen,
         MqttsnQoS qos,
         bool retain,
-        MqttsnPublishCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -708,14 +706,12 @@ public:
 
         if (MqttsnQoS_AtLeastOnceDelivery <= qos) {
             m_currOp = Op::PublishId;
-            auto* pubOp = newOp<PublishIdOp>();
+            auto* pubOp = newAsyncOp<PublishIdOp>(callback, data);
             pubOp->m_topicId = topicId;
             pubOp->m_msg = msg;
             pubOp->m_msgLen = msgLen;
             pubOp->m_qos = qos;
             pubOp->m_retain = retain;
-            pubOp->m_cb = callback;
-            pubOp->m_cbData = data;
 
             bool result = doPublishId();
             static_cast<void>(result);
@@ -745,7 +741,7 @@ public:
         std::size_t msgLen,
         MqttsnQoS qos,
         bool retain,
-        MqttsnPublishCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {

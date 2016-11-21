@@ -262,7 +262,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
     unsigned msgLen,
     MqttsnQoS qos,
     bool retain,
-    MqttsnPublishCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
@@ -276,7 +276,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
     unsigned msgLen,
     MqttsnQoS qos,
     bool retain,
-    MqttsnPublishCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);

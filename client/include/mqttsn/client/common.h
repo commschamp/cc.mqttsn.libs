@@ -178,13 +178,6 @@ typedef void (*MqttsnGwDisconnectReportFn)(void* data);
 /// @param[in] status Status of the asynchronous operation.
 typedef void (*MqttsnAsyncOpCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
 
-
-/// @brief Callback used to report completion of the publish operation.
-/// @param[in] data Pointer to user data object, passed as the last parameter to
-///     the publish request.
-/// @param[in] status Status of the publish operation.
-typedef void (*MqttsnPublishCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-
 /// @brief Callback used to report completion of the subscribe operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the subscribe request.

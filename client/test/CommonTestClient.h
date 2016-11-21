@@ -107,7 +107,6 @@ public:
     typedef std::function<void ()> GwDisconnectReportCallback;
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> PublishCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> UnsubscribeCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> WillUpdateCompleteCallback;
@@ -128,7 +127,7 @@ public:
     MessageReportCallback setMessageReportCallback(MessageReportCallback&& func);
     AsyncOpCompleteCallback setConnectCompleteCallback(AsyncOpCompleteCallback&& func);
     AsyncOpCompleteCallback setDisconnectCompleteCallback(AsyncOpCompleteCallback&& func);
-    PublishCompleteCallback setPublishCompleteCallback(PublishCompleteCallback&& func);
+    AsyncOpCompleteCallback setPublishCompleteCallback(AsyncOpCompleteCallback&& func);
     SubscribeCompleteCallback setSubsribeCompleteCallback(SubscribeCompleteCallback&& func);
     UnsubscribeCompleteCallback setUnsubsribeCompleteCallback(UnsubscribeCompleteCallback&& func);
     WillUpdateCompleteCallback setWillUpdateCompleteCallback(WillUpdateCompleteCallback&& func);
@@ -259,7 +258,7 @@ private:
     MessageReportCallback m_msgReportCallback;
     AsyncOpCompleteCallback m_connectCompleteCallback;
     AsyncOpCompleteCallback m_disconnectCompleteCallback;
-    PublishCompleteCallback m_publishCompleteCallback;
+    AsyncOpCompleteCallback m_publishCompleteCallback;
     SubscribeCompleteCallback m_subscribeCompleteCallback;
     UnsubscribeCompleteCallback m_unsubscribeCompleteCallback;
     WillUpdateCompleteCallback m_willUpdateCompleteCallback;

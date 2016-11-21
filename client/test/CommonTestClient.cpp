@@ -141,10 +141,10 @@ CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setDisconnectComplet
     return old;
 }
 
-CommonTestClient::PublishCompleteCallback CommonTestClient::setPublishCompleteCallback(
-    PublishCompleteCallback&& func)
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setPublishCompleteCallback(
+    AsyncOpCompleteCallback&& func)
 {
-    PublishCompleteCallback old(std::move(m_publishCompleteCallback));
+    AsyncOpCompleteCallback old(std::move(m_publishCompleteCallback));
     m_publishCompleteCallback = std::move(func);
     return old;
 }
@@ -585,7 +585,7 @@ void CommonTestClient::reportDisconnectComplete(MqttsnAsyncOpStatus status)
 void CommonTestClient::reportPublishComplete(MqttsnAsyncOpStatus status)
 {
     if (m_publishCompleteCallback) {
-        PublishCompleteCallback tmp(m_publishCompleteCallback);
+        AsyncOpCompleteCallback tmp(m_publishCompleteCallback);
         tmp(status);
     }
 }
