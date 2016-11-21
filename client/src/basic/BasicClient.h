@@ -156,6 +156,13 @@ class BasicClient : public THandler
         unsigned m_attempt = 0;
     };
 
+    struct AsyncOpBase : public OpBase
+    {
+        MqttsnAsyncOpCompleteReportFn m_cb = nullptr;
+        void* m_cbData = nullptr;
+    };
+
+
     struct ConnectOp : public OpBase
     {
         MqttsnWillInfo m_willInfo = MqttsnWillInfo();
@@ -393,6 +400,12 @@ public:
             m_connectionStatusReportFn = cb;
             m_connectionStatusReportData = data;
         }
+    }
+
+    void setGwDisconnectReportCallback(MqttsnGwDisconnectReportFn cb, void* data)
+    {
+        m_gwDisconnectReportFn = cb;
+        m_gwDisconnectReportData = data;
     }
 
     void setMessageReportCallback(MqttsnMessageReportFn cb, void* data)
@@ -1764,7 +1777,7 @@ public:
 
         if (m_currOp == Op::Disconnect) {
             finaliseOp<DisconnectOp>();
-            reportDisconnected();
+            reportGwDisconnected();
             return;
         }
 
@@ -1775,12 +1788,12 @@ public:
         }
 
         if (m_currOp == Op::None) {
-            reportDisconnected();
+            reportGwDisconnected();
             return;
         }
 
         cancel();
-        reportDisconnected();
+        reportGwDisconnected();
     }
 
     virtual void handle(WilltopicrespMsg& msg) override
@@ -2118,7 +2131,7 @@ private:
         }
 
         if (m_retryCount <= m_pingCount) {
-            reportDisconnected();
+            reportGwDisconnected();
             return;
         }
 
@@ -3071,11 +3084,15 @@ private:
         sendMessage(msg);
     }
 
-    void reportDisconnected()
+    void reportGwDisconnected()
     {
         m_connectionStatus = ConnectionStatus::Disconnected;
         GASSERT(m_connectionStatusReportFn != nullptr);
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+
+        if (m_gwDisconnectReportFn != nullptr) {
+            m_gwDisconnectReportFn(m_gwDisconnectReportData);
+        }
     }
 
     void reportAsleep()
@@ -3317,6 +3334,9 @@ private:
 
     MqttsnConnectionStatusReportFn m_connectionStatusReportFn = nullptr;
     void* m_connectionStatusReportData = nullptr;
+
+    MqttsnGwDisconnectReportFn m_gwDisconnectReportFn = nullptr;
+    void* m_gwDisconnectReportData = nullptr;
 
     MqttsnMessageReportFn m_msgReportFn = nullptr;
     void* m_msgReportData = nullptr;

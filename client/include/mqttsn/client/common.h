@@ -167,6 +167,18 @@ typedef void (*MqttsnGwStatusReportFn)(void* data, unsigned short gwId, MqttsnGw
 /// @param[in] status Connection status.
 typedef void (*MqttsnConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
 
+/// @brief Callback used to report unsolicited disconnection of the gateway.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+typedef void (*MqttsnGwDisconnectReportFn)(void* data);
+
+/// @brief Callback used to report completion of the asynchronous operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] status Status of the asynchronous operation.
+typedef void (*MqttsnAsyncOpCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+
+
 /// @brief Callback used to report completion of the publish operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the publish request.

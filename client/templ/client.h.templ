@@ -99,6 +99,18 @@ void mqttsn_##NAME##client_set_connection_status_report_callback(
     MqttsnClientHandle client,
     MqttsnConnectionStatusReportFn fn,
     void* data);
+    
+/// @brief Set callback to report unsolicited disconnection of the client gateway.
+/// @details The callback will be invoked when gateway sends unsolicited 
+///     @b DISCONNECT message or does not reply to @b PINGREQ message.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] fn Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+void mqttsn_##NAME##client_set_gw_disconnect_report_callback(
+    MqttsnClientHandle client,
+    MqttsnGwDisconnectReportFn fn,
+    void* data);
 
 /// @brief Set callback to report incoming messages.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
