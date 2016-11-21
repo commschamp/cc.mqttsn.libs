@@ -163,7 +163,7 @@ class BasicClient : public THandler
     };
 
 
-    struct ConnectOp : public OpBase
+    struct ConnectOp : public AsyncOpBase
     {
         MqttsnWillInfo m_willInfo = MqttsnWillInfo();
         const char* m_clientId = nullptr;
@@ -477,7 +477,6 @@ public:
         if ((m_nextTickProgramFn == nullptr) ||
             (m_cancelNextTickWaitFn == nullptr) ||
             (m_sendOutputDataFn == nullptr) ||
-            (m_connectionStatusReportFn == nullptr) ||
             (m_msgReportFn == nullptr)) {
             return MqttsnErrorCode_BadParam;
         }
@@ -603,7 +602,9 @@ public:
         const char* clientId,
         unsigned short keepAlivePeriod,
         bool cleanSession,
-        const MqttsnWillInfo* willInfo)
+        const MqttsnWillInfo* willInfo,
+        MqttsnAsyncOpCompleteReportFn callback,
+        void* data)
     {
         if (!m_running) {
             return MqttsnErrorCode_NotStarted;
@@ -623,7 +624,8 @@ public:
         m_connectionStatus = ConnectionStatus::Disconnected;
         m_currOp = Op::Connect;
 
-        auto* connectOp = newOp<ConnectOp>();
+        auto* connectOp = newAsyncOp<ConnectOp>(callback, data);
+
         if (willInfo != nullptr) {
             connectOp->m_willInfo = *willInfo;
             connectOp->m_hasWill = true;
@@ -1265,35 +1267,32 @@ public:
         }
 
         m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
-        finaliseOp<ConnectOp>();
 
-        static_cast<void>(msg);
-        static const MqttsnConnectionStatus StatusMap[] = {
-            /* ReturnCodeVal_Accepted */ MqttsnConnectionStatus_Connected,
-            /* ReturnCodeVal_Congestion */ MqttsnConnectionStatus_Congestion,
-            /* ReturnCodeVal_InvalidTopicId */ MqttsnConnectionStatus_Denied,
-            /* ReturnCodeVal_NotSupported */ MqttsnConnectionStatus_Denied
-        };
-
-        static const std::size_t StatusMapSize =
-                                std::extent<decltype(StatusMap)>::value;
-        static_assert(
-            StatusMapSize == mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
-            "Incorrect map");
-
-        MqttsnConnectionStatus status = MqttsnConnectionStatus_Denied;
         auto returnCode = retCodeField.value();
-        if (returnCode < StatusMapSize) {
-            status = StatusMap[returnCode];
-        }
 
         GASSERT(m_connectionStatus != ConnectionStatus::Connected);
-        if (status == MqttsnConnectionStatus_Connected) {
+        if (returnCode == mqttsn::protocol::field::ReturnCodeVal_Accepted) {
             m_connectionStatus = ConnectionStatus::Connected;
         }
 
-        GASSERT(m_connectionStatusReportFn != nullptr);
-        m_connectionStatusReportFn(m_connectionStatusReportData, status);
+        static const MqttsnAsyncOpStatus OpStatusMap[] = {
+            /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
+            /* ReturnCodeVal_Congestion */ MqttsnAsyncOpStatus_Congestion,
+            /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
+            /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
+        };
+
+        static const std::size_t OpStatusMapSize =
+                                std::extent<decltype(OpStatusMap)>::value;
+        static_assert(
+            OpStatusMapSize == mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
+            "Incorrect map");
+
+        MqttsnAsyncOpStatus opStatus = MqttsnAsyncOpStatus_NotSupported;
+        if (returnCode < OpStatusMapSize) {
+            opStatus = OpStatusMap[returnCode];
+        }
+        finaliseConnectOp(opStatus);
     }
 
     virtual void handle(WilltopicreqMsg& msg) override
@@ -1945,6 +1944,17 @@ private:
         return op;
     }
 
+    template <typename TOp>
+    TOp* newAsyncOp(MqttsnAsyncOpCompleteReportFn cb, void* cbData)
+    {
+        static_assert(std::is_base_of<AsyncOpBase, TOp>::value, "Invalid base");
+
+        auto op = newOp<TOp>();
+        op->m_cb = cb;
+        op->m_cbData = cbData;
+        return op;
+    }
+
     typename GwInfoStorage::iterator findGwInfo(GwIdValueType id)
     {
         return
@@ -2230,7 +2240,7 @@ private:
             return;
         }
 
-        finaliseOp<ConnectOp>();
+        finaliseConnectOp(MqttsnAsyncOpStatus_NoResponse);
         GASSERT(m_connectionStatusReportFn != nullptr);
         m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Timeout);
     }
@@ -2238,9 +2248,7 @@ private:
     void connectCancel()
     {
         GASSERT(m_currOp == Op::Connect);
-        finaliseOp<ConnectOp>();
-        GASSERT(m_connectionStatusReportFn != nullptr);
-        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_ConnectAborted);
+        finaliseConnectOp(MqttsnAsyncOpStatus_Aborted);
     }
 
     void disconnectTimeout()
@@ -3107,6 +3115,20 @@ private:
         ++m_msgId;
         return m_msgId;
     }
+
+    void finaliseConnectOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT(m_currOp == Op::Connect);
+        auto* op = opPtr<AsyncOpBase>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        finaliseOp<ConnectOp>();
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
 
     void finalisePublishOp(MqttsnAsyncOpStatus status)
     {

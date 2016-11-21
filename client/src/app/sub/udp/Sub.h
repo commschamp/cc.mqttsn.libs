@@ -159,6 +159,8 @@ private:
 
     void doConnect(bool reconnecting = false);
     void doSubscribe();
+    void connectComplete(MqttsnAsyncOpStatus status);
+    static void connectCompleteCb(void* obj, MqttsnAsyncOpStatus status);
     void subscribeComplete(MqttsnAsyncOpStatus status);
     static void subscribeCompleteCb(void* obj, MqttsnAsyncOpStatus status, MqttsnQoS qos);
     bool bindLocalPort();

@@ -153,10 +153,15 @@ private:
     void connectionStatusReport(MqttsnConnectionStatus status);
     static void connectionStatusReportCb(void* obj, MqttsnConnectionStatus status);
 
+    void gwDisconnectReport();
+    static void gwDisconnectReportCb(void* obj);
+
     static void messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo);
 
     void doConnect(bool reconnecting = false);
     void doPublish();
+    void connectComplete(MqttsnAsyncOpStatus status);
+    static void connectCompleteCb(void* obj, MqttsnAsyncOpStatus status);
     void publishComplete(MqttsnAsyncOpStatus status);
     static void publishCompleteCb(void* obj, MqttsnAsyncOpStatus status);
     bool bindLocalPort();

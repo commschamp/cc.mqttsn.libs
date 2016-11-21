@@ -24,6 +24,9 @@
 #include <iterator>
 #include <iomanip>
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QTimer>
+
 namespace mqttsn
 {
 
@@ -294,7 +297,15 @@ void Sub::doConnect(bool reconnecting)
         cleanSession = false;
     }
 
-    auto result = mqttsn_client_connect(m_client.get(), m_clientId.c_str(), m_keepAlive, cleanSession, nullptr);
+    auto result =
+        mqttsn_client_connect(
+            m_client.get(),
+            m_clientId.c_str(),
+            m_keepAlive,
+            cleanSession,
+            nullptr,
+            &Sub::connectCompleteCb,
+            this);
     if (result != MqttsnErrorCode_Success) {
         std::cerr << "ERROR: Failed to connect to the gateway" << std::endl;
     }
@@ -335,6 +346,30 @@ void Sub::doSubscribe()
         return;
     }
 }
+
+void Sub::connectComplete(MqttsnAsyncOpStatus status)
+{
+    if (status == MqttsnAsyncOpStatus_Successful) {
+        doSubscribe();
+        return;
+    }
+
+    if (status == MqttsnAsyncOpStatus_Congestion) {
+        std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
+        doConnect();
+        return;
+    }
+
+    std::cerr << "ERROR: Failed to connect..." << std::endl;
+    QTimer::singleShot(10, qApp, SLOT(quit()));
+}
+
+void Sub::connectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+{
+    assert(obj != nullptr);
+    reinterpret_cast<Sub*>(obj)->connectComplete(status);
+}
+
 
 void Sub::subscribeComplete(MqttsnAsyncOpStatus status)
 {

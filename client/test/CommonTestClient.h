@@ -106,6 +106,7 @@ public:
     typedef std::function<void (MqttsnConnectionStatus status)> ConnectionStatusReportCallback;
     typedef std::function<void ()> GwDisconnectReportCallback;
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
+    typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> PublishCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> UnsubscribeCompleteCallback;
@@ -125,6 +126,7 @@ public:
     ConnectionStatusReportCallback setConnectionStatusReportCallback(ConnectionStatusReportCallback&& func);
     GwDisconnectReportCallback setGwDisconnectReportCallback(GwDisconnectReportCallback&& func);
     MessageReportCallback setMessageReportCallback(MessageReportCallback&& func);
+    AsyncOpCompleteCallback setConnectCompleteCallback(AsyncOpCompleteCallback&& func);
     PublishCompleteCallback setPublishCompleteCallback(PublishCompleteCallback&& func);
     SubscribeCompleteCallback setSubsribeCompleteCallback(SubscribeCompleteCallback&& func);
     UnsubscribeCompleteCallback setUnsubsribeCompleteCallback(UnsubscribeCompleteCallback&& func);
@@ -212,6 +214,7 @@ private:
     void reportConnectionStatus(MqttsnConnectionStatus status);
     void reportGwDisconnect();
     void reportMessage(const MqttsnMessageInfo* msgInfo);
+    void reportConnectComplete(MqttsnAsyncOpStatus status);
     void reportPublishComplete(MqttsnAsyncOpStatus status);
     void reportSubsribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos);
     void reportUnsubsribeComplete(MqttsnAsyncOpStatus status);
@@ -229,6 +232,7 @@ private:
     static void connectionStatusReportCallback(void* data, MqttsnConnectionStatus status);
     static void gwDisconnectReportCallback(void* data);
     static void msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo);
+    static void connectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void publishCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
     static void unsubsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status);
@@ -250,6 +254,7 @@ private:
     ConnectionStatusReportCallback m_connectionStatusReportCallback;
     GwDisconnectReportCallback m_gwDisconnectReportCallback;
     MessageReportCallback m_msgReportCallback;
+    AsyncOpCompleteCallback m_connectCompleteCallback;
     PublishCompleteCallback m_publishCompleteCallback;
     SubscribeCompleteCallback m_subscribeCompleteCallback;
     UnsubscribeCompleteCallback m_unsubscribeCompleteCallback;

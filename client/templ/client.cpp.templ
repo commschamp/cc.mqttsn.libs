@@ -232,14 +232,18 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
-    const MqttsnWillInfo* willInfo)
+    const MqttsnWillInfo* willInfo,
+    MqttsnAsyncOpCompleteReportFn callback,
+    void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     return clientObj->connect(
         clientId,
         keepAliveSeconds,
         cleanSession,
-        willInfo);
+        willInfo,
+        callback,
+        data);
 }
 
 MqttsnErrorCode mqttsn_##NAME##client_disconnect(MqttsnClientHandle client)

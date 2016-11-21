@@ -265,13 +265,19 @@ bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 ///     gateway.
 /// @param[in] cleanSession Request to establish clean session.
 /// @param[in] willInfo Requested will information, can be NULL.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_connect(
     MqttsnClientHandle client,
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
-    const MqttsnWillInfo* willInfo);
+    const MqttsnWillInfo* willInfo,
+    MqttsnAsyncOpCompleteReportFn callback,
+    void* data);
 
 /// @brief Disconnect from the gateway.
 /// @details The result of the connection will be reported via connection status report 
