@@ -310,7 +310,7 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe(
 MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
     MqttsnClientHandle client,
     MqttsnTopicId topicId,
-    MqttsnUnsubscribeCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -322,7 +322,7 @@ MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
 MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
     MqttsnClientHandle client,
     const char* topic,
-    MqttsnUnsubscribeCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -333,7 +333,7 @@ MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
 MqttsnErrorCode mqttsn_##NAME##client_will_update(
     MqttsnClientHandle client,
     const MqttsnWillInfo* willInfo,
-    MqttsnWillUpdateCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {

@@ -217,10 +217,8 @@ class BasicClient : public THandler
         MqttsnTopicId m_topicId = 0U;
     };
 
-    struct UnsubscribeOpBase : public OpBase
+    struct UnsubscribeOpBase : public AsyncOpBase
     {
-        MqttsnUnsubscribeCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
         std::uint16_t m_msgId = 0U;
     };
 
@@ -235,11 +233,7 @@ class BasicClient : public THandler
         MqttsnTopicId m_topicId = 0U;
     };
 
-    struct WillUpdateOp : public ConnectOp
-    {
-        MqttsnWillUpdateCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
-    };
+    typedef ConnectOp WillUpdateOp;
 
     struct WillTopicUpdateOp : public OpBase
     {
@@ -867,7 +861,7 @@ public:
 
     MqttsnErrorCode unsubscribe(
         MqttsnTopicId topicId,
-        MqttsnUnsubscribeCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data
     )
     {
@@ -890,10 +884,8 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::UnsubscribeId;
-        auto* op = newOp<UnsubscribeIdOp>();
+        auto* op = newAsyncOp<UnsubscribeIdOp>(callback, data);
         op->m_topicId = topicId;
-        op->m_cb = callback;
-        op->m_cbData = data;
         op->m_msgId = allocMsgId();
 
         bool result = doUnsubscribeId();
@@ -905,7 +897,7 @@ public:
 
     MqttsnErrorCode unsubscribe(
         const char* topic,
-        MqttsnUnsubscribeCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -927,10 +919,8 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::Unsubscribe;
-        auto* op = newOp<UnsubscribeOp>();
+        auto* op = newAsyncOp<UnsubscribeOp>(callback, data);
         op->m_topic = topic;
-        op->m_cb = callback;
-        op->m_cbData = data;
         op->m_msgId = allocMsgId();
 
         bool result = doUnsubscribe();
@@ -942,7 +932,7 @@ public:
 
     MqttsnErrorCode willUpdate(
         const MqttsnWillInfo* willInfo,
-        MqttsnWillUpdateCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -964,7 +954,7 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::WillUpdate;
-        auto* op = newOp<WillUpdateOp>();
+        auto* op = newAsyncOp<WillUpdateOp>(callback, data);
         op->m_clientId = m_clientId.c_str();
         op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
         if (willInfo != nullptr) {
@@ -1230,16 +1220,7 @@ public:
 
         auto& fields = msg.fields();
         auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
-
-        if (m_currOp == Op::WillUpdate) {
-            finaliseWillUpdateOp(retCodeToStatus(retCodeField.value()));
-
-            if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-                m_connectionStatus = ConnectionStatus::Disconnected;
-                m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
-            }
-            return;
-        }
+        auto returnCode = retCodeField.value();
 
         if (m_currOp == Op::Wakeup) {
             finaliseWakeupOp(retCodeToStatus(retCodeField.value()));
@@ -1256,41 +1237,30 @@ public:
             return;
         }
 
-        GASSERT(m_currOp == Op::Connect);
-        if (op->m_clientId != nullptr) {
-            m_clientId = op->m_clientId;
-        }
-        else {
-            m_clientId.clear();
-        }
-
-        m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
-
-        auto returnCode = retCodeField.value();
-
-        GASSERT(m_connectionStatus != ConnectionStatus::Connected);
+        GASSERT((m_currOp != Op::Connect) || (m_connectionStatus != ConnectionStatus::Connected));
         if (returnCode == mqttsn::protocol::field::ReturnCodeVal_Accepted) {
             m_connectionStatus = ConnectionStatus::Connected;
         }
 
-        static const MqttsnAsyncOpStatus OpStatusMap[] = {
-            /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
-            /* ReturnCodeVal_Congestion */ MqttsnAsyncOpStatus_Congestion,
-            /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
-            /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
-        };
+        auto status = retCodeToStatus(returnCode);
+        if (m_currOp == Op::Connect) {
+            GASSERT(m_currOp == Op::Connect);
+            if (op->m_clientId != nullptr) {
+                m_clientId = op->m_clientId;
+            }
+            else {
+                m_clientId.clear();
+            }
 
-        static const std::size_t OpStatusMapSize =
-                                std::extent<decltype(OpStatusMap)>::value;
-        static_assert(
-            OpStatusMapSize == mqttsn::protocol::field::ReturnCodeVal_NumOfValues,
-            "Incorrect map");
-
-        MqttsnAsyncOpStatus opStatus = MqttsnAsyncOpStatus_NotSupported;
-        if (returnCode < OpStatusMapSize) {
-            opStatus = OpStatusMap[returnCode];
+            m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
+            finaliseConnectOp(status);
+            return;
         }
-        finaliseConnectOp(opStatus);
+
+        if (m_currOp == Op::WillUpdate) {
+            finaliseWillUpdateOp(status);
+            return;
+        }
     }
 
     virtual void handle(WilltopicreqMsg& msg) override
@@ -3123,6 +3093,29 @@ private:
         cb(cbData, status);
     }
 
+    template <typename TOp1, Op TCurr1, typename TOp2, Op TCurr2>
+    void finaliseAsyncDoubleOp(MqttsnAsyncOpStatus status)
+    {
+        GASSERT((m_currOp == TCurr1) || (m_currOp == TCurr2));
+
+        static_assert(std::is_base_of<AsyncOpBase, TOp1>::value, "Invalid base");
+        static_assert(std::is_base_of<AsyncOpBase, TOp2>::value, "Invalid base");
+        auto* op = opPtr<AsyncOpBase>();
+        auto* cb = op->m_cb;
+        auto* cbData = op->m_cbData;
+
+        if (m_currOp == TCurr1) {
+            finaliseOp<TOp1>();
+        }
+        else {
+            finaliseOp<TOp2>();
+        }
+
+        GASSERT(m_currOp == Op::None);
+        GASSERT(cb != nullptr);
+        cb(cbData, status);
+    }
+
     void finaliseConnectOp(MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<ConnectOp, Op::Connect>(status);
@@ -3135,20 +3128,7 @@ private:
 
     void finalisePublishOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT((m_currOp == Op::Publish) || (m_currOp == Op::PublishId));
-        auto* op = opPtr<PublishOpBase>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        if (m_currOp == Op::Publish) {
-            finaliseOp<PublishOp>();
-        }
-        else {
-            finaliseOp<PublishIdOp>();
-        }
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncDoubleOp<PublishOp, Op::Publish, PublishIdOp, Op::PublishId>(status);
     }
 
     void finaliseSubscribeOp(MqttsnAsyncOpStatus status, MqttsnQoS qos)
@@ -3171,20 +3151,7 @@ private:
 
     void finaliseUnsubscribeOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT((m_currOp == Op::Unsubscribe) || (m_currOp == Op::UnsubscribeId));
-        auto* op = opPtr<UnsubscribeOpBase>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        if (m_currOp == Op::Unsubscribe) {
-            finaliseOp<UnsubscribeOp>();
-        }
-        else {
-            finaliseOp<UnsubscribeIdOp>();
-        }
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncDoubleOp<UnsubscribeOp, Op::Unsubscribe, UnsubscribeIdOp, Op::UnsubscribeId>(status);
     }
 
     void finaliseWillUpdateOp(MqttsnAsyncOpStatus status)

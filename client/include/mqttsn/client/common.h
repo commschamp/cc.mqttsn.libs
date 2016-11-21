@@ -185,18 +185,6 @@ typedef void (*MqttsnAsyncOpCompleteReportFn)(void* data, MqttsnAsyncOpStatus st
 /// @param[in] qos Maximal level of quality of service, the gateway/broker is going to use to publish incoming messages.
 typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
 
-/// @brief Callback used to report completion of the unsubscribe operation.
-/// @param[in] data Pointer to user data object, passed as the last parameter to
-///     the unsubscribe request.
-/// @param[in] status Status of the operation.
-typedef void (*MqttsnUnsubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-
-/// @brief Callback used to report completion of the will update operation.
-/// @param[in] data Pointer to user data object, passed as the last parameter to
-///     the will update request.
-/// @param[in] status Status of the operation.
-typedef void (*MqttsnWillUpdateCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-
 /// @brief Callback used to report completion of the will topic update operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the will topic update request.

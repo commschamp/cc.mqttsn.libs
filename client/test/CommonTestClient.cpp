@@ -157,18 +157,18 @@ CommonTestClient::SubscribeCompleteCallback CommonTestClient::setSubsribeComplet
     return old;
 }
 
-CommonTestClient::UnsubscribeCompleteCallback CommonTestClient::setUnsubsribeCompleteCallback(
-    UnsubscribeCompleteCallback&& func)
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setUnsubsribeCompleteCallback(
+    AsyncOpCompleteCallback&& func)
 {
-    UnsubscribeCompleteCallback old(std::move(m_unsubscribeCompleteCallback));
+    AsyncOpCompleteCallback old(std::move(m_unsubscribeCompleteCallback));
     m_unsubscribeCompleteCallback = std::move(func);
     return old;
 }
 
-CommonTestClient::WillUpdateCompleteCallback CommonTestClient::setWillUpdateCompleteCallback(
-    WillUpdateCompleteCallback&& func)
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setWillUpdateCompleteCallback(
+    AsyncOpCompleteCallback&& func)
 {
-    WillUpdateCompleteCallback old(std::move(m_willUpdateCompleteCallback));
+    AsyncOpCompleteCallback old(std::move(m_willUpdateCompleteCallback));
     m_willUpdateCompleteCallback = std::move(func);
     return old;
 }
@@ -601,7 +601,7 @@ void CommonTestClient::reportSubsribeComplete(MqttsnAsyncOpStatus status, Mqttsn
 void CommonTestClient::reportUnsubsribeComplete(MqttsnAsyncOpStatus status)
 {
     if (m_unsubscribeCompleteCallback) {
-        UnsubscribeCompleteCallback tmp(m_unsubscribeCompleteCallback);
+        AsyncOpCompleteCallback tmp(m_unsubscribeCompleteCallback);
         tmp(status);
     }
 }
@@ -609,7 +609,7 @@ void CommonTestClient::reportUnsubsribeComplete(MqttsnAsyncOpStatus status)
 void CommonTestClient::reportWillUpdateComplete(MqttsnAsyncOpStatus status)
 {
     if (m_willUpdateCompleteCallback) {
-        WillUpdateCompleteCallback tmp(m_willUpdateCompleteCallback);
+        AsyncOpCompleteCallback tmp(m_willUpdateCompleteCallback);
         tmp(status);
     }
 }
