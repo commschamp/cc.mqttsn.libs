@@ -127,6 +127,7 @@ public:
     GwDisconnectReportCallback setGwDisconnectReportCallback(GwDisconnectReportCallback&& func);
     MessageReportCallback setMessageReportCallback(MessageReportCallback&& func);
     AsyncOpCompleteCallback setConnectCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setDisconnectCompleteCallback(AsyncOpCompleteCallback&& func);
     PublishCompleteCallback setPublishCompleteCallback(PublishCompleteCallback&& func);
     SubscribeCompleteCallback setSubsribeCompleteCallback(SubscribeCompleteCallback&& func);
     UnsubscribeCompleteCallback setUnsubsribeCompleteCallback(UnsubscribeCompleteCallback&& func);
@@ -215,6 +216,7 @@ private:
     void reportGwDisconnect();
     void reportMessage(const MqttsnMessageInfo* msgInfo);
     void reportConnectComplete(MqttsnAsyncOpStatus status);
+    void reportDisconnectComplete(MqttsnAsyncOpStatus status);
     void reportPublishComplete(MqttsnAsyncOpStatus status);
     void reportSubsribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos);
     void reportUnsubsribeComplete(MqttsnAsyncOpStatus status);
@@ -233,6 +235,7 @@ private:
     static void gwDisconnectReportCallback(void* data);
     static void msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo);
     static void connectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
+    static void disconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void publishCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
     static void unsubsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status);
@@ -255,6 +258,7 @@ private:
     GwDisconnectReportCallback m_gwDisconnectReportCallback;
     MessageReportCallback m_msgReportCallback;
     AsyncOpCompleteCallback m_connectCompleteCallback;
+    AsyncOpCompleteCallback m_disconnectCompleteCallback;
     PublishCompleteCallback m_publishCompleteCallback;
     SubscribeCompleteCallback m_subscribeCompleteCallback;
     UnsubscribeCompleteCallback m_unsubscribeCompleteCallback;

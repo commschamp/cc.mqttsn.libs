@@ -133,6 +133,14 @@ CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setConnectCompleteCa
     return old;
 }
 
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setDisconnectCompleteCallback(
+    AsyncOpCompleteCallback&& func)
+{
+    AsyncOpCompleteCallback old(std::move(m_disconnectCompleteCallback));
+    m_disconnectCompleteCallback = std::move(func);
+    return old;
+}
+
 CommonTestClient::PublishCompleteCallback CommonTestClient::setPublishCompleteCallback(
     PublishCompleteCallback&& func)
 {
@@ -288,7 +296,10 @@ bool CommonTestClient::cancel()
 MqttsnErrorCode CommonTestClient::disconnect()
 {
     assert(m_libFuncs.m_disconnectFunc != nullptr);
-    return (m_libFuncs.m_disconnectFunc)(m_client);
+    return (m_libFuncs.m_disconnectFunc)(
+        m_client,
+        &CommonTestClient::disconnectCompleteCallback,
+        this);
 }
 
 MqttsnErrorCode CommonTestClient::publishId(
@@ -563,6 +574,14 @@ void CommonTestClient::reportConnectComplete(MqttsnAsyncOpStatus status)
     }
 }
 
+void CommonTestClient::reportDisconnectComplete(MqttsnAsyncOpStatus status)
+{
+    if (m_disconnectCompleteCallback) {
+        AsyncOpCompleteCallback tmp(m_disconnectCompleteCallback);
+        tmp(status);
+    }
+}
+
 void CommonTestClient::reportPublishComplete(MqttsnAsyncOpStatus status)
 {
     if (m_publishCompleteCallback) {
@@ -694,6 +713,12 @@ void CommonTestClient::connectCompleteCallback(void* data, MqttsnAsyncOpStatus s
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportConnectComplete(status);
+}
+
+void CommonTestClient::disconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+{
+    assert(data != nullptr);
+    reinterpret_cast<CommonTestClient*>(data)->reportDisconnectComplete(status);
 }
 
 void CommonTestClient::subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)

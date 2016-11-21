@@ -285,7 +285,10 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
 ///     function.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_disconnect(MqttsnClientHandle client);
+MqttsnErrorCode mqttsn_##NAME##client_disconnect(
+    MqttsnClientHandle client,
+    MqttsnAsyncOpCompleteReportFn callback,
+    void* data);
 
 /// @brief Publish message with predefined topic ID.
 /// @details When publish operation is complete, the provided callback

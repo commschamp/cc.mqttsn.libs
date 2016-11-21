@@ -174,7 +174,7 @@ class BasicClient : public THandler
         bool m_willMsgSent = false;
     };
 
-    typedef OpBase DisconnectOp;
+    typedef AsyncOpBase DisconnectOp;
 
     struct PublishOpBase : public OpBase
     {
@@ -646,7 +646,9 @@ public:
         return MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode disconnect()
+    MqttsnErrorCode disconnect(
+        MqttsnAsyncOpCompleteReportFn callback,
+        void* data)
     {
         if (!m_running) {
             return MqttsnErrorCode_NotStarted;
@@ -662,7 +664,7 @@ public:
 
         auto guard = apiCall();
         m_currOp = Op::Disconnect;
-        auto* disconnectOp = newOp<DisconnectOp>();
+        auto* disconnectOp = newAsyncOp<DisconnectOp>(callback, data);
         static_cast<void>(disconnectOp);
 
         bool result = doDisconnect();
@@ -1775,8 +1777,7 @@ public:
         static_cast<void>(msg);
 
         if (m_currOp == Op::Disconnect) {
-            finaliseOp<DisconnectOp>();
-            reportGwDisconnected();
+            finaliseDisconnectOp(MqttsnAsyncOpStatus_Successful);
             return;
         }
 
@@ -2241,8 +2242,6 @@ private:
         }
 
         finaliseConnectOp(MqttsnAsyncOpStatus_NoResponse);
-        GASSERT(m_connectionStatusReportFn != nullptr);
-        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Timeout);
     }
 
     void connectCancel()
@@ -2260,18 +2259,14 @@ private:
             return;
         }
 
-        finaliseOp<DisconnectOp>();
-        GASSERT(m_connectionStatusReportFn != nullptr);
-        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
+        finaliseDisconnectOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
     void disconnectCancel()
     {
         GASSERT(m_currOp == Op::Disconnect);
-        finaliseOp<DisconnectOp>();
-        GASSERT(m_connectionStatusReportFn != nullptr);
-        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
-    }
+        finaliseDisconnectOp(MqttsnAsyncOpStatus_Aborted);
+     }
 
     void publishIdTimeout()
     {
@@ -3116,19 +3111,31 @@ private:
         return m_msgId;
     }
 
-    void finaliseConnectOp(MqttsnAsyncOpStatus status)
+    template <typename TOp, Op TCurr>
+    void finaliseAsyncOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT(m_currOp == Op::Connect);
+        GASSERT(m_currOp == TCurr);
+
+        static_assert(std::is_base_of<AsyncOpBase, TOp>::value, "Invalid base");
         auto* op = opPtr<AsyncOpBase>();
         auto* cb = op->m_cb;
         auto* cbData = op->m_cbData;
 
-        finaliseOp<ConnectOp>();
+        finaliseOp<TOp>();
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
         cb(cbData, status);
     }
 
+    void finaliseConnectOp(MqttsnAsyncOpStatus status)
+    {
+        finaliseAsyncOp<ConnectOp, Op::Connect>(status);
+    }
+
+    void finaliseDisconnectOp(MqttsnAsyncOpStatus status)
+    {
+        finaliseAsyncOp<DisconnectOp, Op::Disconnect>(status);
+    }
 
     void finalisePublishOp(MqttsnAsyncOpStatus status)
     {

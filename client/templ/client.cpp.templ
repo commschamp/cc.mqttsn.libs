@@ -246,10 +246,13 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
         data);
 }
 
-MqttsnErrorCode mqttsn_##NAME##client_disconnect(MqttsnClientHandle client)
+MqttsnErrorCode mqttsn_##NAME##client_disconnect(
+    MqttsnClientHandle client,
+    MqttsnAsyncOpCompleteReportFn callback,
+    void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    return clientObj->disconnect();
+    return clientObj->disconnect(callback, data);
 }
 
 MqttsnErrorCode mqttsn_##NAME##client_publish_id(

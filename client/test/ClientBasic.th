@@ -154,8 +154,9 @@ private:
         std::list<ReportedMsgInfo> m_reportedMsgs;
         std::list<ReportedGwInfo> m_reportedGws;
         std::list<MqttsnConnectionStatus> m_reportedConnStatuses;
-        std::list<bool> m_reportedDisconnects;
+        std::list<bool> m_reportedGwDisconnects;
         std::list<MqttsnAsyncOpStatus> m_reportedConnects;
+        std::list<MqttsnAsyncOpStatus> m_reportedDisconnects;
         std::list<MqttsnAsyncOpStatus> m_reportedPublishes;
         std::list<std::pair<MqttsnAsyncOpStatus, MqttsnQoS> > m_reportedSubscribes;
         std::list<MqttsnAsyncOpStatus> m_reportedUnsubscribes;
@@ -178,8 +179,9 @@ private:
         TS_ASSERT(state.m_reportedMsgs.empty());
         TS_ASSERT(state.m_reportedGws.empty());
         TS_ASSERT(state.m_reportedConnStatuses.empty());
-        TS_ASSERT(state.m_reportedDisconnects.empty());
+        TS_ASSERT(state.m_reportedGwDisconnects.empty());
         TS_ASSERT(state.m_reportedConnects.empty());
+        TS_ASSERT(state.m_reportedDisconnects.empty());
         TS_ASSERT(state.m_reportedPublishes.empty());
         TS_ASSERT(state.m_reportedSubscribes.empty());
         TS_ASSERT(state.m_reportedUnsubscribes.empty());
@@ -221,7 +223,7 @@ private:
             {
                 TS_TRACE("GW disconnect reported: ");
                 if (state != nullptr) {
-                    state->m_reportedDisconnects.push_back(true);
+                    state->m_reportedGwDisconnects.push_back(true);
                 }
             });
 
@@ -234,6 +236,14 @@ private:
                 }
             });
 
+        ptr->setDisconnectCompleteCallback(
+            [state](MqttsnAsyncOpStatus val)
+            {
+                TS_TRACE("Disconnect complete with status: " + std::to_string((int)val));
+                if (state != nullptr) {
+                    state->m_reportedDisconnects.push_back(val);
+                }
+            });
 
         ptr->setPublishCompleteCallback(
             [state](MqttsnAsyncOpStatus val)
@@ -1284,12 +1294,12 @@ private:
     static void verifyCb_ReportedGwDisconnect(
         TestBasicState& state)
     {
-        TS_ASSERT(!state.m_reportedDisconnects.empty());
-        if (state.m_reportedDisconnects.empty()) {
+        TS_ASSERT(!state.m_reportedGwDisconnects.empty());
+        if (state.m_reportedGwDisconnects.empty()) {
             return;
         }
 
-        state.m_reportedDisconnects.pop_front();
+        state.m_reportedGwDisconnects.pop_front();
     }
 
     static void verifyCb_ReportedConnect(
@@ -1303,6 +1313,19 @@ private:
 
         TS_ASSERT_EQUALS(state.m_reportedConnects.front(), status);
         state.m_reportedConnects.pop_front();
+    }
+
+    static void verifyCb_ReportedDisconnect(
+        TestBasicState& state,
+        MqttsnAsyncOpStatus status)
+    {
+        TS_ASSERT(!state.m_reportedDisconnects.empty());
+        if (state.m_reportedDisconnects.empty()) {
+            return;
+        }
+
+        TS_ASSERT_EQUALS(state.m_reportedDisconnects.front(), status);
+        state.m_reportedDisconnects.pop_front();
     }
 
     static void verifyCb_ReportedPublish(
@@ -1800,8 +1823,7 @@ void ClientBasic::test7()
     state.m_nextElapsedTicks = 1000;
     auto disconnectMsg = dataProc.prepareDisconnectMsg();
     dataFromGw(*client, disconnectMsg, "DISCONNECT");
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Disconnected);
-    verifyCb_ReportedGwDisconnect(state); // TODO: remove
+    verifyCb_ReportedDisconnect(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
 }
 
@@ -1846,7 +1868,7 @@ void ClientBasic::test8()
     client->tick(nextTicks);
 
     TS_ASSERT(state.m_nextOutput.empty());
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Disconnected);
+    verifyCb_ReportedDisconnect(state, MqttsnAsyncOpStatus_NoResponse);
     verifyNoOtherEvent(state);
 }
 
@@ -1913,7 +1935,7 @@ void ClientBasic::test10()
     state.m_nextElapsedTicks = 1000;
     bool cancelResult = client->cancel();
     TS_ASSERT(cancelResult);
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Disconnected);
+    verifyCb_ReportedDisconnect(state, MqttsnAsyncOpStatus_Aborted);
     verifyNoOtherEvent(state);
 }
 
