@@ -214,6 +214,16 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
         data);
 }
 
+MqttsnErrorCode mqttsn_##NAME##client_reconnect(
+    MqttsnClientHandle client,
+    MqttsnAsyncOpCompleteReportFn callback,
+    void* data
+)
+{
+    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
+    return clientObj->reconnect(callback, data);
+}
+
 MqttsnErrorCode mqttsn_##NAME##client_disconnect(
     MqttsnClientHandle client,
     MqttsnAsyncOpCompleteReportFn callback,
@@ -343,16 +353,6 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
     return clientObj->sleep(duration, callback, data);
-}
-
-MqttsnErrorCode mqttsn_##NAME##client_wakeup(
-    MqttsnClientHandle client,
-    MqttsnAsyncOpCompleteReportFn callback,
-    void* data
-)
-{
-    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    return clientObj->wakeup(callback, data);
 }
 
 MqttsnErrorCode mqttsn_##NAME##client_check_messages(

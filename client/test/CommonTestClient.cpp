@@ -54,7 +54,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_willTopicUpdateFunc = &mqttsn_client_will_topic_update;
     funcs.m_willMsgUpdateFunc = &mqttsn_client_will_msg_update;
     funcs.m_sleepFunc = &mqttsn_client_sleep;
-    funcs.m_wakeupFunc = &mqttsn_client_wakeup;
+    funcs.m_reconnectFunc = &mqttsn_client_reconnect;
     funcs.m_checkMessagesFunc = &mqttsn_client_check_messages;
     return funcs;
 }
@@ -188,11 +188,11 @@ CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setSleepCompleteCall
     return old;
 }
 
-CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setWakeupCompleteCallback(
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setReconnectCompleteCallback(
     AsyncOpCompleteCallback&& func)
 {
-    AsyncOpCompleteCallback old(std::move(m_wakeupCompleteCallback));
-    m_wakeupCompleteCallback = std::move(func);
+    AsyncOpCompleteCallback old(std::move(m_reconnectCompleteCallback));
+    m_reconnectCompleteCallback = std::move(func);
     return old;
 }
 
@@ -426,12 +426,12 @@ MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::wakeup()
+MqttsnErrorCode CommonTestClient::reconnect()
 {
-    assert(m_libFuncs.m_wakeupFunc != nullptr);
-    return (m_libFuncs.m_wakeupFunc)(
+    assert(m_libFuncs.m_reconnectFunc != nullptr);
+    return (m_libFuncs.m_reconnectFunc)(
         m_client,
-        &CommonTestClient::wakeupCompleteCallback,
+        &CommonTestClient::reconnectCompleteCallback,
         this);
 }
 
@@ -619,10 +619,10 @@ void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportWakeupComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportReconnectComplete(MqttsnAsyncOpStatus status)
 {
-    if (m_wakeupCompleteCallback) {
-        AsyncOpCompleteCallback tmp(m_wakeupCompleteCallback);
+    if (m_reconnectCompleteCallback) {
+        AsyncOpCompleteCallback tmp(m_reconnectCompleteCallback);
         tmp(status);
     }
 }
@@ -732,10 +732,10 @@ void CommonTestClient::sleepCompleteCallback(void* data, MqttsnAsyncOpStatus sta
     reinterpret_cast<CommonTestClient*>(data)->reportSleepComplete(status);
 }
 
-void CommonTestClient::wakeupCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::reconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
-    reinterpret_cast<CommonTestClient*>(data)->reportWakeupComplete(status);
+    reinterpret_cast<CommonTestClient*>(data)->reportReconnectComplete(status);
 }
 
 void CommonTestClient::checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status)

@@ -163,7 +163,7 @@ private:
         std::list<MqttsnAsyncOpStatus> m_reportedWillTopicUpdates;
         std::list<MqttsnAsyncOpStatus> m_reportedWillMsgUpdates;
         std::list<MqttsnAsyncOpStatus> m_reportedSleeps;
-        std::list<MqttsnAsyncOpStatus> m_reportedWakeups;
+        std::list<MqttsnAsyncOpStatus> m_reportedReconnects;
         std::list<MqttsnAsyncOpStatus> m_reportedMessageChecks;
     };
 
@@ -187,7 +187,7 @@ private:
         TS_ASSERT(state.m_reportedWillTopicUpdates.empty());
         TS_ASSERT(state.m_reportedWillMsgUpdates.empty());
         TS_ASSERT(state.m_reportedSleeps.empty());
-        TS_ASSERT(state.m_reportedWakeups.empty());
+        TS_ASSERT(state.m_reportedReconnects.empty());
         TS_ASSERT(state.m_reportedMessageChecks.empty());
     }
 
@@ -298,12 +298,12 @@ private:
                 }
             });
 
-        ptr->setWakeupCompleteCallback(
+        ptr->setReconnectCompleteCallback(
             [state](MqttsnAsyncOpStatus val)
             {
-                TS_TRACE("Wakeup complete with status: " + std::to_string((int)val));
+                TS_TRACE("Reconnect complete with status: " + std::to_string((int)val));
                 if (state != nullptr) {
-                    state->m_reportedWakeups.push_back(val);
+                    state->m_reportedReconnects.push_back(val);
                 }
             });
 
@@ -1410,19 +1410,19 @@ private:
         state.m_reportedSleeps.pop_front();
     }
 
-    static void verifyCb_ReportedWakeup(
+    static void verifyCb_ReportedReconnect(
         TestBasicState& state,
         MqttsnAsyncOpStatus status)
     {
-        TS_ASSERT(!state.m_reportedWakeups.empty());
-        if (state.m_reportedWakeups.empty()) {
+        TS_ASSERT(!state.m_reportedReconnects.empty());
+        if (state.m_reportedReconnects.empty()) {
             return;
         }
 
-        auto& elem = state.m_reportedWakeups.front();
+        auto& elem = state.m_reportedReconnects.front();
 
         TS_ASSERT_EQUALS(elem, status);
-        state.m_reportedWakeups.pop_front();
+        state.m_reportedReconnects.pop_front();
     }
 
     static void verifyCb_ReportedMessageChecks(
@@ -2193,8 +2193,7 @@ void ClientBasic::test16()
 void ClientBasic::test17()
 {
     DataProcessor dataProc;
-    typedef TestBasicState Test17State;
-    Test17State state;
+    TestBasicState state;
 
     auto client = allocClient(&state, &dataProc);
     startClient(*client);
@@ -2242,6 +2241,17 @@ void ClientBasic::test17()
     client->tick(nextTicks);
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_NoResponse);
     TS_ASSERT(state.m_nextOutput.empty());
+    verifyNoOtherEvent(state);
+
+    clearState(state);
+    client->reconnect();
+    verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, false);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+    verifyNoOtherEvent(state);
+
+    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    dataFromGw(*client, connackMsg, "CONNACK");
+    verifyCb_ReportedReconnect(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
 }
 
@@ -3682,7 +3692,7 @@ void ClientBasic::test39()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
     verifyNoOtherEvent(state);
 
-    result = client->wakeup();
+    result = client->reconnect();
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
     verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -3698,7 +3708,7 @@ void ClientBasic::test39()
     state.m_nextElapsedTicks = 1000;
     auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
-    verifyCb_ReportedWakeup(state, MqttsnAsyncOpStatus_Successful);
+    verifyCb_ReportedReconnect(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
 }
 

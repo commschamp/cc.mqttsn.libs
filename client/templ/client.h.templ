@@ -232,12 +232,13 @@ void mqttsn_##NAME##client_discard_all_gw(MqttsnClientHandle client);
 bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 
 /// @brief Issue the connect request to the gateway.
-/// @details This function needs to be called to connect to the gateway. The
-///     result of the connection will be reported via connection status report 
-///     callback, set using mqttsn_##NAME##client_set_connection_status_report_callback()
-///     function. Note, that the function cannot be successfully called when
+/// @details This function needs to be called to connect to the gateway. 
+///     When the  operation is complete, the provided callback
+///     will be invoked. Note, that the function cannot be successfully called when
 ///     client is already connected to the gateway. In order to change the
 ///     will information use mqttsn_##NAME##client_will_update() function.
+///     If some other operation timed out, use mqttsn_##NAME##client_check_reconnect()
+///     to refresh the connection.
 ///     In order to change client ID and/or "keep alive" value disconnect
 ///     first and then try to connect again. 
 ///
@@ -268,11 +269,31 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     const MqttsnWillInfo* willInfo,
     MqttsnAsyncOpCompleteReportFn callback,
     void* data);
+    
+/// @brief Reconnect to the gateway using previously used client ID and keep alive
+///     period.
+/// @details The invocation will work only when in "conneced" or "asleep" state,
+///     It will not work after invocation of mqttsn_##NAME##client_disconnect(). 
+///     When the operation is complete, the provided callback
+///     will be invoked. If successful completion is reported, the client
+///     is properly connected to the gateway again.
+/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
+/// @return Error code indicating success/failure status of the operation.
+MqttsnErrorCode mqttsn_##NAME##client_reconnect(
+    MqttsnClientHandle client,
+    MqttsnAsyncOpCompleteReportFn callback,
+    void* data
+);
 
 /// @brief Disconnect from the gateway.
-/// @details The result of the connection will be reported via connection status report 
-///     callback, set using mqttsn_##NAME##client_set_connection_status_report_callback()
-///     function.
+/// @details When publish operation is complete, the provided callback
+///     will be invoked. Regardless of the result reportd disconnect result,
+///     the library assumes "disconnected" internal state and some functions,
+///     such as requests to publish and/or subscribe may not work.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_disconnect(
@@ -482,15 +503,12 @@ MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
 
 /// @brief Notify gateway about entering the sleep state.
 /// @details When the operation is complete, the provided callback
-///     will be invoked. The connection status report callback
-///     (set with mqttsn_##NAME##client_set_connection_status_report_callback())
-///     will also be invoked to report the "Asleep" state in case the operation
-///     is successful.
+///     will be invoked. 
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] duration Muximal number of seconds the client will remain in
 ///     the sleep state until next check of accumulated pending messages 
 ///     (use mqttsn_##NAME##client_check_messages() for this purpose) or
-///     full wake up (use mqttsn_##NAME##client_check_wakeup() for this purpose).
+///     full wake up (use mqttsn_##NAME##client_check_reconnect() for this purpose).
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
@@ -499,22 +517,6 @@ MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
 MqttsnErrorCode mqttsn_##NAME##client_sleep(
     MqttsnClientHandle client,
     unsigned short duration,
-    MqttsnAsyncOpCompleteReportFn callback,
-    void* data
-);
-
-/// @brief Notify gateway about waking up from the sleep state.
-/// @details When the operation is complete, the provided callback
-///     will be invoked. If successful completion is reported, the client
-///     is properly connected to the gateway again.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
-/// @param[in] callback Callback to be invoked when operation is complete,
-///     must @b NOT be NULL.
-/// @param[in] data Pointer to any user data, it will be passed as the first
-///     parameter to the invoked completion report callback, can be NULL.
-/// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_wakeup(
-    MqttsnClientHandle client,
     MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );

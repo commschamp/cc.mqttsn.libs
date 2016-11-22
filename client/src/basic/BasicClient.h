@@ -576,6 +576,42 @@ public:
         return MqttsnErrorCode_Success;
     }
 
+    MqttsnErrorCode reconnect(
+        MqttsnAsyncOpCompleteReportFn callback,
+        void* data)
+    {
+        if (!m_running) {
+            return MqttsnErrorCode_NotStarted;
+        }
+
+        if (m_connectionStatus == ConnectionStatus::Disconnected) {
+            return MqttsnErrorCode_NotConnected;
+        }
+
+        if (m_currOp != Op::None) {
+            return MqttsnErrorCode_Busy;
+        }
+
+        if (callback == nullptr) {
+            return MqttsnErrorCode_BadParam;
+        }
+
+        auto guard = apiCall();
+
+        m_currOp = Op::Connect;
+        auto* op = newAsyncOp<ConnectOp>(callback, data);
+        op->m_clientId = m_clientId.c_str();
+        op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
+        op->m_hasWill = false;
+        op->m_cleanSession = false;
+
+        bool result = doConnect();
+        static_cast<void>(result);
+        GASSERT(result);
+
+        return MqttsnErrorCode_Success;
+    }
+
     MqttsnErrorCode disconnect(
         MqttsnAsyncOpCompleteReportFn callback,
         void* data)
@@ -1010,42 +1046,6 @@ public:
         op->m_duration = duration;
 
         bool result = doSleep();
-        static_cast<void>(result);
-        GASSERT(result);
-
-        return MqttsnErrorCode_Success;
-    }
-
-    MqttsnErrorCode wakeup(
-        MqttsnAsyncOpCompleteReportFn callback,
-        void* data)
-    {
-        if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
-        }
-
-        if (m_connectionStatus != ConnectionStatus::Asleep) {
-            return MqttsnErrorCode_NotSleeping;
-        }
-
-        if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
-        }
-
-        if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
-        }
-
-        auto guard = apiCall();
-
-        m_currOp = Op::Connect;
-        auto* op = newAsyncOp<ConnectOp>(callback, data);
-        op->m_clientId = m_clientId.c_str();
-        op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
-        op->m_hasWill = false;
-        op->m_cleanSession = false;
-
-        bool result = doConnect();
         static_cast<void>(result);
         GASSERT(result);
 
