@@ -525,7 +525,7 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
 /// @return Error code indicating success/failure status of the operation.
 MqttsnErrorCode mqttsn_##NAME##client_wakeup(
     MqttsnClientHandle client,
-    MqttsnWakeupCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 

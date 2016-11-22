@@ -197,10 +197,10 @@ CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setSleepCompleteCall
     return old;
 }
 
-CommonTestClient::WakeupCompleteCallback CommonTestClient::setWakeupCompleteCallback(
-    WakeupCompleteCallback&& func)
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setWakeupCompleteCallback(
+    AsyncOpCompleteCallback&& func)
 {
-    WakeupCompleteCallback old(std::move(m_wakeupCompleteCallback));
+    AsyncOpCompleteCallback old(std::move(m_wakeupCompleteCallback));
     m_wakeupCompleteCallback = std::move(func);
     return old;
 }
@@ -641,7 +641,7 @@ void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
 void CommonTestClient::reportWakeupComplete(MqttsnAsyncOpStatus status)
 {
     if (m_wakeupCompleteCallback) {
-        WakeupCompleteCallback tmp(m_wakeupCompleteCallback);
+        AsyncOpCompleteCallback tmp(m_wakeupCompleteCallback);
         tmp(status);
     }
 }

@@ -379,7 +379,7 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
 
 MqttsnErrorCode mqttsn_##NAME##client_wakeup(
     MqttsnClientHandle client,
-    MqttsnWakeupCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {

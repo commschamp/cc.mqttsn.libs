@@ -253,11 +253,7 @@ class BasicClient : public THandler
         std::uint16_t m_duration = 0;
     };
 
-    struct WakeupOp : public ConnectOp
-    {
-        MqttsnWakeupCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
-    };
+    typedef ConnectOp WakeupOp;
 
     struct CheckMessagesOp : public OpBase
     {
@@ -1067,7 +1063,7 @@ public:
     }
 
     MqttsnErrorCode wakeup(
-        MqttsnWakeupCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -1089,13 +1085,11 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::Wakeup;
-        auto* op = newOp<WakeupOp>();
+        auto* op = newAsyncOp<WakeupOp>(callback, data);
         op->m_clientId = m_clientId.c_str();
         op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
         op->m_hasWill = false;
         op->m_cleanSession = false;
-        op->m_cb = callback;
-        op->m_cbData = data;
 
         bool result = doWakeup();
         static_cast<void>(result);
@@ -3149,15 +3143,7 @@ private:
 
     void finaliseWakeupOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT(m_currOp == Op::Wakeup);
-        auto* op = opPtr<WakeupOp>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        finaliseOp<WakeupOp>();
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncOp<WakeupOp, Op::Wakeup>(status);
     }
 
     void finaliseCheckMessagesOp(MqttsnAsyncOpStatus status)
