@@ -32,7 +32,6 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_cancelNextTickCallbackSetFunc = &mqttsn_client_set_cancel_next_tick_wait_callback;
     funcs.m_sentOutDataCallbackSetFunc = &mqttsn_client_set_send_output_data_callback;
     funcs.m_gwStatusReportCallbackSetFunc = &mqttsn_client_set_gw_status_report_callback;
-    funcs.m_connectionStatusReportCallbackSetFunc = &mqttsn_client_set_connection_status_report_callback;
     funcs.m_gwDisconnectReportCallbackSetFunc = &mqttsn_client_set_gw_disconnect_report_callback;
     funcs.m_msgReportCallbackSetFunc = &mqttsn_client_set_message_report_callback;
     funcs.m_startFunc = &mqttsn_client_start;
@@ -99,14 +98,6 @@ CommonTestClient::GwStatusReportCallback CommonTestClient::setGwStatusReportCall
 {
     GwStatusReportCallback old(std::move(m_gwStatusReportCallback));
     m_gwStatusReportCallback = std::move(func);
-    return old;
-}
-
-CommonTestClient::ConnectionStatusReportCallback CommonTestClient::setConnectionStatusReportCallback(
-    ConnectionStatusReportCallback&& func)
-{
-    ConnectionStatusReportCallback old(std::move(m_connectionStatusReportCallback));
-    m_connectionStatusReportCallback = std::move(func);
     return old;
 }
 
@@ -492,7 +483,6 @@ CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)
     assert(m_libFuncs.m_cancelNextTickCallbackSetFunc != nullptr);
     assert(m_libFuncs.m_sentOutDataCallbackSetFunc != nullptr);
     assert(m_libFuncs.m_gwStatusReportCallbackSetFunc != nullptr);
-    assert(m_libFuncs.m_connectionStatusReportCallbackSetFunc != nullptr);
     assert(m_libFuncs.m_gwDisconnectReportCallbackSetFunc != nullptr);
     assert(m_libFuncs.m_msgReportCallbackSetFunc != nullptr);
 
@@ -500,7 +490,6 @@ CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)
     (m_libFuncs.m_cancelNextTickCallbackSetFunc)(m_client, &CommonTestClient::cancelNextTickCallback, this);
     (m_libFuncs.m_sentOutDataCallbackSetFunc)(m_client, &CommonTestClient::sendOutputDataCallback, this);
     (m_libFuncs.m_gwStatusReportCallbackSetFunc)(m_client, &CommonTestClient::gwStatusReportCallback, this);
-    (m_libFuncs.m_connectionStatusReportCallbackSetFunc)(m_client, &CommonTestClient::connectionStatusReportCallback, this);
     (m_libFuncs.m_gwDisconnectReportCallbackSetFunc)(m_client, &CommonTestClient::gwDisconnectReportCallback, this);
     (m_libFuncs.m_msgReportCallbackSetFunc)(m_client, &CommonTestClient::msgReportCallback, this);
     // TODO: callbacks
@@ -538,14 +527,6 @@ void CommonTestClient::reportGwStatus(unsigned short gwId, MqttsnGwStatus status
     if (m_gwStatusReportCallback) {
         GwStatusReportCallback tmp(m_gwStatusReportCallback);
         tmp(gwId, status);
-    }
-}
-
-void CommonTestClient::reportConnectionStatus(MqttsnConnectionStatus status)
-{
-    if (m_connectionStatusReportCallback) {
-        ConnectionStatusReportCallback tmp(m_connectionStatusReportCallback);
-        tmp(status);
     }
 }
 
@@ -683,12 +664,6 @@ void CommonTestClient::gwStatusReportCallback(
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportGwStatus(gwId, status);
-}
-
-void CommonTestClient::connectionStatusReportCallback(void* data, MqttsnConnectionStatus status)
-{
-    assert(data != nullptr);
-    reinterpret_cast<CommonTestClient*>(data)->reportConnectionStatus(status);
 }
 
 void CommonTestClient::gwDisconnectReportCallback(void* data)

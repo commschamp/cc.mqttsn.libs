@@ -121,15 +121,6 @@ void mqttsn_##NAME##client_set_gw_status_report_callback(
     clientObj->setGwStatusReportCallback(fn, data);
 }
 
-void mqttsn_##NAME##client_set_connection_status_report_callback(
-    MqttsnClientHandle client,
-    MqttsnConnectionStatusReportFn fn,
-    void* data)
-{
-    auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->setConnectionStatusReportCallback(fn, data);
-}
-
 void mqttsn_##NAME##client_set_gw_disconnect_report_callback(
     MqttsnClientHandle client,
     MqttsnGwDisconnectReportFn fn,

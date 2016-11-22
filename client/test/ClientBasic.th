@@ -153,7 +153,6 @@ private:
         bool m_broadcast;
         std::list<ReportedMsgInfo> m_reportedMsgs;
         std::list<ReportedGwInfo> m_reportedGws;
-        std::list<MqttsnConnectionStatus> m_reportedConnStatuses;
         std::list<bool> m_reportedGwDisconnects;
         std::list<MqttsnAsyncOpStatus> m_reportedConnects;
         std::list<MqttsnAsyncOpStatus> m_reportedDisconnects;
@@ -178,7 +177,6 @@ private:
     {
         TS_ASSERT(state.m_reportedMsgs.empty());
         TS_ASSERT(state.m_reportedGws.empty());
-        TS_ASSERT(state.m_reportedConnStatuses.empty());
         TS_ASSERT(state.m_reportedGwDisconnects.empty());
         TS_ASSERT(state.m_reportedConnects.empty());
         TS_ASSERT(state.m_reportedDisconnects.empty());
@@ -209,14 +207,6 @@ private:
         ptr->setRetryPeriod(DefaultRetryTimeout / 1000);
         ptr->setRetryCount(DefaultRetryCount);
         ptr->setBroadcastRadius(DefaultBroadcastRadius);
-        ptr->setConnectionStatusReportCallback(
-            [state](MqttsnConnectionStatus val)
-            {
-                TS_TRACE("Connect status reported: " + std::to_string((int)val));
-                if (state != nullptr) {
-                    state->m_reportedConnStatuses.push_back(val);
-                }
-            });
 
         ptr->setGwDisconnectReportCallback(
             [state]()
@@ -1278,19 +1268,6 @@ private:
         state.m_reportedMsgs.pop_front();
     }
 
-    static void verifyCb_ReportedConnStatus(
-        TestBasicState& state,
-        MqttsnConnectionStatus status)
-    {
-        TS_ASSERT(!state.m_reportedConnStatuses.empty());
-        if (state.m_reportedConnStatuses.empty()) {
-            return;
-        }
-
-        TS_ASSERT_EQUALS(state.m_reportedConnStatuses.front(), status);
-        state.m_reportedConnStatuses.pop_front();
-    }
-
     static void verifyCb_ReportedGwDisconnect(
         TestBasicState& state)
     {
@@ -1667,7 +1644,6 @@ void ClientBasic::test4()
     auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
     // Ack must be ignored
-    TS_ASSERT(state.m_reportedConnStatuses.empty());
     TS_ASSERT(state.m_nextOutput.empty())
 
     auto willTopicReq = dataProc.prepareWilltopicreqMsg();
@@ -1761,7 +1737,6 @@ void ClientBasic::test5()
     nextTicks = state.m_nextRequestedTicks;
     clearState(state);
     client->tick(nextTicks);
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Disconnected);
     verifyCb_ReportedGwDisconnect(state);
     verifyNoOtherEvent(state);
 }
@@ -1788,10 +1763,8 @@ void ClientBasic::test6()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    TS_ASSERT(state.m_reportedConnStatuses.empty());
     auto disconnectMsg = dataProc.prepareDisconnectMsg();
     dataFromGw(*client, disconnectMsg, "DISCONNECT");
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Disconnected);
     verifyCb_ReportedGwDisconnect(state);
     verifyNoOtherEvent(state);
 }
@@ -1817,7 +1790,6 @@ void ClientBasic::test7()
     verifySent_DisconnectMsg(state, dataProc);
     verifyNoOtherEvent(state);
 
-    TS_ASSERT(state.m_reportedConnStatuses.empty());
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
 
     state.m_nextElapsedTicks = 1000;

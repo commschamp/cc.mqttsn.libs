@@ -33,7 +33,6 @@ typedef decltype(&mqttsn_client_set_next_tick_program_callback) NextTickProgramC
 typedef decltype(&mqttsn_client_set_cancel_next_tick_wait_callback) CancelNextTickCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_send_output_data_callback) SendOutDataCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_gw_status_report_callback) GwStatusReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_connection_status_report_callback) ConnectionStatusReportCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_gw_disconnect_report_callback) GwDisconnectsReportCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_message_report_callback) MessageReportCallbackSetFunc;
 typedef decltype(&mqttsn_client_start) StartFunc;
@@ -68,7 +67,6 @@ struct ClientLibFuncs
     CancelNextTickCallbackSetFunc m_cancelNextTickCallbackSetFunc = nullptr;
     SendOutDataCallbackSetFunc m_sentOutDataCallbackSetFunc = nullptr;
     GwStatusReportCallbackSetFunc m_gwStatusReportCallbackSetFunc = nullptr;
-    ConnectionStatusReportCallbackSetFunc m_connectionStatusReportCallbackSetFunc = nullptr;
     GwDisconnectsReportCallbackSetFunc m_gwDisconnectReportCallbackSetFunc = nullptr;
     MessageReportCallbackSetFunc m_msgReportCallbackSetFunc = nullptr;
     StartFunc m_startFunc = nullptr;
@@ -103,7 +101,6 @@ public:
     typedef std::function<unsigned ()> CancelNextTickCallback;
     typedef std::function<void (const std::uint8_t* buf, unsigned bufLen, bool broadcast)> SendDataCallback;
     typedef std::function<void (unsigned short gwId, MqttsnGwStatus status)> GwStatusReportCallback;
-    typedef std::function<void (MqttsnConnectionStatus status)> ConnectionStatusReportCallback;
     typedef std::function<void ()> GwDisconnectReportCallback;
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
@@ -115,7 +112,6 @@ public:
     CancelNextTickCallback setCancelNextTickCallback(CancelNextTickCallback&& func);
     SendDataCallback setSendDataCallback(SendDataCallback&& func);
     GwStatusReportCallback setGwStatusReportCallback(GwStatusReportCallback&& func);
-    ConnectionStatusReportCallback setConnectionStatusReportCallback(ConnectionStatusReportCallback&& func);
     GwDisconnectReportCallback setGwDisconnectReportCallback(GwDisconnectReportCallback&& func);
     MessageReportCallback setMessageReportCallback(MessageReportCallback&& func);
     AsyncOpCompleteCallback setConnectCompleteCallback(AsyncOpCompleteCallback&& func);
@@ -204,7 +200,6 @@ private:
     unsigned cancelNextTick();
     void sendOutputData(const unsigned char* buf, unsigned bufLen, bool broadcast);
     void reportGwStatus(unsigned short gwId, MqttsnGwStatus status);
-    void reportConnectionStatus(MqttsnConnectionStatus status);
     void reportGwDisconnect();
     void reportMessage(const MqttsnMessageInfo* msgInfo);
     void reportConnectComplete(MqttsnAsyncOpStatus status);
@@ -223,7 +218,6 @@ private:
     static unsigned cancelNextTickCallback(void* data);
     static void sendOutputDataCallback(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void gwStatusReportCallback(void* data, unsigned short gwId, MqttsnGwStatus status);
-    static void connectionStatusReportCallback(void* data, MqttsnConnectionStatus status);
     static void gwDisconnectReportCallback(void* data);
     static void msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo);
     static void connectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
@@ -246,7 +240,6 @@ private:
     CancelNextTickCallback m_cancelNextTickCallback;
     SendDataCallback m_sendDataCallback;
     GwStatusReportCallback m_gwStatusReportCallback;
-    ConnectionStatusReportCallback m_connectionStatusReportCallback;
     GwDisconnectReportCallback m_gwDisconnectReportCallback;
     MessageReportCallback m_msgReportCallback;
     AsyncOpCompleteCallback m_connectCompleteCallback;

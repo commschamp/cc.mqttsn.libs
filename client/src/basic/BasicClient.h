@@ -372,14 +372,6 @@ public:
         m_gwStatusReportData = data;
     }
 
-    void setConnectionStatusReportCallback(MqttsnConnectionStatusReportFn cb, void* data)
-    {
-        if (cb != nullptr) {
-            m_connectionStatusReportFn = cb;
-            m_connectionStatusReportData = data;
-        }
-    }
-
     void setGwDisconnectReportCallback(MqttsnGwDisconnectReportFn cb, void* data)
     {
         m_gwDisconnectReportFn = cb;
@@ -3017,8 +3009,6 @@ private:
     void reportGwDisconnected()
     {
         m_connectionStatus = ConnectionStatus::Disconnected;
-        GASSERT(m_connectionStatusReportFn != nullptr);
-        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
 
         if (m_gwDisconnectReportFn != nullptr) {
             m_gwDisconnectReportFn(m_gwDisconnectReportData);
@@ -3229,9 +3219,6 @@ private:
 
     MqttsnGwStatusReportFn m_gwStatusReportFn = nullptr;
     void* m_gwStatusReportData = nullptr;
-
-    MqttsnConnectionStatusReportFn m_connectionStatusReportFn = nullptr;
-    void* m_connectionStatusReportData = nullptr;
 
     MqttsnGwDisconnectReportFn m_gwDisconnectReportFn = nullptr;
     void* m_gwDisconnectReportData = nullptr;

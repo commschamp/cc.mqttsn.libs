@@ -42,20 +42,6 @@ enum MqttsnQoS
     MqttsnQoS_ExactlyOnceDelivery ///< QoS=2. Exactly once delivery.
 };
 
-/// @brief Connection status to the gateway
-enum MqttsnConnectionStatus
-{
-    MqttsnConnectionStatus_Invalid, ///< Invalid value, should not be used
-    MqttsnConnectionStatus_Connected, ///< The client is connected to the gateway
-    MqttsnConnectionStatus_Denied, ///< The gateway or broker has rejected the connection attempt
-    MqttsnConnectionStatus_Congestion, ///< The gateway is busy doing something else, retry later
-    MqttsnConnectionStatus_Timeout, ///< The connection request timed out
-    MqttsnConnectionStatus_Disconnected, ///< The gateway has disconnected.
-    MqttsnConnectionStatus_DisconnectedAsleep, ///< The gateway acknowledged client's ASLEEP state.
-    MqttsnConnectionStatus_ConnectAborted, ///< The connection attempt has been aborted using mqttsn_client_cancel() call.
-    MqttsnConnectionStatus_NumOfValues ///< Number of available enumeration values, must be last
-};
-
 /// @brief Error code returned by various API functions.
 enum MqttsnErrorCode
 {
@@ -158,14 +144,6 @@ typedef void (*MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, uns
 /// @param[in] gwId ID of the gateway.
 /// @param[in] status Status of the gateway.
 typedef void (*MqttsnGwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
-
-/// @brief Callback used to report current connection status to the gateway.
-/// @details The callback is set using
-///     mqttsn_client_set_connection_status_report_callback() function.
-/// @param[in] data Pointer to user data object, passed as last parameter to
-///     mqttsn_client_set_connection_status_report_callback() function.
-/// @param[in] status Connection status.
-typedef void (*MqttsnConnectionStatusReportFn)(void* data, MqttsnConnectionStatus status);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
