@@ -141,11 +141,9 @@ class BasicClient : public THandler
         Subscribe,
         UnsubscribeId,
         Unsubscribe,
-        WillUpdate,
         WillTopicUpdate,
         WillMsgUpdate,
         Sleep,
-        Wakeup,
         CheckMessages,
         NumOfValues // must be last
     };
@@ -233,8 +231,6 @@ class BasicClient : public THandler
         MqttsnTopicId m_topicId = 0U;
     };
 
-    typedef ConnectOp WillUpdateOp;
-
     struct WillTopicUpdateOp : public AsyncOpBase
     {
         const char* m_topic = nullptr;
@@ -252,8 +248,6 @@ class BasicClient : public THandler
     {
         std::uint16_t m_duration = 0;
     };
-
-    typedef ConnectOp WakeupOp;
 
     typedef AsyncOpBase CheckMessagesOp;
 
@@ -548,11 +542,9 @@ public:
             &BasicClient::subscribeCancel,
             &BasicClient::unsubscribeIdCancel,
             &BasicClient::unsubscribeCancel,
-            &BasicClient::willUpdateCancel,
             &BasicClient::willTopicUpdateCancel,
             &BasicClient::willMsgUpdateCancel,
             &BasicClient::sleepCancel,
-            &BasicClient::wakeupCancel,
             &BasicClient::checkMessagesCancel
         };
         static const std::size_t OpCancelFuncMapSize =
@@ -923,8 +915,8 @@ public:
 
         auto guard = apiCall();
 
-        m_currOp = Op::WillUpdate;
-        auto* op = newAsyncOp<WillUpdateOp>(callback, data);
+        m_currOp = Op::Connect;
+        auto* op = newAsyncOp<ConnectOp>(callback, data);
         op->m_clientId = m_clientId.c_str();
         op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
         if (willInfo != nullptr) {
@@ -932,10 +924,8 @@ public:
         }
         op->m_hasWill = true;
         op->m_cleanSession = false;
-        op->m_cb = callback;
-        op->m_cbData = data;
 
-        bool result = doWillUpdate();
+        bool result = doConnect();
         static_cast<void>(result);
         GASSERT(result);
 
@@ -1072,14 +1062,14 @@ public:
 
         auto guard = apiCall();
 
-        m_currOp = Op::Wakeup;
-        auto* op = newAsyncOp<WakeupOp>(callback, data);
+        m_currOp = Op::Connect;
+        auto* op = newAsyncOp<ConnectOp>(callback, data);
         op->m_clientId = m_clientId.c_str();
         op->m_keepAlivePeriod = static_cast<decltype(op->m_keepAlivePeriod)>(m_keepAlivePeriod / 1000);
         op->m_hasWill = false;
         op->m_cleanSession = false;
 
-        bool result = doWakeup();
+        bool result = doConnect();
         static_cast<void>(result);
         GASSERT(result);
 
@@ -1167,9 +1157,7 @@ public:
 
     virtual void handle(ConnackMsg& msg) override
     {
-        if ((m_currOp != Op::Connect) &&
-            (m_currOp != Op::WillUpdate) &&
-            (m_currOp != Op::Wakeup)) {
+        if (m_currOp != Op::Connect) {
             return;
         }
 
@@ -1183,53 +1171,37 @@ public:
         auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
         auto returnCode = retCodeField.value();
 
-        GASSERT((m_currOp != Op::Connect) || (m_connectionStatus != ConnectionStatus::Connected));
         if (returnCode == mqttsn::protocol::field::ReturnCodeVal_Accepted) {
             m_connectionStatus = ConnectionStatus::Connected;
         }
 
-        auto status = retCodeToStatus(returnCode);
-        if (m_currOp == Op::Connect) {
-            GASSERT(m_currOp == Op::Connect);
-            if (op->m_clientId != nullptr) {
-                m_clientId = op->m_clientId;
-            }
-            else {
+        do {
+            if (op->m_clientId == nullptr) {
                 m_clientId.clear();
+                break;
             }
 
-            m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
-            finaliseConnectOp(status);
-            return;
-        }
+            if (op->m_clientId == m_clientId.c_str()) {
+                break;
+            }
 
-        if (m_currOp == Op::WillUpdate) {
-            finaliseWillUpdateOp(status);
-            return;
-        }
+            m_clientId = op->m_clientId;
+        } while (false);
 
-        if (m_currOp == Op::Wakeup) {
-            finaliseWakeupOp(status);
-            return;
-        }
-
-        GASSERT(!"Some case wasn't handled");
+        m_keepAlivePeriod = op->m_keepAlivePeriod * 1000U;
+        finaliseConnectOp(retCodeToStatus(returnCode));
     }
 
     virtual void handle(WilltopicreqMsg& msg) override
     {
         static_cast<void>(msg);
-        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
+        if (m_currOp != Op::Connect) {
             return;
         }
 
         auto* op = opPtr<ConnectOp>();
         bool emptyTopic =
             (op->m_willInfo.topic == nullptr) || (op->m_willInfo.topic[0] == '\0');
-
-        if ((m_currOp == Op::Connect) && (emptyTopic)) {
-            return;
-        }
 
         op->m_lastMsgTimestamp = m_timestamp;
         op->m_willTopicSent = true;
@@ -1243,7 +1215,7 @@ public:
     virtual void handle(WillmsgreqMsg& msg) override
     {
         static_cast<void>(msg);
-        if ((m_currOp != Op::Connect) && (m_currOp != Op::WillUpdate)) {
+        if (m_currOp != Op::Connect) {
             return;
         }
 
@@ -1748,11 +1720,9 @@ private:
         SubscribeOp,
         UnsubscribeIdOp,
         UnsubscribeOp,
-        WillUpdateOp,
         WillTopicUpdateOp,
         WillMsgUpdateOp,
         SleepOp,
-        WakeupOp,
         CheckMessagesOp
     >::Type OpStorageType;
 
@@ -2090,11 +2060,9 @@ private:
             &BasicClient::subscribeTimeout,
             &BasicClient::unsubscribeIdTimeout,
             &BasicClient::unsubscribeTimeout,
-            &BasicClient::willUpdateTimeout,
             &BasicClient::willTopicUpdateTimeout,
             &BasicClient::willMsgUpdateTimeout,
             &BasicClient::sleepTimeout,
-            &BasicClient::wakeupTimeout,
             &BasicClient::checkMessagesTimeout
         };
         static const std::size_t OpTimeoutFuncMapSize =
@@ -2295,24 +2263,6 @@ private:
         finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Aborted);
     }
 
-    void willUpdateTimeout()
-    {
-        GASSERT(m_currOp == Op::WillUpdate);
-
-        if (doWillUpdate()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseWillUpdateOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void willUpdateCancel()
-    {
-        GASSERT(m_currOp == Op::WillUpdate);
-        finaliseWillUpdateOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
     void willTopicUpdateTimeout()
     {
         GASSERT(m_currOp == Op::WillTopicUpdate);
@@ -2368,25 +2318,6 @@ private:
         GASSERT(m_currOp == Op::Sleep);
         finaliseSleepOp(MqttsnAsyncOpStatus_Aborted);
     }
-
-    void wakeupTimeout()
-    {
-        GASSERT(m_currOp == Op::Wakeup);
-
-        if (doWakeup()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseWakeupOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void wakeupCancel()
-    {
-        GASSERT(m_currOp == Op::Wakeup);
-        finaliseWakeupOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
 
     void checkMessagesTimeout()
     {
@@ -2753,21 +2684,6 @@ private:
         return true;
     }
 
-    bool doWillUpdate()
-    {
-        GASSERT (m_currOp == Op::WillUpdate);
-
-        auto* op = opPtr<WillUpdateOp>();
-        if (m_retryCount <= op->m_attempt) {
-            return false;
-        }
-
-        ++op->m_attempt;
-
-        sendConnect(op->m_clientId, op->m_keepAlivePeriod, false, true);
-        return true;
-    }
-
     bool doWillTopicUpdate()
     {
         GASSERT (m_currOp == Op::WillTopicUpdate);
@@ -2841,21 +2757,6 @@ private:
         durationField.setMode(comms::field::OptionalMode::Exists);
         durationField.field().value() = op->m_duration;
         sendMessage(msg);
-        return true;
-    }
-
-    bool doWakeup()
-    {
-        GASSERT (m_currOp == Op::Wakeup);
-
-        auto* op = opPtr<WakeupOp>();
-        if (m_retryCount <= op->m_attempt) {
-            return false;
-        }
-
-        ++op->m_attempt;
-
-        sendConnect(op->m_clientId, op->m_keepAlivePeriod, false, false);
         return true;
     }
 
@@ -3098,11 +2999,6 @@ private:
         finaliseAsyncDoubleOp<UnsubscribeOp, Op::Unsubscribe, UnsubscribeIdOp, Op::UnsubscribeId>(status);
     }
 
-    void finaliseWillUpdateOp(MqttsnAsyncOpStatus status)
-    {
-        finaliseAsyncOp<WillUpdateOp, Op::WillUpdate>(status);
-    }
-
     void finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<WillTopicUpdateOp, Op::WillTopicUpdate>(status);
@@ -3116,11 +3012,6 @@ private:
     void finaliseSleepOp(MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<SleepOp, Op::Sleep>(status);
-    }
-
-    void finaliseWakeupOp(MqttsnAsyncOpStatus status)
-    {
-        finaliseAsyncOp<WakeupOp, Op::Wakeup>(status);
     }
 
     void finaliseCheckMessagesOp(MqttsnAsyncOpStatus status)
