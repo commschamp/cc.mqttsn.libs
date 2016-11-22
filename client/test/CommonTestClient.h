@@ -108,8 +108,6 @@ public:
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> WillTopicUpdateCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> WillMsgUpdateCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> SleepCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> WakeupCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> CheckMessagesCompleteCallback;
@@ -129,8 +127,8 @@ public:
     SubscribeCompleteCallback setSubsribeCompleteCallback(SubscribeCompleteCallback&& func);
     AsyncOpCompleteCallback setUnsubsribeCompleteCallback(AsyncOpCompleteCallback&& func);
     AsyncOpCompleteCallback setWillUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
-    WillTopicUpdateCompleteCallback setWillTopicUpdateCompleteCallback(WillTopicUpdateCompleteCallback&& func);
-    WillMsgUpdateCompleteCallback setWillMsgUpdateCompleteCallback(WillMsgUpdateCompleteCallback&& func);
+    AsyncOpCompleteCallback setWillTopicUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setWillMsgUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
     SleepCompleteCallback setSleepCompleteCallback(SleepCompleteCallback&& func);
     WakeupCompleteCallback setWakeupCompleteCallback(WakeupCompleteCallback&& func);
     CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
@@ -260,8 +258,8 @@ private:
     SubscribeCompleteCallback m_subscribeCompleteCallback;
     AsyncOpCompleteCallback m_unsubscribeCompleteCallback;
     AsyncOpCompleteCallback m_willUpdateCompleteCallback;
-    WillTopicUpdateCompleteCallback m_willTopicUpdateCompleteCallback;
-    WillMsgUpdateCompleteCallback m_willMsgUpdateCompleteCallback;
+    AsyncOpCompleteCallback m_willTopicUpdateCompleteCallback;
+    AsyncOpCompleteCallback m_willMsgUpdateCompleteCallback;
     SleepCompleteCallback m_sleepCompleteCallback;
     WakeupCompleteCallback m_wakeupCompleteCallback;
     CheckMessagesCompleteCallback m_checkMessagesCompleteCallback;

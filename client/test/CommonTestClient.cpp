@@ -173,18 +173,18 @@ CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setWillUpdateComplet
     return old;
 }
 
-CommonTestClient::WillTopicUpdateCompleteCallback CommonTestClient::setWillTopicUpdateCompleteCallback(
-    WillTopicUpdateCompleteCallback&& func)
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setWillTopicUpdateCompleteCallback(
+    AsyncOpCompleteCallback&& func)
 {
-    WillTopicUpdateCompleteCallback old(std::move(m_willTopicUpdateCompleteCallback));
+    AsyncOpCompleteCallback old(std::move(m_willTopicUpdateCompleteCallback));
     m_willTopicUpdateCompleteCallback = std::move(func);
     return old;
 }
 
-CommonTestClient::WillMsgUpdateCompleteCallback CommonTestClient::setWillMsgUpdateCompleteCallback(
-    WillMsgUpdateCompleteCallback&& func)
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setWillMsgUpdateCompleteCallback(
+    AsyncOpCompleteCallback&& func)
 {
-    WillMsgUpdateCompleteCallback old(std::move(m_willMsgUpdateCompleteCallback));
+    AsyncOpCompleteCallback old(std::move(m_willMsgUpdateCompleteCallback));
     m_willMsgUpdateCompleteCallback = std::move(func);
     return old;
 }
@@ -617,7 +617,7 @@ void CommonTestClient::reportWillUpdateComplete(MqttsnAsyncOpStatus status)
 void CommonTestClient::reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status)
 {
     if (m_willTopicUpdateCompleteCallback) {
-        WillTopicUpdateCompleteCallback tmp(m_willTopicUpdateCompleteCallback);
+        AsyncOpCompleteCallback tmp(m_willTopicUpdateCompleteCallback);
         tmp(status);
     }
 }
@@ -625,7 +625,7 @@ void CommonTestClient::reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status)
 void CommonTestClient::reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status)
 {
     if (m_willMsgUpdateCompleteCallback) {
-        WillMsgUpdateCompleteCallback tmp(m_willMsgUpdateCompleteCallback);
+        AsyncOpCompleteCallback tmp(m_willMsgUpdateCompleteCallback);
         tmp(status);
     }
 }

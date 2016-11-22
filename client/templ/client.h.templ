@@ -466,7 +466,7 @@ MqttsnErrorCode mqttsn_##NAME##client_will_topic_update(
     const char* topic,
     MqttsnQoS qos,
     bool retain,
-    MqttsnWillTopicUpdateCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
@@ -486,7 +486,7 @@ MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
     MqttsnClientHandle client,
     const unsigned char* msg,
     unsigned msgLen,
-    MqttsnWillMsgUpdateCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 

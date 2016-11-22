@@ -235,21 +235,17 @@ class BasicClient : public THandler
 
     typedef ConnectOp WillUpdateOp;
 
-    struct WillTopicUpdateOp : public OpBase
+    struct WillTopicUpdateOp : public AsyncOpBase
     {
         const char* m_topic = nullptr;
         MqttsnQoS m_qos;
         bool m_retain;
-        MqttsnWillTopicUpdateCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
     };
 
-    struct WillMsgUpdateOp : public OpBase
+    struct WillMsgUpdateOp : public AsyncOpBase
     {
         const unsigned char* m_msg = nullptr;
         unsigned m_msgLen = 0;
-        MqttsnWillMsgUpdateCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
     };
 
     struct SleepOp : public OpBase
@@ -976,7 +972,7 @@ public:
         const char* topic,
         MqttsnQoS qos,
         bool retain,
-        MqttsnWillTopicUpdateCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -998,12 +994,10 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::WillTopicUpdate;
-        auto* op = newOp<WillTopicUpdateOp>();
+        auto* op = newAsyncOp<WillTopicUpdateOp>(callback, data);
         op->m_topic = topic;
         op->m_qos = qos;
         op->m_retain = retain;
-        op->m_cb = callback;
-        op->m_cbData = data;
 
         bool result = doWillTopicUpdate();
         static_cast<void>(result);
@@ -1015,7 +1009,7 @@ public:
     MqttsnErrorCode willMsgUpdate(
         const unsigned char* msg,
         unsigned msgLen,
-        MqttsnWillMsgUpdateCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -1037,11 +1031,9 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::WillMsgUpdate;
-        auto* op = newOp<WillMsgUpdateOp>();
+        auto* op = newAsyncOp<WillMsgUpdateOp>(callback, data);
         op->m_msg = msg;
         op->m_msgLen = msgLen;
-        op->m_cb = callback;
-        op->m_cbData = data;
 
         bool result = doWillMsgUpdate();
         static_cast<void>(result);
@@ -3156,41 +3148,17 @@ private:
 
     void finaliseWillUpdateOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT(m_currOp == Op::WillUpdate);
-        auto* op = opPtr<WillUpdateOp>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        finaliseOp<WillUpdateOp>();
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncOp<WillUpdateOp, Op::WillUpdate>(status);
     }
 
     void finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT(m_currOp == Op::WillTopicUpdate);
-        auto* op = opPtr<WillTopicUpdateOp>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        finaliseOp<WillTopicUpdateOp>();
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncOp<WillTopicUpdateOp, Op::WillTopicUpdate>(status);
     }
 
     void finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT(m_currOp == Op::WillMsgUpdate);
-        auto* op = opPtr<WillMsgUpdateOp>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        finaliseOp<WillMsgUpdateOp>();
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncOp<WillMsgUpdateOp, Op::WillMsgUpdate>(status);
     }
 
     void finaliseSleepOp(MqttsnAsyncOpStatus status)
