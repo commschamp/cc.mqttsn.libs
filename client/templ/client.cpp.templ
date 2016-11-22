@@ -34,36 +34,13 @@ typedef std::tuple<
 
 typedef mqttsn::protocol::ParsedOptions<ProtocolOptions> ParsedProtocolOptions;
 
-typedef mqttsn::client::AllMessages<ParsedProtocolOptions> AllMsgs;
-
 typedef std::tuple<
     ##CLIENT_OPTS##
 > ClientOptions;
 
 typedef mqttsn::client::ParsedOptions<ClientOptions> ParsedClientOptions;
 
-}  // namespace
-
-
-namespace mqttsn
-{
-
-namespace client
-{
-
-class MsgHandler : public comms::GenericHandler<Message, AllMsgs>
-{
-};
-
-}  // namespace client
-
-}  // namespace mqttsn
-
-
-namespace
-{
-
-typedef mqttsn::client::BasicClient<mqttsn::client::MsgHandler, ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
+typedef mqttsn::client::BasicClient<ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
 typedef mqttsn::client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
 
 MqttsnClientMgr& getClientMgr()

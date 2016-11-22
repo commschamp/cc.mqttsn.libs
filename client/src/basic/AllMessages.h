@@ -29,9 +29,9 @@ namespace mqttsn
 namespace client
 {
 
-template <typename TOptions>
+template <typename TMessage, typename TOptions>
 using AllMessages =
-    mqttsn::protocol::AllMessages<Message, TOptions>;
+    mqttsn::protocol::AllMessages<TMessage, TOptions>;
 
 }  // namespace client
 

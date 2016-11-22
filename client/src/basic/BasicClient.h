@@ -120,13 +120,10 @@ MqttsnQoS translateQosValue(mqttsn::protocol::field::QosType val)
 
 }  // namespace details
 
-template <
-    typename THandler,
-    typename TClientOpts,
-    typename TProtOpts>
-class BasicClient : public THandler
+template <typename TClientOpts, typename TProtOpts>
+class BasicClient
 {
-    typedef THandler Base;
+    typedef MessageT<BasicClient<TClientOpts, TProtOpts> > Message;
 
     typedef unsigned long long Timestamp;
 
@@ -258,10 +255,10 @@ class BasicClient : public THandler
         Asleep
     };
 
-    typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
+    typedef void (BasicClient<TClientOpts, TProtOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
 
 public:
-    typedef Message::Field FieldBase;
+    typedef typename Message::Field FieldBase;
     typedef typename mqttsn::protocol::field::GwId<FieldBase>::ValueType GwIdValueType;
     //typedef typename mqttsn::protocol::field::GwAdd<FieldBase, TProtOpts>::ValueType GwAddValueType;
     typedef typename mqttsn::protocol::field::WillTopic<FieldBase, TProtOpts>::ValueType WillTopicType;
@@ -314,7 +311,7 @@ public:
     BasicClient() = default;
     virtual ~BasicClient() = default;
 
-    typedef Message::ReadIterator ReadIterator;
+    typedef typename Message::ReadIterator ReadIterator;
 
     const GwInfoStorage& gwInfos() const
     {
@@ -1088,8 +1085,7 @@ public:
         return MqttsnErrorCode_Success;
     }
 
-    using Base::handle;
-    virtual void handle(AdvertiseMsg& msg) override
+    void handle(AdvertiseMsg& msg)
     {
         auto& fields = msg.fields();
         auto& idField = std::get<AdvertiseMsg::FieldIdx_gwId>(fields);
@@ -1108,7 +1104,7 @@ public:
         reportGwStatus(idField.value(), MqttsnGwStatus_Available);
     }
 
-    virtual void handle(GwinfoMsg& msg) override
+    void handle(GwinfoMsg& msg)
     {
         auto& fields = msg.fields();
         auto& idField = std::get<GwinfoMsg::FieldIdx_gwId>(fields);
@@ -1134,7 +1130,7 @@ public:
         reportGwStatus(idField.value(), MqttsnGwStatus_Available);
     }
 
-    virtual void handle(ConnackMsg& msg) override
+    void handle(ConnackMsg& msg)
     {
         if (m_currOp != Op::Connect) {
             return;
@@ -1171,7 +1167,7 @@ public:
         finaliseConnectOp(retCodeToStatus(returnCode));
     }
 
-    virtual void handle(WilltopicreqMsg& msg) override
+    void handle(WilltopicreqMsg& msg)
     {
         static_cast<void>(msg);
         if (m_currOp != Op::Connect) {
@@ -1191,7 +1187,7 @@ public:
         sendWilltopic(op->m_willInfo.topic, op->m_willInfo.qos, op->m_willInfo.retain);
     }
 
-    virtual void handle(WillmsgreqMsg& msg) override
+    void handle(WillmsgreqMsg& msg)
     {
         static_cast<void>(msg);
         if (m_currOp != Op::Connect) {
@@ -1216,7 +1212,7 @@ public:
         sendMessage(outMsg);
     }
 
-    virtual void handle(RegisterMsg& msg) override
+    void handle(RegisterMsg& msg)
     {
         auto& fields = msg.fields();
         auto& topicIdField = std::get<RegisterMsg::FieldIdx_topicId>(fields);
@@ -1236,7 +1232,7 @@ public:
         sendMessage(ackMsg);
     }
 
-    virtual void handle(RegackMsg& msg) override
+    void handle(RegackMsg& msg)
     {
         if (m_currOp != Op::Publish) {
             return;
@@ -1274,7 +1270,7 @@ public:
         GASSERT(result);
     }
 
-    virtual void handle(PublishMsg& msg) override
+    void handle(PublishMsg& msg)
     {
         auto& fields = msg.fields();
         auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
@@ -1375,7 +1371,7 @@ public:
         sendMessage(recMsg);
     }
 
-    virtual void handle(PubackMsg& msg) override
+    void handle(PubackMsg& msg)
     {
         auto& fields = msg.fields();
         auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
@@ -1433,7 +1429,7 @@ public:
         finalisePublishOp(retCodeToStatus(retCodeField.value()));
     }
 
-    virtual void handle(PubrecMsg& msg) override
+    void handle(PubrecMsg& msg)
     {
         if ((m_currOp != Op::Publish) && (m_currOp != Op::PublishId)) {
             return;
@@ -1453,7 +1449,7 @@ public:
         sendPubrel(op->m_msgId);
     }
 
-    virtual void handle(PubrelMsg& msg) override
+    void handle(PubrelMsg& msg)
     {
         auto& fields = msg.fields();
         auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
@@ -1496,7 +1492,7 @@ public:
         }
     }
 
-    virtual void handle(PubcompMsg& msg) override
+    void handle(PubcompMsg& msg)
     {
         if ((m_currOp != Op::Publish) && (m_currOp != Op::PublishId)) {
             return;
@@ -1515,7 +1511,7 @@ public:
         finalisePublishOp(MqttsnAsyncOpStatus_Successful);
     }
 
-    virtual void handle(SubackMsg& msg) override
+    void handle(SubackMsg& msg)
     {
         if ((m_currOp != Op::Subscribe) && (m_currOp != Op::SubscribeId)) {
             return;
@@ -1580,7 +1576,7 @@ public:
         finaliseSubscribeOp(MqttsnAsyncOpStatus_Successful);
     }
 
-    virtual void handle(UnsubackMsg& msg) override
+    void handle(UnsubackMsg& msg)
     {
         if ((m_currOp != Op::Unsubscribe) && (m_currOp != Op::UnsubscribeId)) {
             return;
@@ -1623,14 +1619,14 @@ public:
         finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Successful);
     }
 
-    virtual void handle(PingreqMsg& msg) override
+    void handle(PingreqMsg& msg)
     {
         static_cast<void>(msg);
         PingrespMsg outMsg;
         sendMessage(outMsg);
     }
 
-    virtual void handle(PingrespMsg& msg) override
+    void handle(PingrespMsg& msg)
     {
         static_cast<void>(msg);
         bool pinging = (0U < m_pingCount);
@@ -1645,7 +1641,7 @@ public:
         finaliseCheckMessagesOp(MqttsnAsyncOpStatus_Successful);
     }
 
-    virtual void handle(DisconnectMsg& msg) override
+    void handle(DisconnectMsg& msg)
     {
         static_cast<void>(msg);
 
@@ -1669,7 +1665,7 @@ public:
         reportGwDisconnected();
     }
 
-    virtual void handle(WilltopicrespMsg& msg) override
+    void handle(WilltopicrespMsg& msg)
     {
         if (m_currOp != Op::WillTopicUpdate) {
             return;
@@ -1680,7 +1676,7 @@ public:
         finaliseWillTopicUpdateOp(retCodeToStatus(retCodeField.value()));
     }
 
-    virtual void handle(WillmsgrespMsg& msg) override
+    void handle(WillmsgrespMsg& msg)
     {
         if (m_currOp != Op::WillMsgUpdate) {
             return;
@@ -1689,6 +1685,11 @@ public:
         auto& fields = msg.fields();
         auto& retCodeField = std::get<WillmsgrespMsg::FieldIdx_returnCode>(fields);
         finaliseWillMsgUpdateOp(retCodeToStatus(retCodeField.value()));
+    }
+
+    void handle(Message& msg)
+    {
+        static_cast<void>(msg);
     }
 
 private:
@@ -1709,7 +1710,7 @@ private:
     >::Type OpStorageType;
 
 
-    typedef protocol::Stack<Message, AllMessages<TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
+    typedef protocol::Stack<Message, AllMessages<Message, TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
 
     struct RegInfo
@@ -2031,7 +2032,7 @@ private:
             return;
         }
 
-        typedef bool (BasicClient<THandler, TClientOpts, TProtOpts>::*DoOpFunc)();
+        typedef bool (BasicClient<TClientOpts, TProtOpts>::*DoOpFunc)();
         static const DoOpFunc OpTimeoutFuncMap[] =
         {
             &BasicClient::doConnect,
@@ -2856,7 +2857,7 @@ private:
     // VC compiler
     auto apiCall()
 #else
-    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&BasicClient<THandler, TClientOpts, TProtOpts>::apiCallExit, this)))
+    auto apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&BasicClient<TClientOpts, TProtOpts>::apiCallExit, this)))
 #endif
     {
         ++m_callStackCount;
@@ -2867,7 +2868,7 @@ private:
         return
             comms::util::makeScopeGuard(
                 std::bind(
-                    &BasicClient<THandler, TClientOpts, TProtOpts>::apiCallExit,
+                    &BasicClient<TClientOpts, TProtOpts>::apiCallExit,
                     this));
     }
 
