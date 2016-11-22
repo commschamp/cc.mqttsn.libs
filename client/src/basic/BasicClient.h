@@ -248,10 +248,8 @@ class BasicClient : public THandler
         unsigned m_msgLen = 0;
     };
 
-    struct SleepOp : public OpBase
+    struct SleepOp : public AsyncOpBase
     {
-        MqttsnSleepCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
         std::uint16_t m_duration = 0;
     };
 
@@ -598,7 +596,7 @@ public:
             return MqttsnErrorCode_NotStarted;
         }
 
-        if (m_connectionStatus == ConnectionStatus::Connected) {
+        if (m_connectionStatus != ConnectionStatus::Disconnected) {
             return MqttsnErrorCode_AlreadyConnected;
         }
 
@@ -608,8 +606,6 @@ public:
 
         auto guard = apiCall();
 
-        bool reportDisconnected = (m_connectionStatus == ConnectionStatus::Asleep);
-        m_connectionStatus = ConnectionStatus::Disconnected;
         m_currOp = Op::Connect;
 
         auto* connectOp = newAsyncOp<ConnectOp>(callback, data);
@@ -625,12 +621,6 @@ public:
         bool result = doConnect();
         static_cast<void>(result);
         GASSERT(result);
-
-        if (reportDisconnected) {
-            GASSERT(m_connectionStatusReportFn != nullptr);
-            m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
-        }
-
         return MqttsnErrorCode_Success;
     }
 
@@ -1044,7 +1034,7 @@ public:
 
     MqttsnErrorCode sleep(
         std::uint16_t duration,
-        MqttsnSleepCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -1066,10 +1056,8 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::Sleep;
-        auto* op = newOp<SleepOp>();
+        auto* op = newAsyncOp<SleepOp>(callback, data);
         op->m_duration = duration;
-        op->m_cb = callback;
-        op->m_cbData = data;
 
         bool result = doSleep();
         static_cast<void>(result);
@@ -1740,8 +1728,8 @@ public:
         }
 
         if (m_currOp == Op::Sleep) {
+            m_connectionStatus = ConnectionStatus::Asleep;
             finaliseSleepOp(MqttsnAsyncOpStatus_Successful);
-            reportAsleep();
             return;
         }
 
@@ -3056,13 +3044,6 @@ private:
         }
     }
 
-    void reportAsleep()
-    {
-        m_connectionStatus = ConnectionStatus::Asleep;
-        GASSERT(m_connectionStatusReportFn != nullptr);
-        m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_DisconnectedAsleep);
-    }
-
     std::uint16_t allocMsgId()
     {
         ++m_msgId;
@@ -3163,15 +3144,7 @@ private:
 
     void finaliseSleepOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT(m_currOp == Op::Sleep);
-        auto* op = opPtr<SleepOp>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        finaliseOp<SleepOp>();
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncOp<SleepOp, Op::Sleep>(status);
     }
 
     void finaliseWakeupOp(MqttsnAsyncOpStatus status)

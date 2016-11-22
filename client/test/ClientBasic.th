@@ -3623,7 +3623,6 @@ void ClientBasic::test38()
     auto disconnectMsg = dataProc.prepareDisconnectMsg(Duration);
     dataFromGw(*client, disconnectMsg, "DISCONNECT");
     verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_Successful);
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_DisconnectedAsleep);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
     verifyNoOtherEvent(state);
 
@@ -3631,10 +3630,7 @@ void ClientBasic::test38()
     state.m_nextElapsedTicks = 1000;
     static const std::string ClientId = "test_client";
     result = client->connect(ClientId.c_str(), DefaultKeepAlive, true, nullptr);
-    TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    verifySent_ConnectMsg(state, dataProc, ClientId, DefaultKeepAlive, true, false);
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Disconnected);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
+    TS_ASSERT_EQUALS(result, MqttsnErrorCode_AlreadyConnected);
     verifyNoOtherEvent(state);
 }
 
@@ -3669,7 +3665,6 @@ void ClientBasic::test39()
     auto disconnectMsg = dataProc.prepareDisconnectMsg(Duration);
     dataFromGw(*client, disconnectMsg, "DISCONNECT");
     verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_Successful);
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_DisconnectedAsleep);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, 0);
     verifyNoOtherEvent(state);
 

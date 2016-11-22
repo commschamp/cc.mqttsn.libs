@@ -108,7 +108,6 @@ public:
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> SleepCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> WakeupCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> CheckMessagesCompleteCallback;
 
@@ -129,7 +128,7 @@ public:
     AsyncOpCompleteCallback setWillUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
     AsyncOpCompleteCallback setWillTopicUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
     AsyncOpCompleteCallback setWillMsgUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
-    SleepCompleteCallback setSleepCompleteCallback(SleepCompleteCallback&& func);
+    AsyncOpCompleteCallback setSleepCompleteCallback(AsyncOpCompleteCallback&& func);
     WakeupCompleteCallback setWakeupCompleteCallback(WakeupCompleteCallback&& func);
     CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
 
@@ -260,7 +259,7 @@ private:
     AsyncOpCompleteCallback m_willUpdateCompleteCallback;
     AsyncOpCompleteCallback m_willTopicUpdateCompleteCallback;
     AsyncOpCompleteCallback m_willMsgUpdateCompleteCallback;
-    SleepCompleteCallback m_sleepCompleteCallback;
+    AsyncOpCompleteCallback m_sleepCompleteCallback;
     WakeupCompleteCallback m_wakeupCompleteCallback;
     CheckMessagesCompleteCallback m_checkMessagesCompleteCallback;
 

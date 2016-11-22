@@ -509,7 +509,7 @@ MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
 MqttsnErrorCode mqttsn_##NAME##client_sleep(
     MqttsnClientHandle client,
     unsigned short duration,
-    MqttsnSleepCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 

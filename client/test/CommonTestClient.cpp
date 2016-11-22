@@ -189,10 +189,10 @@ CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setWillMsgUpdateComp
     return old;
 }
 
-CommonTestClient::SleepCompleteCallback CommonTestClient::setSleepCompleteCallback(
-    SleepCompleteCallback&& func)
+CommonTestClient::AsyncOpCompleteCallback CommonTestClient::setSleepCompleteCallback(
+    AsyncOpCompleteCallback&& func)
 {
-    SleepCompleteCallback old(std::move(m_sleepCompleteCallback));
+    AsyncOpCompleteCallback old(std::move(m_sleepCompleteCallback));
     m_sleepCompleteCallback = std::move(func);
     return old;
 }
@@ -633,7 +633,7 @@ void CommonTestClient::reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status)
 void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
 {
     if (m_sleepCompleteCallback) {
-        SleepCompleteCallback tmp(m_sleepCompleteCallback);
+        AsyncOpCompleteCallback tmp(m_sleepCompleteCallback);
         tmp(status);
     }
 }
