@@ -258,6 +258,8 @@ class BasicClient : public THandler
         Asleep
     };
 
+    typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
+
 public:
     typedef Message::Field FieldBase;
     typedef typename mqttsn::protocol::field::GwId<FieldBase>::ValueType GwIdValueType;
@@ -531,31 +533,8 @@ public:
         GASSERT(m_running);
         auto guard = apiCall();
 
-        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
-        static const FinaliseFunc OpCancelFuncMap[] =
-        {
-            &BasicClient::finaliseConnectOp,
-            &BasicClient::finaliseDisconnectOp,
-            &BasicClient::finalisePublishOp,
-            &BasicClient::finalisePublishOp,
-            &BasicClient::finaliseSubscribeOp,
-            &BasicClient::finaliseSubscribeOp,
-            &BasicClient::finaliseUnsubscribeOp,
-            &BasicClient::finaliseUnsubscribeOp,
-            &BasicClient::finaliseWillTopicUpdateOp,
-            &BasicClient::finaliseWillMsgUpdateOp,
-            &BasicClient::finaliseSleepOp,
-            &BasicClient::finaliseCheckMessagesOp,
-        };
-        static const std::size_t OpCancelFuncMapSize =
-                            std::extent<decltype(OpCancelFuncMap)>::value;
-
-        static_assert(OpCancelFuncMapSize == (static_cast<std::size_t>(Op::NumOfValues) - 1U),
-            "Map above is incorrect");
-
-        auto opIdx = static_cast<unsigned>(m_currOp) - 1;
-        GASSERT(opIdx < OpCancelFuncMapSize);
-        auto fn = OpCancelFuncMap[opIdx];
+        auto fn = getFinaliseFunc();
+        GASSERT(fn != nullptr);
         (this->*(fn))(MqttsnAsyncOpStatus_Aborted);
         return true;
     }
@@ -2052,21 +2031,21 @@ private:
             return;
         }
 
-        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*TimeoutFunc)();
-        static const TimeoutFunc OpTimeoutFuncMap[] =
+        typedef bool (BasicClient<THandler, TClientOpts, TProtOpts>::*DoOpFunc)();
+        static const DoOpFunc OpTimeoutFuncMap[] =
         {
-            &BasicClient::connectTimeout,
-            &BasicClient::disconnectTimeout,
-            &BasicClient::publishIdTimeout,
-            &BasicClient::publishTimeout,
-            &BasicClient::subscribeIdTimeout,
-            &BasicClient::subscribeTimeout,
-            &BasicClient::unsubscribeIdTimeout,
-            &BasicClient::unsubscribeTimeout,
-            &BasicClient::willTopicUpdateTimeout,
-            &BasicClient::willMsgUpdateTimeout,
-            &BasicClient::sleepTimeout,
-            &BasicClient::checkMessagesTimeout
+            &BasicClient::doConnect,
+            &BasicClient::doDisconnect,
+            &BasicClient::doPublishId,
+            &BasicClient::doPublish,
+            &BasicClient::doSubscribeId,
+            &BasicClient::doSubscribe,
+            &BasicClient::doUnsubscribeId,
+            &BasicClient::doUnsubscribe,
+            &BasicClient::doWillTopicUpdate,
+            &BasicClient::doWillMsgUpdate,
+            &BasicClient::doSleep,
+            &BasicClient::doCheckMessages
         };
         static const std::size_t OpTimeoutFuncMapSize =
                             std::extent<decltype(OpTimeoutFuncMap)>::value;
@@ -2074,8 +2053,18 @@ private:
         static_assert(OpTimeoutFuncMapSize == (static_cast<std::size_t>(Op::NumOfValues) - 1U),
             "Map above is incorrect");
 
+        GASSERT((static_cast<unsigned>(m_currOp) - 1) < OpTimeoutFuncMapSize);
         auto fn = OpTimeoutFuncMap[static_cast<unsigned>(m_currOp) - 1];
-        (this->*(fn))();
+
+        GASSERT(fn != nullptr);
+        if ((this->*(fn))()) {
+            op->m_lastMsgTimestamp = m_timestamp;
+            return;
+        }
+
+        auto finaliseFn = getFinaliseFunc();
+        GASSERT(finaliseFn != nullptr);
+        (this->*finaliseFn)(MqttsnAsyncOpStatus_NoResponse);
     }
 
     void checkTimeouts()
@@ -2120,151 +2109,6 @@ private:
 
         sendMessage(msg, true);
         m_lastGwSearchTimestamp = m_timestamp;
-    }
-
-    void connectTimeout()
-    {
-        GASSERT(m_currOp == Op::Connect);
-
-        if (doConnect()) {
-            opPtr<ConnectOp>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseConnectOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void disconnectTimeout()
-    {
-        GASSERT(m_currOp == Op::Disconnect);
-
-        if (doDisconnect()) {
-            opPtr<DisconnectOp>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseDisconnectOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void publishIdTimeout()
-    {
-        GASSERT(m_currOp == Op::PublishId);
-
-        if (doPublishId()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finalisePublishOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void publishTimeout()
-    {
-        GASSERT(m_currOp == Op::Publish);
-
-        if (doPublish()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finalisePublishOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void subscribeIdTimeout()
-    {
-        GASSERT(m_currOp == Op::SubscribeId);
-
-        if (doSubscribeId()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void subscribeTimeout()
-    {
-        GASSERT(m_currOp == Op::Subscribe);
-
-        if (doSubscribe()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void unsubscribeIdTimeout()
-    {
-        GASSERT(m_currOp == Op::UnsubscribeId);
-
-        if (doUnsubscribeId()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void unsubscribeTimeout()
-    {
-        GASSERT(m_currOp == Op::Unsubscribe);
-
-        if (doUnsubscribe()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void willTopicUpdateTimeout()
-    {
-        GASSERT(m_currOp == Op::WillTopicUpdate);
-
-        if (doWillTopicUpdate()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-
-    void willMsgUpdateTimeout()
-    {
-        GASSERT(m_currOp == Op::WillMsgUpdate);
-
-        if (doWillMsgUpdate()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void sleepTimeout()
-    {
-        GASSERT(m_currOp == Op::Sleep);
-
-        if (doSleep()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseSleepOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void checkMessagesTimeout()
-    {
-        GASSERT(m_currOp == Op::CheckMessages);
-
-        if (doCheckMessages()) {
-            opPtr<OpBase>()->m_lastMsgTimestamp = m_timestamp;
-            return;
-        }
-
-        finaliseCheckMessagesOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
     void sendMessage(const Message& msg, bool broadcast = false)
@@ -2947,6 +2791,34 @@ private:
     void finaliseCheckMessagesOp(MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<CheckMessagesOp, Op::CheckMessages>(status);
+    }
+
+    FinaliseFunc getFinaliseFunc() const
+    {
+        static const FinaliseFunc Map[] =
+        {
+            &BasicClient::finaliseConnectOp,
+            &BasicClient::finaliseDisconnectOp,
+            &BasicClient::finalisePublishOp,
+            &BasicClient::finalisePublishOp,
+            &BasicClient::finaliseSubscribeOp,
+            &BasicClient::finaliseSubscribeOp,
+            &BasicClient::finaliseUnsubscribeOp,
+            &BasicClient::finaliseUnsubscribeOp,
+            &BasicClient::finaliseWillTopicUpdateOp,
+            &BasicClient::finaliseWillMsgUpdateOp,
+            &BasicClient::finaliseSleepOp,
+            &BasicClient::finaliseCheckMessagesOp,
+        };
+        static const std::size_t MapSize =
+                            std::extent<decltype(Map)>::value;
+
+        static_assert(MapSize == (static_cast<std::size_t>(Op::NumOfValues) - 1U),
+            "Map above is incorrect");
+
+        auto opIdx = static_cast<unsigned>(m_currOp) - 1;
+        GASSERT(opIdx < MapSize);
+        return Map[opIdx];
     }
 
     MqttsnAsyncOpStatus retCodeToStatus(mqttsn::protocol::field::ReturnCodeVal val)
