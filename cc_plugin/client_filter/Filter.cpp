@@ -52,7 +52,7 @@ bool Filter::startImpl()
     mqttsn_client_set_next_tick_program_callback(m_client.get(), &Filter::programNextTickCb, this);
     mqttsn_client_set_cancel_next_tick_wait_callback(m_client.get(), &Filter::cancelTickCb, this);
     mqttsn_client_set_gw_status_report_callback(m_client.get(), &Filter::gwStatusReportCb, this);
-    mqttsn_client_set_connection_status_report_callback(m_client.get(), &Filter::connectionStatusReportCb, this);
+    mqttsn_client_set_gw_disconnect_report_callback(m_client.get(), &Filter::gwDisconnectReportCb, this);
     QTimer::singleShot(0, this, SLOT(startClient()));
     return true;
 }
@@ -258,11 +258,31 @@ void Filter::doConnect()
     assert(!m_clientId.empty());
     auto result =
         mqttsn_client_connect(
-            m_client.get(), m_clientId.c_str(), m_keepAlivePeriod, true, nullptr);
+            m_client.get(),
+            m_clientId.c_str(),
+            m_keepAlivePeriod,
+            true,
+            nullptr,
+            &Filter::connectCompleteCb,
+            this);
 
     if (result != MqttsnErrorCode_Success) {
         std::cerr << "ERROR: MQTT-SN: Failed to initiate connection to the GW" << std::endl;
     }
+}
+
+void Filter::connectComplete(MqttsnAsyncOpStatus status)
+{
+    if (status == MqttsnAsyncOpStatus_Successful) {
+        m_connected = true;
+        m_completedSubsCount = 0;
+
+        doSubscribe();
+        return;
+    }
+
+    std::cerr << "WARNING: MQTT-SN: Failed to connect to the GW, retrying" << std::endl;
+    doConnect();
 }
 
 void Filter::sendAccumulatedMessages()
@@ -423,20 +443,14 @@ void Filter::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
     }
 }
 
-void Filter::connectionStatusReport(MqttsnConnectionStatus status)
+void Filter::gwDisconnectReport()
 {
-    if (status != MqttsnConnectionStatus_Connected) {
-        std::cerr << "ERROR: MQTT-SN: Not connected to gateway: status=" << (int)status << std::endl;
-        m_connected = false;
-        doConnect();
-        return;
-    }
-
-    m_connected = true;
-    m_completedSubsCount = 0;
-
-    doSubscribe();
+    std::cerr << "ERROR: MQTT-SN: Disconnected from gateway" << std::endl;
+    m_connected = false;
+    doConnect();
+    return;
 }
+
 
 void Filter::messageArrivedCb(void* data, const MqttsnMessageInfo* msgInfo)
 {
@@ -489,13 +503,22 @@ void Filter::gwStatusReportCb(
     reinterpret_cast<Filter*>(data)->gwStatusReport(gwId, status);
 }
 
-void Filter::connectionStatusReportCb(void* data, MqttsnConnectionStatus status)
+void Filter::gwDisconnectReportCb(void* data)
 {
     if (data == nullptr) {
         return;
     }
 
-    reinterpret_cast<Filter*>(data)->connectionStatusReport(status);
+    reinterpret_cast<Filter*>(data)->gwDisconnectReport();
+}
+
+void Filter::connectCompleteCb(void* data, MqttsnAsyncOpStatus status)
+{
+    if (data == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Filter*>(data)->connectComplete(status);
 }
 
 void Filter::publishCompleteCb(void* data, MqttsnAsyncOpStatus status)

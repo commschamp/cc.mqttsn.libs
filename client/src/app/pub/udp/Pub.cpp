@@ -63,9 +63,6 @@ Pub::Pub()
     mqttsn_client_set_gw_status_report_callback(
         m_client.get(), &Pub::gwStatusReportCb, this);
 
-    mqttsn_client_set_connection_status_report_callback(
-        m_client.get(), &Pub::connectionStatusReportCb, this);
-
     mqttsn_client_set_gw_disconnect_report_callback(
         m_client.get(), &Pub::gwDisconnectReportCb, this);
 
@@ -240,41 +237,6 @@ void Pub::gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status
     reinterpret_cast<Pub*>(obj)->gwStatusReport(gwId, status);
 }
 
-void Pub::connectionStatusReport(MqttsnConnectionStatus status)
-{
-    if (m_qos == MqttsnQoS_NoGwPublish) {
-        return;
-    }
-
-    if (status == MqttsnConnectionStatus_Connected) {
-        doPublish();
-        return;
-    }
-
-    if (status == MqttsnConnectionStatus_Disconnected) {
-        if (m_disconnecting) {
-            quitApp();
-            return;
-        }
-
-        std::cerr << "WARNING: Disconnected from GW, reconnecting..." << std::endl;
-        doConnect();
-        return;
-    }
-
-    if (status == MqttsnConnectionStatus_Congestion) {
-        std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
-        doConnect();
-        return;
-    }
-}
-
-void Pub::connectionStatusReportCb(void* obj, MqttsnConnectionStatus status)
-{
-    assert(obj != nullptr);
-    reinterpret_cast<Pub*>(obj)->connectionStatusReport(status);
-}
-
 void Pub::gwDisconnectReport()
 {
     if (m_disconnecting) {
@@ -364,7 +326,7 @@ void Pub::doPublish()
     }
 
     m_disconnecting = true;
-    mqttsn_client_disconnect(m_client.get());
+    mqttsn_client_disconnect(m_client.get(), &Pub::disconnectCompleteCb, this);
 }
 
 void Pub::connectComplete(MqttsnAsyncOpStatus status)
@@ -394,6 +356,18 @@ void Pub::connectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
     reinterpret_cast<Pub*>(obj)->connectComplete(status);
 }
 
+void Pub::disconnectComplete(MqttsnAsyncOpStatus status)
+{
+    static_cast<void>(status);
+    quitApp();
+}
+
+void Pub::disconnectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+{
+    assert(obj != nullptr);
+    reinterpret_cast<Pub*>(obj)->disconnectComplete(status);
+}
+
 void Pub::publishComplete(MqttsnAsyncOpStatus status)
 {
     if (status == MqttsnAsyncOpStatus_Congestion) {
@@ -420,7 +394,7 @@ void Pub::publishComplete(MqttsnAsyncOpStatus status)
     }
 
     m_disconnecting = true;
-    mqttsn_client_disconnect(m_client.get());
+    mqttsn_client_disconnect(m_client.get(), &Pub::disconnectCompleteCb, this);
 }
 
 void Pub::publishCompleteCb(void* obj, MqttsnAsyncOpStatus status)
