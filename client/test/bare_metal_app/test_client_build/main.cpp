@@ -39,10 +39,21 @@ unsigned cancelTick(void* data)
     return 0U;
 }
 
-void connectStatus(void* data, MqttsnConnectionStatus status)
+void connectComplete(void* data, MqttsnAsyncOpStatus status)
 {
     static_cast<void>(data);
     static_cast<void>(status);
+}
+
+void disconnectComplete(void* data, MqttsnAsyncOpStatus status)
+{
+    static_cast<void>(data);
+    static_cast<void>(status);
+}
+
+void gwDisconnected(void* data)
+{
+    static_cast<void>(data);
 }
 
 void sendOutputData(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast)
@@ -81,7 +92,7 @@ int main(int argc, const char** argv)
     mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
     mqttsn_test_bare_metal_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
     mqttsn_test_bare_metal_client_set_send_output_data_callback(client, &sendOutputData, nullptr);
-    mqttsn_test_bare_metal_client_set_connection_status_report_callback(client, &connectStatus, nullptr);
+    mqttsn_test_bare_metal_client_set_gw_disconnect_report_callback(client, &gwDisconnected, nullptr);
     if (mqttsn_test_bare_metal_client_start(client) == 0) {
         return -1;
     }
@@ -92,7 +103,7 @@ int main(int argc, const char** argv)
     const unsigned char* from = &Seq[0];
     mqttsn_test_bare_metal_client_process_data(client, from, SeqSize);
     mqttsn_test_bare_metal_client_tick(client, 10);
-    mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr);
+    mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr, &connectComplete, nullptr);
     static const char* Topic("/this/is/topic");
     static const std::uint8_t Data[] = {
         0x00, 0x01, 0x02, 0x03
@@ -157,7 +168,7 @@ int main(int argc, const char** argv)
         &unsubscribeCallback,
         nullptr);
 
-    mqttsn_test_bare_metal_client_disconnect(client);
+    mqttsn_test_bare_metal_client_disconnect(client, &disconnectComplete, nullptr);
     mqttsn_test_bare_metal_client_free(client);
     while (true) {};
     return 0;
