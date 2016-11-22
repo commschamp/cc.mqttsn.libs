@@ -531,21 +531,21 @@ public:
         GASSERT(m_running);
         auto guard = apiCall();
 
-        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*CancelFunc)();
-        static const CancelFunc OpCancelFuncMap[] =
+        typedef void (BasicClient<THandler, TClientOpts, TProtOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
+        static const FinaliseFunc OpCancelFuncMap[] =
         {
-            &BasicClient::connectCancel,
-            &BasicClient::disconnectCancel,
-            &BasicClient::publishIdCancel,
-            &BasicClient::publishCancel,
-            &BasicClient::subscribeIdCancel,
-            &BasicClient::subscribeCancel,
-            &BasicClient::unsubscribeIdCancel,
-            &BasicClient::unsubscribeCancel,
-            &BasicClient::willTopicUpdateCancel,
-            &BasicClient::willMsgUpdateCancel,
-            &BasicClient::sleepCancel,
-            &BasicClient::checkMessagesCancel
+            &BasicClient::finaliseConnectOp,
+            &BasicClient::finaliseDisconnectOp,
+            &BasicClient::finalisePublishOp,
+            &BasicClient::finalisePublishOp,
+            &BasicClient::finaliseSubscribeOp,
+            &BasicClient::finaliseSubscribeOp,
+            &BasicClient::finaliseUnsubscribeOp,
+            &BasicClient::finaliseUnsubscribeOp,
+            &BasicClient::finaliseWillTopicUpdateOp,
+            &BasicClient::finaliseWillMsgUpdateOp,
+            &BasicClient::finaliseSleepOp,
+            &BasicClient::finaliseCheckMessagesOp,
         };
         static const std::size_t OpCancelFuncMapSize =
                             std::extent<decltype(OpCancelFuncMap)>::value;
@@ -556,7 +556,7 @@ public:
         auto opIdx = static_cast<unsigned>(m_currOp) - 1;
         GASSERT(opIdx < OpCancelFuncMapSize);
         auto fn = OpCancelFuncMap[opIdx];
-        (this->*(fn))();
+        (this->*(fn))(MqttsnAsyncOpStatus_Aborted);
         return true;
     }
 
@@ -1578,15 +1578,17 @@ public:
             return;
         }
 
+        auto qosValue = details::translateQosValue(qosField.value());
         if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-            finaliseSubscribeOp(retCodeToStatus(retCodeField.value()), details::translateQosValue(qosField.value()));
+            op->m_qos = qosValue;
+            finaliseSubscribeOp(retCodeToStatus(retCodeField.value()));
             return;
         }
 
         if ((m_currOp == Op::SubscribeId) &&
             (opPtr<SubscribeIdOp>()->m_topicId != topicIdField.value())) {
             if (!doSubscribeId()) {
-                finaliseSubscribeOp(MqttsnAsyncOpStatus_InvalidId, op->m_qos);
+                finaliseSubscribeOp(MqttsnAsyncOpStatus_InvalidId);
             }
             return;
         }
@@ -1595,7 +1597,8 @@ public:
             updateRegInfo(opPtr<SubscribeOp>()->m_topic, topicIdField.value(), true);
         }
 
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_Successful, details::translateQosValue(qosField.value()));
+        op->m_qos = qosValue;
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_Successful);
     }
 
     virtual void handle(UnsubackMsg& msg) override
@@ -2131,12 +2134,6 @@ private:
         finaliseConnectOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
-    void connectCancel()
-    {
-        GASSERT(m_currOp == Op::Connect);
-        finaliseConnectOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
     void disconnectTimeout()
     {
         GASSERT(m_currOp == Op::Disconnect);
@@ -2149,12 +2146,6 @@ private:
         finaliseDisconnectOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
-    void disconnectCancel()
-    {
-        GASSERT(m_currOp == Op::Disconnect);
-        finaliseDisconnectOp(MqttsnAsyncOpStatus_Aborted);
-     }
-
     void publishIdTimeout()
     {
         GASSERT(m_currOp == Op::PublishId);
@@ -2165,12 +2156,6 @@ private:
         }
 
         finalisePublishOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void publishIdCancel()
-    {
-        GASSERT(m_currOp == Op::PublishId);
-        finalisePublishOp(MqttsnAsyncOpStatus_Aborted);
     }
 
     void publishTimeout()
@@ -2185,12 +2170,6 @@ private:
         finalisePublishOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
-    void publishCancel()
-    {
-        GASSERT(m_currOp == Op::Publish);
-        finalisePublishOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
     void subscribeIdTimeout()
     {
         GASSERT(m_currOp == Op::SubscribeId);
@@ -2200,13 +2179,7 @@ private:
             return;
         }
 
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse, opPtr<SubscribeIdOp>()->m_qos);
-    }
-
-    void subscribeIdCancel()
-    {
-        GASSERT(m_currOp == Op::SubscribeId);
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_Aborted, opPtr<SubscribeIdOp>()->m_qos);
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
     void subscribeTimeout()
@@ -2218,13 +2191,7 @@ private:
             return;
         }
 
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse, opPtr<SubscribeOp>()->m_qos);
-    }
-
-    void subscribeCancel()
-    {
-        GASSERT(m_currOp == Op::Subscribe);
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_Aborted, opPtr<SubscribeOp>()->m_qos);
+        finaliseSubscribeOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
     void unsubscribeIdTimeout()
@@ -2239,12 +2206,6 @@ private:
         finaliseUnsubscribeOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
-    void unsubscribeIdCancel()
-    {
-        GASSERT(m_currOp == Op::UnsubscribeId);
-        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
     void unsubscribeTimeout()
     {
         GASSERT(m_currOp == Op::Unsubscribe);
@@ -2257,12 +2218,6 @@ private:
         finaliseUnsubscribeOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
-    void unsubscribeCancel()
-    {
-        GASSERT(m_currOp == Op::Unsubscribe);
-        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
     void willTopicUpdateTimeout()
     {
         GASSERT(m_currOp == Op::WillTopicUpdate);
@@ -2273,12 +2228,6 @@ private:
         }
 
         finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void willTopicUpdateCancel()
-    {
-        GASSERT(m_currOp == Op::WillTopicUpdate);
-        finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus_Aborted);
     }
 
 
@@ -2294,13 +2243,6 @@ private:
         finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
-    void willMsgUpdateCancel()
-    {
-        GASSERT(m_currOp == Op::WillMsgUpdate);
-        finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
-
     void sleepTimeout()
     {
         GASSERT(m_currOp == Op::Sleep);
@@ -2313,12 +2255,6 @@ private:
         finaliseSleepOp(MqttsnAsyncOpStatus_NoResponse);
     }
 
-    void sleepCancel()
-    {
-        GASSERT(m_currOp == Op::Sleep);
-        finaliseSleepOp(MqttsnAsyncOpStatus_Aborted);
-    }
-
     void checkMessagesTimeout()
     {
         GASSERT(m_currOp == Op::CheckMessages);
@@ -2329,12 +2265,6 @@ private:
         }
 
         finaliseCheckMessagesOp(MqttsnAsyncOpStatus_NoResponse);
-    }
-
-    void checkMessagesCancel()
-    {
-        GASSERT(m_currOp == Op::CheckMessages);
-        finaliseCheckMessagesOp(MqttsnAsyncOpStatus_Aborted);
     }
 
     void sendMessage(const Message& msg, bool broadcast = false)
@@ -2976,7 +2906,7 @@ private:
         finaliseAsyncDoubleOp<PublishOp, Op::Publish, PublishIdOp, Op::PublishId>(status);
     }
 
-    void finaliseSubscribeOp(MqttsnAsyncOpStatus status, MqttsnQoS qos)
+    void finaliseSubscribeOp(MqttsnAsyncOpStatus status)
     {
         GASSERT((m_currOp == Op::Subscribe) || (m_currOp == Op::SubscribeId));
         auto* op = opPtr<SubscribeOpBase>();
@@ -2991,7 +2921,7 @@ private:
         }
         GASSERT(m_currOp == Op::None);
         GASSERT(cb != nullptr);
-        cb(cbData, status, qos);
+        cb(cbData, status, op->m_qos);
     }
 
     void finaliseUnsubscribeOp(MqttsnAsyncOpStatus status)
