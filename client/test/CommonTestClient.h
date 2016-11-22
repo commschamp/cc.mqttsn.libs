@@ -108,7 +108,6 @@ public:
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> CheckMessagesCompleteCallback;
 
     ~CommonTestClient();
 
@@ -129,7 +128,7 @@ public:
     AsyncOpCompleteCallback setWillMsgUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
     AsyncOpCompleteCallback setSleepCompleteCallback(AsyncOpCompleteCallback&& func);
     AsyncOpCompleteCallback setWakeupCompleteCallback(AsyncOpCompleteCallback&& func);
-    CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
+    AsyncOpCompleteCallback setCheckMessagesCompleteCallback(AsyncOpCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
     MqttsnErrorCode start();
@@ -260,7 +259,7 @@ private:
     AsyncOpCompleteCallback m_willMsgUpdateCompleteCallback;
     AsyncOpCompleteCallback m_sleepCompleteCallback;
     AsyncOpCompleteCallback m_wakeupCompleteCallback;
-    CheckMessagesCompleteCallback m_checkMessagesCompleteCallback;
+    AsyncOpCompleteCallback m_checkMessagesCompleteCallback;
 
     static const ClientLibFuncs DefaultFuncs;
 };

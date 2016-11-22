@@ -185,12 +185,6 @@ typedef void (*MqttsnAsyncOpCompleteReportFn)(void* data, MqttsnAsyncOpStatus st
 /// @param[in] qos Maximal level of quality of service, the gateway/broker is going to use to publish incoming messages.
 typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
 
-/// @brief Callback used to report completion of the check pending messages operation.
-/// @param[in] data Pointer to user data object, passed as the last parameter to
-///     the check messages request.
-/// @param[in] status Status of the operation.
-typedef void (*MqttsnCheckMessagesCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
-
 /// @brief Callback used to report incoming messages.
 /// @details The callback is set using
 ///     mqttsn_client_set_message_report_callback() function. The reported

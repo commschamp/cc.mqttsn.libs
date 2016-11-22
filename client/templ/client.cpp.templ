@@ -389,7 +389,7 @@ MqttsnErrorCode mqttsn_##NAME##client_wakeup(
 
 MqttsnErrorCode mqttsn_##NAME##client_check_messages(
     MqttsnClientHandle client,
-    MqttsnCheckMessagesCompleteReportFn callback,
+    MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {

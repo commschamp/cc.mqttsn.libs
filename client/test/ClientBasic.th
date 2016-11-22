@@ -3727,7 +3727,6 @@ void ClientBasic::test39()
     auto connackMsg = dataProc.prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal_Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
     verifyCb_ReportedWakeup(state, MqttsnAsyncOpStatus_Successful);
-    verifyCb_ReportedConnStatus(state, MqttsnConnectionStatus_Connected);
     verifyNoOtherEvent(state);
 }
 

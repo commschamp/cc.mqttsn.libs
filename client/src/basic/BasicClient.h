@@ -255,11 +255,7 @@ class BasicClient : public THandler
 
     typedef ConnectOp WakeupOp;
 
-    struct CheckMessagesOp : public OpBase
-    {
-        MqttsnCheckMessagesCompleteReportFn m_cb = nullptr;
-        void* m_cbData = nullptr;
-    };
+    typedef AsyncOpBase CheckMessagesOp;
 
     enum class ConnectionStatus
     {
@@ -638,8 +634,8 @@ public:
 
         auto guard = apiCall();
         m_currOp = Op::Disconnect;
-        auto* disconnectOp = newAsyncOp<DisconnectOp>(callback, data);
-        static_cast<void>(disconnectOp);
+        auto* op = newAsyncOp<DisconnectOp>(callback, data);
+        static_cast<void>(op);
 
         bool result = doDisconnect();
         static_cast<void>(result);
@@ -1099,7 +1095,7 @@ public:
     }
 
     MqttsnErrorCode checkMessages(
-        MqttsnCheckMessagesCompleteReportFn callback,
+        MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
@@ -1121,9 +1117,8 @@ public:
         auto guard = apiCall();
 
         m_currOp = Op::CheckMessages;
-        auto* op = newOp<CheckMessagesOp>();
-        op->m_cb = callback;
-        op->m_cbData = data;
+        auto* op = newAsyncOp<CheckMessagesOp>(callback, data);
+        static_cast<void>(op);
 
         bool result = doCheckMessages();
         static_cast<void>(result);
@@ -1196,21 +1191,6 @@ public:
         auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
         auto returnCode = retCodeField.value();
 
-        if (m_currOp == Op::Wakeup) {
-            finaliseWakeupOp(retCodeToStatus(retCodeField.value()));
-
-            if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-                m_connectionStatus = ConnectionStatus::Disconnected;
-                m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Disconnected);
-            }
-            else {
-                m_connectionStatus = ConnectionStatus::Connected;
-                m_connectionStatusReportFn(m_connectionStatusReportData, MqttsnConnectionStatus_Connected);
-            }
-
-            return;
-        }
-
         GASSERT((m_currOp != Op::Connect) || (m_connectionStatus != ConnectionStatus::Connected));
         if (returnCode == mqttsn::protocol::field::ReturnCodeVal_Accepted) {
             m_connectionStatus = ConnectionStatus::Connected;
@@ -1235,6 +1215,13 @@ public:
             finaliseWillUpdateOp(status);
             return;
         }
+
+        if (m_currOp == Op::Wakeup) {
+            finaliseWakeupOp(status);
+            return;
+        }
+
+        GASSERT(!"Some case wasn't handled");
     }
 
     virtual void handle(WilltopicreqMsg& msg) override
@@ -3148,15 +3135,7 @@ private:
 
     void finaliseCheckMessagesOp(MqttsnAsyncOpStatus status)
     {
-        GASSERT(m_currOp == Op::CheckMessages);
-        auto* op = opPtr<CheckMessagesOp>();
-        auto* cb = op->m_cb;
-        auto* cbData = op->m_cbData;
-
-        finaliseOp<CheckMessagesOp>();
-        GASSERT(m_currOp == Op::None);
-        GASSERT(cb != nullptr);
-        cb(cbData, status);
+        finaliseAsyncOp<CheckMessagesOp, Op::CheckMessages>(status);
     }
 
     MqttsnAsyncOpStatus retCodeToStatus(mqttsn::protocol::field::ReturnCodeVal val)
