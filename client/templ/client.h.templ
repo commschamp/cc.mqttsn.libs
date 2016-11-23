@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+/// @file
+/// @brief Functions of MQTT-SN client library.
 
 #pragma once
 
@@ -69,7 +71,8 @@ void mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
     
 /// @brief Set callback to send raw data over I/O link.
 /// @details The callback is invoked when there is a need to send data
-///     to the gateway.
+///     to the gateway. The callback is invoked for every single message
+///     that need to be sent as a single datagram. 
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
@@ -90,7 +93,7 @@ void mqttsn_##NAME##client_set_gw_status_report_callback(
     MqttsnGwStatusReportFn fn,
     void* data);
 
-/// @brief Set callback to report unsolicited disconnection of the client gateway.
+/// @brief Set callback to report unsolicited disconnection of the gateway.
 /// @details The callback will be invoked when gateway sends unsolicited 
 ///     @b DISCONNECT message or does not reply to @b PINGREQ message.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
@@ -131,7 +134,7 @@ MqttsnErrorCode mqttsn_##NAME##client_stop(MqttsnClientHandle client);
 
 /// @brief Provide data, received over I/O link, to the library for processing.
 /// @details This call may cause invocation of some callbacks, such as 
-///     request to cancel the currently running time, send some messages to
+///     request to cancel the currently running time measurement, send some messages to
 ///     the gateway, report incoming application message, and (re)start time
 ///     measurement.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
@@ -160,16 +163,16 @@ void mqttsn_##NAME##client_tick(MqttsnClientHandle client, unsigned ms);
 /// @details Some messages, sent to the gateway, may require acknowledgement by 
 ///     the latter. The delay (in seconds) between such attempts to resend the
 ///     message may be specified using this function. The default value is
-///     15 seconds.
+///     @b 15 seconds.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] value Number of @b seconds to wait before making an attempt to resend.
 void mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value);
 
 /// @brief Set number of retry attempts to perform before reporting unsuccessful result of the operation.
 /// @details Some messages, sent to the gateway, may require acknowledgement by 
-///     the latter. The amount of retry attempts before reporting unsucessful result
+///     the latter. The amount of retry attempts before reporting unsuccessful result
 ///     of the operation may be specified using this function. The default value
-///     is 3.
+///     is @b 3.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] value Number of retry attempts.
 void mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned value);
@@ -188,7 +191,7 @@ void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsig
 ///     If address of the gateway is known (such as known UDP host), there may
 ///     be no need to send these messages. To enable/disable search for available
 ///     gateways can be done using this function. By default the search for
-///     the gateway is enabled.
+///     the gateway is @b enabled.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] value @b true to enable, and @false to disable.
 void mqttsn_##NAME##client_set_searchgw_enabled(MqttsnClientHandle client, bool value);
@@ -237,19 +240,21 @@ bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 ///     will be invoked. Note, that the function cannot be successfully called when
 ///     client is already connected to the gateway. In order to change the
 ///     will information use mqttsn_##NAME##client_will_update() function.
-///     If some other operation timed out, use mqttsn_##NAME##client_check_reconnect()
+///     If some other operation timed out, use mqttsn_##NAME##client_reconnect()
 ///     to refresh the connection.
 ///     In order to change client ID and/or "keep alive" value disconnect
-///     first and then try to connect again. 
+///     first (using mqttsn_##NAME##client_disconnect()) and then try to 
+///     connect again. 
 ///
 ///     @b IMPORTANT : The buffers containing client ID string, as well as
 ///     will topic and message (if such exist) must be preserved intact
-///     until the connect operation is complete (connection status report
+///     until the connect operation is complete (provided
 ///     callback is invoked). The @b MqttsnWillInfo structure passed as
 ///     @b willInfo parameter may reside on the stack and be destructed 
-///     immediately after this function returns. 
+///     immediately after this function returns, but the buffers its data
+///     members point to must be preserved. 
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
-/// @param[in] client ID Client ID string.
+/// @param[in] clientId Client ID string.
 /// @param[in] keepAliveSeconds Maximum number of seconds allowed between the 
 ///     messages sent to the gateway. If no publish is performed during this
 ///     timeframe, the library will generate @b PINGREQ message and send to the
@@ -272,7 +277,7 @@ MqttsnErrorCode mqttsn_##NAME##client_connect(
     
 /// @brief Reconnect to the gateway using previously used client ID and keep alive
 ///     period.
-/// @details The invocation will work only when in "conneced" or "asleep" state,
+/// @details The invocation will work only when in "connected" or "asleep" state,
 ///     It will not work after invocation of mqttsn_##NAME##client_disconnect(). 
 ///     When the operation is complete, the provided callback
 ///     will be invoked. If successful completion is reported, the client
@@ -290,8 +295,8 @@ MqttsnErrorCode mqttsn_##NAME##client_reconnect(
 );
 
 /// @brief Disconnect from the gateway.
-/// @details When publish operation is complete, the provided callback
-///     will be invoked. Regardless of the result reportd disconnect result,
+/// @details When the operation is complete, the provided callback
+///     will be invoked. Regardless of the reported disconnect result,
 ///     the library assumes "disconnected" internal state and some functions,
 ///     such as requests to publish and/or subscribe may not work.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
@@ -503,12 +508,18 @@ MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
 
 /// @brief Notify gateway about entering the sleep state.
 /// @details When the operation is complete, the provided callback
-///     will be invoked. 
+///     will be invoked. If successful completion is reported, the client may
+///     enter the low power mode and do not send any messages within the
+///     "keep alive" period specified in mqttsn_##NAME##client_connect() 
+///     invocation. However, there is a need to either wake up (using 
+///     mqttsn_##NAME##client_reconnect()) or check for the accumulated messages
+///     (using mqttsn_##NAME##client_check_messages()) within the period 
+///     specified in this function invocation.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] duration Muximal number of seconds the client will remain in
 ///     the sleep state until next check of accumulated pending messages 
 ///     (use mqttsn_##NAME##client_check_messages() for this purpose) or
-///     full wake up (use mqttsn_##NAME##client_check_reconnect() for this purpose).
+///     full wake up (use mqttsn_##NAME##client_reconnect() for this purpose).
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
@@ -522,7 +533,9 @@ MqttsnErrorCode mqttsn_##NAME##client_sleep(
 );
 
 /// @brief Check for accumulated pending messages the gateway has to report.
-/// @details According to MQTT-SN protocol specification, this function will
+/// @details Can be invoked after successful entering the sleep state using
+///     mqttsn_##NAME##client_sleep(). 
+///     According to MQTT-SN protocol specification, this function will
 ///     force sending @b PINGREQ message to the gateway. The gateway then will
 ///     deliver all the pending messages, which may cause multiple invocation
 ///     of message report callback (set with

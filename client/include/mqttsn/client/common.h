@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+/// @file
+/// @brief Common definition for MQTT-SN clients.
 
 #pragma once
 
@@ -109,7 +111,7 @@ struct MqttsnMessageInfo
 ///     mqttsn_client_set_next_tick_program_callback() function.
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     mqttsn_client_set_next_tick_program_callback() function.
-/// @param[in] duration Time duration in milliseconds. After the requested
+/// @param[in] duration Time duration in @b milliseconds. After the requested
 ///     time expires, the mqttsn_client_tick() function is expected to be invoked.
 typedef void (*MqttsnNextTickProgramFn)(void* data, unsigned duration);
 
