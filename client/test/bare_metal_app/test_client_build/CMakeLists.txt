@@ -18,7 +18,7 @@ function (bin_client_build)
     set (name "test_client_build")
     
     set (src 
-        "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/main.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/stub.cpp")
 
     set (link

@@ -36,16 +36,16 @@ extern "C" {
 #endif // #ifdef __cplusplus
 
 /// @brief Quality of Service
-enum MqttsnQoS
+typedef enum
 {
     MqttsnQoS_NoGwPublish = -1, ///< QoS=-1. No gateway publish, used by publish only clients.
     MqttsnQoS_AtMostOnceDelivery, ///< QoS=0. At most once delivery.
     MqttsnQoS_AtLeastOnceDelivery, ///< QoS=1. At least once delivery.
     MqttsnQoS_ExactlyOnceDelivery ///< QoS=2. Exactly once delivery.
-};
+} MqttsnQoS;
 
 /// @brief Error code returned by various API functions.
-enum MqttsnErrorCode
+typedef enum
 {
     MqttsnErrorCode_Success, ///< The requested operation was successfully started.
     MqttsnErrorCode_AlreadyStarted, ///< Returned by mqttsn_client_start() function if invoked twice.
@@ -55,19 +55,19 @@ enum MqttsnErrorCode
     MqttsnErrorCode_NotConnected, ///< The client library is not connected to the gateway. Returned by operations that require connection to the gateway.
     MqttsnErrorCode_NotSleeping, ///< The client is not in ASLEEP mode.
     MqttsnErrorCode_BadParam, ///< Bad parameter is passed to the function.
-};
+} MqttsnErrorCode;
 
 /// @brief Status of the gateway
-enum MqttsnGwStatus
+typedef enum
 {
     MqttsnGwStatus_Invalid, ///< Invalid value, should never be used
     MqttsnGwStatus_Available, ///< The gateway is available.
     MqttsnGwStatus_TimedOut, ///< The gateway hasn't advertised its presence in time, assumed disconnected.
     MqttsnGwStatus_Discarded ///< The gateway info was discarded using mqttsn_client_discard_gw() or mqttsn_client_discard_all_gw().
-};
+} MqttsnGwStatus;
 
 /// @brief Status of the asynchronous operation
-enum MqttsnAsyncOpStatus
+typedef enum
 {
     MqttsnAsyncOpStatus_Invalid, ///< Invalid value, should never be used
     MqttsnAsyncOpStatus_Successful, ///< The operation was successful
@@ -76,7 +76,7 @@ enum MqttsnAsyncOpStatus
     MqttsnAsyncOpStatus_NotSupported, ///< The issued request is not supported by the gateway.
     MqttsnAsyncOpStatus_NoResponse, ///< The gateway/broker didn't respond the the request
     MqttsnAsyncOpStatus_Aborted, ///< The operation was cancelled using mqttsn_client_cancel() call.
-};
+} MqttsnAsyncOpStatus;
 
 /// @brief Handler used to access client specific data structures.
 /// @details Returned by mqttsn_client_new() function.
@@ -86,17 +86,17 @@ typedef void* MqttsnClientHandle;
 typedef unsigned short MqttsnTopicId;
 
 /// @brief Will Information
-struct MqttsnWillInfo
+typedef struct
 {
     const char* topic; ///< Topic of the will, can be NULL (means empty topic)
     const unsigned char* msg; ///< Pointer to the buffer containing will binary message.
     unsigned msgLen; ///< Length of the buffer containing will binary message.
     MqttsnQoS qos; ///< QoS level of the will message.
     bool retain; ///< Retain flag
-};
+} MqttsnWillInfo;
 
 /// @brief Incoming message information
-struct MqttsnMessageInfo
+typedef struct
 {
     const char* topic; ///< Topic the message was published with. May be NULL if message is reported with predefined topic ID.
     MqttsnTopicId topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.
@@ -104,7 +104,7 @@ struct MqttsnMessageInfo
     unsigned msgLen; ///< Number of bytes in reported message binary data.
     MqttsnQoS qos; ///< QoS level the message was received with.
     bool retain; ///< Retain flag of the message.
-};
+} MqttsnMessageInfo;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
