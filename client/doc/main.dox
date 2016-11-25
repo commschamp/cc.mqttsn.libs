@@ -249,7 +249,7 @@
 /// when some gateway failed to advertise its presence in time, and hence was
 /// reported as "timed out", but may still be online and respond to messages.
 /// The only way to identify the real availability of the gateway is to try
-/// to connect to it (see @ref mqttsn_client_connect section below).
+/// to connect to it (see @ref mqttsn_client_connect_disconnect section below).
 ///
 /// The library provides an ability to discard information about currently being
 /// tracked gateway. It may be useful when attempt to connect or send any messages
@@ -266,7 +266,7 @@
 /// mqttsn_client_discard_all_gw(client);
 /// @endcode
 ///
-/// @section mqttsn_client_connect Connect / Disconnect
+/// @section mqttsn_client_connect_disconnect Connect / Disconnect
 /// In order to establish connection to MQTT-SN gateway, the client must send
 /// to it special @b CONNECT message. It must be done prior to issuing any
 /// publish or subscribe request. The connection can be performed using
@@ -510,7 +510,7 @@
 ///
 /// @section mqttsn_client_will Updating the Will
 /// There are several ways to update the will information that was initially
-/// setup during connection process (see @ref mqttsn_client_connect).
+/// setup during connection process (see @ref mqttsn_client_connect_disconnect).
 ///
 /// One way is to update both topic and message body in one go:
 /// @code
@@ -589,6 +589,58 @@
 /// @endcode
 ///
 /// @section mqttsn_client_sleep Sleeping
+/// The MQTT-SN protocol supports sleeping clients. It requires to let gateway 
+/// know about entering the low power mode to cause accumulating the
+/// incoming messages with the gateway until clients wakes up.
+///
+/// To notify the gateway use mqttsn_client_sleep() function.
+/// @code
+/// void my_sleep_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     if (status == MqttsnAsyncOpStatus_Successful) {
+///         ... /* Enter low power mode */
+///     }
+///     ...
+/// }
+///
+/// // Next communication attempt in 10 minutes (600 seconds)
+/// MqttsnErrorCode result = mqttsn_client_sleep(client, 600, &my_sleep_complete, someUserData);
+/// ...
+/// @endcode
+/// The second parameter specifies time duration in seconds within which the
+/// client is going to check for accumulated messages or issue connection/disconnection
+/// request.
+///
+/// In order to notify the gateway about return to normal running mode, use
+/// mqttsn_client_reconnect() message, described in 
+/// @ref mqttsn_client_connect_disconnect section.
+///
+/// Check for pending messages to be delivered can be performed using
+/// mqttsn_client_check_messages() function.
+/// @code
+/// void my_check_messages_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ...
+/// }
+///
+/// MqttsnErrorCode result = mqttsn_client_check_messages(client, &my_check_messages_complete, someUserData);
+/// @endcode
+/// Between issuing the check request and completion callback invocation, there
+/// can be multiple exchange of messages between the client and gateway with
+/// multiple reports about incoming application messages. After callback is
+/// called, the client may return to low power mode again for up to number of
+/// seconds provided to initial mqttsn_client_sleep() call. When this period
+/// is over again, the client needs to either check for accumulated messages
+/// again or reconnect to the gateway (using mqttsn_client_reconnect() function).
 ///
 /// @section mqttsn_client_cancel Cancel Existing Opration
-///
+/// This MQTT-SN client library supports only one asynchronous operation at a 
+/// time. If current operation takes too much time or there is other more
+/// important one to perform, the current operation can be cancelled.
+/// @code
+/// bool cancelled = mqttsn_client_cancel(client);
+/// @endcode
+/// The return value shows whether the operation was really cancelled. If no
+/// operation was in progress, false is returned. If the operation is cancelled,
+/// the relevant callback will be invoked with @ref MqttsnAsyncOpStatus_Aborted
+/// status.

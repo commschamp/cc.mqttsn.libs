@@ -232,6 +232,8 @@ void mqttsn_##NAME##client_discard_all_gw(MqttsnClientHandle client);
 ///     the asyncrhonous operation will report @ref MqttsnAsyncOpStatus_Aborted
 ///     as operation result status. 
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @return true in case an asynchronous operation was cancelled,
+///     false otherwise.
 bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 
 /// @brief Issue the connect request to the gateway.
