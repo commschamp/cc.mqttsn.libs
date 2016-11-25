@@ -493,7 +493,7 @@ unsigned Filter::cancelTickCb(void* data)
 
 void Filter::gwStatusReportCb(
     void* data,
-    unsigned short gwId,
+    unsigned char gwId,
     MqttsnGwStatus status)
 {
     if (data == nullptr) {

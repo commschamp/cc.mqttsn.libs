@@ -145,7 +145,7 @@ typedef void (*MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, uns
 ///     mqttsn_client_set_gw_status_report_callback() function.
 /// @param[in] gwId ID of the gateway.
 /// @param[in] status Status of the gateway.
-typedef void (*MqttsnGwStatusReportFn)(void* data, unsigned short gwId, MqttsnGwStatus status);
+typedef void (*MqttsnGwStatusReportFn)(void* data, unsigned char gwId, MqttsnGwStatus status);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to

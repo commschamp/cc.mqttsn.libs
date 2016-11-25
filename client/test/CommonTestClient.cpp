@@ -659,7 +659,7 @@ void CommonTestClient::sendOutputDataCallback(
 
 void CommonTestClient::gwStatusReportCallback(
     void* data,
-    unsigned short gwId,
+    unsigned char gwId,
     MqttsnGwStatus status)
 {
     assert(data != nullptr);

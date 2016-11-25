@@ -137,7 +137,7 @@ private:
     static void sendMessageCb(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void programNextTickCb(void* data, unsigned duration);
     static unsigned cancelTickCb(void* data);
-    static void gwStatusReportCb(void* data, unsigned short gwId, MqttsnGwStatus status);
+    static void gwStatusReportCb(void* data, unsigned char gwId, MqttsnGwStatus status);
     static void gwDisconnectReportCb(void* data);
     static void connectCompleteCb(void* data, MqttsnAsyncOpStatus status);
     static void publishCompleteCb(void* data, MqttsnAsyncOpStatus status);

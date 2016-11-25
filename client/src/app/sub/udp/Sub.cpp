@@ -215,7 +215,7 @@ void Sub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
     doConnect();
 }
 
-void Sub::gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status)
+void Sub::gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Sub*>(obj)->gwStatusReport(gwId, status);

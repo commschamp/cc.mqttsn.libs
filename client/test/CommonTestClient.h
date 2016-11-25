@@ -217,7 +217,7 @@ private:
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
     static void sendOutputDataCallback(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
-    static void gwStatusReportCallback(void* data, unsigned short gwId, MqttsnGwStatus status);
+    static void gwStatusReportCallback(void* data, unsigned char gwId, MqttsnGwStatus status);
     static void gwDisconnectReportCallback(void* data);
     static void msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo);
     static void connectCompleteCallback(void* data, MqttsnAsyncOpStatus status);

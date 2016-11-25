@@ -148,7 +148,7 @@ private:
     static void sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool broadcast);
 
     void gwStatusReport(unsigned short gwId, MqttsnGwStatus status);
-    static void gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status);
+    static void gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status);
 
     void gwDisconnectReport();
     static void gwDisconnectReportCb(void* obj);
