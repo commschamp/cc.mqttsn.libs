@@ -221,6 +221,7 @@
 ///     }
 ///     ...
 /// }
+///
 /// mqttsn_client_set_gw_status_report_callback(client, &my_gw_status_report, someUserData);
 /// @endcode
 /// The gateways report their numeric ID (only one byte long), 
@@ -633,7 +634,7 @@
 /// is over again, the client needs to either check for accumulated messages
 /// again or reconnect to the gateway (using mqttsn_client_reconnect() function).
 ///
-/// @section mqttsn_client_cancel Cancel Existing Opration
+/// @section mqttsn_client_cancel Cancel Existing Operation
 /// This MQTT-SN client library supports only one asynchronous operation at a 
 /// time. If current operation takes too much time or there is other more
 /// important one to perform, the current operation can be cancelled.
