@@ -1090,14 +1090,16 @@ public:
         auto& fields = msg.fields();
         auto& idField = std::get<AdvertiseMsg::FieldIdx_gwId>(fields);
         auto& durationField = std::get<AdvertiseMsg::FieldIdx_duration>(fields);
+        auto durationVal =  durationField.value() * 3000U;
+
         auto iter = findGwInfo(idField.value());
         if (iter != m_gwInfos.end()) {
             iter->m_timestamp = m_timestamp;
-            iter->m_duration = durationField.value() * 1000U;
+            iter->m_duration = durationVal;
             return;
         }
 
-        if (!addNewGw(idField.value(), durationField.value() * 1000U)) {
+        if (!addNewGw(idField.value(), durationVal)) {
             return;
         }
 

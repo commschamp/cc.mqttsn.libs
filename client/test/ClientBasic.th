@@ -1506,11 +1506,11 @@ void ClientBasic::test2()
 
     dataFromGw(*client, advertiseData, "ADVERTISE");
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_Available);
-    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultAdvertisePeriod  + 1000);
+    TS_ASSERT_EQUALS(state.m_nextRequestedTicks, (DefaultAdvertisePeriod + 1000) * 3);
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultAdvertisePeriod  + 1000);
+    client->tick((DefaultAdvertisePeriod + 1000) * 3);
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_TimedOut);
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
