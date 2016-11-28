@@ -45,7 +45,7 @@
 /// @section mqttsn_client_header Header
 /// To use this <b>MQTT-SN Client Library</b> use the following include statement:
 /// @code
-/// #include "mqttsn/client.h"
+/// #include "mqttsn/client/client.h"
 /// @endcode
 ///
 /// @section mqttsn_client_allocation Client Allocation
