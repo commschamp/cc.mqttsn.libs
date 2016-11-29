@@ -1,0 +1,9 @@
+/// @mainpage MQTT-SN Gateway Library
+/// @tableofcontents
+/// @section mqttsn_gw_overview Overview
+/// The MQTT-SN Gateway Library provides simple, asynchronous, non-blocking, 
+/// and easy to use interface to implement and operate MQTT-SN gateway. 
+/// The library doesn't make any assumption on the system it is running on, 
+/// as well as on the type of I/O links being used to communicate with
+/// MQTT-SN clients as well as MQTT broker.
+///
