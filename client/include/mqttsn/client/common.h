@@ -25,9 +25,17 @@ extern "C" {
 #else
 
 #ifdef WIN32
+#ifndef bool
 #define bool char
+#endif
+
+#ifndef true
 #define true 1
+#endif
+
+#ifndef false
 #define false 0
+#endif
 
 #else // #ifdef WIN32
 #include <stdbool.h>

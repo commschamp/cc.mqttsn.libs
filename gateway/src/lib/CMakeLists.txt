@@ -2,6 +2,7 @@ function (lib_mqttsn_gateway)
     set (name "${MQTTSN_GATEWAY_LIB_NAME}")
 
     set (src
+        gateway_all.c
         gateway_all.cpp
         Gateway.cpp
         GatewayImpl.cpp

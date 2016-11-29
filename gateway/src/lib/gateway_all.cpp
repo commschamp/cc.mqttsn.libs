@@ -358,3 +358,303 @@ void mqttsn_gw_session_free(MqttsnSessionHandle session)
     std::unique_ptr<Session>(reinterpret_cast<Session*>(session));
 }
 
+void mqttsn_gw_session_set_tick_req_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionTickReqCb cb,
+    void* data)
+{
+    if ((session == nullptr) || (cb == nullptr)) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setNextTickProgramReqCb(
+        [cb, data](unsigned duration)
+        {
+            cb(data, duration);
+        });
+}
+
+void mqttsn_gw_session_set_cancel_tick_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionCancelTickReqCb cb,
+    void* data)
+{
+    if ((session == nullptr) || (cb == nullptr)) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setCancelTickWaitReqCb(
+        [cb, data]() -> unsigned
+        {
+            return cb(data);
+        });
+}
+
+void mqttsn_gw_session_set_send_data_to_client_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionSendDataReqCb cb,
+    void* data)
+{
+    if ((session == nullptr) || (cb == nullptr)) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setSendDataClientReqCb(
+        [cb, data](const std::uint8_t* buf, std::size_t bufLen)
+        {
+            cb(data, buf, static_cast<unsigned>(bufLen));
+        });
+}
+
+
+void mqttsn_gw_session_set_send_data_to_broker_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionSendDataReqCb cb,
+    void* data)
+{
+    if ((session == nullptr) || (cb == nullptr)) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setSendDataBrokerReqCb(
+        [cb, data](const std::uint8_t* buf, std::size_t bufLen)
+        {
+            cb(data, buf, static_cast<unsigned>(bufLen));
+        });
+}
+
+void mqttsn_gw_session_set_term_req_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionTermReqCb cb,
+    void* data)
+{
+    if ((session == nullptr) || (cb == nullptr)) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setTerminationReqCb(
+        [cb, data]()
+        {
+            cb(data);
+        });
+}
+
+void mqttsn_gw_session_set_broker_reconnect_req_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionBrokerReconnectReqCb cb,
+    void* data)
+{
+    if ((session == nullptr) || (cb == nullptr)) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setBrokerReconnectReqCb(
+        [cb, data]()
+        {
+            cb(data);
+        });
+}
+
+void mqttsn_gw_session_set_client_connect_report_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionClientConnectReportCb cb,
+    void* data)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    if (cb == nullptr) {
+        reinterpret_cast<Session*>(session)->setClientConnectedReportCb(nullptr);
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setClientConnectedReportCb(
+        [cb, data](const std::string& clientId)
+        {
+            cb(data, clientId.c_str());
+        });
+}
+
+void mqttsn_gw_session_set_auth_info_req_cb(
+    MqttsnSessionHandle session,
+    MqttsnSessionAuthInfoReqCb cb,
+    void* data)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    if (cb == nullptr) {
+        reinterpret_cast<Session*>(session)->setAuthInfoReqCb(nullptr);
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setAuthInfoReqCb(
+        [cb, data](const std::string& clientId) -> Session::AuthInfo
+        {
+            const char* username = nullptr;
+            const std::uint8_t* password = nullptr;
+            unsigned passLen = 0U;
+            cb(data, clientId.c_str(), &username, &password, &passLen);
+
+            Session::AuthInfo info;
+            if (username != nullptr) {
+                info.first = username;
+            }
+
+            if ((password != nullptr) && (0U < passLen)) {
+                info.second.assign(password, password + passLen);
+            }
+
+            return info;
+        });
+}
+
+void mqttsn_gw_session_set_id(MqttsnSessionHandle session, unsigned char id)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setGatewayId(id);
+}
+
+void mqttsn_gw_session_set_retry_period(MqttsnSessionHandle session, unsigned value)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setRetryPeriod(value);
+}
+
+void mqttsn_gw_session_set_retry_count(MqttsnSessionHandle session, unsigned value)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setRetryCount(value);
+}
+
+void mqttsn_gw_session_set_sleeping_client_msg_limit(
+    MqttsnSessionHandle session,
+    unsigned value)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setSleepingClientMsgLimit(value);
+}
+
+void mqttsn_gw_session_set_default_client_id(MqttsnSessionHandle session, const char* clientId)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setDefaultClientId(clientId);
+}
+
+void mqttsn_gw_session_set_pub_only_keep_alive(
+    MqttsnSessionHandle session,
+    unsigned value)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setPubOnlyKeepAlive(value);
+}
+
+bool mqttsn_gw_session_start(MqttsnSessionHandle session)
+{
+    if (session == nullptr) {
+        return false;
+    }
+
+    return reinterpret_cast<Session*>(session)->start();
+}
+
+void mqttsn_gw_session_stop(MqttsnSessionHandle session)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->stop();
+}
+
+void mqttsn_gw_session_tick(MqttsnSessionHandle session, unsigned ms)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->tick(ms);
+}
+
+unsigned mqttsn_gw_session_data_from_client(
+    MqttsnSessionHandle session,
+    const unsigned char* buf,
+    unsigned bufLen)
+{
+    if (session == nullptr) {
+        return 0U;
+    }
+
+    return static_cast<unsigned>(
+        reinterpret_cast<Session*>(session)->dataFromClient(buf, bufLen));
+
+}
+
+unsigned mqttsn_gw_session_data_from_broker(
+    MqttsnSessionHandle session,
+    const unsigned char* buf,
+    unsigned bufLen)
+{
+    if (session == nullptr) {
+        return 0U;
+    }
+
+    return static_cast<unsigned>(
+        reinterpret_cast<Session*>(session)->dataFromBroker(buf, bufLen));
+
+}
+
+void mqttsn_gw_session_broker_connected(MqttsnSessionHandle session, bool connected)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setBrokerConnected(connected);
+}
+
+void mqttsn_gw_session_add_predefined_topic(
+    MqttsnSessionHandle session,
+    const char* topic,
+    unsigned short topicId)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->addPredefinedTopic(topic, topicId);
+}
+
+void mqttsn_gw_session_set_topic_alloc_range(
+    MqttsnSessionHandle session,
+    unsigned short minTopicId,
+    unsigned short maxTopicId)
+{
+    if (session == nullptr) {
+        return;
+    }
+
+    reinterpret_cast<Session*>(session)->setTopicIdAllocationRange(minTopicId, maxTopicId);
+}
+
+
