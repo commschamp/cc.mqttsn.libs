@@ -7,3 +7,45 @@
 /// as well as on the type of I/O links being used to communicate with
 /// MQTT-SN clients as well as MQTT broker.
 ///
+/// Having a gateway library instead of stand alone application allows
+/// implementation of any custom gateway that is suitable for the environment
+/// it is running on, working with any I/O link, and using any other additional 
+/// transport protocol to exchange data with clients and/or broker.
+///
+/// The library is implemented in C++(11). It provides two separate APIs: @b C++ 
+/// and @b C. The @b C interface is a wrapper around @b C++ one, but provides 
+/// an interface to be used with any project developed using C.
+///
+/// @section mqttsn_gw_headers Headers
+/// To use the C++ interface, use the following include statement:
+/// @code
+/// #include "mqttsn/gateway/gateway_allpp.h
+/// @endcode
+/// And for C interface, use the the folloing include statement:
+/// @code
+/// #include "mqttsn/gateway/gateway_all.h
+/// @endcode
+///
+/// @section mqttsn_gw_entities Entities
+/// The gateway library works with and provides an interface for three 
+/// intependent entities.
+/// - @b Gateway - Its main responsibility to advertise presence of the MQTT-SN
+///     gateway to all the clients on the network. If there is no need to advertise
+///     a presence, this entity may not be created or used. Example for such
+///     case would be UDP/IP network where the clients know up front the
+///     address of the gateway, and do not require gateway advertising its
+///     presence. For API description and tutorial, please read the
+///     @ref mqttsn_gw_gateway_page page.
+/// - @b Session - It is responsible to inteligently forward traffic between
+///     single client and the broker. New "session" object must be created
+///     when message from new client has been received. Once the relevant client
+///     gets disconnected, the "session" object needs to be deleted.
+/// - @b Config - It is responsible to provide a common way to parse the configuration
+///     file and provide a convenient interface to retrieve any configuration
+///     values, which can later be applied to the @b Gateway and/or @b Session
+///     entities. The format of the configuration file is described in the
+///     example config file provided with the project.
+///
+/// @section mqttsn_gw_thread_safety Thread Safety
+/// Parallel access to the distinct objects @b is safe, but parallel access
+/// to the same one is @b NOT.
