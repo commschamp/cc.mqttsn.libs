@@ -32,7 +32,7 @@ namespace gateway
 
 class GatewayImpl;
 /// @brief Interface for @b Gateway entity.
-/// @details The responsibility of the @b Gateway object it to advertise
+/// @details The responsibility of the @b Gateway object is to advertise
 ///     its presence to all MQTT-SN clients on the network. It requests the
 ///     driving code to send serialised @b ADVERTISE message periodically, using
 ///     provided callback.

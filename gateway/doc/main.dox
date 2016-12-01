@@ -40,6 +40,8 @@
 ///     single client and the broker. New "session" object must be created
 ///     when message from new client has been received. Once the relevant client
 ///     gets disconnected, the "session" object needs to be deleted.
+///     For API description and tutorial, please read the
+///     @ref mqttsn_gw_session_page page.
 /// - @b Config - It is responsible to provide a common way to parse the configuration
 ///     file and provide a convenient interface to retrieve any configuration
 ///     values, which can later be applied to the @b Gateway and/or @b Session

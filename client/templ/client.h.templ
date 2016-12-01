@@ -138,12 +138,12 @@ MqttsnErrorCode mqttsn_##NAME##client_stop(MqttsnClientHandle client);
 ///     the gateway, report incoming application message, and (re)start time
 ///     measurement.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
-/// @param[in] from Pointer to the buffer of data to process.
-/// @param[in] len Number of bytes in the data buffer.
+/// @param[in] buf Pointer to the buffer of data to process.
+/// @param[in] bufLen Number of bytes in the data buffer.
 /// @return Number of processed bytes.
 /// @note The function returns number of bytes that were actually consumed, and
 ///     can be removed from the holding buffer.
-unsigned mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const unsigned char* from, unsigned len);
+unsigned mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen);
 
 /// @brief Notify client library about amount of elapsed milliseconds.
 /// @details The reported amount of milliseconds needs to be from the 
