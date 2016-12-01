@@ -192,6 +192,45 @@
 /// data needs to be broadcasted on the network or sent directly to the 
 /// gateway that the client is connected to.
 ///
+/// @section mqttsn_client_time_measurement Time Measurement
+/// The MQTT-SN client must be aware of time to be able to measure delays
+/// between messages. The driving code has to provide a callback using
+/// which the library may request for such time measurement. The second
+/// parameter to the callback will specify number of @b milliseconds it
+/// needs to measure.
+/// @code
+/// void my_timer(void* userData, unsigned ms)
+/// {
+///     ... /* Program asynchronous timer to tick after requested number of milliseconds. When expires invoke mqttsn_client_tick() */
+/// }
+///
+/// mqttsn_client_set_next_tick_program_callback(client, &my_timer, someUserData);
+/// @endcode
+/// 
+/// The driving code will have to use its system timer(s) to measure the
+/// required time, and notify the library when it expires using
+/// mqttsn_client_tick() function.
+/// @code
+/// mqttsn_client_tick(client);
+/// @endcode
+/// 
+/// Based on some events, the library may require knowledge of elapsed time
+/// since last tick programming request. For this purpose the driving code
+/// must set a callback to cancel the existing time measurement and return
+/// number of elapsed @b milliseconds.
+/// @code
+/// unsigned my_cancel_timer(void* userData)
+/// {
+///     ... /* cancel timer */
+///     return ...; /* return number of elapsed milliseconds */
+/// }
+///
+/// mqttsn_client_set_cancel_next_tick_wait_callback(client, &my_cancel_timer, someUserData);
+/// @endcode
+/// When the library issues the existing time measurement cancellation request,
+/// the driving code must cancel its programmed system timer and
+/// must @b NOT call mqttsn_client_tick() function later on.
+///
 /// @section mqttsn_client_gateways Gateway Discovery
 /// The MQTT-SN protocol built to be suitable for wireless sensor networks, where
 /// the exact address of the gateway may be unknown upfront or there may be

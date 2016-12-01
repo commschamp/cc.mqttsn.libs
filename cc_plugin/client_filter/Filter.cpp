@@ -132,7 +132,8 @@ QList<Filter::DataInfoPtr> Filter::sendDataImpl(DataInfoPtr dataPtr)
 
 void Filter::tick()
 {
-    mqttsn_client_tick(m_client.get(), m_tickDuration);
+    m_tickDuration = 0U;
+    mqttsn_client_tick(m_client.get());
 }
 
 void Filter::startClient()

@@ -110,9 +110,8 @@ bool Pub::start()
 
 void Pub::tick()
 {
-    auto ms = m_reqTimeout;
     m_reqTimeout = 0;
-    mqttsn_client_tick(m_client.get(), ms);
+    mqttsn_client_tick(m_client.get());
 }
 
 void Pub::readFromSocket()

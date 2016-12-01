@@ -457,7 +457,7 @@ public:
         m_connectionStatus = ConnectionStatus::Disconnected;
 
         m_currOp = Op::None;
-        m_timerActive = false;
+        m_tickDelay = 0U;
 
         checkGwSearchReq();
         programNextTimeout();
@@ -475,15 +475,15 @@ public:
         return MqttsnErrorCode_Success;
     }
 
-    void tick(unsigned ms)
+    void tick()
     {
         if (!m_running) {
             return;
         }
 
         GASSERT(m_callStackCount == 0U);
-        m_timerActive = false;
-        m_timestamp += ms;
+        m_timestamp += m_tickDelay;
+        m_tickDelay = 0U;
 
         checkTimeouts();
         programNextTimeout();
@@ -1843,13 +1843,13 @@ private:
 
     bool updateTimestamp()
     {
-        if (!m_timerActive) {
+        if (!isTimerActive()) {
             return false;
         }
 
         GASSERT(m_cancelNextTickWaitFn != nullptr);
         m_timestamp += m_cancelNextTickWaitFn(m_cancelNextTickWaitData);
-        m_timerActive = false;
+        m_tickDelay = 0U;
         checkTimeouts();
         return true;
     }
@@ -1951,7 +1951,7 @@ private:
         GASSERT(m_nextTickProgramFn != nullptr);
         m_nextTickProgramFn(m_nextTickProgramData, delay);
         m_nextTimeoutTimestamp = m_timestamp + delay;
-        m_timerActive = true;
+        m_tickDelay = delay;
     }
 
     void checkAvailableGateways()
@@ -2874,6 +2874,11 @@ private:
                     this));
     }
 
+    bool isTimerActive() const
+    {
+        return (m_tickDelay != 0U);
+    }
+
 
     ProtStack m_stack;
     GwInfoStorage m_gwInfos;
@@ -2893,8 +2898,8 @@ private:
     std::uint16_t m_msgId = 0;
     std::uint8_t m_broadcastRadius = DefaultBroadcastRadius;
 
+    unsigned m_tickDelay = 0U;
     bool m_running = false;
-    bool m_timerActive = false;
     bool m_searchgwEnabled = true;
 
     Op m_currOp = Op::None;

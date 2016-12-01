@@ -85,7 +85,7 @@ int main(int argc, const char** argv)
     }
 
     mqttsn_test_bare_metal_client_process_data(client, from, SeqSize);
-    mqttsn_test_bare_metal_client_tick(client, 10);
+    mqttsn_test_bare_metal_client_tick(client);
     mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, NULL, &connectComplete, NULL);
     mqttsn_test_bare_metal_client_publish(
         client,

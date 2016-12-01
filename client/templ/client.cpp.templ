@@ -137,10 +137,10 @@ unsigned mqttsn_##NAME##client_process_data(
     return clientObj->processData(from, len);
 }
 
-void mqttsn_##NAME##client_tick(void* client, unsigned ms)
+void mqttsn_##NAME##client_tick(void* client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    clientObj->tick(ms);
+    clientObj->tick();
 }
 
 void mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value)

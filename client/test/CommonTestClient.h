@@ -129,7 +129,7 @@ public:
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
     MqttsnErrorCode start();
     void inputData(const std::uint8_t* buf, std::size_t bufLen);
-    void tick(unsigned ms);
+    void tick();
     void setRetryPeriod(unsigned ms);
     void setRetryCount(unsigned value);
     void setBroadcastRadius(unsigned char val);

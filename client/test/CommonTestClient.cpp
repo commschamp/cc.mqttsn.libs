@@ -229,10 +229,10 @@ void CommonTestClient::inputData(const std::uint8_t* buf, std::size_t bufLen)
     m_inData.erase(m_inData.begin(), m_inData.begin() + count);
 }
 
-void CommonTestClient::tick(unsigned ms)
+void CommonTestClient::tick()
 {
     assert(m_libFuncs.m_tickFunc != nullptr);
-    (m_libFuncs.m_tickFunc)(m_client, ms);
+    (m_libFuncs.m_tickFunc)(m_client);
 }
 
 void CommonTestClient::setRetryPeriod(unsigned ms)

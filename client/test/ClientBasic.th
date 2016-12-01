@@ -1474,7 +1474,7 @@ void ClientBasic::test2()
 
     clearState(state);
     TS_TRACE("Tick");
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
@@ -1493,7 +1493,7 @@ void ClientBasic::test2()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(MaxPeriod);
+    client->tick();
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_TimedOut);
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -1510,7 +1510,7 @@ void ClientBasic::test2()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick((DefaultAdvertisePeriod + 1000) * 3);
+    client->tick();
     verifyCb_ReportedGw(state, GwId, MqttsnGwStatus_TimedOut);
     verifySent_SearchgwMsg(state, dataProc, DefaultBroadcastRadius);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -1568,23 +1568,20 @@ void ClientBasic::test3()
 
     verifySent_ConnectMsg(state, dataProc, ClientId, KeepAlive, true, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
-    auto nextTick = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTick);
+    client->tick();
     verifySent_ConnectMsg(state, dataProc, ClientId, KeepAlive, true, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTick = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTick);
+    client->tick();
     verifySent_ConnectMsg(state, dataProc, ClientId, KeepAlive, true, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTick = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTick);
+    client->tick();
 
     // Timeout and new connect attempt is expected here
 
@@ -1652,10 +1649,8 @@ void ClientBasic::test4()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    auto nextTick = state.m_nextRequestedTicks;
     clearState(state);
-
-    client->tick(nextTick); // Timeout is expected, new connect attempt
+    client->tick(); // Timeout is expected, new connect attempt
 
     verifySent_ConnectMsg(state, dataProc, ClientId, KeepAlive, true, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -1701,7 +1696,7 @@ void ClientBasic::test5()
     auto nextTicks = state.m_nextRequestedTicks;
     TS_ASSERT_EQUALS(nextTicks, DefaultKeepAlive * 1000);
 
-    client->tick(nextTicks);
+    client->tick();
     verifySent_PingreqMsg(state, dataProc);
     verifyNoOtherEvent(state);
 
@@ -1718,25 +1713,25 @@ void ClientBasic::test5()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_PingreqMsg(state, dataProc);
     verifyNoOtherEvent(state);
 
     nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_PingreqMsg(state, dataProc);
     verifyNoOtherEvent(state);
 
     nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_PingreqMsg(state, dataProc);
     verifyNoOtherEvent(state);
 
     nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifyCb_ReportedGwDisconnect(state);
     verifyNoOtherEvent(state);
 }
@@ -1821,23 +1816,20 @@ void ClientBasic::test8()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_DisconnectMsg(state, dataProc);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_DisconnectMsg(state, dataProc);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
 
     TS_ASSERT(state.m_nextOutput.empty());
     verifyCb_ReportedDisconnect(state, MqttsnAsyncOpStatus_NoResponse);
@@ -1868,9 +1860,8 @@ void ClientBasic::test9()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    auto nextTick = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTick);
+    client->tick();
     verifySent_ConnectMsg(state, dataProc, ClientId, KeepAlive, true, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
@@ -2008,9 +1999,8 @@ void ClientBasic::test13()
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     auto msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
@@ -2113,9 +2103,8 @@ void ClientBasic::test15()
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_PubrelMsg(state, dataProc, msgId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
@@ -2220,25 +2209,22 @@ void ClientBasic::test17()
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_RegisterMsg(state, dataProc, Topic);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_RegisterMsg(state, dataProc, Topic);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_NoResponse);
     TS_ASSERT(state.m_nextOutput.empty());
     verifyNoOtherEvent(state);
@@ -2288,17 +2274,15 @@ void ClientBasic::test18()
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifySent_RegisterMsg(state, dataProc, Topic);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     TS_ASSERT(state.m_reportedPublishes.empty());
     auto msgId = verifySent_RegisterMsg(state, dataProc, Topic);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -2314,9 +2298,8 @@ void ClientBasic::test18()
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     TS_ASSERT(state.m_reportedPublishes.empty());
     msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -2901,9 +2884,8 @@ void ClientBasic::test27()
     TS_ASSERT(state.m_reportedSubscribes.empty());
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     auto msgId2 = verifySent_SubsribeMsg(state, dataProc, TopicId, Qos, true);
     TS_ASSERT_EQUALS(msgId, msgId2);
     verifyNoOtherEvent(state);
@@ -3035,23 +3017,20 @@ void ClientBasic::test29()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_SubsribeMsg(state, dataProc, Topic, Qos, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_SubsribeMsg(state, dataProc, Topic, Qos, true);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_NoResponse, Qos);
     verifyNoOtherEvent(state);
 
@@ -3247,23 +3226,20 @@ void ClientBasic::test32()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    auto nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_UnsubsribeMsg(state, dataProc, TopicId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifySent_UnsubsribeMsg(state, dataProc, TopicId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    nextTicks = state.m_nextRequestedTicks;
     clearState(state);
-    client->tick(nextTicks);
+    client->tick();
     verifyCb_ReportedUnsubsribe(state, MqttsnAsyncOpStatus_NoResponse);
     verifyNoOtherEvent(state);
 
@@ -3404,21 +3380,21 @@ void ClientBasic::test35()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     TS_ASSERT(state.m_reportedWillUpdates.empty());
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     TS_ASSERT(state.m_reportedWillUpdates.empty());
     verifySent_WilltopicupdMsg(state, dataProc, WillTopic, Qos, Retain);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     verifyCb_ReportedWillTopicUpdate(state, MqttsnAsyncOpStatus_NoResponse);
     verifyNoOtherEvent(state);
 }
@@ -3464,21 +3440,21 @@ void ClientBasic::test36()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     TS_ASSERT(state.m_reportedWillUpdates.empty());
     verifySent_WillmsgupdMsg(state, dataProc, Data);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     TS_ASSERT(state.m_reportedWillUpdates.empty());
     verifySent_WillmsgupdMsg(state, dataProc, Data);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     verifyCb_ReportedWillMsgUpdate(state, MqttsnAsyncOpStatus_NoResponse);
     verifyNoOtherEvent(state);
 }
@@ -3576,19 +3552,19 @@ void ClientBasic::test38()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     verifySent_DisconnectMsg(state, dataProc, Duration);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     verifySent_DisconnectMsg(state, dataProc, Duration);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     verifyCb_ReportedSleep(state, MqttsnAsyncOpStatus_NoResponse);
     verifyNoOtherEvent(state);
 
@@ -3699,7 +3675,7 @@ void ClientBasic::test39()
     verifyNoOtherEvent(state);
 
     clearState(state);
-    client->tick(DefaultRetryTimeout);
+    client->tick();
     verifySent_ConnectMsg(state, dataProc, DefaultClientId, DefaultKeepAlive, false, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);

@@ -58,7 +58,7 @@ void mqttsn_##NAME##client_set_next_tick_program_callback(
 /// @details The client may request termination of currently running time 
 ///     measurement, previously requested via callback, which was set using
 ///     mqttsn_##NAME##client_set_next_tick_program_callback() function. This function
-///     sets appropriate callback. When invoked, it must returned number of
+///     sets appropriate callback. When invoked, it must returne number of
 ///     elapsed milliseconds since previoius time measurement request.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
@@ -145,7 +145,7 @@ MqttsnErrorCode mqttsn_##NAME##client_stop(MqttsnClientHandle client);
 ///     can be removed from the holding buffer.
 unsigned mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen);
 
-/// @brief Notify client library about amount of elapsed milliseconds.
+/// @brief Notify client about requested time expiry.
 /// @details The reported amount of milliseconds needs to be from the 
 ///     last request to program timer via callback (set by
 ///     mqttsn_##NAME##client_set_next_tick_program_callback()).
@@ -157,7 +157,7 @@ unsigned mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const uns
 ///     to send new data to the gateway.
 /// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
 /// @param[in] ms Number of elapsed @b milliseconds.
-void mqttsn_##NAME##client_tick(MqttsnClientHandle client, unsigned ms);
+void mqttsn_##NAME##client_tick(MqttsnClientHandle client);
 
 /// @brief Set retry period to wait between resending unacknowledged message to the gateway.
 /// @details Some messages, sent to the gateway, may require acknowledgement by 

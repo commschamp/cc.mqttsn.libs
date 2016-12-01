@@ -102,9 +102,8 @@ bool Sub::start()
 
 void Sub::tick()
 {
-    auto ms = m_reqTimeout;
     m_reqTimeout = 0;
-    mqttsn_client_tick(m_client.get(), ms);
+    mqttsn_client_tick(m_client.get());
 }
 
 void Sub::readFromSocket()
