@@ -117,9 +117,9 @@ bool Session::isRunning() const
     return m_pImpl->isRunning();
 }
 
-void Session::tick(unsigned ms)
+void Session::tick()
 {
-    m_pImpl->tick(ms);
+    m_pImpl->tick();
 }
 
 std::size_t Session::dataFromClient(const std::uint8_t* buf, std::size_t len)

@@ -587,13 +587,13 @@ void mqttsn_gw_session_stop(MqttsnSessionHandle session)
     reinterpret_cast<Session*>(session)->stop();
 }
 
-void mqttsn_gw_session_tick(MqttsnSessionHandle session, unsigned ms)
+void mqttsn_gw_session_tick(MqttsnSessionHandle session)
 {
     if (session == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->tick(ms);
+    reinterpret_cast<Session*>(session)->tick();
 }
 
 unsigned mqttsn_gw_session_data_from_client(

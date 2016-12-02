@@ -250,7 +250,7 @@ void mqttsn_gw_session_set_pub_only_keep_alive(MqttsnSessionHandle session, unsi
 
 bool mqttsn_gw_session_start(MqttsnSessionHandle session);
 void mqttsn_gw_session_stop(MqttsnSessionHandle session);
-void mqttsn_gw_session_tick(MqttsnSessionHandle session, unsigned ms);
+void mqttsn_gw_session_tick(MqttsnSessionHandle session);
 
 unsigned mqttsn_gw_session_data_from_client(
     MqttsnSessionHandle session,

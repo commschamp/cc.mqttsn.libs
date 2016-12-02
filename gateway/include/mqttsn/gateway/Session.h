@@ -222,8 +222,7 @@ public:
     /// @brief Notify the @ref Session object about requested time period expiry.
     /// @details This function needs to be called from the driving code after
     ///     the requested time measurement has expired.
-    /// @param[in] ms Number of @b milliseconds since last time measurement request.
-    void tick(unsigned ms);
+    void tick();
 
     /// @brief Provide data received from the client for processing.
     /// @details This call may cause invocation of some callbacks, such as

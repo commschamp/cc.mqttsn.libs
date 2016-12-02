@@ -135,7 +135,8 @@ bool SessionWrapper::start()
 
 void SessionWrapper::tickTimeout()
 {
-    m_session.tick(m_reqTicks);
+    m_reqTicks = 0U;
+    m_session.tick();
 }
 
 void SessionWrapper::brokerConnected()

@@ -158,7 +158,7 @@ public:
         return m_state.m_running;
     }
 
-    void tick(unsigned ms);
+    void tick();
 
     std::size_t dataFromClient(const std::uint8_t* buf, std::size_t len);
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
