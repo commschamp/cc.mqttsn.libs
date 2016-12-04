@@ -16,6 +16,18 @@
 /// and @b C. The @b C interface is a wrapper around @b C++ one, but provides 
 /// an interface to be used with any project developed using C.
 ///
+/// @section mqttsn_client_io_links Various I/O Links
+/// MQTT-SN is designed to be a @b datagram protocol, i.e. if sent message is 
+/// received by the other side, it is received <b>in full</b> and 
+/// <b>without errors</b>. If sent over UDP link, it can be used as is. The
+/// UDP transport cares about all the rest. However, when sent over other 
+/// I/O link, such as RS-232 serial connection, the protocol may require additional
+/// transport wrapping to insure correct delivery and differentiate between packets.
+///
+/// The interface, this <b>MQTT-SN Gateway Library</b> provides, allows any
+/// sent or received data to be wrapped with or unwrapped from additional 
+/// independent transport data, that insures safe and correct delivery.
+///
 /// @section mqttsn_gw_headers Headers
 /// To use the C++ interface, use the following include statement:
 /// @code

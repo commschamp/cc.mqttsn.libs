@@ -247,6 +247,10 @@ public:
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
 
     /// @brief Notify the library about broker being connected / disconnected
+    /// @details The report of broker being connected or disconnected must
+    ///     be performed only when the session's operation has been successfully
+    ///     started (see start()). Otherwise the call to this function gets
+    ///     ignored.
     /// @param[in] conneted Connection status - @b true means connected, @b false disconnected.
     void setBrokerConnected(bool connected);
 

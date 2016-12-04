@@ -89,8 +89,25 @@ typedef void (*MqttsnGwBroadcastReqCb)(void* userData, const unsigned char* buf,
 
 typedef void (*MqttsnSessionTickReqCb)(void* userData, unsigned duration);
 typedef unsigned (*MqttsnSessionCancelTickReqCb)(void* userData);
+
+/// @brief Type of callback, used to request delivery of serialised message
+///     to the client or broker.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] buf Buffer containing serialised message.
+/// @param[in] bufLen Number of bytes in the buffer
 typedef void (*MqttsnSessionSendDataReqCb)(void* userData, const unsigned char* buf, unsigned bufLen);
+
+/// @brief Type of callback, used to request session termination.
+/// @details When the callback is invoked, the driving code must flush
+///     all the previously sent messages to appropriate I/O links and
+///     delete this session object.
+/// @param[in] userData User data passed as the last parameter to the setting function.
 typedef void (*MqttsnSessionTermReqCb)(void* userData);
+
+/// @brief Type of callback used to request reconnection to the broker.
+/// @details When the callback is invoked, the driving code must close
+///     existing TCP/IP connection to the broker and create a new one.
+/// @param[in] userData User data passed as the last parameter to the setting function.
 typedef void (*MqttsnSessionBrokerReconnectReqCb)(void* userData);
 typedef void (*MqttsnSessionClientConnectReportCb)(void* userData, const char* clientId);
 typedef void (*MqttsnSessionAuthInfoReqCb)(
@@ -193,32 +210,90 @@ void mqttsn_gw_stop(MqttsnGatewayHandle gw);
 /// @param[in] gw Handle returned by mqttsn_gw_alloc() function.
 void mqttsn_gw_tick(MqttsnGatewayHandle gw);
 
+/// @brief Allocate @b Session object.
+/// @details The returned handle need to be passed as first parameter
+///     to all relevant functions. Note that the @b Session object is
+///     dynamically allocated and needs to be freed using
+///     mqttsn_gw_session_free() function.
+/// @return Handler to the allocated @b Session object.
 MqttsnSessionHandle mqttsn_gw_session_alloc(void);
+
+/// @brief Free allocated @b Session object.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
 void mqttsn_gw_session_free(MqttsnSessionHandle session);
+
+/// @brief Set the callback to be invoked when new time measurement is required.
+/// @details This is a must have callback, without it the object can not
+///     be started (see mqttsn_gw_session_start()).
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_tick_req_cb(
     MqttsnSessionHandle session,
     MqttsnSessionTickReqCb cb,
     void* data);
+
+/// @brief Set the callback to be invoked when previously requested time
+///     measurement needs to be cancelled.
+/// @details This is a must have callback, without it the object can not
+///     be started (see mqttsn_gw_session_start()).
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_cancel_tick_cb(
     MqttsnSessionHandle session,
     MqttsnSessionCancelTickReqCb cb,
     void* data);
 
+/// @brief Set the callback to be invoked when new data needs to be sent
+///     to the @b client.
+/// @details This is a must have callback, without it the object can not
+///     be started (see mqttsn_gw_session_start()).
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_send_data_to_client_cb(
     MqttsnSessionHandle session,
     MqttsnSessionSendDataReqCb cb,
     void* data);
 
+/// @brief Set the callback to be invoked when new data needs to be sent
+///     to the @b broker.
+/// @details This is a must have callback, without it the object can not
+///     be started (see mqttsn_gw_session_start()).
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_send_data_to_broker_cb(
     MqttsnSessionHandle session,
     MqttsnSessionSendDataReqCb cb,
     void* data);
 
+/// @brief Set the callback to be invoked when the session needs to be
+///     terminated and this @ref Session object deleted.
+/// @details This is a must have callback, without it the object can not
+///     be started (see mqttsn_gw_session_start()).
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_term_req_cb(
     MqttsnSessionHandle session,
     MqttsnSessionTermReqCb cb,
     void* data);
 
+/// @brief Set the callback to be invoked when the session needs to close
+///     existing TCP/IP connection to the broker and open a new one.
+/// @details This is a must have callback, without it the object can not
+///     be started (see mqttsn_gw_session_start()).
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_broker_reconnect_req_cb(
     MqttsnSessionHandle session,
     MqttsnSessionBrokerReconnectReqCb cb,
@@ -250,13 +325,38 @@ void mqttsn_gw_session_set_pub_only_keep_alive(MqttsnSessionHandle session, unsi
 
 bool mqttsn_gw_session_start(MqttsnSessionHandle session);
 void mqttsn_gw_session_stop(MqttsnSessionHandle session);
+
+/// @brief Notify the @ref Session object about requested time period expiry.
+/// @details This function needs to be called from the driving code after
+///     the requested time measurement has expired.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
 void mqttsn_gw_session_tick(MqttsnSessionHandle session);
 
+/// @brief Provide data received from the @b client for processing.
+/// @details This call may cause invocation of some callbacks, such as
+///     request to cancel the currently running time measurement,
+///     send new message(s) and/or (re)start time measurement.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] buf Pointer to the buffer of data to process.
+/// @param[in] len Number of bytes in the data buffer.
+/// @return Number of processed bytes.
+/// @note The function returns number of bytes that were actually consumed, and
+///     can be removed from the holding buffer.
 unsigned mqttsn_gw_session_data_from_client(
     MqttsnSessionHandle session,
     const unsigned char* buf,
     unsigned bufLen);
 
+/// @brief Provide data received from the @b broker for processing.
+/// @details This call may cause invocation of some callbacks, such as
+///     request to cancel the currently running time measurement,
+///     send new message(s) and/or (re)start time measurement.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] buf Pointer to the buffer of data to process.
+/// @param[in] len Number of bytes in the data buffer.
+/// @return Number of processed bytes.
+/// @note The function returns number of bytes that were actually consumed, and
+///     can be removed from the holding buffer.
 unsigned mqttsn_gw_session_data_from_broker(
     MqttsnSessionHandle session,
     const unsigned char* buf,
