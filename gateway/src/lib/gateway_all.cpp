@@ -33,234 +33,7 @@ typedef mqttsn::gateway::Session Session;
 
 }  // namespace
 
-MqttsnConfigHandle mqttsn_gw_config_alloc(void)
-{
-    return new Config;
-}
-
-void mqttsn_gw_config_free(MqttsnConfigHandle config)
-{
-    std::unique_ptr<Config>(reinterpret_cast<Config*>(config));
-}
-
-void mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str)
-{
-    if (config == nullptr) {
-        return;
-    }
-
-    std::stringstream stream;
-    stream << str;
-    reinterpret_cast<Config*>(config)->read(stream);
-}
-
-bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename)
-{
-    if (config == nullptr) {
-        return false;
-    }
-
-    std::ifstream stream(filename, std::ios_base::in);
-    if (!stream) {
-        return false;
-    }
-
-    reinterpret_cast<Config*>(config)->read(stream);
-    return true;
-}
-
-unsigned char mqttsn_gw_config_id(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return reinterpret_cast<const Config*>(config)->gatewayId();
-}
-
-unsigned short mqttsn_gw_config_advertise_period(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return reinterpret_cast<const Config*>(config)->advertisePeriod();
-}
-
-unsigned mqttsn_gw_config_retry_period(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return reinterpret_cast<const Config*>(config)->retryPeriod();
-}
-
-unsigned mqttsn_gw_config_retry_count(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return reinterpret_cast<const Config*>(config)->retryCount();
-}
-
-const char* mqttsn_gw_config_default_client_id(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return nullptr;
-    }
-
-    return reinterpret_cast<const Config*>(config)->defaultClientId().c_str();
-}
-
-unsigned mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return reinterpret_cast<const Config*>(config)->pubOnlyKeepAlive();
-}
-
-unsigned mqttsn_gw_config_sleepin_client_msg_limit(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return std::numeric_limits<unsigned>::max();
-    }
-
-    return static_cast<unsigned>(
-        reinterpret_cast<const Config*>(config)->sleepingClientMsgLimit());
-}
-
-unsigned mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return static_cast<unsigned>(
-        reinterpret_cast<const Config*>(config)->predefinedTopics().size());
-}
-
-unsigned mqttsn_gw_config_get_predefined_topics(
-    MqttsnConfigHandle config,
-    MqttsnPredefinedTopicInfo* buf,
-    unsigned bufLen)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    auto& predefinedTopics = reinterpret_cast<const Config*>(config)->predefinedTopics();
-    auto total = std::min(static_cast<unsigned>(predefinedTopics.size()), bufLen);
-
-    std::transform(
-        predefinedTopics.begin(), predefinedTopics.begin() + total, buf,
-        [](const mqttsn::gateway::Config::PredefinedTopicInfo& info) -> MqttsnPredefinedTopicInfo
-        {
-            MqttsnPredefinedTopicInfo retInfo;
-            retInfo.clientId = info.clientId.c_str();
-            retInfo.topic = info.topic.c_str();
-            retInfo.topicId = info.topicId;
-            return retInfo;
-        });
-    return total;
-}
-
-unsigned mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return static_cast<unsigned>(
-        reinterpret_cast<const Config*>(config)->authInfos().size());
-}
-
-unsigned mqttsn_gw_config_get_auth_infos(
-    MqttsnConfigHandle config,
-    MqttsnAuthInfo* buf,
-    unsigned bufLen)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    auto& authInfos = reinterpret_cast<const Config*>(config)->authInfos();
-    auto total = std::min(static_cast<unsigned>(authInfos.size()), bufLen);
-
-    std::transform(
-        authInfos.begin(), authInfos.begin() + total, buf,
-        [](const mqttsn::gateway::Config::AuthInfo& info) -> MqttsnAuthInfo
-        {
-            MqttsnAuthInfo retInfo;
-            retInfo.clientId = info.clientId.c_str();
-            retInfo.username = info.username.c_str();
-            retInfo.password = info.password.c_str();
-            return retInfo;
-        });
-    return total;
-}
-
-void mqttsn_gw_config_topic_id_alloc_range(
-    MqttsnConfigHandle config,
-    unsigned short* min,
-    unsigned short* max)
-{
-    if (config == nullptr) {
-        return;
-    }
-
-    auto range = reinterpret_cast<const Config*>(config)->topicIdAllocRange();
-    if (min != nullptr) {
-        *min = range.first;
-    }
-
-    if (max != nullptr) {
-        *max = range.second;
-    }
-}
-
-const char* mqttsn_gw_config_broker_address(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return nullptr;
-    }
-
-    return reinterpret_cast<const Config*>(config)->brokerTcpHostAddress().c_str();
-}
-
-unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    return reinterpret_cast<const Config*>(config)->brokerTcpHostPort();
-}
-
-unsigned mqttsn_gw_config_get_value(
-    MqttsnConfigHandle config,
-    const char* key,
-    char* buf,
-    unsigned bufLen)
-{
-    if (config == nullptr) {
-        return 0U;
-    }
-
-    auto& map = reinterpret_cast<const Config*>(config)->configMap();
-    auto iter = map.find(key);
-    if (iter == map.end()) {
-        return 0U;
-    }
-
-    auto maxLen = std::min(bufLen - 1U, static_cast<unsigned>(iter->second.size()));
-    std::copy_n(iter->second.begin(), maxLen, buf);
-    buf[maxLen] = '\0';
-    return maxLen + 1;
-}
+/*===================== Gateway Object ======================*/
 
 MqttsnGatewayHandle mqttsn_gw_alloc(void)
 {
@@ -347,6 +120,9 @@ void mqttsn_gw_tick(MqttsnGatewayHandle gw)
 
     reinterpret_cast<Gateway*>(gw)->tick();
 }
+
+/*===================== Session Object ======================*/
+
 
 MqttsnSessionHandle mqttsn_gw_session_alloc(void)
 {
@@ -633,28 +409,259 @@ void mqttsn_gw_session_broker_connected(MqttsnSessionHandle session, bool connec
     reinterpret_cast<Session*>(session)->setBrokerConnected(connected);
 }
 
-void mqttsn_gw_session_add_predefined_topic(
+bool mqttsn_gw_session_add_predefined_topic(
     MqttsnSessionHandle session,
     const char* topic,
     unsigned short topicId)
 {
     if (session == nullptr) {
-        return;
+        return false;
     }
 
-    reinterpret_cast<Session*>(session)->addPredefinedTopic(topic, topicId);
+    return reinterpret_cast<Session*>(session)->addPredefinedTopic(topic, topicId);
 }
 
-void mqttsn_gw_session_set_topic_alloc_range(
+bool mqttsn_gw_session_set_topic_id_alloc_range(
     MqttsnSessionHandle session,
     unsigned short minTopicId,
     unsigned short maxTopicId)
 {
     if (session == nullptr) {
+        return false;
+    }
+
+    return reinterpret_cast<Session*>(session)->setTopicIdAllocationRange(minTopicId, maxTopicId);
+}
+
+/*===================== Config Object ======================*/
+
+MqttsnConfigHandle mqttsn_gw_config_alloc(void)
+{
+    return new Config;
+}
+
+void mqttsn_gw_config_free(MqttsnConfigHandle config)
+{
+    std::unique_ptr<Config>(reinterpret_cast<Config*>(config));
+}
+
+void mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str)
+{
+    if (config == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setTopicIdAllocationRange(minTopicId, maxTopicId);
+    std::stringstream stream;
+    stream << str;
+    reinterpret_cast<Config*>(config)->read(stream);
+}
+
+bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename)
+{
+    if (config == nullptr) {
+        return false;
+    }
+
+    std::ifstream stream(filename, std::ios_base::in);
+    if (!stream) {
+        return false;
+    }
+
+    reinterpret_cast<Config*>(config)->read(stream);
+    return true;
+}
+
+unsigned char mqttsn_gw_config_id(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<const Config*>(config)->gatewayId();
+}
+
+unsigned short mqttsn_gw_config_advertise_period(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<const Config*>(config)->advertisePeriod();
+}
+
+unsigned mqttsn_gw_config_retry_period(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<const Config*>(config)->retryPeriod();
+}
+
+unsigned mqttsn_gw_config_retry_count(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<const Config*>(config)->retryCount();
+}
+
+const char* mqttsn_gw_config_default_client_id(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<const Config*>(config)->defaultClientId().c_str();
+}
+
+unsigned mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<const Config*>(config)->pubOnlyKeepAlive();
+}
+
+unsigned mqttsn_gw_config_sleepin_client_msg_limit(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return std::numeric_limits<unsigned>::max();
+    }
+
+    return static_cast<unsigned>(
+        reinterpret_cast<const Config*>(config)->sleepingClientMsgLimit());
+}
+
+unsigned mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return static_cast<unsigned>(
+        reinterpret_cast<const Config*>(config)->predefinedTopics().size());
+}
+
+unsigned mqttsn_gw_config_get_predefined_topics(
+    MqttsnConfigHandle config,
+    MqttsnPredefinedTopicInfo* buf,
+    unsigned bufLen)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    auto& predefinedTopics = reinterpret_cast<const Config*>(config)->predefinedTopics();
+    auto total = std::min(static_cast<unsigned>(predefinedTopics.size()), bufLen);
+
+    std::transform(
+        predefinedTopics.begin(), predefinedTopics.begin() + total, buf,
+        [](const mqttsn::gateway::Config::PredefinedTopicInfo& info) -> MqttsnPredefinedTopicInfo
+        {
+            MqttsnPredefinedTopicInfo retInfo;
+            retInfo.clientId = info.clientId.c_str();
+            retInfo.topic = info.topic.c_str();
+            retInfo.topicId = info.topicId;
+            return retInfo;
+        });
+    return total;
+}
+
+unsigned mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return static_cast<unsigned>(
+        reinterpret_cast<const Config*>(config)->authInfos().size());
+}
+
+unsigned mqttsn_gw_config_get_auth_infos(
+    MqttsnConfigHandle config,
+    MqttsnAuthInfo* buf,
+    unsigned bufLen)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    auto& authInfos = reinterpret_cast<const Config*>(config)->authInfos();
+    auto total = std::min(static_cast<unsigned>(authInfos.size()), bufLen);
+
+    std::transform(
+        authInfos.begin(), authInfos.begin() + total, buf,
+        [](const mqttsn::gateway::Config::AuthInfo& info) -> MqttsnAuthInfo
+        {
+            MqttsnAuthInfo retInfo;
+            retInfo.clientId = info.clientId.c_str();
+            retInfo.username = info.username.c_str();
+            retInfo.password = info.password.c_str();
+            return retInfo;
+        });
+    return total;
+}
+
+void mqttsn_gw_config_topic_id_alloc_range(
+    MqttsnConfigHandle config,
+    unsigned short* min,
+    unsigned short* max)
+{
+    if (config == nullptr) {
+        return;
+    }
+
+    auto range = reinterpret_cast<const Config*>(config)->topicIdAllocRange();
+    if (min != nullptr) {
+        *min = range.first;
+    }
+
+    if (max != nullptr) {
+        *max = range.second;
+    }
+}
+
+const char* mqttsn_gw_config_broker_address(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<const Config*>(config)->brokerTcpHostAddress().c_str();
+}
+
+unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<const Config*>(config)->brokerTcpHostPort();
+}
+
+unsigned mqttsn_gw_config_get_value(
+    MqttsnConfigHandle config,
+    const char* key,
+    char* buf,
+    unsigned bufLen)
+{
+    if (config == nullptr) {
+        return 0U;
+    }
+
+    auto& map = reinterpret_cast<const Config*>(config)->configMap();
+    auto iter = map.find(key);
+    if (iter == map.end()) {
+        return 0U;
+    }
+
+    auto maxLen = std::min(bufLen - 1U, static_cast<unsigned>(iter->second.size()));
+    std::copy_n(iter->second.begin(), maxLen, buf);
+    buf[maxLen] = '\0';
+    return maxLen + 1;
 }
 
 

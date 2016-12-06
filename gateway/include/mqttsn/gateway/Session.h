@@ -169,7 +169,7 @@ public:
     /// @param[in] value Number of @b seconds to wait before making an attempt to resend.
     void setRetryPeriod(unsigned value);
 
-    /// @brief Set number of retry attempts to perform before abandoning attemp
+    /// @brief Set number of retry attempts to perform before abandoning attempt
     ///     to send unacknowledged message.
     /// @details Some messages, may require acknowledgement by
     ///     the client and/or broker. The amount of retry attempts before
@@ -190,7 +190,7 @@ public:
 
     /// @brief Provide default client ID for clients that report empty one
     ///     in their attempt to connect.
-    /// @param[in] value Max number of pending messages.
+    /// @param[in] value Default client ID string.
     void setDefaultClientId(const std::string& value);
 
     /// @brief Provide default "keep alive" period for "publish only" clients,
@@ -246,7 +246,7 @@ public:
     ///     can be removed from the holding buffer.
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
 
-    /// @brief Notify the library about broker being connected / disconnected
+    /// @brief Notify the @ref Session object about broker being connected / disconnected
     /// @details The report of broker being connected or disconnected must
     ///     be performed only when the session's operation has been successfully
     ///     started (see start()). Otherwise the call to this function gets
@@ -254,14 +254,16 @@ public:
     /// @param[in] conneted Connection status - @b true means connected, @b false disconnected.
     void setBrokerConnected(bool connected);
 
-    /// @brief Add predefined topic ID.
+    /// @brief Add predefined topic string and ID information.
     /// @param[in] topic Topic string
     /// @param[in] topicId Numeric topic ID.
+    /// @return success/failure status
     bool addPredefinedTopic(const std::string& topic, std::uint16_t topicId);
 
-    /// @brief Limit range of topic IDs allocated for newly registed topics.
+    /// @brief Limit range of topic IDs allocated for newly registered topics.
     /// @param[in] minVal Min topic ID.
     /// @param[in] maxVal Max topic ID.
+    /// @return success/failure status
     bool setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal);
 
 private:

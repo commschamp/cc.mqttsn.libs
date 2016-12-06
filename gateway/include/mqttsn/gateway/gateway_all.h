@@ -43,28 +43,10 @@ extern "C" {
 
 #endif // #ifdef __cplusplus
 
-typedef struct
-{
-    const char* clientId;
-    const char* topic;
-    unsigned short topicId;
-} MqttsnPredefinedTopicInfo;
-
-typedef struct
-{
-    const char* clientId;
-    const char* username;
-    const char* password;
-} MqttsnAuthInfo;
-
-/// @brief Handle for configuration object used in all @b mqttsn_gw_config_* functions.
-typedef void* MqttsnConfigHandle;
+/*===================== Gateway Object ======================*/
 
 /// @brief Handle for gateway object used in all @b mqttsn_gw_* functions.
 typedef void* MqttsnGatewayHandle;
-
-/// @brief Handle for session object used in all @b mqttsn_gw_session_* functions.
-typedef void* MqttsnSessionHandle;
 
 /// @brief Type of callback function, to be used to request time measurement for
 ///     the @b Gateway object.
@@ -86,70 +68,6 @@ typedef void (*MqttsnGwTickReqCb)(void* userData, unsigned duration);
 ///     driving code may require to copy the buffer to its own data structures
 ///     and preserve it intact until send over I/O link is complete.
 typedef void (*MqttsnGwBroadcastReqCb)(void* userData, const unsigned char* buf, unsigned bufLen);
-
-typedef void (*MqttsnSessionTickReqCb)(void* userData, unsigned duration);
-typedef unsigned (*MqttsnSessionCancelTickReqCb)(void* userData);
-
-/// @brief Type of callback, used to request delivery of serialised message
-///     to the client or broker.
-/// @param[in] userData User data passed as the last parameter to the setting function.
-/// @param[in] buf Buffer containing serialised message.
-/// @param[in] bufLen Number of bytes in the buffer
-typedef void (*MqttsnSessionSendDataReqCb)(void* userData, const unsigned char* buf, unsigned bufLen);
-
-/// @brief Type of callback, used to request session termination.
-/// @details When the callback is invoked, the driving code must flush
-///     all the previously sent messages to appropriate I/O links and
-///     delete this session object.
-/// @param[in] userData User data passed as the last parameter to the setting function.
-typedef void (*MqttsnSessionTermReqCb)(void* userData);
-
-/// @brief Type of callback used to request reconnection to the broker.
-/// @details When the callback is invoked, the driving code must close
-///     existing TCP/IP connection to the broker and create a new one.
-/// @param[in] userData User data passed as the last parameter to the setting function.
-typedef void (*MqttsnSessionBrokerReconnectReqCb)(void* userData);
-typedef void (*MqttsnSessionClientConnectReportCb)(void* userData, const char* clientId);
-typedef void (*MqttsnSessionAuthInfoReqCb)(
-    void* userData,
-    const char* clientId,
-    const char** username,
-    const unsigned char** password,
-    unsigned* passwordLen);
-
-MqttsnConfigHandle mqttsn_gw_config_alloc(void);
-void mqttsn_gw_config_free(MqttsnConfigHandle config);
-
-void mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str);
-bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename);
-unsigned char mqttsn_gw_config_id(MqttsnConfigHandle config);
-unsigned short mqttsn_gw_config_advertise_period(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_retry_period(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_retry_count(MqttsnConfigHandle config);
-const char* mqttsn_gw_config_default_client_id(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_sleepin_client_msg_limit(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_get_predefined_topics(
-    MqttsnConfigHandle config,
-    MqttsnPredefinedTopicInfo* buf,
-    unsigned bufLen);
-unsigned mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_get_auth_infos(
-    MqttsnConfigHandle config,
-    MqttsnAuthInfo* buf,
-    unsigned bufLen);
-void mqttsn_gw_config_topic_id_alloc_range(
-    MqttsnConfigHandle config,
-    unsigned short* min,
-    unsigned short* max);
-const char* mqttsn_gw_config_broker_address(MqttsnConfigHandle config);
-unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_get_value(
-    MqttsnConfigHandle config,
-    const char* key,
-    char* buf,
-    unsigned bufLen);
 
 /// @brief Allocate @b Gateway object.
 /// @details The returned handle need to be passed as first parameter
@@ -209,6 +127,124 @@ void mqttsn_gw_stop(MqttsnGatewayHandle gw);
 ///     data request callback as well as new time measurement request.
 /// @param[in] gw Handle returned by mqttsn_gw_alloc() function.
 void mqttsn_gw_tick(MqttsnGatewayHandle gw);
+
+/*===================== Session Object ======================*/
+
+/// @brief Handle for session object used in all @b mqttsn_gw_session_* functions.
+typedef void* MqttsnSessionHandle;
+
+/// @brief Type of callback, used to request new time measurement.
+/// @details When the requested time is due, the driving code is expected
+///     to call mqttsn_gw_session_tick() member function.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] value Number of @b milliseconds to measure.
+typedef void (*MqttsnSessionTickReqCb)(void* userData, unsigned duration);
+
+/// @brief Type of callback, used to cancel existing time measurement.
+/// @details When invoked the existing time measurement needs to be cancelled.
+///     The function also needs to return amount of @b milliseconds elapsed
+///     since last timer programming request.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @return Number of elapsed @b milliseconds since last timer programming
+///     request.
+typedef unsigned (*MqttsnSessionCancelTickReqCb)(void* userData);
+
+/// @brief Type of callback, used to request delivery of serialised message
+///     to the client or broker.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] buf Buffer containing serialised message.
+/// @param[in] bufLen Number of bytes in the buffer
+typedef void (*MqttsnSessionSendDataReqCb)(void* userData, const unsigned char* buf, unsigned bufLen);
+
+/// @brief Type of callback, used to request session termination.
+/// @details When the callback is invoked, the driving code must flush
+///     all the previously sent messages to appropriate I/O links and
+///     delete this session object.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+typedef void (*MqttsnSessionTermReqCb)(void* userData);
+
+/// @brief Type of callback used to request reconnection to the broker.
+/// @details When the callback is invoked, the driving code must close
+///     existing TCP/IP connection to the broker and create a new one.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+typedef void (*MqttsnSessionBrokerReconnectReqCb)(void* userData);
+
+/// @brief Type of callback used to report client ID of the newly connected
+///     MQTT-SN client.
+/// @details The callback can be used to provide additional client specific
+///     information, such as predefined topic IDs.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] clientId Client ID
+typedef void (*MqttsnSessionClientConnectReportCb)(void* userData, const char* clientId);
+
+/// @brief Type of callback used to request authentication information of
+///     the client that is trying connect.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] clientId Client ID
+/// @param[out] username Username string
+/// @param[out] password Binary password buffer
+/// @param[out] passwordLen Length of the binary password
+typedef void (*MqttsnSessionAuthInfoReqCb)(
+    void* userData,
+    const char* clientId,
+    const char** username,
+    const unsigned char** password,
+    unsigned* passwordLen);
+
+/*===================== Config Object ======================*/
+
+typedef struct
+{
+    const char* clientId;
+    const char* topic;
+    unsigned short topicId;
+} MqttsnPredefinedTopicInfo;
+
+typedef struct
+{
+    const char* clientId;
+    const char* username;
+    const char* password;
+} MqttsnAuthInfo;
+
+/// @brief Handle for configuration object used in all @b mqttsn_gw_config_* functions.
+typedef void* MqttsnConfigHandle;
+
+
+MqttsnConfigHandle mqttsn_gw_config_alloc(void);
+void mqttsn_gw_config_free(MqttsnConfigHandle config);
+
+void mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str);
+bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename);
+unsigned char mqttsn_gw_config_id(MqttsnConfigHandle config);
+unsigned short mqttsn_gw_config_advertise_period(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_retry_period(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_retry_count(MqttsnConfigHandle config);
+const char* mqttsn_gw_config_default_client_id(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_sleepin_client_msg_limit(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_get_predefined_topics(
+    MqttsnConfigHandle config,
+    MqttsnPredefinedTopicInfo* buf,
+    unsigned bufLen);
+unsigned mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_get_auth_infos(
+    MqttsnConfigHandle config,
+    MqttsnAuthInfo* buf,
+    unsigned bufLen);
+void mqttsn_gw_config_topic_id_alloc_range(
+    MqttsnConfigHandle config,
+    unsigned short* min,
+    unsigned short* max);
+const char* mqttsn_gw_config_broker_address(MqttsnConfigHandle config);
+unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config);
+unsigned mqttsn_gw_config_get_value(
+    MqttsnConfigHandle config,
+    const char* key,
+    char* buf,
+    unsigned bufLen);
+
 
 /// @brief Allocate @b Session object.
 /// @details The returned handle need to be passed as first parameter
@@ -299,31 +335,102 @@ void mqttsn_gw_session_set_broker_reconnect_req_cb(
     MqttsnSessionBrokerReconnectReqCb cb,
     void* data);
 
+/// @brief Set the callback to be invoked when MQTT-SN client is successfully
+///     connected to the broker.
+/// @details This is an optional callback. It can be used when there is a
+///     need to provide client specific configuration, such as predefined
+///     topic IDs, valid only for specific client.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_client_connect_report_cb(
     MqttsnSessionHandle session,
     MqttsnSessionClientConnectReportCb cb,
     void* data);
 
+/// @brief Set the callback to be used to request authentication information
+///     for specific client.
+/// @details This is an optional callback. It can be used when there is a
+///     need to provide authentication details (username/password) for
+///     specific clients.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
 void mqttsn_gw_session_set_auth_info_req_cb(
     MqttsnSessionHandle session,
     MqttsnSessionAuthInfoReqCb cb,
     void* data);
 
+/// @brief Set gateway numeric ID to be reported when requested.
+/// @details If not set, default value 0 is assumed.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] id Gateway numeric ID.
 void mqttsn_gw_session_set_id(MqttsnSessionHandle session, unsigned char id);
 
+/// @brief Set retry period to wait between resending unacknowledged message
+///     to the client and/or broker.
+/// @details Some messages, may require acknowledgement by
+///     the client and/or broker. The delay (in seconds) between such
+///     attempts to resend the message may be specified using this function.
+///     The default value is @b 10 seconds.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] value Number of @b seconds to wait before making an attempt to resend.
 void mqttsn_gw_session_set_retry_period(MqttsnSessionHandle session, unsigned value);
 
+/// @brief Set number of retry attempts to perform before abandoning attempt
+///     to send unacknowledged message.
+/// @details Some messages, may require acknowledgement by
+///     the client and/or broker. The amount of retry attempts before
+///     abandoning the attempt to deliver the message may be specified
+///     using this function. The default value is @b 3.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] value Number of retry attempts.
 void mqttsn_gw_session_set_retry_count(MqttsnSessionHandle session, unsigned value);
 
+/// @brief Provide limit to number pending messages being accumulated for
+///     the sleeping client.
+/// @details When client is known to be in "ASLEEP" state, the gateway must
+///     accumulate all the messages the broker sends until client wakes up
+///     or explicitly requests to send them. This function may be used
+///     to limit amount of such messages to prevent acquiring lots of
+///     RAM by the gateway application.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] value Max number of pending messages.
 void mqttsn_gw_session_set_sleeping_client_msg_limit(
     MqttsnSessionHandle session,
     unsigned value);
 
+/// @brief Provide default client ID for clients that report empty one
+///     in their attempt to connect.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] clientId Default client ID string.
 void mqttsn_gw_session_set_default_client_id(MqttsnSessionHandle session, const char* clientId);
 
+/// @brief Provide default "keep alive" period for "publish only" clients,
+///     that do not make an attempt to connect to the gateway.
+/// @details MQTT-SN protocol allows "publish only" clients that don't
+///     make any attempt to connect to the gateway/broker and send all
+///     their messages with QoS=-1. In this case, the gateway must connect
+///     to the broker on behalf of the "publish only" client. Such connection
+///     attempt requires to specify "keep alive" period. Use this function
+///     to set the value.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] value Max number of seconds between messages the "publish only"
+///     client is going to send.
 void mqttsn_gw_session_set_pub_only_keep_alive(MqttsnSessionHandle session, unsigned value);
 
+/// @brief Start the @b Session's object's operation.
+/// @details The function will check whether all necessary callbacks have been
+///     set.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @return true if the operation has been successfully started, false in
+///     case some necessary callback hasn't been set.
 bool mqttsn_gw_session_start(MqttsnSessionHandle session);
+
+/// @brief Stop the operation of the @b Session object.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
 void mqttsn_gw_session_stop(MqttsnSessionHandle session);
 
 /// @brief Notify the @ref Session object about requested time period expiry.
@@ -362,14 +469,31 @@ unsigned mqttsn_gw_session_data_from_broker(
     const unsigned char* buf,
     unsigned bufLen);
 
+/// @brief Notify the @b Session object about broker being connected / disconnected
+/// @details The report of broker being connected or disconnected must
+///     be performed only when the session's operation has been successfully
+///     started (see mqttsn_gw_session_start()). Otherwise the call to this function gets
+///     ignored.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] conneted Connection status - @b true means connected, @b false disconnected.
 void mqttsn_gw_session_broker_connected(MqttsnSessionHandle session, bool connected);
 
-void mqttsn_gw_session_add_predefined_topic(
+/// @brief Add predefined topic string and ID information.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] topic Topic string
+/// @param[in] topicId Numeric topic ID.
+/// @return success/failure status
+bool mqttsn_gw_session_add_predefined_topic(
     MqttsnSessionHandle session,
     const char* topic,
     unsigned short topicId);
 
-void mqttsn_gw_session_set_topic_alloc_range(
+/// @brief Limit range of topic IDs allocated for newly registered topics.
+/// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
+/// @param[in] minVal Min topic ID.
+/// @param[in] maxVal Max topic ID.
+/// @return success/failure status
+bool mqttsn_gw_session_set_topic_id_alloc_range(
     MqttsnSessionHandle session,
     unsigned short minTopicId,
     unsigned short maxTopicId);

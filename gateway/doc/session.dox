@@ -256,9 +256,293 @@
 /// when they happen. Details are in 
 /// @ref mqttsn_gw_session_page_broker_conn section below.
 ///
+/// @section mqttsn_gw_session_page_id Gateway ID
+/// The MQTT-SN client may broadcast @b SEARCHGW message in an attempt to discover
+/// existing gateways on the network. The @b Session object is responsible to 
+/// send @b GWINFO message as a response. Such message contains numeric
+/// gateway ID. Hence, the @b Session object must also be aware of the
+/// gateway ID information:
+///
+/// @b C++ interface:
+/// @code
+/// session->setGatewayId(5);
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_session_set_id(handle, 5);
+/// @endcode
+///
+/// @section mqttsn_gw_session_page_retry Retry Attempts
+/// There are cases when the communication to either client or broker is 
+/// driven by the @b Session object itself. Such communication may involve
+/// messages that require acknowledgement by the other side. If acknowledgement
+/// is not received in time, the message must be re-sent. The @b Session object
+/// may be configured with duration (in @b seconds) between resend attempts and
+/// total number of attempts to perform.
+///
+/// @b C++ interface:
+/// @code
+/// session->setRetryPeriod(5U); // 5 seconds between resend attempts
+/// session->setRetryCount(4U); // up to 4 attempts to resend the same message
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_session_set_retry_period(handle, 5U); /* 5 seconds between resend attempts */
+/// mqttsn_gw_session_set_retry_count(handle, 4U); /* up to 4 attempts to resend the same message */
+/// @endcode
+/// If not configured, the default values of @b 10 seconds and @b 3 attempts apply.
+///
+/// @section mqttsn_gw_session_page_predefined_topics Predefined Topics
+/// The messages in MQTT-SN protocol are published with numeric topic IDs
+/// instead of strings (like in original MQTT). The protocol also allows 
+/// bypassing the topic strings registration and using predefined IDs directly.
+/// In this case the @b Session object must be configured with all known and
+/// applicable topic string and topic numeric ID pairs. It will use this
+/// information to convert between numeric topic ID topic topic string when forwarding
+/// @b PUBLISH messages to both directions.
+///
+/// @b C++ interface:
+/// @code
+/// if (!session->addPredefinedTopic("some/predefined/topic", 123)) {
+///     ... // report error
+/// }
+///
+/// if (!session->addPredefinedTopic("other/predefined/topic", 1111)) {
+///     ... // report error
+/// }
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// if (!mqttsn_gw_session_add_predefined_topic(handle, "some/predefined/topic", 123)) {
+///     ... /* report error */
+/// }
+///
+/// if (!mqttsn_gw_session_add_predefined_topic(handle, "other/predefined/topic", 1111)) {
+///     ... /* report error */
+/// }
+/// @endcode
+///
+/// @section mqttsn_gw_session_page_topics_registration Allocating Topic IDs
+/// When not using predefined topic IDs, there is a process of topic string
+/// registration and allocating relevant numeric topic ID. This allocation is
+/// performed by the @b Session object. By default the @b Session object will
+/// pick the first number available. However, it may be wise to reserve some
+/// range of topic IDs to be predefined ones, especially when there are
+/// some @b client @b specific predefined topic IDs, which added later when
+/// connected client ID is known (see @ref mqttsn_gw_session_page_connected_client).
+/// The library provides a way to limit range of topic IDs allocated during
+/// the registration process.
+///
+/// @b C++ interface:
+/// @code
+/// if (!session->setTopicIdAllocationRange(0x1000, 0xffff)) {
+///     ... // report error
+/// }
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// if (!mqttsn_gw_session_set_topic_id_alloc_range(handle, 0x1000, 0xffff)) {
+///     ... // report error
+/// }
+/// @endcode
+///
 /// @section mqttsn_gw_session_page_start Start Operation
+/// After been properly configured the @b Session object needs to be
+/// started.
+///
+/// @b C++ interface:
+/// @code
+/// if (!session->start()) {
+///     ... // The session hasn't been properly configured, report error
+/// }
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// if (!mqttsn_gw_session_start(handle)) {
+///     ... /* The session hasn't been properly configured, report error */
+/// }
+/// @endcode
+/// If not properly started, the @b Session object will ignore any input from
+/// client and broker.
+///
+/// The operation of the @b Session object can also be stopped / paused for a while.
+///
+/// @b C++ interface:
+/// @code
+/// session->stop();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_session_stop(handle);
+/// @endcode
+/// The operation of the stopped @b Session object may be restarted using the
+/// same mqttsn::gateway::Session::start() and mqttsn_gw_session_start() functions.
 ///
 /// @section mqttsn_gw_session_page_broker_conn Connection to Broker
+/// @b AFTER (important emphasis here) successfully starting operation of the
+/// @b Session object (see @ref mqttsn_gw_session_page_start) the driving
+/// code must initiate TCP/IP connection to the MQTT broker. The driving code
+/// must also constantly monitor the state of this connection and 
+/// to the @b Session object any detected change. When started, the @b Session
+/// object assumes broker is @b disconnected.
 ///
-
+/// @b C++ interface:
+/// @code
+/// session->setBrokerConnected(true); // Reports broker being connected
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_session_broker_connected(handle, true); // Reports broker being connected
+/// @endcode
+/// When issuing broker re-connection request (see @ref mqttsn_gw_session_page_broker_reconnect),
+/// the @b Session object expects this call to happen twice: the first one for disconnection
+/// report and second one for new connection report.
+///
+/// The driving code also responsible to detect unsolicited disconnects of
+/// TCP/IP link to the broker and report it to the @b Session object using the
+/// same function call.
+///
+/// @section mqttsn_gw_session_page_client_auth Client Authentication
+/// The @b MQTT protocol supports client authentication, where the @b CONNECT
+/// message may contain username and password. The @b MQTT-SN protocol,
+/// on the other hand, lacks this feature. The @b Session object
+/// provides an ability to set a callback function, which will be invoked
+/// when MQTT-SN client's connection request is recognised. This callback
+/// may provide authentication information for this client, which is
+/// going to be filled in the forwarded @b CONNECT request.
+///
+/// @b C++ interface:
+/// @code
+/// session->setAuthInfoReqCb(
+///     [](const std::string& clientId) -> mqttsn::gateway::Session::AuthInfo
+///     {
+///         return std::make_pair(getUsernameFor(clientId), getPasswordFor(clientId));
+///         
+///     }); 
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// void my_auth_callback(
+///     void* userData, 
+///     const char* clientId, 
+///     const char** username, 
+///     const unsigned char** password, 
+///     unsigned* passwordLen)
+/// {
+///     *username = ...; /* assign pointer to username for provided client ID */
+///     *password = ...; /* assign pointer to password for provided client ID */
+///     *passwordLen = ...; /* specify length of the password */
+/// }
+///
+/// mqttsn_gw_session_set_auth_info_req_cb(handle, &my_auth_callback, someUserData);
+/// @endcode
+///
+/// @section mqttsn_gw_session_page_connected_client Connected Client Report
+/// The @b Session object provides an ability to get notified when a MQTT-SN
+/// client is successfully connected. The notification is performed using 
+/// a callback. Inside this callback, the driving code may provide some
+/// client specific configurations, such as new predefined topic IDs relevant
+/// only to the connected client.
+///
+/// @b C++ interface:
+/// @code
+/// session->setClientConnectedReportCb(
+///     [session](const std::string& clientId)
+///     {
+///         if (!session->addPredefinedTopic("client/specific/predefined/topic", 2222)) {
+///             ... /* report error */
+///         }
+///     }); 
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// void my_client_connect_report(void* userData, const char* clientId)
+/// {
+///     if (!mqttsn_gw_session_add_predefined_topic(handle, "client/specific/predefined/topic", 2222)) {
+///         ... /* report error */
+///     }
+/// }
+///
+/// mqttsn_gw_session_set_client_connect_report_cb(handle, &my_client_connect_report, someUserData);
+/// @endcode
+///
+/// @section mqttsn_gw_session_page_default_client_id Default Client ID
+/// The @b Session object interface allows to specify the default ID
+/// of the client, which is going to be used to connect to broker, if the
+/// client doesn't provide non-empty ID string in its connection attempt.
+/// This may be useful when client is connected over one-to-one I/O link such as
+/// @b RS-232. In order to simplify the client implementation and reduce 
+/// amount of data transferred on the link, the @b Session object may be
+/// configured to substitute the empty client ID with other, non-empty
+/// one, when forwarding the connection request to the broker.
+///
+/// The default client ID configuration may also be used with "publish
+/// only" clients (see @ref mqttsn_gw_session_page_publish_only below).
+/// The configured client ID will be used when connecting to the broker on
+/// behalf of the "publish only" client.
+///
+/// @b C++ interface:
+/// @code
+/// session->setDefaultClientId("some_default_id");
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_session_set_default_client_id(handle, "some_default_id");
+/// @endcode
+/// @b NOTE, that the @b Session object will make an attempt to substitute
+/// reported client ID <b>if and only if</b> the client ID @b is empty and
+/// configured default client ID is @b NOT.
+///
+/// @section mqttsn_gw_session_page_publish_only Publish Only Client
+/// The MQTT-SN protocol allows "publish only" clients, which don't make
+/// an attempt to connect to the gateway/broker, but allowed to 
+/// publish messages with predefined topic IDs and QoS=-1. The gateway
+/// must connect to the broker on behalf of such client. The connection
+/// operation involves knowledge about client ID and "keep alive" period.
+/// The client ID, that is going to be used, is configured as 
+/// @ref mqttsn_gw_session_page_default_client_id. The "keep alive" period
+/// can be provided using separate function:
+/// 
+/// @b C++ interface:
+/// @code
+/// session->setPubOnlyKeepAlive(100); // 100 seconds
+/// @endcode
+///
+/// @b C++ interface:
+/// @code
+/// mqttsn_gw_session_set_pub_only_keep_alive(handle, 100); /* 100 seconds */
+/// @endcode
+/// If such configuration is not provided, the default value of @b 60 seconds
+/// is assumed.
+///
+/// @section mqttsn_gw_session_page_sleep Sleeping Client
+/// The @b Session object supports client entering the @b SLEEP mode without any
+/// extra configuration. It will send the @b PINGREQ messages on behalf of 
+/// the client to keep the connection to the broker alive, and will accumulate
+/// all the messages sent to the client until it wakes up. 
+///
+/// However, it may be a good idea to limit the number of messages, the 
+/// @b Session object is allowed to accumulate, to avoid consumption of too much
+/// memory.
+///
+/// @b C++ interface:
+/// @code
+/// session->setSleepingClientMsgLimit(1000); // no more that 1000 messages
+/// @endcode
+///
+/// @b C++ interface:
+/// @code
+/// mqttsn_gw_session_set_sleeping_client_msg_limit(handle, 1000); /* no more that 1000 messages */
+/// @endcode
+///
 
