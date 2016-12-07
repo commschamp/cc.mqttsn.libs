@@ -65,7 +65,8 @@
 ///     file and provide a convenient interface to retrieve any configuration
 ///     values, which can later be applied to the @b Gateway and/or @b Session
 ///     entities. The format of the configuration file is described in the
-///     example config file provided with the project.
+///     example config file provided with the project. For API description and 
+///     tutorial, please read the @ref mqttsn_gw_config_page page.
 ///
 /// @section mqttsn_gw_thread_safety Thread Safety
 /// Parallel access to the distinct objects @b is safe, but parallel access

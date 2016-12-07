@@ -37,41 +37,43 @@ typedef mqttsn::gateway::Session Session;
 
 MqttsnGatewayHandle mqttsn_gw_alloc(void)
 {
-    return new Gateway;
+    MqttsnGatewayHandle gw;
+    gw.obj = new Gateway();
+    return gw;
 }
 
 void mqttsn_gw_free(MqttsnGatewayHandle gw)
 {
-    std::unique_ptr<Gateway>(reinterpret_cast<Gateway*>(gw));
+    std::unique_ptr<Gateway>(reinterpret_cast<Gateway*>(gw.obj));
 }
 
 void mqttsn_gw_set_advertise_period(
     MqttsnGatewayHandle gw,
     unsigned short value)
 {
-    if (gw == nullptr) {
+    if (gw.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Gateway*>(gw)->setAdvertisePeriod(value);
+    reinterpret_cast<Gateway*>(gw.obj)->setAdvertisePeriod(value);
 }
 
 void mqttsn_gw_set_id(MqttsnGatewayHandle gw, unsigned char id)
 {
-    if (gw == nullptr) {
+    if (gw.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Gateway*>(gw)->setGatewayId(id);
+    reinterpret_cast<Gateway*>(gw.obj)->setGatewayId(id);
 }
 
 void mqttsn_gw_set_tick_req_cb(MqttsnGatewayHandle gw, MqttsnGwTickReqCb cb, void* data)
 {
-    if ((gw == nullptr) || (cb == nullptr)) {
+    if ((gw.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Gateway*>(gw)->setNextTickProgramReqCb(
+    reinterpret_cast<Gateway*>(gw.obj)->setNextTickProgramReqCb(
         [cb, data](unsigned duration)
         {
             cb(data, duration);
@@ -83,11 +85,11 @@ void mqttsn_gw_set_advertise_broadcast_req_cb(
     MqttsnGwBroadcastReqCb cb,
     void* data)
 {
-    if ((gw == nullptr) || (cb == nullptr)) {
+    if ((gw.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Gateway*>(gw)->setSendDataReqCb(
+    reinterpret_cast<Gateway*>(gw.obj)->setSendDataReqCb(
         [cb, data](const unsigned char* buf, unsigned bufLen)
         {
             cb(data, buf, bufLen);
@@ -96,29 +98,29 @@ void mqttsn_gw_set_advertise_broadcast_req_cb(
 
 bool mqttsn_gw_start(MqttsnGatewayHandle gw)
 {
-    if (gw == nullptr) {
+    if (gw.obj == nullptr) {
         return false;
     }
 
-    return reinterpret_cast<Gateway*>(gw)->start();
+    return reinterpret_cast<Gateway*>(gw.obj)->start();
 }
 
 void mqttsn_gw_stop(MqttsnGatewayHandle gw)
 {
-    if (gw == nullptr) {
+    if (gw.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Gateway*>(gw)->stop();
+    reinterpret_cast<Gateway*>(gw.obj)->stop();
 }
 
 void mqttsn_gw_tick(MqttsnGatewayHandle gw)
 {
-    if (gw == nullptr) {
+    if (gw.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Gateway*>(gw)->tick();
+    reinterpret_cast<Gateway*>(gw.obj)->tick();
 }
 
 /*===================== Session Object ======================*/
@@ -126,12 +128,14 @@ void mqttsn_gw_tick(MqttsnGatewayHandle gw)
 
 MqttsnSessionHandle mqttsn_gw_session_alloc(void)
 {
-    return new Session;
+    MqttsnSessionHandle session;
+    session.obj = new Session;
+    return session;
 }
 
 void mqttsn_gw_session_free(MqttsnSessionHandle session)
 {
-    std::unique_ptr<Session>(reinterpret_cast<Session*>(session));
+    std::unique_ptr<Session>(reinterpret_cast<Session*>(session.obj));
 }
 
 void mqttsn_gw_session_set_tick_req_cb(
@@ -139,11 +143,11 @@ void mqttsn_gw_session_set_tick_req_cb(
     MqttsnSessionTickReqCb cb,
     void* data)
 {
-    if ((session == nullptr) || (cb == nullptr)) {
+    if ((session.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setNextTickProgramReqCb(
+    reinterpret_cast<Session*>(session.obj)->setNextTickProgramReqCb(
         [cb, data](unsigned duration)
         {
             cb(data, duration);
@@ -155,11 +159,11 @@ void mqttsn_gw_session_set_cancel_tick_cb(
     MqttsnSessionCancelTickReqCb cb,
     void* data)
 {
-    if ((session == nullptr) || (cb == nullptr)) {
+    if ((session.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setCancelTickWaitReqCb(
+    reinterpret_cast<Session*>(session.obj)->setCancelTickWaitReqCb(
         [cb, data]() -> unsigned
         {
             return cb(data);
@@ -171,11 +175,11 @@ void mqttsn_gw_session_set_send_data_to_client_cb(
     MqttsnSessionSendDataReqCb cb,
     void* data)
 {
-    if ((session == nullptr) || (cb == nullptr)) {
+    if ((session.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setSendDataClientReqCb(
+    reinterpret_cast<Session*>(session.obj)->setSendDataClientReqCb(
         [cb, data](const std::uint8_t* buf, std::size_t bufLen)
         {
             cb(data, buf, static_cast<unsigned>(bufLen));
@@ -188,11 +192,11 @@ void mqttsn_gw_session_set_send_data_to_broker_cb(
     MqttsnSessionSendDataReqCb cb,
     void* data)
 {
-    if ((session == nullptr) || (cb == nullptr)) {
+    if ((session.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setSendDataBrokerReqCb(
+    reinterpret_cast<Session*>(session.obj)->setSendDataBrokerReqCb(
         [cb, data](const std::uint8_t* buf, std::size_t bufLen)
         {
             cb(data, buf, static_cast<unsigned>(bufLen));
@@ -204,11 +208,11 @@ void mqttsn_gw_session_set_term_req_cb(
     MqttsnSessionTermReqCb cb,
     void* data)
 {
-    if ((session == nullptr) || (cb == nullptr)) {
+    if ((session.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setTerminationReqCb(
+    reinterpret_cast<Session*>(session.obj)->setTerminationReqCb(
         [cb, data]()
         {
             cb(data);
@@ -220,11 +224,11 @@ void mqttsn_gw_session_set_broker_reconnect_req_cb(
     MqttsnSessionBrokerReconnectReqCb cb,
     void* data)
 {
-    if ((session == nullptr) || (cb == nullptr)) {
+    if ((session.obj == nullptr) || (cb == nullptr)) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setBrokerReconnectReqCb(
+    reinterpret_cast<Session*>(session.obj)->setBrokerReconnectReqCb(
         [cb, data]()
         {
             cb(data);
@@ -236,16 +240,16 @@ void mqttsn_gw_session_set_client_connect_report_cb(
     MqttsnSessionClientConnectReportCb cb,
     void* data)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
     if (cb == nullptr) {
-        reinterpret_cast<Session*>(session)->setClientConnectedReportCb(nullptr);
+        reinterpret_cast<Session*>(session.obj)->setClientConnectedReportCb(nullptr);
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setClientConnectedReportCb(
+    reinterpret_cast<Session*>(session.obj)->setClientConnectedReportCb(
         [cb, data](const std::string& clientId)
         {
             cb(data, clientId.c_str());
@@ -257,16 +261,16 @@ void mqttsn_gw_session_set_auth_info_req_cb(
     MqttsnSessionAuthInfoReqCb cb,
     void* data)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
     if (cb == nullptr) {
-        reinterpret_cast<Session*>(session)->setAuthInfoReqCb(nullptr);
+        reinterpret_cast<Session*>(session.obj)->setAuthInfoReqCb(nullptr);
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setAuthInfoReqCb(
+    reinterpret_cast<Session*>(session.obj)->setAuthInfoReqCb(
         [cb, data](const std::string& clientId) -> Session::AuthInfo
         {
             const char* username = nullptr;
@@ -289,87 +293,87 @@ void mqttsn_gw_session_set_auth_info_req_cb(
 
 void mqttsn_gw_session_set_id(MqttsnSessionHandle session, unsigned char id)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setGatewayId(id);
+    reinterpret_cast<Session*>(session.obj)->setGatewayId(id);
 }
 
 void mqttsn_gw_session_set_retry_period(MqttsnSessionHandle session, unsigned value)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setRetryPeriod(value);
+    reinterpret_cast<Session*>(session.obj)->setRetryPeriod(value);
 }
 
 void mqttsn_gw_session_set_retry_count(MqttsnSessionHandle session, unsigned value)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setRetryCount(value);
+    reinterpret_cast<Session*>(session.obj)->setRetryCount(value);
 }
 
 void mqttsn_gw_session_set_sleeping_client_msg_limit(
     MqttsnSessionHandle session,
     unsigned value)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setSleepingClientMsgLimit(value);
+    reinterpret_cast<Session*>(session.obj)->setSleepingClientMsgLimit(value);
 }
 
 void mqttsn_gw_session_set_default_client_id(MqttsnSessionHandle session, const char* clientId)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setDefaultClientId(clientId);
+    reinterpret_cast<Session*>(session.obj)->setDefaultClientId(clientId);
 }
 
 void mqttsn_gw_session_set_pub_only_keep_alive(
     MqttsnSessionHandle session,
     unsigned value)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setPubOnlyKeepAlive(value);
+    reinterpret_cast<Session*>(session.obj)->setPubOnlyKeepAlive(value);
 }
 
 bool mqttsn_gw_session_start(MqttsnSessionHandle session)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return false;
     }
 
-    return reinterpret_cast<Session*>(session)->start();
+    return reinterpret_cast<Session*>(session.obj)->start();
 }
 
 void mqttsn_gw_session_stop(MqttsnSessionHandle session)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->stop();
+    reinterpret_cast<Session*>(session.obj)->stop();
 }
 
 void mqttsn_gw_session_tick(MqttsnSessionHandle session)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->tick();
+    reinterpret_cast<Session*>(session.obj)->tick();
 }
 
 unsigned mqttsn_gw_session_data_from_client(
@@ -377,12 +381,12 @@ unsigned mqttsn_gw_session_data_from_client(
     const unsigned char* buf,
     unsigned bufLen)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return 0U;
     }
 
     return static_cast<unsigned>(
-        reinterpret_cast<Session*>(session)->dataFromClient(buf, bufLen));
+        reinterpret_cast<Session*>(session.obj)->dataFromClient(buf, bufLen));
 
 }
 
@@ -391,22 +395,22 @@ unsigned mqttsn_gw_session_data_from_broker(
     const unsigned char* buf,
     unsigned bufLen)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return 0U;
     }
 
     return static_cast<unsigned>(
-        reinterpret_cast<Session*>(session)->dataFromBroker(buf, bufLen));
+        reinterpret_cast<Session*>(session.obj)->dataFromBroker(buf, bufLen));
 
 }
 
 void mqttsn_gw_session_broker_connected(MqttsnSessionHandle session, bool connected)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return;
     }
 
-    reinterpret_cast<Session*>(session)->setBrokerConnected(connected);
+    reinterpret_cast<Session*>(session.obj)->setBrokerConnected(connected);
 }
 
 bool mqttsn_gw_session_add_predefined_topic(
@@ -414,11 +418,11 @@ bool mqttsn_gw_session_add_predefined_topic(
     const char* topic,
     unsigned short topicId)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return false;
     }
 
-    return reinterpret_cast<Session*>(session)->addPredefinedTopic(topic, topicId);
+    return reinterpret_cast<Session*>(session.obj)->addPredefinedTopic(topic, topicId);
 }
 
 bool mqttsn_gw_session_set_topic_id_alloc_range(
@@ -426,39 +430,41 @@ bool mqttsn_gw_session_set_topic_id_alloc_range(
     unsigned short minTopicId,
     unsigned short maxTopicId)
 {
-    if (session == nullptr) {
+    if (session.obj == nullptr) {
         return false;
     }
 
-    return reinterpret_cast<Session*>(session)->setTopicIdAllocationRange(minTopicId, maxTopicId);
+    return reinterpret_cast<Session*>(session.obj)->setTopicIdAllocationRange(minTopicId, maxTopicId);
 }
 
 /*===================== Config Object ======================*/
 
 MqttsnConfigHandle mqttsn_gw_config_alloc(void)
 {
-    return new Config;
+    MqttsnConfigHandle config;
+    config.obj = new Config;
+    return config;
 }
 
 void mqttsn_gw_config_free(MqttsnConfigHandle config)
 {
-    std::unique_ptr<Config>(reinterpret_cast<Config*>(config));
+    std::unique_ptr<Config>(reinterpret_cast<Config*>(config.obj));
 }
 
 void mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return;
     }
 
     std::stringstream stream;
     stream << str;
-    reinterpret_cast<Config*>(config)->read(stream);
+    reinterpret_cast<Config*>(config.obj)->read(stream);
 }
 
 bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return false;
     }
 
@@ -467,82 +473,84 @@ bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename)
         return false;
     }
 
-    reinterpret_cast<Config*>(config)->read(stream);
+    reinterpret_cast<Config*>(config.obj)->read(stream);
     return true;
 }
 
 unsigned char mqttsn_gw_config_id(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    return reinterpret_cast<const Config*>(config)->gatewayId();
+    return reinterpret_cast<const Config*>(config.obj)->gatewayId();
 }
 
 unsigned short mqttsn_gw_config_advertise_period(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    return reinterpret_cast<const Config*>(config)->advertisePeriod();
+    return reinterpret_cast<const Config*>(config.obj)->advertisePeriod();
 }
 
 unsigned mqttsn_gw_config_retry_period(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    return reinterpret_cast<const Config*>(config)->retryPeriod();
+    return reinterpret_cast<const Config*>(config.obj)->retryPeriod();
 }
 
 unsigned mqttsn_gw_config_retry_count(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    return reinterpret_cast<const Config*>(config)->retryCount();
+    return reinterpret_cast<const Config*>(config.obj)->retryCount();
 }
 
 const char* mqttsn_gw_config_default_client_id(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return nullptr;
     }
 
-    return reinterpret_cast<const Config*>(config)->defaultClientId().c_str();
+    return reinterpret_cast<const Config*>(config.obj)->defaultClientId().c_str();
 }
 
 unsigned mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    return reinterpret_cast<const Config*>(config)->pubOnlyKeepAlive();
+    return reinterpret_cast<const Config*>(config.obj)->pubOnlyKeepAlive();
 }
 
-unsigned mqttsn_gw_config_sleepin_client_msg_limit(MqttsnConfigHandle config)
+unsigned mqttsn_gw_config_sleeping_client_msg_limit(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return std::numeric_limits<unsigned>::max();
     }
 
     return static_cast<unsigned>(
-        reinterpret_cast<const Config*>(config)->sleepingClientMsgLimit());
+        std::max(
+            reinterpret_cast<const Config*>(config.obj)->sleepingClientMsgLimit(),
+            static_cast<std::size_t>(std::numeric_limits<unsigned>::max())));
 }
 
 unsigned mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
     return static_cast<unsigned>(
-        reinterpret_cast<const Config*>(config)->predefinedTopics().size());
+        reinterpret_cast<const Config*>(config.obj)->predefinedTopics().size());
 }
 
 unsigned mqttsn_gw_config_get_predefined_topics(
@@ -550,11 +558,11 @@ unsigned mqttsn_gw_config_get_predefined_topics(
     MqttsnPredefinedTopicInfo* buf,
     unsigned bufLen)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    auto& predefinedTopics = reinterpret_cast<const Config*>(config)->predefinedTopics();
+    auto& predefinedTopics = reinterpret_cast<const Config*>(config.obj)->predefinedTopics();
     auto total = std::min(static_cast<unsigned>(predefinedTopics.size()), bufLen);
 
     std::transform(
@@ -572,12 +580,12 @@ unsigned mqttsn_gw_config_get_predefined_topics(
 
 unsigned mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
     return static_cast<unsigned>(
-        reinterpret_cast<const Config*>(config)->authInfos().size());
+        reinterpret_cast<const Config*>(config.obj)->authInfos().size());
 }
 
 unsigned mqttsn_gw_config_get_auth_infos(
@@ -585,11 +593,11 @@ unsigned mqttsn_gw_config_get_auth_infos(
     MqttsnAuthInfo* buf,
     unsigned bufLen)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    auto& authInfos = reinterpret_cast<const Config*>(config)->authInfos();
+    auto& authInfos = reinterpret_cast<const Config*>(config.obj)->authInfos();
     auto total = std::min(static_cast<unsigned>(authInfos.size()), bufLen);
 
     std::transform(
@@ -610,11 +618,11 @@ void mqttsn_gw_config_topic_id_alloc_range(
     unsigned short* min,
     unsigned short* max)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return;
     }
 
-    auto range = reinterpret_cast<const Config*>(config)->topicIdAllocRange();
+    auto range = reinterpret_cast<const Config*>(config.obj)->topicIdAllocRange();
     if (min != nullptr) {
         *min = range.first;
     }
@@ -626,42 +634,50 @@ void mqttsn_gw_config_topic_id_alloc_range(
 
 const char* mqttsn_gw_config_broker_address(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return nullptr;
     }
 
-    return reinterpret_cast<const Config*>(config)->brokerTcpHostAddress().c_str();
+    return reinterpret_cast<const Config*>(config.obj)->brokerTcpHostAddress().c_str();
 }
 
 unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    return reinterpret_cast<const Config*>(config)->brokerTcpHostPort();
+    return reinterpret_cast<const Config*>(config.obj)->brokerTcpHostPort();
 }
 
-unsigned mqttsn_gw_config_get_value(
-    MqttsnConfigHandle config,
-    const char* key,
-    char* buf,
-    unsigned bufLen)
+unsigned mqttsn_gw_config_values_count(MqttsnConfigHandle config, const char* key)
 {
-    if (config == nullptr) {
+    if (config.obj == nullptr) {
         return 0U;
     }
 
-    auto& map = reinterpret_cast<const Config*>(config)->configMap();
-    auto iter = map.find(key);
-    if (iter == map.end()) {
-        return 0U;
-    }
-
-    auto maxLen = std::min(bufLen - 1U, static_cast<unsigned>(iter->second.size()));
-    std::copy_n(iter->second.begin(), maxLen, buf);
-    buf[maxLen] = '\0';
-    return maxLen + 1;
+    auto& map = reinterpret_cast<const Config*>(config.obj)->configMap();
+    auto range = map.equal_range(key);
+    return static_cast<unsigned>(std::distance(range.first, range.second));
 }
 
+const char* mqttsn_gw_config_get_value(MqttsnConfigHandle config, const char* key, unsigned idx)
+{
+    if (config.obj == nullptr) {
+        return 0U;
+    }
+
+    auto& map = reinterpret_cast<const Config*>(config.obj)->configMap();
+    auto range = map.equal_range(key);
+
+    unsigned count = 0;
+    for (auto iter = range.first; iter != range.second; ++iter) {
+        if (count == idx) {
+            return iter->second.c_str();
+        }
+
+        ++count;
+    }
+    return nullptr;
+}
 

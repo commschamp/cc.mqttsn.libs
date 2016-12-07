@@ -46,7 +46,10 @@ extern "C" {
 /*===================== Gateway Object ======================*/
 
 /// @brief Handle for gateway object used in all @b mqttsn_gw_* functions.
-typedef void* MqttsnGatewayHandle;
+typedef struct
+{
+    void* obj;
+} MqttsnGatewayHandle;
 
 /// @brief Type of callback function, to be used to request time measurement for
 ///     the @b Gateway object.
@@ -131,7 +134,10 @@ void mqttsn_gw_tick(MqttsnGatewayHandle gw);
 /*===================== Session Object ======================*/
 
 /// @brief Handle for session object used in all @b mqttsn_gw_session_* functions.
-typedef void* MqttsnSessionHandle;
+typedef struct
+{
+    void* obj;
+} MqttsnSessionHandle;
 
 /// @brief Type of callback, used to request new time measurement.
 /// @details When the requested time is due, the driving code is expected
@@ -190,61 +196,6 @@ typedef void (*MqttsnSessionAuthInfoReqCb)(
     const char** username,
     const unsigned char** password,
     unsigned* passwordLen);
-
-/*===================== Config Object ======================*/
-
-typedef struct
-{
-    const char* clientId;
-    const char* topic;
-    unsigned short topicId;
-} MqttsnPredefinedTopicInfo;
-
-typedef struct
-{
-    const char* clientId;
-    const char* username;
-    const char* password;
-} MqttsnAuthInfo;
-
-/// @brief Handle for configuration object used in all @b mqttsn_gw_config_* functions.
-typedef void* MqttsnConfigHandle;
-
-
-MqttsnConfigHandle mqttsn_gw_config_alloc(void);
-void mqttsn_gw_config_free(MqttsnConfigHandle config);
-
-void mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str);
-bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename);
-unsigned char mqttsn_gw_config_id(MqttsnConfigHandle config);
-unsigned short mqttsn_gw_config_advertise_period(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_retry_period(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_retry_count(MqttsnConfigHandle config);
-const char* mqttsn_gw_config_default_client_id(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_sleepin_client_msg_limit(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_get_predefined_topics(
-    MqttsnConfigHandle config,
-    MqttsnPredefinedTopicInfo* buf,
-    unsigned bufLen);
-unsigned mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_get_auth_infos(
-    MqttsnConfigHandle config,
-    MqttsnAuthInfo* buf,
-    unsigned bufLen);
-void mqttsn_gw_config_topic_id_alloc_range(
-    MqttsnConfigHandle config,
-    unsigned short* min,
-    unsigned short* max);
-const char* mqttsn_gw_config_broker_address(MqttsnConfigHandle config);
-unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config);
-unsigned mqttsn_gw_config_get_value(
-    MqttsnConfigHandle config,
-    const char* key,
-    char* buf,
-    unsigned bufLen);
-
 
 /// @brief Allocate @b Session object.
 /// @details The returned handle need to be passed as first parameter
@@ -498,6 +449,157 @@ bool mqttsn_gw_session_set_topic_id_alloc_range(
     unsigned short minTopicId,
     unsigned short maxTopicId);
 
+/*===================== Config Object ======================*/
+
+/// @brief Info about single predefined topic
+typedef struct
+{
+    const char* clientId; ///< Client ID
+    const char* topic; ///< Topic string
+    unsigned short topicId; ///< Numeric topic ID
+} MqttsnPredefinedTopicInfo;
+
+/// @brief Authentication infor for a single client.
+typedef struct
+{
+    const char* clientId; ///< Client ID
+    const char* username; ///< Username string
+    const char* password; ///< Password string (from the configuration)
+} MqttsnAuthInfo;
+
+/// @brief Handle for configuration object used in all @b mqttsn_gw_config_* functions.
+typedef struct
+{
+    void* obj;
+} MqttsnConfigHandle;
+
+/// @brief Allocate @b Config object.
+/// @details The returned handle need to be passed as first parameter
+///     to all relevant functions. Note that the @b Config object is
+///     dynamically allocated and needs to be freed using
+///     mqttsn_gw_config_free() function.
+/// @return Handler to the allocated @b Config object.
+MqttsnConfigHandle mqttsn_gw_config_alloc(void);
+
+/// @brief Free allocated @b Config object.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+void mqttsn_gw_config_free(MqttsnConfigHandle config);
+
+/// @brief Parse configuration contents from string
+/// @details Updates the default values with values read from string buffer.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @param[in] str Pointer to the string buffer, containing configuration.
+void mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str);
+
+/// @brief Read configuration file
+/// @details Updates the default values with values read from the file.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @param[in] filename Path to the file.
+bool mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename);
+
+/// @brief Get gateway numeric ID.
+/// @details Default value is @b 0.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @return Numeric gateway ID.
+unsigned char mqttsn_gw_config_id(MqttsnConfigHandle config);
+
+/// @brief Get advertise period.
+/// @details Default value is @b 900 seconds (15 minutes).
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @return Advertise period in @b seconds.
+unsigned short mqttsn_gw_config_advertise_period(MqttsnConfigHandle config);
+
+/// @brief Get retry period
+/// @details Default value is @b 10 seconds.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @return Retry period in @b seconds
+unsigned mqttsn_gw_config_retry_period(MqttsnConfigHandle config);
+
+/// @brief Get number of retry attempts.
+/// @details Default value is @b 3.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @return Number of retry attempts
+unsigned mqttsn_gw_config_retry_count(MqttsnConfigHandle config);
+
+/// @brief Get default client ID.
+/// @details Default value is empty string.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @return Default client ID.
+const char* mqttsn_gw_config_default_client_id(MqttsnConfigHandle config);
+
+/// @brief Get keep alive period for publish only clients
+/// @details Default value is @b 60 seconds.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @return Keep alive period for publish only clients.
+unsigned mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config);
+
+/// @brief Get limit for max number of messages to accumulate for sleeping
+///     clients.
+/// @details Default value is @b MAX_UINT seconds.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @return Max number of accumulated messages for sleeping clients.
+unsigned mqttsn_gw_config_sleeping_client_msg_limit(MqttsnConfigHandle config);
+
+/// @brief Get number of available predefined topic IDs.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+unsigned mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config);
+
+/// @brief Read information about available topic IDs into a buffer.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @param[out] buf Buffer to write information into
+/// @param[in] bufLen Max number of element to write into the buffer.
+/// @return Actual number of elements that have been written into a buffer.
+unsigned mqttsn_gw_config_get_predefined_topics(
+    MqttsnConfigHandle config,
+    MqttsnPredefinedTopicInfo* buf,
+    unsigned bufLen);
+
+/// @brief Get number of available authenticatin infos for all the clients.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+unsigned mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config);
+
+/// @brief Read clients' authentication information into a buffer
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @param[out] buf Buffer to write information into
+/// @param[in] bufLen Max number of element to write into the buffer.
+/// @return Actual number of elements that have been written into a buffer.
+unsigned mqttsn_gw_config_get_auth_infos(
+    MqttsnConfigHandle config,
+    MqttsnAuthInfo* buf,
+    unsigned bufLen);
+
+/// @brief Get range of allowed topic IDs for allocation.
+/// @details Default range is [1, 0xfffe]
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @param[out] min Minimal allowed topic ID.
+/// @param[out] max Maximal allowed topic ID.
+void mqttsn_gw_config_topic_id_alloc_range(
+    MqttsnConfigHandle config,
+    unsigned short* min,
+    unsigned short* max);
+
+/// @brief Get TCP/IP address of the broker.
+/// @details Default address is @b 127.0.0.1
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+const char* mqttsn_gw_config_broker_address(MqttsnConfigHandle config);
+
+/// @brief Get TCP/IP port of the broker.
+/// @details Default value is @b 1883
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config);
+
+/// @brief Get number of available configuration values for the provided key
+/// @details The key is the first word in the configuration line, and the
+///     value is rest of the string until the end of the line.
+/// @param[in] config Handle returned by mqttsn_gw_config_alloc() function.
+/// @param[in] key Key string.
+unsigned mqttsn_gw_config_values_count(MqttsnConfigHandle config, const char* key);
+
+/// @brief Get the avialable value for the configuratio key.
+/// @details The key is the first word in the configuration line, and the
+///     value is rest of the string until the end of the line.
+///     If the configuration value doesn't exist NULL is returned.
+const char* mqttsn_gw_config_get_value(MqttsnConfigHandle config, const char* key, unsigned idx);
 
 #ifdef __cplusplus
 }
