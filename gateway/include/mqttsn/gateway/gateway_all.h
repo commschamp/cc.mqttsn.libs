@@ -66,7 +66,7 @@ typedef void (*MqttsnGwTickReqCb)(void* userData, unsigned duration);
 /// @param[in] userData User data passed as the last parameter to the setting function.
 /// @param[in] buf Pointer to the buffer of data, that needs to be sent.
 /// @param[in] bufLen Number of bytes in the buffer.
-/// @note The provided buffer resides in private data structres of the @ref Gateway
+/// @note The provided buffer resides in private data structres of the @b Gateway
 ///     object and can be updated right after the callback function returns. The
 ///     driving code may require to copy the buffer to its own data structures
 ///     and preserve it intact until send over I/O link is complete.
@@ -95,7 +95,7 @@ void mqttsn_gw_set_advertise_period(MqttsnGatewayHandle gw, unsigned short value
 void mqttsn_gw_set_id(MqttsnGatewayHandle gw, unsigned char id);
 
 /// @brief Set callback that requests to perform time measurement.
-/// @details The @ref Gateway object will invoke the callback to request time
+/// @details The @b Gateway object will invoke the callback to request time
 ///     measurement. When requested time expires, the driving code is responsible
 ///     to call mqttsn_gw_tick().
 /// @param[in] gw Handle returned by mqttsn_gw_alloc() function.
@@ -125,7 +125,7 @@ bool mqttsn_gw_start(MqttsnGatewayHandle gw);
 /// @param[in] gw Handle returned by mqttsn_gw_alloc() function.
 void mqttsn_gw_stop(MqttsnGatewayHandle gw);
 
-/// @brief Notify the @ref Gateway object about requested time expiry.
+/// @brief Notify the @b Gateway object about requested time expiry.
 /// @details Invocation of this function will cause  invocation of the send
 ///     data request callback as well as new time measurement request.
 /// @param[in] gw Handle returned by mqttsn_gw_alloc() function.
@@ -184,7 +184,7 @@ typedef void (*MqttsnSessionBrokerReconnectReqCb)(void* userData);
 typedef void (*MqttsnSessionClientConnectReportCb)(void* userData, const char* clientId);
 
 /// @brief Type of callback used to request authentication information of
-///     the client that is trying connect.
+///     the client that is trying to connect.
 /// @param[in] userData User data passed as the last parameter to the setting function.
 /// @param[in] clientId Client ID
 /// @param[out] username Username string
@@ -260,8 +260,8 @@ void mqttsn_gw_session_set_send_data_to_broker_cb(
     MqttsnSessionSendDataReqCb cb,
     void* data);
 
-/// @brief Set the callback to be invoked when the session needs to be
-///     terminated and this @ref Session object deleted.
+/// @brief Set the callback to be invoked when the @b Session needs to be
+///     terminated and the calling @b Session object deleted.
 /// @details This is a must have callback, without it the object can not
 ///     be started (see mqttsn_gw_session_start()).
 /// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
@@ -273,7 +273,7 @@ void mqttsn_gw_session_set_term_req_cb(
     MqttsnSessionTermReqCb cb,
     void* data);
 
-/// @brief Set the callback to be invoked when the session needs to close
+/// @brief Set the callback to be invoked when the @b Session needs to close
 ///     existing TCP/IP connection to the broker and open a new one.
 /// @details This is a must have callback, without it the object can not
 ///     be started (see mqttsn_gw_session_start()).
@@ -315,7 +315,7 @@ void mqttsn_gw_session_set_auth_info_req_cb(
     void* data);
 
 /// @brief Set gateway numeric ID to be reported when requested.
-/// @details If not set, default value 0 is assumed.
+/// @details If not set, default value @b 0 is assumed.
 /// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
 /// @param[in] id Gateway numeric ID.
 void mqttsn_gw_session_set_id(MqttsnSessionHandle session, unsigned char id);
@@ -384,7 +384,7 @@ bool mqttsn_gw_session_start(MqttsnSessionHandle session);
 /// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
 void mqttsn_gw_session_stop(MqttsnSessionHandle session);
 
-/// @brief Notify the @ref Session object about requested time period expiry.
+/// @brief Notify the @b Session object about requested time period expiry.
 /// @details This function needs to be called from the driving code after
 ///     the requested time measurement has expired.
 /// @param[in] session Handle returned by mqttsn_gw_session_alloc() function.
@@ -595,10 +595,10 @@ unsigned short mqttsn_gw_config_broker_port(MqttsnConfigHandle config);
 /// @param[in] key Key string.
 unsigned mqttsn_gw_config_values_count(MqttsnConfigHandle config, const char* key);
 
-/// @brief Get the avialable value for the configuratio key.
+/// @brief Get the available value for the configuration key.
 /// @details The key is the first word in the configuration line, and the
 ///     value is rest of the string until the end of the line.
-///     If the configuration value doesn't exist NULL is returned.
+///     If the configuration value doesn't exist, @b NULL is returned.
 const char* mqttsn_gw_config_get_value(MqttsnConfigHandle config, const char* key, unsigned idx);
 
 #ifdef __cplusplus
