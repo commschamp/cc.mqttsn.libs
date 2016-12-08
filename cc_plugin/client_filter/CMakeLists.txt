@@ -1,4 +1,4 @@
-set (THIS_PLUGIN_NAME "mqttsn_client_filter")
+set (THIS_PLUGIN_NAME "cc_mqttsn_client_filter")
 
 ######################################################################
 

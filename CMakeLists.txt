@@ -67,7 +67,7 @@ set (INC_INSTALL_DIR ${INSTALL_DIR}/include)
 set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/plugin)
 
 
-set (DEFAULT_CLIENT_LIB_TGT "mqttsn_client")
+set (DEFAULT_CLIENT_LIB_TGT "cc_mqttsn_client")
 
 if (NOT "${CC_MQTTSN_QT_DIR}" STREQUAL "")
     list (APPEND CMAKE_PREFIX_PATH ${CC_MQTTSN_QT_DIR})

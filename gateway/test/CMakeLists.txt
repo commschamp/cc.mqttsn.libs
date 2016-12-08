@@ -6,7 +6,7 @@ if (NOT CXXTEST_FOUND)
     return ()
 endif ()
 
-set (COMPONENT_NAME "mqttsn.gateway")
+set (COMPONENT_NAME "cc.mqttsn.gateway")
 set (COMMON_TEST_SESSION_LIB "CommonTestSession")
 
 #################################################################

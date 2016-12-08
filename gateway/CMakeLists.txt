@@ -22,7 +22,7 @@ if (CMAKE_COMPILER_IS_GNUCC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 endif ()
 
-set (MQTTSN_GATEWAY_LIB_NAME "mqttsn_gateway")
+set (MQTTSN_GATEWAY_LIB_NAME "cc_mqttsn_gateway")
 
 add_subdirectory (src)
 add_subdirectory (test)

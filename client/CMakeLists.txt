@@ -2,7 +2,7 @@ set (HEADER_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.h.templ)
 set (SRC_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.cpp.templ)
 set (TEMPL_PROCESS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/script/ProcessTemplate.cmake)
 set (DEFAULT_CLIENT_NAME "")
-set (MQTTSN_CLIENT_LIB_NAME "mqttsn_client")
+set (MQTTSN_CLIENT_LIB_NAME "cc_mqttsn_client")
 set (MQTTSN_CLIENT_HEADER_TGT "client.h.tgt")
 
 ######################################################################
@@ -12,7 +12,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
         set (name "${name}_")
     endif ()
     
-    set (lib_name "mqttsn_${name}client")
+    set (lib_name "cc_mqttsn_${name}client")
     
     set (header_output ${CMAKE_CURRENT_BINARY_DIR}/${name}client.h)
     set (src_output ${CMAKE_CURRENT_BINARY_DIR}/${name}client.cpp)

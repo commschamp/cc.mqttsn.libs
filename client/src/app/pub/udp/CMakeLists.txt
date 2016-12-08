@@ -1,5 +1,5 @@
 function (bin_pub_udp)
-    set (name "mqttsn_pub_udp")
+    set (name "cc_mqttsn_pub_udp")
     
     if (NOT Qt5Core_FOUND)
         message(WARNING "Can NOT build ${name} due to missing Qt5Core library")
