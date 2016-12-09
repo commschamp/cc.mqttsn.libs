@@ -40,7 +40,10 @@ include_directories(
 
 lib_mqttsn_gateway ()
 
-if (CC_MQTTSN_FULL_SOLUTION)
+if (CC_EXTERNAL)
     add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_EXTERNAL_TGT})
-    add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_MQTT_EXTERNAL_TGT})
 endif ()
+
+if (CC_MQTT_EXTERNAL)
+    add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_MQTT_EXTERNAL_TGT})
+endif ()    

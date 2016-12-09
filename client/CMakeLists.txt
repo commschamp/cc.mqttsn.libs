@@ -1,3 +1,9 @@
+if (NOT CC_MQTTSN_BUILD_CLIENT)
+    return ()
+endif ()
+
+######################################################################
+
 set (HEADER_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.h.templ)
 set (SRC_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.cpp.templ)
 set (TEMPL_PROCESS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/script/ProcessTemplate.cmake)
@@ -91,8 +97,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
         )
     endif ()
     
-    
-    if (CC_MQTTSN_FULL_SOLUTION)
+    if (CC_EXTERNAL)
         add_dependencies(${lib_name} ${CC_EXTERNAL_TGT})
     endif ()
     

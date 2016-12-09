@@ -1,8 +1,7 @@
-if (CMAKE_CROSSCOMPILING AND CC_NO_GATEWAY_CROSSCOMPILE)
-    message (STATUS "Cross-compilation of gateway was disabled.")
+if (NOT CC_MQTTSN_BUILD_GATEWAY)
     return ()
 endif ()
-    
+        
 if (NOT CC_COMMS_FOUND)
     message (WARNING "Comms library wasn't found, cannot build gateway library and/or application.")
     return ()
