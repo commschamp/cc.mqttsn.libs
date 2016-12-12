@@ -2,10 +2,9 @@ cmake_minimum_required (VERSION 2.8.11)
 project ("mqttsn")
 
 option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
-option (CC_MQTTSN_BUILD_CLIENT "Build and install MQTT-SN client library(ies) and applications" ON)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 option (CC_MQTTSN_BUILD_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
-option (CC_MQTTSN_BUILD_PLUGINS "Build and install relevant plugins to CommsChampion suite" ON)
+option (CC_MQTTSN_BUILD_PLUGINS "Build and install relevant plugins to CommsChampion suite" OFF)
 option (CC_MQTTSN_FULL_SOLUTION "Build and install full solution, including CommsChampion sources." OFF)
 
 if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})

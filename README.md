@@ -55,6 +55,8 @@ of I/O link to the client(s) being used.
 
 This repository provides such a library. It is implemented using C++(11)
 programming language and provides both **C++** and **C** interfaces to use.
+The gateway uses [v3.1.1](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.pdf)
+of the MQTT protocol to connect to and communicate with the broker.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
