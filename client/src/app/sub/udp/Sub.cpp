@@ -118,6 +118,7 @@ void Sub::readFromSocket()
             &m_lastSenderAddress,
             &m_lastSenderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+        static_cast<void>(readBytes);
 
 //        std::cout << "--> " << std::hex;
 //        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));

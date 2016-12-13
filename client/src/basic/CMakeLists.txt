@@ -18,15 +18,17 @@ if (CC_MQTTSN_CLIENT_DEFAULT_LIB)
     gen_lib_mqttsn_client("${DEFAULT_CLIENT_NAME}" "" "" TRUE "")
 endif ()    
 
-foreach (f in ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
+foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     if (NOT EXISTS "${f}")
+        message (WARNING "File ${f} does not exist")
         continue()
     endif ()
     
     include (${f})  
     
     if ("${MQTTSN_CUSTOM_CLIENT_NAME}" STREQUAL "")
-        return ()
+        message (WARNING "File ${f} does not specify client name!")
+        continue ()
     endif ()
     
     set (mqttsn_protocol_opts)
@@ -83,6 +85,6 @@ foreach (f in ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     gen_lib_mqttsn_client("${MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_protocol_opts}" "${mqttsn_library_opts}" TRUE "${extra_flags}")
     
     if (MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
-        target_compile_definitions("mqttsn_${MQTTSN_CUSTOM_CLIENT_NAME}_client" PRIVATE "-DNOSTDLIB")
+        target_compile_definitions("cc_mqttsn_${MQTTSN_CUSTOM_CLIENT_NAME}_client" PRIVATE "-DNOSTDLIB")
     endif ()
 endforeach()

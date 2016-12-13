@@ -130,6 +130,7 @@ void Mgr::readClientData()
             &senderAddress,
             &senderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+        static_cast<void>(readBytes);
 
         if (data == m_lastAdvertise) {
             continue;

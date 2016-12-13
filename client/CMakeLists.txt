@@ -1,4 +1,8 @@
-if ((NOT CC_MQTTSN_CLIENT_DEFAULT_LIB) AND ("${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES}" STREQUAL ""))
+option (CC_MQTTSN_BARE_METAL_IMAGE_TEST "Include build of bare metal image" OFF)
+
+if ((NOT CC_MQTTSN_CLIENT_DEFAULT_LIB) AND
+    (NOT CC_MQTTSN_BARE_METAL_IMAGE_TEST) AND
+    ("${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES}" STREQUAL ""))
     return ()
 endif ()
 
@@ -69,6 +73,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
         DEPENDS "${src_output}" ${SRC_TEMPL} ${TEMPL_PROCESS_SCRIPT}
     )
     
+    message (STATUS "Defining library ${lib_name}") 
     add_library (${lib_name} STATIC ${src_output})
     target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
     set_target_properties(
@@ -137,7 +142,7 @@ add_subdirectory (test)
 ######################################################################
 
 find_package (Doxygen)
-if (DOXYGEN_FOUND)
+if (DOXYGEN_FOUND AND CC_MQTTSN_CLIENT_DEFAULT_LIB)
     set (doc_output_dir "${DOC_INSTALL_DIR}/mqttsn/client")
     make_directory (${doc_output_dir})
     

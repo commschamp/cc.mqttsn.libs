@@ -126,6 +126,7 @@ void Pub::readFromSocket()
             &m_lastSenderAddress,
             &m_lastSenderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+        static_cast<void>(readBytes);
 
         if (m_debug) {
             std::cout << "[DEBUG]: --> " << std::hex;
