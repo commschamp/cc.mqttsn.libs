@@ -98,10 +98,36 @@ applications:
 ```
 $> cmake -DCMAKE_BUILD_TYPE=Release ..
 ```
-- Build custom MQTT-SN client only (see [custom_client_build.md](custom_client_build.md)
+- Build only two custom MQTT-SN clients (see [custom_client_build.md](custom_client_build.md)
 for details on custom build configuration)
 ```
 $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
-        CC_MQTTSN_BUILD_GATEWAY=OFF CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES=config.cmake ..
+    -DCC_MQTTSN_BUILD_GATEWAY=OFF \
+    -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES=config1.cmake\;config2.cmake ..
+```
+- Build only gateway library and applications
+```
+$> cmake -DCMAKE_BUILD_TYPE=Release CC_MQTTSN_CLIENT_DEFAULT_LIB=OFF ..
+```
+- Build and install everything while having external builds of 
+[comms_champion](https://github.com/arobenko/comms_champion) and
+[mqtt](https://github.com/arobenko/mqtt)
+```
+$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
+    -DCC_MAIN_INSTALL_DIR=/path/to/comms_champion/install \
+    -DCC_MQTT_INSTALL_DIR=/path/to/mqtt/install ..
+```
+- Build and install everything into the same installation directory as
+both [comms_champion](https://github.com/arobenko/comms_champion) and
+[mqtt](https://github.com/arobenko/mqtt)
+```
+$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
+    -DCC_MQTTSN_INSTALL_DIR=/path/to/comms_champion/install  ..
+```
+- Build and install full solution, i.e. [comms_champion](https://github.com/arobenko/comms_champion),
+[mqtt](https://github.com/arobenko/mqtt), and this project.
+```
+$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
+    -DCC_MQTTSN_FULL_SOLUTION=ON  ..
 ```
 
