@@ -33,7 +33,7 @@ out and compiled as part of the build process. However, the result of such
 compilation won't be installed together with the artefacts of this project. To
 install the produced artefacts of 
 [comms_champion](https://github.com/arobenko/comms_champion) and 
-[mqtt](https://github.com/arobenko/mqtt) projects as well use 
+[mqtt](https://github.com/arobenko/mqtt) projects use 
 **CC_MQTTSN_FULL_SOLUTION** option (also described below).
 
 ## Available CMake Options
