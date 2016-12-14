@@ -43,14 +43,15 @@ MQTT-SN **client** "publish"(**cc_mqttsn_pub_udp**) and "subscribe"
 (**cc_mqttsn_sub_udp**) example applications, which use
 UDP/IP as its datagram transport layer. These applications are also using
 [QT5](https://doc.qt.io/qt-5/) framework for their operation. It means that if
-proper libraries are not installed or can not be found, these applications won't
+proper QT5 libraries are not installed or can not be found, these applications won't
 be compiled.
 
 # Gateway Library
 Just like the [Client Library](#client-library) allows additional data
 packatisation for correct delivery, the gateway application must implement
 the same functionality. As the result there is a need for a gateway library,
-which allows implementation of a gateway application, suitable for the type
+which provides the required functionality and allows implementation of any 
+gateway application, suitable for the type
 of I/O link to the client(s) being used.
 
 This repository provides such a library. It is implemented using C++(11)
@@ -69,7 +70,7 @@ correct delivery of the messages. This repository also provides the
 MQTT-SN gateway(**cc_mqttsn_gateway_udp**) example application, which uses
 UDP/IP as its datagram transport layer. The application also using
 [QT5](https://doc.qt.io/qt-5/) framework for its operation. It means that if
-proper libraries are not installed or can not be found, the gateway example
+proper QT5 libraries are not installed or can not be found, the gateway example
 application won't be compiled.
 
 # [CommsChampion](https://github.com/arobenko/comms_champion) Plugins

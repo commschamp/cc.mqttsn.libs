@@ -20,6 +20,22 @@ in **install** subdirectory of the directory chosen for build (/some/build/dir),
 unless the custom installation directory has been provided as an option to CMake
 (see description of **CC_MQTTSN_INSTALL_DIR** below).
 
+## Dependencies
+The messages of MQTT-SN protocol are defined using 
+[COMMS library](https://github.com/arobenko/comms_champion#comms-library) from 
+[comms_champion](https://github.com/arobenko/comms_champion) project. The MQTT
+messages that the **gateway** library uses are defined in 
+[mqtt](https://github.com/arobenko/mqtt) project. Both of them are external
+projects. It is possible to compile and install them separately and provide
+proper paths using **CC_MAIN_INSTALL_DIR** and **CC_MQTT_INSTALL_DIR** options
+(see description below). If not provided, their latest releases will be checked 
+out and compiled as part of the build process. However, the result of such 
+compilation won't be installed together with the artefacts of this project. To
+install the produced artefacts of 
+[comms_champion](https://github.com/arobenko/comms_champion) and 
+[mqtt](https://github.com/arobenko/mqtt) projects as well use 
+**CC_MQTTSN_FULL_SOLUTION** option (also described below).
+
 ## Available CMake Options
 
 In addition to built-in options/variables of CMake, such as **CMAKE_BUILD_TYPE** or
@@ -36,13 +52,15 @@ client library with **default** build options as well as available "publish" /
 uses types like [std::string](http://en.cppreference.com/w/cpp/string/basic_string)
 and [std::vector](http://en.cppreference.com/w/cpp/container/vector), which
 may be problematic for bare-metal applications. It is 
-possible to compile other variants of the client library (see next option
-described). Default value is **ON**.
+possible to compile other variants of the client library (see 
+**CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES** option described below). 
+Default value is **ON**.
 
-- **CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES**=list - Provide list of files containing
-configurations for various custom builds of the client library. See
+- **CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES**=list - Provide list of CMake configuration 
+files containing settings for various custom builds of the client library. See
 [custom_client_build.md](custom_client_build.md) for details. **NOTE**, that
-*list* value is a list of file paths, and the elements of the list in CMake are
+*list* value is a list of relative or absolute file paths, 
+and the elements of the list in CMake are
 semicolon (**;**) separated. However, depending on the shell environment there 
 may be a need to escape the semicolon character with backslash (**\**).
 
@@ -59,35 +77,23 @@ not provided defaults to **install** subdirectory of the directory used for
 build.
 
 - **CC_MAIN_INSTALL_DIR**=dir - Specify installation path of the 
-[comms_champion](https://github.com/arobenko/comms_champion) build. 
-The MQTT-SN protocol messages are defined using
-[COMMS library](https://github.com/arobenko/comms_champion#comms-library) from 
-[comms_champion](https://github.com/arobenko/comms_champion) project. The usage
-of this variable may be omitted, if [comms_champion](https://github.com/arobenko/comms_champion)
-and this project share the same installation path, i.e. the 
-[comms_champion](https://github.com/arobenko/comms_champion) has already been
-built and installed into **CC_MQTTSN_INSTALL_DIR**.
+[comms_champion](https://github.com/arobenko/comms_champion) project build. 
+If its produced artefacts can be found inside path specified by
+**CC_MQTTSN_INSTALL_DIR**, then usage of this variables is unnecessary.
 
 - **CC_MQTT_INSTALL_DIR**=dir - Specify installation path of the 
 [mqtt](https://github.com/arobenko/mqtt) project build. The gateway library
-uses definition of the MQTT messages from this project. The usage of this
-variable may be omitted if either gateway is not built (see 
-description of **CC_MQTTSN_BUILD_GATEWAY**) or the appropriate headers can be
-found in **CC_MQTTSN_INSTALL_DIR**, i.e. both [mqtt](https://github.com/arobenko/mqtt) 
-and this projects are installed in the same location and 
-[mqtt](https://github.com/arobenko/mqtt) has already been built and installed.
+uses definition of the MQTT messages from this project. If its produced artefacts can be found inside path specified by
+**CC_MQTTSN_INSTALL_DIR**, then usage of this variables is unnecessary.
 
-- **CC_MQTTSN_FULL_SOLUTION**=ON/OFF - As was mentioned in the description of
-**CC_MAIN_INSTALL_DIR** and **CC_MQTT_INSTALL_DIR** this project uses headers
-from other ones, which must already been built and installed. This option allows
-build of the full solution in one go, i.e. it will perform independent checkout of 
-[comms_champion](https://github.com/arobenko/comms_champion) and 
-[mqtt](https://github.com/arobenko/mqtt), build and install them to 
-**CC_MQTTSN_INSTALL_DIR** prior to attempting build of the MQTT-SN client/gateway/
-plugins sources.
+- **CC_MQTTSN_FULL_SOLUTION**=ON/OFF - Enable/Disable build of 
+[comms_champion](https://github.com/arobenko/comms_champion) and
+[mqtt](https://github.com/arobenko/mqtt) projects and install the produced
+artefacts into the installation directory specified by **CC_MQTTSN_INSTALL_DIR**
+variable.
 
 - **CC_MQTTSN_QT_DIR**=dir - Directory of QT5 installation. Can be used to 
-provide path to QT5 if differs from system default installation path. If not
+provide path to QT5 libraries if differs from system default installation path. If not
 provided and QT5 cannot be found on the system, the applications that use QT5 
 framework won't be built.
 
