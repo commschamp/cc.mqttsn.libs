@@ -93,7 +93,7 @@ done in one of the future releases.
 # Licence 
 This work provided under the classic GPLv3 / Commercial dual licensing scheme. The
 source code is available for anyone to use as long as the derivative work
-remains open source with compatible license. Download it, try it! If it works
+remains open source with compatible licence. Download it, try it! If it works
 as expected and commercial closed source licence is required for the final
 product, please send me an e-mail. As the author and full copyright owner I 
 will be able to provide one.
