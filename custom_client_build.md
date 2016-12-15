@@ -188,4 +188,26 @@ set(MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT 8)
 # Don't use standard library functions.
 set(MQTTSN_CUSTOM_CLIENT_NO_STDLIB TRUE)
 ```
+As the result of such configuration, the static library `cc_mqttsn_bare_metal_client`
+will be generated, which will contain functions defined in 
+`include/mqttsn/client/bare_metal_client.h" header file:
+```c
+MqttsnClientHandle mqttsn_bare_metal_client_new();
 
+void mqttsn_bare_metal_client_free(MqttsnClientHandle client);
+
+void mqttsn_bare_metal_client_set_next_tick_program_callback(
+    MqttsnClientHandle client,
+    MqttsnNextTickProgramFn fn,
+    void* data);
+    
+void mqttsn_bare_metal_client_set_cancel_next_tick_wait_callback(
+    MqttsnClientHandle client,
+    MqttsnCancelNextTickWaitFn fn,
+    void* data);
+
+...
+    
+```
+**NOTE**, that all the functions have **mqttsn_bare_metal_** prefix due to the
+fact of setting value of **MQTTSN_CUSTOM_CLIENT_NAME** variable to "bare_metal" string.
