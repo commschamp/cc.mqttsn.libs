@@ -90,6 +90,19 @@ project, that tries to implement its own client/gateway functionality.
 At this moment the protocol definition classes are not documented yet, will be
 done in one of the future releases.
 
+# Spec Deviations
+There are a couple of deviations from official MQTT-SN 
+[v1.2](http://mqtt.org/new/wp-content/uploads/2009/06/MQTT-SN_spec_v1.2.pdf)
+spec.
+
+- The [client](#client-library) does NOT send **GWINFO** messages as a response
+to **SEARCHGW** message from other clients, on behalf of the gateway.
+- The [gateway](#gateway-library) sends **GWINFO** as a response to the 
+**SEARCHGW** message directly to the requesting client, not broadcasting it
+like the protocol specifies.
+
+All other behaviour is implemented as specified.
+
 # Licence 
 This work provided under the classic GPLv3 / Commercial dual licensing scheme. The
 source code is available for anyone to use as long as the derivative work
