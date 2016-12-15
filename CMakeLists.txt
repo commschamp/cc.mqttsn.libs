@@ -201,7 +201,7 @@ while (TRUE)
     if (CC_MQTT_FOUND)
         include_directories(${CC_MQTT_INCLUDE_DIRS})
     endif ()
-endif ()
+    break()
 endwhile()
 
 add_subdirectory(protocol)
