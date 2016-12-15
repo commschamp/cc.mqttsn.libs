@@ -182,7 +182,6 @@ set(MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT 1)
 # The library doesn't need to support more than 1 gateway
 set(MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT 1)
 
-```
 # No need to support registration of more than 8 topic strings
 set(MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT 8)
 
