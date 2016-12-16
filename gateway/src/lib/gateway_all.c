@@ -15,23 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "mqttsn/protocol/Message.h"
+#include "mqttsn/gateway/gateway_all.h"
 
-namespace mqttsn
-{
-
-namespace client
-{
-
-template <typename THandler>
-using MessageT =
-    mqttsn::protocol::MessageT<
-        comms::option::ReadIterator<const std::uint8_t*>,
-        comms::option::WriteIterator<std::uint8_t*>,
-        comms::option::Handler<THandler>
-    >;
-
-}  // namespace client
-
-}  // namespace mqttsn
 

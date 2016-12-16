@@ -1,4 +1,4 @@
-set (THIS_PLUGIN_NAME "mqttsn_protocol")
+set (THIS_PLUGIN_NAME "cc_mqttsn_protocol")
 
 ######################################################################
 
@@ -82,6 +82,7 @@ endif ()
 
 cc_plugin_mqttsn_protocol ()
 
-if (CC_MQTTSN_FULL_SOLUTION)
+if (CC_EXTERNAL)
     add_dependencies(${THIS_PLUGIN_NAME} ${CC_EXTERNAL_TGT})
 endif ()
+

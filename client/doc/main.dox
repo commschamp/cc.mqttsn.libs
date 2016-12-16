@@ -1,0 +1,686 @@
+/// @mainpage MQTT-SN Client Library
+/// @tableofcontents
+/// @section mqttsn_client_overview Overview
+/// The <b>MQTT-SN Client Library</b> provides simple, asynchronous, non-blocking,
+/// and easy to use interface to operate MQTT-SN client. The library doesn't
+/// make any assumption on the system it is running on, as well as on the type
+/// of I/O link being used to communicate its data to the MQTT-SN gateway.
+///
+/// The main logic of operation can be described as following:
+///
+/// @li Sends and receives over the I/O link are managed outside this
+///     library. The data received from the gateway is provided to the library for processing
+///     (see mqttsn_client_process_data()) and the data to be sent to the gateway is
+///     provided by the library using callback (see 
+///     mqttsn_client_set_send_output_data_callback()).
+/// @li The library requires measurement of timeouts, it will request to
+///     do so using callback (see  
+///     mqttsn_client_set_next_tick_program_callback()).
+///     The driving code will have to use available system timer
+///     and notify the library about the requested time expiry (see mqttsn_client_tick()).
+/// @li Sometimes the library will terminate the previously requested time
+///     measurement request and inquire the amount of elapsed milliseconds 
+///     since last request. Such inquiry is performed using callback (see 
+///     mqttsn_client_set_cancel_next_tick_wait_callback()).
+/// @li The library supports only @b one asynchronous operation at a time. The
+///     next one can @b NOT be started until previous one complete or cancelled.
+/// @li All the asynchronous operations receive pointer to callback function, 
+///     which will be invoked when the operation is complete.
+/// @li When asynchronous operation request receives pointer to any buffer 
+///     (string or raw data), this buffer must be preserved intact by the caller
+///     until the asynchronous operation is complete (provided callback is called).
+///
+/// @section mqttsn_client_io_links Various I/O Links
+/// MQTT-SN is designed to be a @b datagram protocol, i.e. if sent message is 
+/// received by the other side, it is received <b>in full</b> and 
+/// <b>without errors</b>. If sent over UDP link, it can be used as is. The
+/// UDP transport cares about all the rest. However, when sent over other 
+/// I/O link, such as RS-232 serial connection, the protocol may require additional
+/// transport wrapping to insure correct delivery and differentiate between packets.
+///
+/// The interface, this <b>MQTT-SN Client Library</b> provides, allows any
+/// sent or received data to be wrapped with or unwrapped from additional 
+/// independent transport data, that insures safe and correct delivery.
+///
+/// @section mqttsn_client_header Header
+/// To use this <b>MQTT-SN Client Library</b> use the following include statement:
+/// @code
+/// #include "mqttsn/client/client.h"
+/// @endcode
+///
+/// @section mqttsn_client_allocation Client Allocation
+/// The library supports may support multiple independent MQTT-SN clients. The
+/// allocation of data structures relevant to a single client is performed 
+/// using mqttsn_client_new() function.
+/// @code
+/// MqttsnClientHandle client = mqttsn_client_new();
+/// @endcode
+/// All other functions are client specific, the receive the returned handle 
+/// as their first parameter.
+///
+/// When work with allocated client is complete, it must be freed using
+/// mqttsn_client_free() function.
+/// @code
+/// mqttsn_client_free(client);
+/// @endcode
+/// 
+/// All the allocated clients are completely independent. It is safe to use
+/// multiple threads working with multiple clients as long as there are no
+/// concurrent accesses to the same one.
+///
+/// @section mqttsn_client_setup Client Setup
+/// As was mentioned earlier, there is a need for multiple callbacks to be
+/// set. Four of them are mandatory.
+/// -# Callback to be invoked when new message needs to be sent to the gateway
+/// (see mqttsn_client_set_send_output_data_callback()).
+/// @code
+/// void my_send(void* userData, const unsigned char* buf, unsigned bufLen, bool broadcast)
+/// {
+///     if (broadcast) {
+///         ... /* broadcast */
+///     }
+///     else {
+///         ... /* send data to connected GW*/
+///     }
+/// }
+///
+/// void* someUserData = ...;
+/// mqttsn_client_set_send_output_data_callback(client, &my_send, someUserData);
+/// @endcode
+/// -# Callback to be invoked when timer needs to be programmed
+/// (see mqttsn_client_set_next_tick_program_callback()).
+/// @code
+/// void my_timer(void* userData, unsigned ms)
+/// {
+///     ... /* Program asynchronous timer to tick after requested number of milliseconds. When expires invoke mqttsn_client_tick() */
+/// }
+///
+/// mqttsn_client_set_next_tick_program_callback(client, &my_timer, someUserData);
+/// @endcode
+/// -# Callback to be invoked when previous timer program needs to be cancelled
+/// and number of elapsed seconds since last timer programming request known
+/// (see mqttsn_client_set_cancel_next_tick_wait_callback()).
+/// @code
+/// unsigned my_cancel_timer(void* userData)
+/// {
+///     ... /* cancel timer */
+///     return ...; /* return number of elapsed milliseconds */
+/// }
+///
+/// mqttsn_client_set_cancel_next_tick_wait_callback(client, &my_cancel_timer, someUserData);
+/// @endcode
+/// -# Callback to be invoked when new application message arrives
+/// (see mqttsn_client_set_message_report_callback()).
+/// @code
+/// void my_message_handler(void* userData, const MqttsnMessageInfo* msgInfo)
+/// {
+///     ... /* handle application message */
+/// }
+///
+/// mqttsn_client_set_message_report_callback(client, &my_message_handler, someUserData);
+/// @endcode
+///
+/// All other callbacks are optional and described in later sections.
+///
+/// MQTT-SN protocol defines some messages that need to be acknowledged by the
+/// gateway. If the expected response is not received after some time, the 
+/// message needs to be resent. After number of such retry attempts if there is
+/// still no response, the requested operation needs to terminate with relevant
+/// error code. The retry period in seconds can be configured using 
+/// mqttsn_client_set_retry_period() function and number of retry attempts
+/// can be configured using mqttsn_client_set_retry_count() function. The 
+/// default values are @b 15 seconds and @b 3 attempts respectively.
+/// @code
+/// mqttsn_client_set_retry_period(client, 5); // retry after 5 seconds
+/// mqttsn_client_set_retry_count(client, 4); // perform 4 retry attempts
+/// @endcode
+///
+/// After client has been successfully configured, it needs to be started.
+/// @code
+/// MqttsnErrorCode result = mqttsn_client_start(client);
+/// if (result != MqttsnErrorCode_Success) {
+///     ... /* start has failed, probably some mandatory callback hasn't been set */
+/// }
+/// @endcode
+/// If a gateway needs to be discovered (see @ref mqttsn_client_gateways), the
+/// client will immediately request to send generated @b SEARCHGW message.
+///
+/// If client's work needs to be paused for a while, it can be stopped using
+/// mqttsn_client_stop() and restarted again using mqttsn_client_start().
+///
+/// @section mqttsn_client_data_recv Receiving Data
+/// When new data datagram is successfully received over I/O link, it needs
+/// to be passed to the library for processing using mqttsn_client_process_data().
+/// @code
+/// unsigned char buf[1024] = {0};
+/// ... /* Read data into buffer */
+///
+/// unsigned consumed = mqttsn_client_process_data(client, &buf[0], bytesCount);
+/// if (consumed < bytesCount) {
+///     ... /* Unexpected protocol error, too few bytes consumed. */
+/// }
+/// @endcode
+/// The mqttsn_client_process_data() function returns number of bytes that
+/// were actually processed. If number of processed bytes is less that number
+/// of bytes residing in the buffer, then probably some unexpected protocol error has
+/// occurred.
+///
+/// The invocation of mqttsn_client_process_data() function may cause invocation
+/// of multiple callbacks, such as cancellation of the current time measurement,
+/// report of incoming new application message, report information about new 
+/// gateway, asynchronous operation completion, request to send data back to
+/// the gateway, and reprogram timer with new delay value.
+///
+/// @section mqttsn_client_data_send Sending Data
+/// As was mentioned earlier, the request to send data is performed using callback
+/// function. It is set using mqttsn_client_set_send_output_data_callback().
+/// @code
+/// void my_send(void* userData, const unsigned char* buf, unsigned bufLen, bool broadcast)
+/// {
+///     ...
+/// }
+///
+/// mqttsn_client_set_send_output_data_callback(client, &my_send, someUserData);
+/// @endcode
+/// @b NOTE, that the callback function receives pointer to the buffer of data.
+/// This buffer will be destroyed or updated right after the function returns.
+/// The callback code may require to copy the buffer contents to some other
+/// private data structure and preserve it until data has been properly sent
+/// over the I/O link in full.
+///
+/// Also @b NOTE the @b broadcast boolean parameter. It specifies whether the
+/// data needs to be broadcasted on the network or sent directly to the 
+/// gateway that the client is connected to.
+///
+/// @section mqttsn_client_time_measurement Time Measurement
+/// The MQTT-SN client must be aware of time to be able to measure delays
+/// between messages. The driving code has to provide a callback using
+/// which the library may request for such time measurement. The second
+/// parameter to the callback will specify number of @b milliseconds it
+/// needs to measure.
+/// @code
+/// void my_timer(void* userData, unsigned ms)
+/// {
+///     ... /* Program asynchronous timer to tick after requested number of milliseconds. When expires invoke mqttsn_client_tick() */
+/// }
+///
+/// mqttsn_client_set_next_tick_program_callback(client, &my_timer, someUserData);
+/// @endcode
+/// 
+/// The driving code will have to use its system timer(s) to measure the
+/// required time, and notify the library when it expires using
+/// mqttsn_client_tick() function.
+/// @code
+/// mqttsn_client_tick(client);
+/// @endcode
+/// 
+/// Based on some events, the library may require knowledge of elapsed time
+/// since last tick programming request. For this purpose the driving code
+/// must set a callback to cancel the existing time measurement and return
+/// number of elapsed @b milliseconds.
+/// @code
+/// unsigned my_cancel_timer(void* userData)
+/// {
+///     ... /* cancel timer */
+///     return ...; /* return number of elapsed milliseconds */
+/// }
+///
+/// mqttsn_client_set_cancel_next_tick_wait_callback(client, &my_cancel_timer, someUserData);
+/// @endcode
+/// When the library issues the existing time measurement cancellation request,
+/// the driving code must cancel its programmed system timer and
+/// must @b NOT call mqttsn_client_tick() function later on.
+///
+/// @section mqttsn_client_gateways Gateway Discovery
+/// The MQTT-SN protocol built to be suitable for wireless sensor networks, where
+/// the exact address of the gateway may be unknown upfront or there may be
+/// multiple gateways available. As the result it includes messages for 
+/// gateway tracking and discovery. However, when the address of the gateway to use is known,
+/// the gateway discovery may become unnecessary. The <b>MQTT-SN Client Library</b>
+/// provides an ability to enable or disable broadcast of @b SEARCHGW message,
+/// which causes available gateways to respond and be identified.
+/// @code
+/// mqttsn_client_set_searchgw_enabled(client, false); /* Disable sending of SEARCHGW messages to discover the gateway */
+/// @endcode
+/// By default, the broadcast of @b SEARCHGW message is 
+/// @b enabled, and the library will immediately request to do so when 
+/// call to mqttsn_client_start() is performed.
+///
+/// The library monitors the @b GWINFO responses of the gateways as well as 
+/// their own independent advertising of their presence (using @b ADVERTISE
+/// message) and reports the discovered gateways via callback.
+/// @code
+/// void my_gw_status_report(void* userData, unsigned char gwId, MqttsnGwStatus status)
+/// {
+///     if (status == MqttsnGwStatus_Available) {
+///         ... /* New gateway has been discovered */
+///     }
+///     else if (status == MqttsnGwStatus_TimedOut) {
+///         ... /* The gateway hasn't advertise its presence for a while, probably is not available any more */
+///     }
+///     ...
+/// }
+///
+/// mqttsn_client_set_gw_status_report_callback(client, &my_gw_status_report, someUserData);
+/// @endcode
+/// The gateways report their numeric ID (only one byte long), 
+/// which is expected be unique on the available network.
+/// This ID is passed as a parameter to the provided callback. However, 
+/// in order to connect to the chosen available gateway, there may be a need to know
+/// address of the latter. In this case, the driving code should store the origin address
+/// of every message in its private data structures prior to forwarding the
+/// incoming data to the library for processing (see @ref mqttsn_client_data_recv).
+/// If the gateway status report callback is called immediately, indicating
+/// available gateway, the reported ID as well as recorded address may be
+/// stored as gateway identification information and to be used for connection
+/// in the future.
+///
+/// @b NOTE, that the library sends @b SEARCHGW messages only when there is no
+/// known available gateway. It will continue to send them periodically
+/// until first available gateway responds. After that, the library will count
+/// on any new gateways to independently advertise their presence using 
+/// @b ADVERTISE message, when they become available. When the last known
+/// gateway fails to re-advertise its presence after some time, the library will
+/// resume sending @b SEARCHGW messages again until first gateway responds.
+///
+/// Also @b NOTE, that the reported list of available gateways is indicative 
+/// only. There may be the case when some gateway gone offline, but the library
+/// hasn't reported that it's missing yet. The opposite case may also take place,
+/// when some gateway failed to advertise its presence in time, and hence was
+/// reported as "timed out", but may still be online and respond to messages.
+/// The only way to identify the real availability of the gateway is to try
+/// to connect to it (see @ref mqttsn_client_connect_disconnect section below).
+///
+/// The library provides an ability to discard information about currently being
+/// tracked gateway. It may be useful when attempt to connect or send any messages
+/// fails with timeout, which may indicate that gateway has gone offline. When
+/// the gateway appears online again and advertises its presence, the gateway
+/// status report callback will be invoked again reporting new availability.
+/// @code
+/// mqttsn_client_discard_gw(client, gwId);
+/// @endcode
+///
+/// The library also provides an ability to discard information about all 
+/// gateways at once.
+/// @code
+/// mqttsn_client_discard_all_gw(client);
+/// @endcode
+///
+/// @section mqttsn_client_connect_disconnect Connect / Disconnect
+/// In order to establish connection to MQTT-SN gateway, the client must send
+/// to it special @b CONNECT message. It must be done prior to issuing any
+/// publish or subscribe request. The connection can be performed using
+/// mqttsn_client_connect() call.
+/// @code
+/// const char* clientId = "my_client_id";
+/// void my_connect_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     if (status == MqttsnAsyncOpStatus_Successful) {
+///         ... /* Connection is successful, do something */
+///     }
+///     else {
+///         ... /* process error statuses */
+///     }
+///     ...
+/// }
+///
+/// void someFunc()
+/// {
+///     MqttsnErrorCode result = mqttsn_client_connect(client, clientId, 60, true, NULL, &my_client_connect, someUserData);
+///     ... 
+/// }
+/// @endcode
+/// @b NOTE, that client ID (second parameter) can be NULL or empty string. In
+/// this case, the @b CONNECT message is sent to the gateway with empty client ID
+/// information. The gateway will either replace it with some other default ID (based
+/// on its configuration), or forward the connection request to broker with
+/// empty client ID to make it an anonymous client.
+///
+/// Also @b NOTE, that @b will information (fifth parameter) may also be NULL to
+/// indicate that will doesn't exist. NULL or empty string as topic in the
+/// passed @ref MqttsnWillInfo structure will have the same effect.
+/// @code
+/// const char* willTopic = "this/is/will/topic"
+/// const unsigned char willMsg[] = {...}
+/// const unsigned willMsgSize = sizeof(willMsg)/sizeof(willMsg[0]);
+///
+/// void someFunc()
+/// {
+///     MqttsnWillInfo willInfo;
+///     willInfo.topic = willTopic;
+///     willInfo.msg = willMsg;
+///     willInfo.msgLen = willMsgSize;
+///     willInfo.qos = MqttsnQoS_AtMostOnceDelivery;
+///     willInfo.retain = false;
+///
+///     MqttsnErrorCode result = mqttsn_client_connect(client, clientId, 60, true, &willInfo, &my_client_connect, someUserData);
+///     ...
+/// }
+/// @endcode
+/// Plaese <b>pay attention</b> to the fact that all the buffers containing 
+/// client ID, will topic as will as will message body must be preserved intact
+/// until the completion callback is called. However, the @b willInfo structure
+/// may reside on the stack and be destroyed right after invocation of
+/// mqttsn_client_connect() function.
+///
+/// When client needs to gracefully terminate its connection to the gateway it
+/// needs to send @b DISCONNECT message. It can be achieved by calling to
+/// mqttsn_client_disconnect() function.
+/// @code
+/// void my_disconnect_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ... /* do something */
+/// }
+///
+/// MqttsnErrorCode result = mqttsn_client_disconnect(client, &my_disconnect_complete, someUserData);
+/// ...
+/// @endcode
+/// If client just abandons its connection to the gateway without proper 
+/// disconnection, sooner or later, the broker will terminate its connection
+/// to the client through gateway and will publish the client's will (if such
+/// existed).
+///
+/// Regardless of success/failure status reported to the callback, the library
+/// assumes disconnected state and won't be able to execute operations that
+/// require valid connection to the gateway.
+///
+/// The gateway itself may issue unsolicited disconnection request. To get
+/// notified of such requests, the client needs to set a special callback.
+/// @code
+/// void my_gw_disconnect_report(void* userData)
+/// {
+///     ... /* try to connect to the gateway again */
+/// }
+///
+/// mqttsn_client_set_gw_disconnect_report_callback(client, &my_gw_disconnect_report, someUserData);
+/// @endcode
+/// If this callback is invoked, the client may try to connect to the gateway again.
+/// 
+/// When establishing first connection to the broker (using mqttsn_client_connect()), 
+/// the client ID and "keep alive"
+/// period information is provided. This information is stored in internal
+/// data structures of the library. When there is a need to refresh the same
+/// connection to the client, mqttsn_client_reconnect() function may be used.
+/// Such need may arise when any asynchronous operation reports
+/// @ref MqttsnAsyncOpStatus_NoResponse. It may happen for multiple reasons,
+/// for example, when gateway issued unsolicited disconnect request, but its
+/// @b DISCONNECT message wasn't received by the client. The gateway will 
+/// drop or reject any incoming messages until the new connection request is
+/// sent.
+/// @code
+/// void my_reconnect_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     if (status == MqttsnAsyncOpStatus_Successful) {
+///         ... /* Connection is successful, do something */
+///     }
+///     else {
+///         ... /* process error statuses */
+///     }
+///     ...
+/// }
+///
+/// MqttsnErrorCode result = mqttsn_client_reconnect(client, &my_reconnect_complete, someUserData);
+/// ...
+/// @endcode
+///
+/// @section mqttsn_client_publish Publishing
+/// The publish operation is performed using mqttsn_client_publish() function call.
+/// @code
+/// void my_publish_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ...    
+/// }
+///
+/// const char* pubTopic = "some/topic"
+/// const unsigned char pubData[] = {...};
+/// const unsigned pubDataSize = sizeof(pubData)/sizeof(pubData[0]);
+/// 
+/// void someFunc() {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_publish(
+///             client, 
+///             pubTopic,
+///             pubData,
+///             pubDataSize,
+///             MqttsnQoS_AtLeastOnceDelivery,
+///             false,
+///             &my_publish_complete,
+///             someUserData);
+///     ...
+/// }
+/// @endcode
+/// @b NOTE, that buffers of publish topic and publish message data must be
+/// preserved intact by the caller until the completion callback is invoked.
+///
+/// The MQTT-SN protocol also supports predefined numeric topic IDs instead of
+/// topic strings. To publish such message use mqttsn_client_publish_id().
+/// @code
+/// void someFunc() {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_publish_id(
+///             client, 
+///             pubTopicId, /* numeric topic ID instead of string */
+///             pubData,
+///             pubDataSize,
+///             MqttsnQoS_AtLeastOnceDelivery,
+///             false,
+///             &my_publish_complete,
+///             someUserData);
+/// @endcode
+///
+/// @section mqttsn_client_subscribe Subscribing
+/// The subscribe operation is performed using mqttsn_client_subscribe() function
+/// call.
+/// @code
+/// void my_subscribe_complete(void* userData, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+/// {
+///     ...    
+/// }
+///
+/// const char* subTopic = "subtopic1/+/subtopic2/#"
+/// 
+/// void someFunc() {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_subscribe(
+///             client, 
+///             subTopic,
+///             MqttsnQoS_ExactlyOnceDelivery, /* max QoS */
+///             &my_subscribe_complete,
+///             someUserData);
+///     ...
+/// }
+/// @endcode
+/// Please pay closer attention to the following facts:
+/// @li The buffer containing subscription topic must be preserved intact by the caller
+///     until the end of the operation when callback is called.
+/// @li The @b qos parameter to the function call specifies @b maximal quality
+///     of service level, with which the gateway/broker is allowed to publish messages
+///     to the client.
+/// @li The completion callback also has @b qos parameter. It specifies @b 
+///     actual maximal QoS level the broker/gateway is going to use to 
+///     publish messages to the client.
+/// @li Just like with MQTT protocol, the subscription topic may have the same
+///     @b + and @b # wildcards. 
+///
+/// The MQTT-SN protocol also supports subscription to predefined topic IDs 
+/// instead of topic strings. To do so use mqttsn_client_subscribe_id().
+/// @code
+/// void someFunc() {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_subscribe_id(
+///             client, 
+///             subTopicId, /* numeric topic ID instead of string */
+///             MqttsnQoS_ExactlyOnceDelivery,
+///             &my_subscribe_complete,
+///             someUserData);
+/// @endcode
+///
+/// @section mqttsn_client_unsubscribe Unsubscribing
+/// To unsubscribe use either mqttsn_client_unsubscribe() for string topics:
+/// @code
+/// void my_unsubscribe_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ...    
+/// }
+///
+/// const char* unsubTopic = "some/topic"
+/// 
+/// void someFunc() {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_unsubscribe(
+///             client, 
+///             unsubTopic,
+///             &my_unsubscribe_complete,
+///             someUserData);
+///     ...
+/// }
+/// @endcode
+/// and mqttsn_client_unsubscribe_id() for predefined numeric topic IDs:
+/// @code
+/// void someFunc() {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_unsubscribe_id(
+///             client, 
+///             unsubTopicId, // numeric ID
+///             &my_unsubscribe_complete,
+///             someUserData);
+///     ...
+/// }
+/// @endcode
+///
+/// @section mqttsn_client_will Updating the Will
+/// There are several ways to update the will information that was initially
+/// setup during connection process (see @ref mqttsn_client_connect_disconnect).
+///
+/// One way is to update both topic and message body in one go:
+/// @code
+/// void my_will_update_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ...
+/// }
+/// const char* willTopic = "updated/will/topic"
+/// const unsigned char willMsg[] = {...}
+/// const unsigned willMsgSize = sizeof(willMsg)/sizeof(willMsg[0]);
+///
+/// void someFunc()
+/// {
+///     MqttsnWillInfo willInfo;
+///     willInfo.topic = willTopic;
+///     willInfo.msg = willMsg;
+///     willInfo.msgLen = willMsgSize;
+///     willInfo.qos = MqttsnQoS_AtMostOnceDelivery;
+///     willInfo.retain = false;
+///
+///     MqttsnErrorCode result = mqttsn_client_will_update(client, &willInfo, &my_will_update_complete, someUserData);
+///     ...
+/// }
+/// @endcode
+/// Just like with connection request, all the buffers must be preserved by the
+/// caller until callback is called. Passing NULL as second parameter 
+/// (pointer to MqttsnWillInfo structure) as well as assigning NULL or empty
+/// string to @b topic data member of the struct means clearing the will
+/// information recorded with the broker.
+///
+/// Another possible way is to update both will topic and will message body
+/// separately.
+/// @code
+/// void my_will_topic_update_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ...
+/// }
+/// const char* willTopic = "updated/will/topic"
+///
+/// void someFunc()
+/// {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_will_topic_update(
+///             client, 
+///             willTopic, 
+///             MqttsnQoS_AtMostOnceDelivery, 
+///             false, 
+///             &my_will_topic_update_complete, 
+///             someUserData);
+///     ...
+/// }
+/// @endcode
+/// Passing NULL or empty string as will topic parameter will clear the will
+/// information registration recorded with the broker.
+///
+/// Updating will message body:
+/// @code
+/// void my_will_msg_update_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ...
+/// }
+/// const unsigned char willMsg[] = {...}
+/// const unsigned willMsgSize = sizeof(willMsg)/sizeof(willMsg[0]);
+///
+/// void someFunc()
+/// {
+///     MqttsnErrorCode result = 
+///         mqttsn_client_will_msg_update(
+///             client, 
+///             willMsg, 
+///             willMsgSize, 
+///             &my_will_msg_update_complete, 
+///             someUserData);
+///     ...
+/// }
+/// @endcode
+///
+/// @section mqttsn_client_sleep Sleeping
+/// The MQTT-SN protocol supports sleeping clients. It requires to let gateway 
+/// know about entering the low power mode to cause accumulating the
+/// incoming messages with the gateway until clients wakes up.
+///
+/// To notify the gateway use mqttsn_client_sleep() function.
+/// @code
+/// void my_sleep_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     if (status == MqttsnAsyncOpStatus_Successful) {
+///         ... /* Enter low power mode */
+///     }
+///     ...
+/// }
+///
+/// // Next communication attempt in 10 minutes (600 seconds)
+/// MqttsnErrorCode result = mqttsn_client_sleep(client, 600, &my_sleep_complete, someUserData);
+/// ...
+/// @endcode
+/// The second parameter specifies time duration in seconds within which the
+/// client is going to check for accumulated messages or issue connection/disconnection
+/// request.
+///
+/// In order to notify the gateway about return to normal running mode, use
+/// mqttsn_client_reconnect() message, described in 
+/// @ref mqttsn_client_connect_disconnect section.
+///
+/// Check for pending messages to be delivered can be performed using
+/// mqttsn_client_check_messages() function.
+/// @code
+/// void my_check_messages_complete(void* userData, MqttsnAsyncOpStatus status)
+/// {
+///     ...
+/// }
+///
+/// MqttsnErrorCode result = mqttsn_client_check_messages(client, &my_check_messages_complete, someUserData);
+/// @endcode
+/// Between issuing the check request and completion callback invocation, there
+/// can be multiple exchange of messages between the client and gateway with
+/// multiple reports about incoming application messages. After callback is
+/// called, the client may return to low power mode again for up to number of
+/// seconds provided to initial mqttsn_client_sleep() call. When this period
+/// is over again, the client needs to either check for accumulated messages
+/// again or reconnect to the gateway (using mqttsn_client_reconnect() function).
+///
+/// @section mqttsn_client_cancel Cancel Existing Operation
+/// This MQTT-SN client library supports only one asynchronous operation at a 
+/// time. If current operation takes too much time or there is other more
+/// important one to perform, the current operation can be cancelled.
+/// @code
+/// bool cancelled = mqttsn_client_cancel(client);
+/// @endcode
+/// The return value shows whether the operation was really cancelled. If no
+/// operation was in progress, false is returned. If the operation is cancelled,
+/// the relevant callback will be invoked with @ref MqttsnAsyncOpStatus_Aborted
+/// status.

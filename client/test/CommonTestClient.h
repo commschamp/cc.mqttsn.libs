@@ -33,7 +33,7 @@ typedef decltype(&mqttsn_client_set_next_tick_program_callback) NextTickProgramC
 typedef decltype(&mqttsn_client_set_cancel_next_tick_wait_callback) CancelNextTickCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_send_output_data_callback) SendOutDataCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_gw_status_report_callback) GwStatusReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_connection_status_report_callback) ConnectionStatusReportCallbackSetFunc;
+typedef decltype(&mqttsn_client_set_gw_disconnect_report_callback) GwDisconnectsReportCallbackSetFunc;
 typedef decltype(&mqttsn_client_set_message_report_callback) MessageReportCallbackSetFunc;
 typedef decltype(&mqttsn_client_start) StartFunc;
 typedef decltype(&mqttsn_client_process_data) ProcessDataFunc;
@@ -55,6 +55,7 @@ typedef decltype(&mqttsn_client_will_update) WillUpdateFunc;
 typedef decltype(&mqttsn_client_will_topic_update) WillTopicUpdateFunc;
 typedef decltype(&mqttsn_client_will_msg_update) WillMsgUpdateFunc;
 typedef decltype(&mqttsn_client_sleep) SleepFunc;
+typedef decltype(&mqttsn_client_reconnect) ReconnectFunc;
 typedef decltype(&mqttsn_client_check_messages) CheckMessagesFunc;
 
 
@@ -66,7 +67,7 @@ struct ClientLibFuncs
     CancelNextTickCallbackSetFunc m_cancelNextTickCallbackSetFunc = nullptr;
     SendOutDataCallbackSetFunc m_sentOutDataCallbackSetFunc = nullptr;
     GwStatusReportCallbackSetFunc m_gwStatusReportCallbackSetFunc = nullptr;
-    ConnectionStatusReportCallbackSetFunc m_connectionStatusReportCallbackSetFunc = nullptr;
+    GwDisconnectsReportCallbackSetFunc m_gwDisconnectReportCallbackSetFunc = nullptr;
     MessageReportCallbackSetFunc m_msgReportCallbackSetFunc = nullptr;
     StartFunc m_startFunc = nullptr;
     ProcessDataFunc m_processDataFunc = nullptr;
@@ -88,6 +89,7 @@ struct ClientLibFuncs
     WillTopicUpdateFunc m_willTopicUpdateFunc = nullptr;
     WillMsgUpdateFunc m_willMsgUpdateFunc = nullptr;
     SleepFunc m_sleepFunc = nullptr;
+    ReconnectFunc m_reconnectFunc = nullptr;
     CheckMessagesFunc m_checkMessagesFunc = nullptr;
 };
 
@@ -99,16 +101,10 @@ public:
     typedef std::function<unsigned ()> CancelNextTickCallback;
     typedef std::function<void (const std::uint8_t* buf, unsigned bufLen, bool broadcast)> SendDataCallback;
     typedef std::function<void (unsigned short gwId, MqttsnGwStatus status)> GwStatusReportCallback;
-    typedef std::function<void (MqttsnConnectionStatus status)> ConnectionStatusReportCallback;
+    typedef std::function<void ()> GwDisconnectReportCallback;
     typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> PublishCompleteCallback;
+    typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
     typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> UnsubscribeCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> WillUpdateCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> WillTopicUpdateCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> WillMsgUpdateCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> SleepCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> CheckMessagesCompleteCallback;
 
     ~CommonTestClient();
 
@@ -116,21 +112,24 @@ public:
     CancelNextTickCallback setCancelNextTickCallback(CancelNextTickCallback&& func);
     SendDataCallback setSendDataCallback(SendDataCallback&& func);
     GwStatusReportCallback setGwStatusReportCallback(GwStatusReportCallback&& func);
-    ConnectionStatusReportCallback setConnectionStatusReportCallback(ConnectionStatusReportCallback&& func);
+    GwDisconnectReportCallback setGwDisconnectReportCallback(GwDisconnectReportCallback&& func);
     MessageReportCallback setMessageReportCallback(MessageReportCallback&& func);
-    PublishCompleteCallback setPublishCompleteCallback(PublishCompleteCallback&& func);
+    AsyncOpCompleteCallback setConnectCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setDisconnectCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setPublishCompleteCallback(AsyncOpCompleteCallback&& func);
     SubscribeCompleteCallback setSubsribeCompleteCallback(SubscribeCompleteCallback&& func);
-    UnsubscribeCompleteCallback setUnsubsribeCompleteCallback(UnsubscribeCompleteCallback&& func);
-    WillUpdateCompleteCallback setWillUpdateCompleteCallback(WillUpdateCompleteCallback&& func);
-    WillTopicUpdateCompleteCallback setWillTopicUpdateCompleteCallback(WillTopicUpdateCompleteCallback&& func);
-    WillMsgUpdateCompleteCallback setWillMsgUpdateCompleteCallback(WillMsgUpdateCompleteCallback&& func);
-    SleepCompleteCallback setSleepCompleteCallback(SleepCompleteCallback&& func);
-    CheckMessagesCompleteCallback setCheckMessagesCompleteCallback(CheckMessagesCompleteCallback&& func);
+    AsyncOpCompleteCallback setUnsubsribeCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setWillUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setWillTopicUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setWillMsgUpdateCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setSleepCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setReconnectCompleteCallback(AsyncOpCompleteCallback&& func);
+    AsyncOpCompleteCallback setCheckMessagesCompleteCallback(AsyncOpCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
     MqttsnErrorCode start();
     void inputData(const std::uint8_t* buf, std::size_t bufLen);
-    void tick(unsigned ms);
+    void tick();
     void setRetryPeriod(unsigned ms);
     void setRetryCount(unsigned value);
     void setBroadcastRadius(unsigned char val);
@@ -185,6 +184,8 @@ public:
 
     MqttsnErrorCode sleep(std::uint16_t duration);
 
+    MqttsnErrorCode reconnect();
+
     MqttsnErrorCode checkMessages();
 
     static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
@@ -199,8 +200,10 @@ private:
     unsigned cancelNextTick();
     void sendOutputData(const unsigned char* buf, unsigned bufLen, bool broadcast);
     void reportGwStatus(unsigned short gwId, MqttsnGwStatus status);
-    void reportConnectionStatus(MqttsnConnectionStatus status);
+    void reportGwDisconnect();
     void reportMessage(const MqttsnMessageInfo* msgInfo);
+    void reportConnectComplete(MqttsnAsyncOpStatus status);
+    void reportDisconnectComplete(MqttsnAsyncOpStatus status);
     void reportPublishComplete(MqttsnAsyncOpStatus status);
     void reportSubsribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos);
     void reportUnsubsribeComplete(MqttsnAsyncOpStatus status);
@@ -208,14 +211,17 @@ private:
     void reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status);
     void reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status);
     void reportSleepComplete(MqttsnAsyncOpStatus status);
+    void reportReconnectComplete(MqttsnAsyncOpStatus status);
     void reportCheckMessagesComplete(MqttsnAsyncOpStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
     static void sendOutputDataCallback(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
-    static void gwStatusReportCallback(void* data, unsigned short gwId, MqttsnGwStatus status);
-    static void connectionStatusReportCallback(void* data, MqttsnConnectionStatus status);
+    static void gwStatusReportCallback(void* data, unsigned char gwId, MqttsnGwStatus status);
+    static void gwDisconnectReportCallback(void* data);
     static void msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo);
+    static void connectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
+    static void disconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void publishCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
     static void unsubsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status);
@@ -223,6 +229,7 @@ private:
     static void willTopicUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void willMsgUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void sleepCompleteCallback(void* data, MqttsnAsyncOpStatus status);
+    static void reconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
     static void checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status);
 
     ClientLibFuncs m_libFuncs;
@@ -233,16 +240,19 @@ private:
     CancelNextTickCallback m_cancelNextTickCallback;
     SendDataCallback m_sendDataCallback;
     GwStatusReportCallback m_gwStatusReportCallback;
-    ConnectionStatusReportCallback m_connectionStatusReportCallback;
+    GwDisconnectReportCallback m_gwDisconnectReportCallback;
     MessageReportCallback m_msgReportCallback;
-    PublishCompleteCallback m_publishCompleteCallback;
+    AsyncOpCompleteCallback m_connectCompleteCallback;
+    AsyncOpCompleteCallback m_disconnectCompleteCallback;
+    AsyncOpCompleteCallback m_publishCompleteCallback;
     SubscribeCompleteCallback m_subscribeCompleteCallback;
-    UnsubscribeCompleteCallback m_unsubscribeCompleteCallback;
-    WillUpdateCompleteCallback m_willUpdateCompleteCallback;
-    WillTopicUpdateCompleteCallback m_willTopicUpdateCompleteCallback;
-    WillMsgUpdateCompleteCallback m_willMsgUpdateCompleteCallback;
-    SleepCompleteCallback m_sleepCompleteCallback;
-    CheckMessagesCompleteCallback m_checkMessagesCompleteCallback;
+    AsyncOpCompleteCallback m_unsubscribeCompleteCallback;
+    AsyncOpCompleteCallback m_willUpdateCompleteCallback;
+    AsyncOpCompleteCallback m_willTopicUpdateCompleteCallback;
+    AsyncOpCompleteCallback m_willMsgUpdateCompleteCallback;
+    AsyncOpCompleteCallback m_sleepCompleteCallback;
+    AsyncOpCompleteCallback m_reconnectCompleteCallback;
+    AsyncOpCompleteCallback m_checkMessagesCompleteCallback;
 
     static const ClientLibFuncs DefaultFuncs;
 };

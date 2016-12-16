@@ -135,7 +135,8 @@ bool SessionWrapper::start()
 
 void SessionWrapper::tickTimeout()
 {
-    m_session.tick(m_reqTicks);
+    m_reqTicks = 0U;
+    m_session.tick();
 }
 
 void SessionWrapper::brokerConnected()
@@ -317,12 +318,12 @@ SessionWrapper::AuthInfo SessionWrapper::getAuthInfoFor(const std::string& clien
     BinaryData data;
     data.reserve(iter->password.size());
 
-    unsigned pos;
+    unsigned pos = 0U;
     while (pos < iter->password.size()) {
         auto remSize = iter->password.size() - pos;
         const char* remStr = &iter->password[pos];
 
-        static const std::string BackSlashStr("\\");
+        static const std::string BackSlashStr("\\\\");
         if ((BackSlashStr.size() <= remSize) &&
             (std::equal(BackSlashStr.begin(), BackSlashStr.end(), remStr))) {
             data.push_back(static_cast<std::uint8_t>('\\'));

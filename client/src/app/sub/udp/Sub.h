@@ -149,16 +149,18 @@ private:
     static void sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool broadcast);
 
     void gwStatusReport(unsigned short gwId, MqttsnGwStatus status);
-    static void gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status);
+    static void gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status);
 
-    void connectionStatusReport(MqttsnConnectionStatus status);
-    static void connectionStatusReportCb(void* obj, MqttsnConnectionStatus status);
+    void gwDisconnectReport();
+    static void gwDisconnectReportCb(void* obj);
 
     void messageReport(const MqttsnMessageInfo* msgInfo);
     static void messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo);
 
     void doConnect(bool reconnecting = false);
     void doSubscribe();
+    void connectComplete(MqttsnAsyncOpStatus status);
+    static void connectCompleteCb(void* obj, MqttsnAsyncOpStatus status);
     void subscribeComplete(MqttsnAsyncOpStatus status);
     static void subscribeCompleteCb(void* obj, MqttsnAsyncOpStatus status, MqttsnQoS qos);
     bool bindLocalPort();

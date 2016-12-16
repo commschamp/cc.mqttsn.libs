@@ -8,7 +8,7 @@ if (NOT CXXTEST_FOUND)
     return ()
 endif ()
 
-set (COMPONENT_NAME "mqttsn.client")
+set (COMPONENT_NAME "cc.mqttsn.client")
 set (COMMON_TEST_CLIENT_LIB "CommonTestClient")
 
 #################################################################

@@ -1,4 +1,4 @@
-set (THIS_PLUGIN_NAME "mqttsn_client_filter")
+set (THIS_PLUGIN_NAME "cc_mqttsn_client_filter")
 
 ######################################################################
 
@@ -76,6 +76,6 @@ include_directories(
 
 cc_plugin_mqttsn_client_filter ()
 
-if (CC_MQTTSN_FULL_SOLUTION)
+if (CC_EXTERNAL)
     add_dependencies(${THIS_PLUGIN_NAME} ${CC_EXTERNAL_TGT})
 endif ()

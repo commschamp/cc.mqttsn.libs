@@ -125,11 +125,11 @@ struct SessionState
 
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
+    unsigned m_tickReq = 0U;
     bool m_running = false;
     bool m_brokerConnected = false;
     bool m_reconnectingBroker = false;
     bool m_terminating = false;
-    bool m_timerActive = false;
     bool m_pendingClientDisconnect = false;
     bool m_clientConnectReported = false;
     Timestamp m_timestamp = InitialTimestamp;

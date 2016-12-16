@@ -17,87 +17,76 @@
 
 
 // This function is required by common startup code
-#include <type_traits>
-#include <cstdint>
+#include <stdint.h>
+#include <stddef.h>
 
 #include "test_bare_metal_client.h"
 
-extern "C"
 void interruptHandler()
 {
 }
 
-void programNextTick(void* data, unsigned duration)
+void programNextTick(void* data, unsigned ms)
 {
-    static_cast<void>(data);
-    static_cast<void>(duration);
 }
 
 unsigned cancelTick(void* data)
 {
-    static_cast<void>(data);
     return 0U;
 }
 
-void connectStatus(void* data, MqttsnConnectionStatus status)
+void connectComplete(void* data, MqttsnAsyncOpStatus status)
 {
-    static_cast<void>(data);
-    static_cast<void>(status);
 }
 
-void sendOutputData(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast)
+void disconnectComplete(void* data, MqttsnAsyncOpStatus status)
 {
-    static_cast<void>(data);
-    static_cast<void>(buf);
-    static_cast<void>(bufLen);
-    static_cast<void>(broadcast);
+}
+
+void gwDisconnected(void* data)
+{
+}
+
+void sendOutputData(void* data, const unsigned char* buf, unsigned bufSize, bool broadcast)
+{
 }
 
 void publishCallback(void* data, MqttsnAsyncOpStatus status)
 {
-    static_cast<void>(data);
-    static_cast<void>(status);
 }
 
 void subscribeCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)
 {
-    static_cast<void>(data);
-    static_cast<void>(status);
-    static_cast<void>(qos);
 }
 
 void unsubscribeCallback(void* data, MqttsnAsyncOpStatus status)
 {
-    static_cast<void>(data);
-    static_cast<void>(status);
 }
 
 int main(int argc, const char** argv)
 {
-    static_cast<void>(argc);
-    static_cast<void>(argv);
+    static const unsigned char Seq[] = {0x00, 0xf0};
+    static const unsigned SeqSize = sizeof(Seq)/sizeof(Seq[0]);
+    static const char* Topic = "/this/is/topic";
+    static const unsigned char Data[] = {
+        0x00, 0x01, 0x02, 0x03
+    };
+    static const unsigned DataSize = sizeof(Data)/sizeof(Data[0]);
+    const unsigned char* from = &Seq[0];
+    MqttsnClientHandle client = mqttsn_test_bare_metal_client_new();
 
-    auto* client = mqttsn_test_bare_metal_client_new();
-    mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, nullptr);
-    mqttsn_test_bare_metal_client_set_cancel_next_tick_wait_callback(client, &cancelTick, nullptr);
-    mqttsn_test_bare_metal_client_set_send_output_data_callback(client, &sendOutputData, nullptr);
-    mqttsn_test_bare_metal_client_set_connection_status_report_callback(client, &connectStatus, nullptr);
+
+    mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, NULL);
+    mqttsn_test_bare_metal_client_set_cancel_next_tick_wait_callback(client, &cancelTick, NULL);
+    mqttsn_test_bare_metal_client_set_send_output_data_callback(client, &sendOutputData, NULL);
+    mqttsn_test_bare_metal_client_set_gw_disconnect_report_callback(client, &gwDisconnected, NULL);
     if (mqttsn_test_bare_metal_client_start(client) == 0) {
         return -1;
     }
 
-    static const unsigned char Seq[] = {0x00, 0xf0};
-    static const std::size_t SeqSize = std::extent<decltype(Seq)>::value;
-
-    const unsigned char* from = &Seq[0];
     mqttsn_test_bare_metal_client_process_data(client, from, SeqSize);
-    mqttsn_test_bare_metal_client_tick(client, 10);
-    mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, nullptr);
-    static const char* Topic("/this/is/topic");
-    static const std::uint8_t Data[] = {
-        0x00, 0x01, 0x02, 0x03
-    };
-    static const std::size_t DataSize = std::extent<decltype(Data)>::value;
+    mqttsn_test_bare_metal_client_tick(client);
+    mqttsn_test_bare_metal_client_connect(client, "my_id", 60, true, NULL, &connectComplete, NULL);
     mqttsn_test_bare_metal_client_publish(
         client,
         Topic,
@@ -106,7 +95,7 @@ int main(int argc, const char** argv)
         MqttsnQoS_ExactlyOnceDelivery,
         false,
         &publishCallback,
-        nullptr);
+        NULL);
 
     mqttsn_test_bare_metal_client_publish_id(
         client,
@@ -116,21 +105,21 @@ int main(int argc, const char** argv)
         MqttsnQoS_ExactlyOnceDelivery,
         false,
         &publishCallback,
-        nullptr);
+        NULL);
 
     mqttsn_test_bare_metal_client_subscribe(
         client,
         Topic,
         MqttsnQoS_ExactlyOnceDelivery,
         &subscribeCallback,
-        nullptr);
+        NULL);
 
     mqttsn_test_bare_metal_client_subscribe_id(
         client,
         0x1111,
         MqttsnQoS_ExactlyOnceDelivery,
         &subscribeCallback,
-        nullptr);
+        NULL);
 
     mqttsn_test_bare_metal_client_cancel(client);
 
@@ -138,26 +127,26 @@ int main(int argc, const char** argv)
         client,
         Topic,
         &unsubscribeCallback,
-        nullptr);
+        NULL);
 
     mqttsn_test_bare_metal_client_unsubscribe_id(
         client,
         0x1111,
         &unsubscribeCallback,
-        nullptr);
+        NULL);
 
     mqttsn_test_bare_metal_client_sleep(
         client,
         10000,
         &unsubscribeCallback,
-        nullptr);
+        NULL);
 
     mqttsn_test_bare_metal_client_check_messages(
         client,
         &unsubscribeCallback,
-        nullptr);
+        NULL);
 
-    mqttsn_test_bare_metal_client_disconnect(client);
+    mqttsn_test_bare_metal_client_disconnect(client, &disconnectComplete, NULL);
     mqttsn_test_bare_metal_client_free(client);
     while (true) {};
     return 0;

@@ -1,0 +1,156 @@
+/// @page mqttsn_gw_gateway_page Gateway
+/// @tableofcontents
+/// The @b Gateway object is responsible to advertise the gateway presence to
+/// all the possible clients on MQTT-SN network. If such advertisement is not
+/// needed, there is no need to create or use the @b Gateway object.
+///
+/// @section mqttsn_gw_gateway_page_alloc Allocation
+/// When using @b C++ interface, just instantiate object of mqttsn::gateway::Gateway
+/// class. The destruction of the object will clean up all acquired resources.
+/// @code
+/// mqttsn::gateway::Gateway gw;
+/// @endcode
+///
+/// When using @b C interface, the allocation is performed using mqttsn_gw_alloc()
+/// @code
+/// MqttsnGatewayHandle gw = mqttsn_gw_alloc();
+/// @endcode
+/// and de-allocation is performed using mqttsn_gw_free() functions.
+/// @code
+/// mqttsn_gw_free(gw);
+/// @endcode
+///
+/// @section mqttsn_gw_gateway_page_send Sending Data
+/// As was stated, the @b Gateway object is responsible to periodically 
+/// broadcast @b ADVERTISE messages to all MQTT-SN clients on the network to
+/// advertise its presence. The library just generates the binary data, that
+/// needs to be sent, and uses a callback function to request the driving code
+/// to send this data over I/O link being used. The required callback needs to
+/// be provided by the driving code.
+///
+/// @b C++ interface: 
+/// @code
+/// gw.setSendDataReqCb(
+///     [](const std::uint8_t* buf, std::size_t bufLen)
+///     {
+///         ... // Broadcast the requested data
+///     });
+/// @endcode
+///
+/// @b C interface: 
+/// @code
+/// void my_advertise_broadcast(void* userData, const unsigned char* buf, unsigned bufLen)
+/// {
+///     ... /* Broadcast the provided buffer */
+/// }
+///
+/// mqttsn_gw_set_advertise_broadcast_req_cb(gw, &my_advertise_broadcast, someUserData);
+/// @endcode
+///
+/// @section mqttsn_gw_gateway_page_time Time Measurement
+/// As was mentioned earlier there is a need to send @b ADVERTISE messages 
+/// @b periodically. As the result the @b Gateway object needs to perform
+/// some time measurement. It relies on the driving code to provide such 
+/// service. There is a need to set appropriate callback:
+/// 
+/// @b C++ interface:
+/// @code
+/// gw.setNextTickProgramReqCb(
+///     [](unsigned duration)
+///     {
+///         ... // Set timer to expire after duration milliseconds
+///             // After expiry call gw.tick()
+///     };
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// void my_tick_req(void* userData, unsigned duration)
+/// {
+///     ... /* Set timer to expire after duration milliseconds */
+///     ... /* After expiry call mqttsn_gw_tick() */
+/// }
+///
+/// mqttsn_gw_set_tick_req_cb(gw, &my_tick_req, someUserData);
+/// @endcode
+/// 
+/// After the requested time expires, the driving code needs to notify the
+/// @b Gateway object. It must call the appropriate @b tick() function.
+///
+/// @b C++ interface:
+/// @code
+/// gw.tick();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_tick(gw); 
+/// @endcode
+///
+/// @section mqttsn_gw_gateway_page_adv_period Advertise Period
+/// The @b ADVERTISE message must be sent periodically. The message itself
+/// contains information when next @b ADVERTISE message will be sent. The
+/// @b Gateway object cannot operate without the advertise period being set.
+///
+/// @b C++ interface:
+/// @code
+/// gw.setAdvertisePeriod(900); // The advertise period is in seconds
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_set_advertise_period(gw, 900); /* The advertise period is in seconds */
+/// @endcode
+///
+/// @section mqttsn_gw_gateway_page_gw Gateway ID
+/// The @b ADVERTISE message also contain 1 byte of numeric gateway ID. If the
+/// actual gateway ID differs from default value @b 0. It must be provided
+/// to the @b Gateway object.
+///
+/// @b C++ interface:
+/// @code
+/// gw.setGatewayId(5); 
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_set_id(gw, 5); 
+/// @endcode
+///
+/// @section mqttsn_gw_gateway_page_start Start Operation
+/// After all the callbacks have been set and the advertise period was provided,
+/// the operation of the @b Gateway object needs to be properly started.
+///
+/// @b C++ interface:
+/// @code
+/// if (!gw.start()) {
+///     ... // Something is not configured properly
+/// } 
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// if (!mqttsn_gw_start(gw) {
+///     ... /* Something is not configured properly */
+/// } 
+/// @endcode
+///
+/// If the start is successful, the @b Gateway object will immediatelly request
+/// to send new @b ADVERTISE message and will request a time measurement 
+/// for the next time.
+///
+/// If the @b Gateway's operation needs to be paused for a while, use
+/// mqttsn::gateway::Gateway::stop() or mqttsn_gw_stop() functions. The
+/// operation can be resumed using mqttsn::gateway::Gateway::start() or 
+/// mqttsn_gw_start() respectively.
+///
+/// @b C++ interface:
+/// @code
+/// gw.stop(); 
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// mqttsn_gw_stop(gw);
+/// @endcode
+///

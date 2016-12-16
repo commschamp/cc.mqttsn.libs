@@ -151,14 +151,14 @@ SessionImpl::SessionImpl()
     }
 }
 
-void SessionImpl::tick(unsigned ms)
+void SessionImpl::tick()
 {
     if ((!isRunning()) || m_state.m_terminating) {
         return;
     }
 
-    m_state.m_timerActive = false;
-    m_state.m_timestamp += ms;
+    m_state.m_timestamp += m_state.m_tickReq;
+    m_state.m_tickReq = 0U;
 
     auto guard = apiCall();
     updateOps();
@@ -308,7 +308,7 @@ void SessionImpl::programNextTimeout()
         return;
     }
 
-    assert(!m_state.m_timerActive);
+    assert(m_state.m_tickReq == 0U);
     unsigned delay = NoTimeout;
     for (auto& op : m_ops) {
         delay = std::min(delay, op->nextTick());
@@ -320,18 +320,18 @@ void SessionImpl::programNextTimeout()
 
     GASSERT(m_nextTickProgramCb != nullptr);
     m_nextTickProgramCb(delay);
-    m_state.m_timerActive = true;
+    m_state.m_tickReq = delay;
 }
 
 void SessionImpl::updateTimestamp()
 {
-    if (!m_state.m_timerActive) {
+    if (m_state.m_tickReq == 0U) {
         return;
     }
 
     GASSERT(m_cancelTickCb);
     m_state.m_timestamp += m_cancelTickCb();
-    m_state.m_timerActive = false;
+    m_state.m_tickReq = 0U;
     updateOps();
 }
 

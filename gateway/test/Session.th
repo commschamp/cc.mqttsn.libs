@@ -1509,7 +1509,7 @@ private:
             TS_TRACE("[TICK]: " + std::to_string(ms));
             TS_ASSERT(state.m_tickReq.size() <= 1U);
             state.m_tickReq.clear();
-            session.tick(ms);
+            session.tick();
             return;
         }
 
@@ -1521,7 +1521,7 @@ private:
         auto value = state.m_tickReq.front();
         TS_TRACE("[TICK]: " + std::to_string(value));
         state.m_tickReq.pop_front();
-        session.tick(value);
+        session.tick();
     }
 
     static void doConnect(
@@ -1801,11 +1801,7 @@ void SessionTest::test6()
     verifyTickReq(state, expectedTickReq);
     verifyNoOtherEvent(state, handler);
 
-    doTick(state, *session, expectedTickReq - 1000);
-    verifyTickReq(state, 1000);
-    verifyNoOtherEvent(state, handler);
-
-    doTick(state, *session, 1000);
+    doTick(state, *session, expectedTickReq);
     verifySentToBroker_PingreqMsg(state, handler);
     verifyTickReq(state, DefaultRetryPeriod * 1000);
     verifyNoOtherEvent(state, handler);

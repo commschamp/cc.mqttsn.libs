@@ -63,8 +63,8 @@ Pub::Pub()
     mqttsn_client_set_gw_status_report_callback(
         m_client.get(), &Pub::gwStatusReportCb, this);
 
-    mqttsn_client_set_connection_status_report_callback(
-        m_client.get(), &Pub::connectionStatusReportCb, this);
+    mqttsn_client_set_gw_disconnect_report_callback(
+        m_client.get(), &Pub::gwDisconnectReportCb, this);
 
     mqttsn_client_set_message_report_callback(
         m_client.get(), &Pub::messageReportCb, this);
@@ -110,9 +110,8 @@ bool Pub::start()
 
 void Pub::tick()
 {
-    auto ms = m_reqTimeout;
     m_reqTimeout = 0;
-    mqttsn_client_tick(m_client.get(), ms);
+    mqttsn_client_tick(m_client.get());
 }
 
 void Pub::readFromSocket()
@@ -127,6 +126,7 @@ void Pub::readFromSocket()
             &m_lastSenderAddress,
             &m_lastSenderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+        static_cast<void>(readBytes);
 
         if (m_debug) {
             std::cout << "[DEBUG]: --> " << std::hex;
@@ -231,45 +231,27 @@ void Pub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
     doConnect();
 }
 
-void Pub::gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status)
+void Pub::gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Pub*>(obj)->gwStatusReport(gwId, status);
 }
 
-void Pub::connectionStatusReport(MqttsnConnectionStatus status)
+void Pub::gwDisconnectReport()
 {
-    if (m_qos == MqttsnQoS_NoGwPublish) {
+    if (m_disconnecting) {
+        quitApp();
         return;
     }
 
-    if (status == MqttsnConnectionStatus_Connected) {
-        doPublish();
-        return;
-    }
-
-    if (status == MqttsnConnectionStatus_Disconnected) {
-        if (m_disconnecting) {
-            quitApp();
-            return;
-        }
-
-        std::cerr << "WARNING: Disconnected from GW, reconnecting..." << std::endl;
-        doConnect();
-        return;
-    }
-
-    if (status == MqttsnConnectionStatus_Congestion) {
-        std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
-        doConnect();
-        return;
-    }
+    std::cerr << "WARNING: Disconnected from GW, reconnecting..." << std::endl;
+    doConnect();
 }
 
-void Pub::connectionStatusReportCb(void* obj, MqttsnConnectionStatus status)
+void Pub::gwDisconnectReportCb(void* obj)
 {
     assert(obj != nullptr);
-    reinterpret_cast<Pub*>(obj)->connectionStatusReport(status);
+    reinterpret_cast<Pub*>(obj)->gwDisconnectReport();
 }
 
 void Pub::messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo)
@@ -285,7 +267,15 @@ void Pub::doConnect(bool reconnecting)
         cleanSession = false;
     }
 
-    auto result = mqttsn_client_connect(m_client.get(), m_clientId.c_str(), m_keepAlive, cleanSession, nullptr);
+    auto result =
+        mqttsn_client_connect(
+            m_client.get(),
+            m_clientId.c_str(),
+            m_keepAlive,
+            cleanSession,
+            nullptr,
+            &Pub::connectCompleteCb,
+            this);
     if (result != MqttsnErrorCode_Success) {
         std::cerr << "ERROR: Failed to connect to the gateway" << std::endl;
     }
@@ -336,7 +326,46 @@ void Pub::doPublish()
     }
 
     m_disconnecting = true;
-    mqttsn_client_disconnect(m_client.get());
+    mqttsn_client_disconnect(m_client.get(), &Pub::disconnectCompleteCb, this);
+}
+
+void Pub::connectComplete(MqttsnAsyncOpStatus status)
+{
+    if (m_qos == MqttsnQoS_NoGwPublish) {
+        return;
+    }
+
+    if (status == MqttsnAsyncOpStatus_Successful) {
+        doPublish();
+        return;
+    }
+
+    if (status == MqttsnAsyncOpStatus_Congestion) {
+        std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
+        doConnect();
+        return;
+    }
+
+    std::cerr << "ERROR: Failed to connect..." << std::endl;
+    quitApp();
+}
+
+void Pub::connectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+{
+    assert(obj != nullptr);
+    reinterpret_cast<Pub*>(obj)->connectComplete(status);
+}
+
+void Pub::disconnectComplete(MqttsnAsyncOpStatus status)
+{
+    static_cast<void>(status);
+    quitApp();
+}
+
+void Pub::disconnectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+{
+    assert(obj != nullptr);
+    reinterpret_cast<Pub*>(obj)->disconnectComplete(status);
 }
 
 void Pub::publishComplete(MqttsnAsyncOpStatus status)
@@ -365,7 +394,7 @@ void Pub::publishComplete(MqttsnAsyncOpStatus status)
     }
 
     m_disconnecting = true;
-    mqttsn_client_disconnect(m_client.get());
+    mqttsn_client_disconnect(m_client.get(), &Pub::disconnectCompleteCb, this);
 }
 
 void Pub::publishCompleteCb(void* obj, MqttsnAsyncOpStatus status)

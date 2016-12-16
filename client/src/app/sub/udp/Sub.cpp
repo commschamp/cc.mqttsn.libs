@@ -24,6 +24,9 @@
 #include <iterator>
 #include <iomanip>
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QTimer>
+
 namespace mqttsn
 {
 
@@ -61,8 +64,8 @@ Sub::Sub()
     mqttsn_client_set_gw_status_report_callback(
         m_client.get(), &Sub::gwStatusReportCb, this);
 
-    mqttsn_client_set_connection_status_report_callback(
-        m_client.get(), &Sub::connectionStatusReportCb, this);
+    mqttsn_client_set_gw_disconnect_report_callback(
+        m_client.get(), &Sub::gwDisconnectReportCb, this);
 
     mqttsn_client_set_message_report_callback(
         m_client.get(), &Sub::messageReportCb, this);
@@ -99,9 +102,8 @@ bool Sub::start()
 
 void Sub::tick()
 {
-    auto ms = m_reqTimeout;
     m_reqTimeout = 0;
-    mqttsn_client_tick(m_client.get(), ms);
+    mqttsn_client_tick(m_client.get());
 }
 
 void Sub::readFromSocket()
@@ -116,6 +118,7 @@ void Sub::readFromSocket()
             &m_lastSenderAddress,
             &m_lastSenderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
+        static_cast<void>(readBytes);
 
 //        std::cout << "--> " << std::hex;
 //        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));
@@ -212,36 +215,22 @@ void Sub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
     doConnect();
 }
 
-void Sub::gwStatusReportCb(void* obj, unsigned short gwId, MqttsnGwStatus status)
+void Sub::gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Sub*>(obj)->gwStatusReport(gwId, status);
 }
 
-void Sub::connectionStatusReport(MqttsnConnectionStatus status)
+void Sub::gwDisconnectReport()
 {
-    if (status == MqttsnConnectionStatus_Connected) {
-        doSubscribe();
-        return;
-    }
-
-    if (status == MqttsnConnectionStatus_Disconnected) {
-        std::cerr << "WARNING: Disconnected from GW, reconnecting..." << std::endl;
-        doConnect(true);
-        return;
-    }
-
-    if (status == MqttsnConnectionStatus_Congestion) {
-        std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
-        doConnect();
-        return;
-    }
+    std::cerr << "WARNING: Disconnected from GW, reconnecting..." << std::endl;
+    doConnect(true);
 }
 
-void Sub::connectionStatusReportCb(void* obj, MqttsnConnectionStatus status)
+void Sub::gwDisconnectReportCb(void* obj)
 {
     assert(obj != nullptr);
-    reinterpret_cast<Sub*>(obj)->connectionStatusReport(status);
+    reinterpret_cast<Sub*>(obj)->gwDisconnectReport();
 }
 
 void Sub::messageReport(const MqttsnMessageInfo* msgInfo)
@@ -294,7 +283,15 @@ void Sub::doConnect(bool reconnecting)
         cleanSession = false;
     }
 
-    auto result = mqttsn_client_connect(m_client.get(), m_clientId.c_str(), m_keepAlive, cleanSession, nullptr);
+    auto result =
+        mqttsn_client_connect(
+            m_client.get(),
+            m_clientId.c_str(),
+            m_keepAlive,
+            cleanSession,
+            nullptr,
+            &Sub::connectCompleteCb,
+            this);
     if (result != MqttsnErrorCode_Success) {
         std::cerr << "ERROR: Failed to connect to the gateway" << std::endl;
     }
@@ -335,6 +332,30 @@ void Sub::doSubscribe()
         return;
     }
 }
+
+void Sub::connectComplete(MqttsnAsyncOpStatus status)
+{
+    if (status == MqttsnAsyncOpStatus_Successful) {
+        doSubscribe();
+        return;
+    }
+
+    if (status == MqttsnAsyncOpStatus_Congestion) {
+        std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
+        doConnect();
+        return;
+    }
+
+    std::cerr << "ERROR: Failed to connect..." << std::endl;
+    QTimer::singleShot(10, qApp, SLOT(quit()));
+}
+
+void Sub::connectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+{
+    assert(obj != nullptr);
+    reinterpret_cast<Sub*>(obj)->connectComplete(status);
+}
+
 
 void Sub::subscribeComplete(MqttsnAsyncOpStatus status)
 {

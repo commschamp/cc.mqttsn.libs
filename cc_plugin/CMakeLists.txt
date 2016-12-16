@@ -1,4 +1,4 @@
-if (CMAKE_CROSSCOMPILING)
+if (NOT CC_MQTTSN_BUILD_PLUGINS)
     return()
 endif ()
 

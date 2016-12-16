@@ -121,6 +121,7 @@ private:
     void doPublish();
     void publishComplete(MqttsnAsyncOpStatus status);
     void doConnect();
+    void connectComplete(MqttsnAsyncOpStatus status);
     void sendAccumulatedMessages();
     void doSubscribe();
     void subscribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos);
@@ -130,14 +131,15 @@ private:
     void programNextTick(unsigned duration);
     unsigned cancelTick();
     void gwStatusReport(unsigned short gwId, MqttsnGwStatus status);
-    void connectionStatusReport(MqttsnConnectionStatus status);
+    void gwDisconnectReport();
 
     static void messageArrivedCb(void* data, const MqttsnMessageInfo* msgInfo);
     static void sendMessageCb(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void programNextTickCb(void* data, unsigned duration);
     static unsigned cancelTickCb(void* data);
-    static void gwStatusReportCb(void* data, unsigned short gwId, MqttsnGwStatus status);
-    static void connectionStatusReportCb(void* data, MqttsnConnectionStatus status);
+    static void gwStatusReportCb(void* data, unsigned char gwId, MqttsnGwStatus status);
+    static void gwDisconnectReportCb(void* data);
+    static void connectCompleteCb(void* data, MqttsnAsyncOpStatus status);
     static void publishCompleteCb(void* data, MqttsnAsyncOpStatus status);
     static void subscribeCompleteCb(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
 
