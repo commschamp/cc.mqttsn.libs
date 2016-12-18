@@ -31,7 +31,7 @@
 #include "details/WriteBufStorageType.h"
 #include "mqttsn/protocol/field.h"
 #include "Message.h"
-#include "AllMessages.h"
+#include "InputMessages.h"
 
 //#include <iostream>
 
@@ -505,14 +505,16 @@ public:
                 break;
             }
 
-            if (es != comms::ErrorStatus::Success) {
+            if (es == comms::ErrorStatus::ProtocolError) {
                 ++iter;
                 continue;
             }
 
-            GASSERT(msg);
-            m_lastMsgTimestamp = m_timestamp;
-            msg->dispatch(*this);
+            if (es == comms::ErrorStatus::Success) {
+                GASSERT(msg);
+                m_lastMsgTimestamp = m_timestamp;
+                msg->dispatch(*this);
+            }
 
             consumed += static_cast<std::size_t>(std::distance(iter, iterTmp));
             iter = iterTmp;
@@ -1712,7 +1714,7 @@ private:
     >::Type OpStorageType;
 
 
-    typedef protocol::Stack<Message, AllMessages<Message, TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
+    typedef protocol::Stack<Message, InputMessages<Message, TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
 
     struct RegInfo
