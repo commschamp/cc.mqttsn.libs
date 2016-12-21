@@ -49,6 +49,8 @@ class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler
 public:
     using MqttsnBase::handle;
     using MqttBase::handle;
+
+    virtual ~MsgHandler() = default;
 };
 
 
