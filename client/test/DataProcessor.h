@@ -32,7 +32,8 @@ class DataProcessor;
 typedef mqttsn::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
-    comms::option::Handler<DataProcessor>
+    comms::option::Handler<DataProcessor>,
+    comms::option::LengthInfoInterface
 > TestMessage;
 
 typedef mqttsn::protocol::AllMessages<TestMessage> AllTestMessages;

@@ -28,7 +28,8 @@ using MessageT =
     mqttsn::protocol::MessageT<
         comms::option::ReadIterator<const std::uint8_t*>,
         comms::option::WriteIterator<std::uint8_t*>,
-        comms::option::Handler<THandler>
+        comms::option::Handler<THandler>,
+        comms::option::LengthInfoInterface
     >;
 
 }  // namespace client

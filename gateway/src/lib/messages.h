@@ -34,7 +34,8 @@ class MsgHandler;
 typedef mqttsn::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
-    comms::option::Handler<MsgHandler>
+    comms::option::Handler<MsgHandler>,
+    comms::option::LengthInfoInterface
 > MqttsnMessage;
 
 typedef mqtt::MessageT<

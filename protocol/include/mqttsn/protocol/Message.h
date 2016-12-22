@@ -41,18 +41,17 @@ class MessageT : public
     comms::Message<
         comms::option::BigEndian,
         comms::option::MsgIdType<MsgTypeId>,
-        comms::option::LengthInfoInterface,
         comms::option::RefreshInterface,
         TOptions...
     >
 {
-    typedef     comms::Message<
-        comms::option::BigEndian,
-        comms::option::MsgIdType<MsgTypeId>,
-        comms::option::LengthInfoInterface,
-        comms::option::RefreshInterface,
-        TOptions...
-    > Base;
+    typedef
+        comms::Message<
+            comms::option::BigEndian,
+            comms::option::MsgIdType<MsgTypeId>,
+            comms::option::RefreshInterface,
+            TOptions...
+        > Base;
 public:
 
     typedef typename Base::Field Field;
