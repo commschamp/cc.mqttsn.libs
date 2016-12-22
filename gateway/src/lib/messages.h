@@ -49,34 +49,62 @@ typedef mqtt::MessageT<
     comms::option::LengthInfoInterface
 > MqttMessage;
 
-typedef mqttsn::protocol::message::Advertise<MqttsnMessage> AdvertiseMsg_SN;
-typedef mqttsn::protocol::message::Searchgw<MqttsnMessage> SearchgwMsg_SN;
-typedef mqttsn::protocol::message::Gwinfo<MqttsnMessage> GwinfoMsg_SN;
-typedef mqttsn::protocol::message::Connect<MqttsnMessage> ConnectMsg_SN;
-typedef mqttsn::protocol::message::Connack<MqttsnMessage> ConnackMsg_SN;
+typedef protocol::ParsedOptions<
+    protocol::option::GatewayOnlyVariant
+> GwOptions;
+
+typedef mqttsn::protocol::message::Advertise<MqttsnMessage, GwOptions> AdvertiseMsg_SN;
+typedef mqttsn::protocol::message::Searchgw<MqttsnMessage, GwOptions> SearchgwMsg_SN;
+typedef mqttsn::protocol::message::Gwinfo<MqttsnMessage, GwOptions> GwinfoMsg_SN;
+typedef mqttsn::protocol::message::Connect<MqttsnMessage, GwOptions> ConnectMsg_SN;
+typedef mqttsn::protocol::message::Connack<MqttsnMessage, GwOptions> ConnackMsg_SN;
 typedef mqttsn::protocol::message::Willtopicreq<MqttsnMessage> WilltopicreqMsg_SN;
-typedef mqttsn::protocol::message::Willtopic<MqttsnMessage> WilltopicMsg_SN;
+typedef mqttsn::protocol::message::Willtopic<MqttsnMessage, GwOptions> WilltopicMsg_SN;
 typedef mqttsn::protocol::message::Willmsgreq<MqttsnMessage> WillmsgreqMsg_SN;
-typedef mqttsn::protocol::message::Willmsg<MqttsnMessage> WillmsgMsg_SN;
-typedef mqttsn::protocol::message::Register<MqttsnMessage> RegisterMsg_SN;
+typedef mqttsn::protocol::message::Willmsg<MqttsnMessage, GwOptions> WillmsgMsg_SN;
+typedef mqttsn::protocol::message::Register<MqttsnMessage, GwOptions> RegisterMsg_SN;
 typedef mqttsn::protocol::message::Regack<MqttsnMessage> RegackMsg_SN;
-typedef mqttsn::protocol::message::Publish<MqttsnMessage> PublishMsg_SN;
+typedef mqttsn::protocol::message::Publish<MqttsnMessage, GwOptions> PublishMsg_SN;
 typedef mqttsn::protocol::message::Puback<MqttsnMessage> PubackMsg_SN;
 typedef mqttsn::protocol::message::Pubrec<MqttsnMessage> PubrecMsg_SN;
 typedef mqttsn::protocol::message::Pubrel<MqttsnMessage> PubrelMsg_SN;
 typedef mqttsn::protocol::message::Pubcomp<MqttsnMessage> PubcompMsg_SN;
-typedef mqttsn::protocol::message::Subscribe<MqttsnMessage> SubscribeMsg_SN;
+typedef mqttsn::protocol::message::Subscribe<MqttsnMessage, GwOptions> SubscribeMsg_SN;
 typedef mqttsn::protocol::message::Suback<MqttsnMessage> SubackMsg_SN;
-typedef mqttsn::protocol::message::Unsubscribe<MqttsnMessage> UnsubscribeMsg_SN;
+typedef mqttsn::protocol::message::Unsubscribe<MqttsnMessage, GwOptions> UnsubscribeMsg_SN;
 typedef mqttsn::protocol::message::Unsuback<MqttsnMessage> UnsubackMsg_SN;
-typedef mqttsn::protocol::message::Pingreq<MqttsnMessage> PingreqMsg_SN;
+typedef mqttsn::protocol::message::Pingreq<MqttsnMessage, GwOptions> PingreqMsg_SN;
 typedef mqttsn::protocol::message::Pingresp<MqttsnMessage> PingrespMsg_SN;
 typedef mqttsn::protocol::message::Disconnect<MqttsnMessage> DisconnectMsg_SN;
-typedef mqttsn::protocol::message::Willtopicupd<MqttsnMessage> WilltopicupdMsg_SN;
+typedef mqttsn::protocol::message::Willtopicupd<MqttsnMessage, GwOptions> WilltopicupdMsg_SN;
 typedef mqttsn::protocol::message::Willtopicresp<MqttsnMessage> WilltopicrespMsg_SN;
-typedef mqttsn::protocol::message::Willmsgupd<MqttsnMessage> WillmsgupdMsg_SN;
+typedef mqttsn::protocol::message::Willmsgupd<MqttsnMessage, GwOptions> WillmsgupdMsg_SN;
 typedef mqttsn::protocol::message::Willmsgresp<MqttsnMessage> WillmsgrespMsg_SN;
-typedef mqttsn::protocol::Stack<MqttsnMessage> MqttsnProtStack;
+
+template <typename TMsgBase>
+using InputMqttsnMessages =
+    std::tuple<
+    protocol::message::Searchgw<TMsgBase, GwOptions>,
+    protocol::message::Connect<TMsgBase, GwOptions>,
+    protocol::message::Willtopic<TMsgBase, GwOptions>,
+    protocol::message::Willmsg<TMsgBase, GwOptions>,
+    protocol::message::Register<TMsgBase, GwOptions>,
+    protocol::message::Regack<TMsgBase>,
+    protocol::message::Publish<TMsgBase, GwOptions>,
+    protocol::message::Puback<TMsgBase>,
+    protocol::message::Pubcomp<TMsgBase>,
+    protocol::message::Pubrec<TMsgBase>,
+    protocol::message::Pubrel<TMsgBase>,
+    protocol::message::Subscribe<TMsgBase, GwOptions>,
+    protocol::message::Unsubscribe<TMsgBase, GwOptions>,
+    protocol::message::Pingreq<TMsgBase, GwOptions>,
+    protocol::message::Pingresp<TMsgBase>,
+    protocol::message::Disconnect<TMsgBase>,
+    protocol::message::Willtopicupd<TMsgBase, GwOptions>,
+    protocol::message::Willmsgupd<TMsgBase, GwOptions>
+>;
+
+typedef mqttsn::protocol::Stack<MqttsnMessage, InputMqttsnMessages<MqttsnMessage> > MqttsnProtStack;
 
 typedef mqtt::message::Connect<MqttMessage> ConnectMsg;
 typedef mqtt::message::Connack<MqttMessage> ConnackMsg;

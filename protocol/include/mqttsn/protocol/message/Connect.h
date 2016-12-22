@@ -32,6 +32,33 @@ namespace protocol
 namespace message
 {
 
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraConnectOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraConnectOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <>
+struct ExtraConnectOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <typename TOpts>
+using ExtraConnectOptionsT =
+    typename ExtraConnectOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
 template <typename TFieldBase, typename TOptions>
 using ConnectFields =
     std::tuple<
@@ -47,14 +74,16 @@ class Connect : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
         comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >
+        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >,
+        details::ExtraConnectOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
         comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >
+        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >,
+        details::ExtraConnectOptionsT<TOptions>
     > Base;
 
 public:

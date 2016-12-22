@@ -21,6 +21,7 @@
 #include "comms/comms.h"
 #include "mqttsn/protocol/MsgTypeId.h"
 #include "mqttsn/protocol/field.h"
+#include "mqttsn/protocol/ParsedOptions.h"
 
 namespace mqttsn
 {
@@ -31,6 +32,33 @@ namespace protocol
 namespace message
 {
 
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraAdvertiseOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraAdvertiseOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <>
+struct ExtraAdvertiseOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <typename TOpts>
+using ExtraAdvertiseOptionsT =
+    typename ExtraAdvertiseOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
 template <typename TFieldBase>
 using AdvertiseFields =
     std::tuple<
@@ -38,20 +66,22 @@ using AdvertiseFields =
         field::Duration<TFieldBase>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Advertise : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_ADVERTISE>,
         comms::option::FieldsImpl<AdvertiseFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Advertise<TMsgBase> >
+        comms::option::DispatchImpl<Advertise<TMsgBase, TOptions> >,
+        details::ExtraAdvertiseOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_ADVERTISE>,
         comms::option::FieldsImpl<AdvertiseFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Advertise<TMsgBase> >
+        comms::option::DispatchImpl<Advertise<TMsgBase, TOptions> >,
+        details::ExtraAdvertiseOptionsT<TOptions>
     > Base;
 
 public:

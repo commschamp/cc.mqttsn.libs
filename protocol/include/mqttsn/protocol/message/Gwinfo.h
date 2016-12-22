@@ -32,7 +32,34 @@ namespace protocol
 namespace message
 {
 
-template <typename TFieldBase, typename TOptions>
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraGwinfoOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraGwinfoOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <>
+struct ExtraGwinfoOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <typename TOpts>
+using ExtraGwinfoOptionsT =
+    typename ExtraGwinfoOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
+template <typename TFieldBase, typename TOptions = protocol::ParsedOptions<> >
 using GwinfoFields =
     std::tuple<
         field::GwId<TFieldBase>,
@@ -45,14 +72,16 @@ class Gwinfo : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >
+        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >,
+        details::ExtraGwinfoOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >
+        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >,
+        details::ExtraGwinfoOptionsT<TOptions>
     > Base;
 
 public:

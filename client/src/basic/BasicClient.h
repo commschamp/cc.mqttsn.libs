@@ -287,11 +287,11 @@ public:
 
     typedef details::GwInfoStorageTypeT<GwInfo, TClientOpts> GwInfoStorage;
 
-    typedef mqttsn::protocol::message::Advertise<Message> AdvertiseMsg;
-    typedef mqttsn::protocol::message::Searchgw<Message> SearchgwMsg;
+    typedef mqttsn::protocol::message::Advertise<Message, TProtOpts> AdvertiseMsg;
+    typedef mqttsn::protocol::message::Searchgw<Message, TProtOpts> SearchgwMsg;
     typedef mqttsn::protocol::message::Gwinfo<Message, TProtOpts> GwinfoMsg;
     typedef mqttsn::protocol::message::Connect<Message, TProtOpts> ConnectMsg;
-    typedef mqttsn::protocol::message::Connack<Message> ConnackMsg;
+    typedef mqttsn::protocol::message::Connack<Message, TProtOpts> ConnackMsg;
     typedef mqttsn::protocol::message::Willtopicreq<Message> WilltopicreqMsg;
     typedef mqttsn::protocol::message::Willtopic<Message, TProtOpts> WilltopicMsg;
     typedef mqttsn::protocol::message::Willmsgreq<Message> WillmsgreqMsg;

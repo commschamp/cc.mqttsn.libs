@@ -58,7 +58,7 @@ namespace protocol
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 using AllMessages =
     std::tuple<
-        message::Advertise<TMsgBase>,
+        message::Advertise<TMsgBase, TOptions>,
         message::Searchgw<TMsgBase>,
         message::Gwinfo<TMsgBase, TOptions>,
         message::Connect<TMsgBase, TOptions>,

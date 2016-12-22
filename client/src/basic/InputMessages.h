@@ -31,9 +31,9 @@ namespace client
 template <typename TMessage, typename TOptions>
 using InputMessages =
     std::tuple<
-        protocol::message::Advertise<TMessage>,
+        protocol::message::Advertise<TMessage, TOptions>,
         protocol::message::Gwinfo<TMessage, TOptions>,
-        protocol::message::Connack<TMessage>,
+        protocol::message::Connack<TMessage, TOptions>,
         protocol::message::Willtopicreq<TMessage>,
         protocol::message::Willmsgreq<TMessage>,
         protocol::message::Register<TMessage, TOptions>,
