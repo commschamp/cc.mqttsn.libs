@@ -31,7 +31,10 @@ typedef std::tuple<
         ##PROT_OPTS##
     > ProtocolOptions;
 
-typedef mqttsn::protocol::ParsedOptions<ProtocolOptions> ParsedProtocolOptions;
+typedef mqttsn::protocol::ParsedOptions<
+    ProtocolOptions, 
+    mqttsn::protocol::option::ClientOnlyVariant
+> ParsedProtocolOptions;
 
 typedef std::tuple<
     ##CLIENT_OPTS##
