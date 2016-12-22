@@ -30,7 +30,7 @@
 #include "mqttsn/protocol/Stack.h"
 #include "details/WriteBufStorageType.h"
 #include "mqttsn/protocol/field.h"
-#include "Message.h"
+#include "mqttsn/protocol/Message.h"
 #include "InputMessages.h"
 
 //#include <iostream>
@@ -123,7 +123,14 @@ MqttsnQoS translateQosValue(mqttsn::protocol::field::QosType val)
 template <typename TClientOpts, typename TProtOpts>
 class BasicClient
 {
-    typedef MessageT<BasicClient<TClientOpts, TProtOpts> > Message;
+    typedef details::WriteBufStorageTypeT<TProtOpts> WriteBufStorage;
+
+    typedef protocol::MessageT<
+        comms::option::ReadIterator<const std::uint8_t*>,
+        comms::option::WriteIterator<std::uint8_t*>,
+        comms::option::Handler<BasicClient<TClientOpts, TProtOpts> >,
+        comms::option::LengthInfoInterface
+    > Message;
 
     typedef unsigned long long Timestamp;
 
@@ -2123,12 +2130,10 @@ private:
             return;
         }
 
-        typedef details::WriteBufStorageTypeT<TProtOpts> DataStorage;
-
-        DataStorage data(m_stack.length(msg));
-        GASSERT(!data.empty());
-        typename ProtStack::WriteIterator writeIter = &data[0];
-        auto es = m_stack.write(msg, writeIter, data.size());
+        m_writeBuf.resize(std::max(m_writeBuf.size(), m_stack.length(msg)));
+        GASSERT(!m_writeBuf.empty());
+        typename ProtStack::WriteIterator writeIter = &m_writeBuf[0];
+        auto es = m_stack.write(msg, writeIter, m_writeBuf.size());
         GASSERT(es == comms::ErrorStatus::Success);
         if (es != comms::ErrorStatus::Success) {
             // Buffer is too small
@@ -2136,9 +2141,9 @@ private:
         }
 
         auto writtenBytes = static_cast<std::size_t>(
-            std::distance(typename ProtStack::WriteIterator(&data[0]), writeIter));
+            std::distance(typename ProtStack::WriteIterator(&m_writeBuf[0]), writeIter));
 
-        m_sendOutputDataFn(m_sendOutputDataData, &data[0], writtenBytes, broadcast);
+        m_sendOutputDataFn(m_sendOutputDataData, &m_writeBuf[0], writtenBytes, broadcast);
     }
 
     template <typename TOp>
@@ -2928,6 +2933,8 @@ private:
 
     MqttsnMessageReportFn m_msgReportFn = nullptr;
     void* m_msgReportData = nullptr;
+
+    WriteBufStorage m_writeBuf;
 
     static const unsigned DefaultAdvertisePeriod = 30 * 60 * 1000;
     static const unsigned DefaultRetryPeriod = 15 * 1000;

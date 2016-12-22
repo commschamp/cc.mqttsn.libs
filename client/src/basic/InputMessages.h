@@ -21,7 +21,6 @@
 #include <tuple>
 
 #include "mqttsn/protocol/AllMessages.h"
-#include "Message.h"
 
 namespace mqttsn
 {
