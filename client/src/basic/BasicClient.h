@@ -292,9 +292,9 @@ public:
     typedef mqttsn::protocol::message::Gwinfo<Message, TProtOpts> GwinfoMsg;
     typedef mqttsn::protocol::message::Connect<Message, TProtOpts> ConnectMsg;
     typedef mqttsn::protocol::message::Connack<Message, TProtOpts> ConnackMsg;
-    typedef mqttsn::protocol::message::Willtopicreq<Message> WilltopicreqMsg;
+    typedef mqttsn::protocol::message::Willtopicreq<Message, TProtOpts> WilltopicreqMsg;
     typedef mqttsn::protocol::message::Willtopic<Message, TProtOpts> WilltopicMsg;
-    typedef mqttsn::protocol::message::Willmsgreq<Message> WillmsgreqMsg;
+    typedef mqttsn::protocol::message::Willmsgreq<Message, TProtOpts> WillmsgreqMsg;
     typedef mqttsn::protocol::message::Willmsg<Message, TProtOpts> WillmsgMsg;
     typedef mqttsn::protocol::message::Register<Message, TProtOpts> RegisterMsg;
     typedef mqttsn::protocol::message::Regack<Message> RegackMsg;

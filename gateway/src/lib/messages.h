@@ -58,9 +58,9 @@ typedef mqttsn::protocol::message::Searchgw<MqttsnMessage, GwOptions> SearchgwMs
 typedef mqttsn::protocol::message::Gwinfo<MqttsnMessage, GwOptions> GwinfoMsg_SN;
 typedef mqttsn::protocol::message::Connect<MqttsnMessage, GwOptions> ConnectMsg_SN;
 typedef mqttsn::protocol::message::Connack<MqttsnMessage, GwOptions> ConnackMsg_SN;
-typedef mqttsn::protocol::message::Willtopicreq<MqttsnMessage> WilltopicreqMsg_SN;
+typedef mqttsn::protocol::message::Willtopicreq<MqttsnMessage, GwOptions> WilltopicreqMsg_SN;
 typedef mqttsn::protocol::message::Willtopic<MqttsnMessage, GwOptions> WilltopicMsg_SN;
-typedef mqttsn::protocol::message::Willmsgreq<MqttsnMessage> WillmsgreqMsg_SN;
+typedef mqttsn::protocol::message::Willmsgreq<MqttsnMessage, GwOptions> WillmsgreqMsg_SN;
 typedef mqttsn::protocol::message::Willmsg<MqttsnMessage, GwOptions> WillmsgMsg_SN;
 typedef mqttsn::protocol::message::Register<MqttsnMessage, GwOptions> RegisterMsg_SN;
 typedef mqttsn::protocol::message::Regack<MqttsnMessage> RegackMsg_SN;

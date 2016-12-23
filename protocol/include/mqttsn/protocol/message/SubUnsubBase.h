@@ -32,6 +32,28 @@ namespace protocol
 namespace message
 {
 
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraSubUnsubOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraSubUnsubOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <typename TOpts>
+using ExtraSubUnsubOptionsT =
+    typename ExtraSubUnsubOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
+
 template <typename TFieldBase, typename TOptions>
 using SubUnsubBaseFields =
     std::tuple<
@@ -52,13 +74,15 @@ class SubUnsubFieldsBase : public
     comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoDefaultFieldsReadImpl
+        comms::option::NoDefaultFieldsReadImpl,
+        details::ExtraSubUnsubOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoDefaultFieldsReadImpl
+        comms::option::NoDefaultFieldsReadImpl,
+        details::ExtraSubUnsubOptionsT<TOptions>
     > Base;
 
 public:
@@ -79,6 +103,37 @@ public:
 protected:
     comms::ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override
     {
+        return readInternal(iter, len, ReadTag());
+    }
+
+    bool refreshImpl() override
+    {
+        return refreshInternal(RefreshTag());
+    }
+
+private:
+    struct NoReadTag {};
+    struct HasReadTag {};
+    struct NoRefreshTag {};
+    struct HasRefreshTag {};
+
+    typedef typename std::conditional<
+        TOptions::ClientOnlyVariant && (!TOptions::GatewayOnlyVariant),
+        NoReadTag,
+        HasReadTag
+    >::type ReadTag;
+
+    typedef typename std::conditional<
+        (!TOptions::ClientOnlyVariant) && TOptions::GatewayOnlyVariant,
+        NoRefreshTag,
+        HasRefreshTag
+    >::type RefreshTag;
+
+    comms::ErrorStatus doRead(ReadIterator& iter, std::size_t len)
+    {
+        static_assert(Base::ImplOptions::HasNoDefaultFieldsReadImpl,
+            "Expected to have read implementation in the base");
+
         auto es = Base::template readFieldsUntil<FieldIdx_msgId>(iter, len);
         if (es != comms::ErrorStatus::Success) {
             return es;
@@ -103,7 +158,19 @@ protected:
         return Base::template readFieldsFrom<FieldIdx_msgId>(iter, len);
     }
 
-    bool refreshImpl() override
+    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, NoReadTag)
+    {
+        static_assert(Base::ImplOptions::HasNoDefaultFieldsReadImpl,
+            "Expected to have not supported read");
+        return Base::readImpl(iter, len);
+    }
+
+    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, HasReadTag)
+    {
+        return doRead(iter, len);
+    }
+
+    bool doRefresh()
     {
         auto& allFields = Base::fields();
         auto& flagsField = std::get<FieldIdx_flags>(allFields);
@@ -131,6 +198,16 @@ protected:
         }
 
         return refreshed;
+    }
+
+    bool refreshInternal(NoRefreshTag)
+    {
+        return Base::refreshImpl();
+    }
+
+    bool refreshInternal(HasRefreshTag)
+    {
+        return doRefresh();
     }
 };
 

@@ -59,13 +59,13 @@ template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 using AllMessages =
     std::tuple<
         message::Advertise<TMsgBase, TOptions>,
-        message::Searchgw<TMsgBase>,
+        message::Searchgw<TMsgBase, TOptions>,
         message::Gwinfo<TMsgBase, TOptions>,
         message::Connect<TMsgBase, TOptions>,
-        message::Connack<TMsgBase>,
-        message::Willtopicreq<TMsgBase>,
+        message::Connack<TMsgBase, TOptions>,
+        message::Willtopicreq<TMsgBase, TOptions>,
         message::Willtopic<TMsgBase, TOptions>,
-        message::Willmsgreq<TMsgBase>,
+        message::Willmsgreq<TMsgBase, TOptions>,
         message::Willmsg<TMsgBase, TOptions>,
         message::Register<TMsgBase, TOptions>,
         message::Regack<TMsgBase>,
