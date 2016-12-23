@@ -196,6 +196,10 @@ while (TRUE)
         link_directories(${CC_PLUGIN_LIBRARY_DIRS})
     endif ()
     
+    if (NOT CC_MQTTSN_BUILD_GATEWAY)
+        break()
+    endif()
+   
     find_package(CC_Mqtt)
     
     if (CC_MQTT_FOUND)
