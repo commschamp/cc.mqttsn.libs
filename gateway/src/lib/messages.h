@@ -70,16 +70,16 @@ typedef mqttsn::protocol::message::Pubrec<MqttsnMessage> PubrecMsg_SN;
 typedef mqttsn::protocol::message::Pubrel<MqttsnMessage> PubrelMsg_SN;
 typedef mqttsn::protocol::message::Pubcomp<MqttsnMessage> PubcompMsg_SN;
 typedef mqttsn::protocol::message::Subscribe<MqttsnMessage, GwOptions> SubscribeMsg_SN;
-typedef mqttsn::protocol::message::Suback<MqttsnMessage> SubackMsg_SN;
+typedef mqttsn::protocol::message::Suback<MqttsnMessage, GwOptions> SubackMsg_SN;
 typedef mqttsn::protocol::message::Unsubscribe<MqttsnMessage, GwOptions> UnsubscribeMsg_SN;
 typedef mqttsn::protocol::message::Unsuback<MqttsnMessage> UnsubackMsg_SN;
 typedef mqttsn::protocol::message::Pingreq<MqttsnMessage, GwOptions> PingreqMsg_SN;
 typedef mqttsn::protocol::message::Pingresp<MqttsnMessage> PingrespMsg_SN;
 typedef mqttsn::protocol::message::Disconnect<MqttsnMessage> DisconnectMsg_SN;
 typedef mqttsn::protocol::message::Willtopicupd<MqttsnMessage, GwOptions> WilltopicupdMsg_SN;
-typedef mqttsn::protocol::message::Willtopicresp<MqttsnMessage> WilltopicrespMsg_SN;
+typedef mqttsn::protocol::message::Willtopicresp<MqttsnMessage, GwOptions> WilltopicrespMsg_SN;
 typedef mqttsn::protocol::message::Willmsgupd<MqttsnMessage, GwOptions> WillmsgupdMsg_SN;
-typedef mqttsn::protocol::message::Willmsgresp<MqttsnMessage> WillmsgrespMsg_SN;
+typedef mqttsn::protocol::message::Willmsgresp<MqttsnMessage, GwOptions> WillmsgrespMsg_SN;
 
 template <typename TMsgBase>
 using InputMqttsnMessages =

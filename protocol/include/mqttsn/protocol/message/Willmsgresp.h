@@ -31,26 +31,57 @@ namespace protocol
 namespace message
 {
 
+
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraWillmsgrespOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraWillmsgrespOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <>
+struct ExtraWillmsgrespOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <typename TOpts>
+using ExtraWillmsgrespOptionsT =
+    typename ExtraWillmsgrespOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
+
 template <typename TFieldBase>
 using WillmsgrespFields =
     std::tuple<
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Willmsgresp : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGRESP>,
         comms::option::FieldsImpl<WillmsgrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willmsgresp<TMsgBase> >
+        comms::option::DispatchImpl<Willmsgresp<TMsgBase, TOptions> >,
+        details::ExtraWillmsgrespOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGRESP>,
         comms::option::FieldsImpl<WillmsgrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willmsgresp<TMsgBase> >
+        comms::option::DispatchImpl<Willmsgresp<TMsgBase, TOptions> >,
+        details::ExtraWillmsgrespOptionsT<TOptions>
     > Base;
 
 public:

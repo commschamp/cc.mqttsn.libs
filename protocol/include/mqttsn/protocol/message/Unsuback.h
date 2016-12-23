@@ -31,26 +31,55 @@ namespace protocol
 namespace message
 {
 
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraUnsubackOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraUnsubackOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <>
+struct ExtraUnsubackOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <typename TOpts>
+using ExtraUnsubackOptionsT =
+    typename ExtraUnsubackOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
 template <typename TFieldBase>
 using UnsubackFields =
     std::tuple<
         field::MsgId<TFieldBase>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Unsuback : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
         comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Unsuback<TMsgBase> >
+        comms::option::DispatchImpl<Unsuback<TMsgBase, TOptions> >,
+        details::ExtraUnsubackOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
         comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Unsuback<TMsgBase> >
+        comms::option::DispatchImpl<Unsuback<TMsgBase, TOptions> >,
+        details::ExtraUnsubackOptionsT<TOptions>
     > Base;
 
 public:

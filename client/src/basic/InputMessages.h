@@ -43,13 +43,13 @@ using InputMessages =
         protocol::message::Pubcomp<TMessage>,
         protocol::message::Pubrec<TMessage>,
         protocol::message::Pubrel<TMessage>,
-        protocol::message::Suback<TMessage>,
-        protocol::message::Unsuback<TMessage>,
+        protocol::message::Suback<TMessage, TOptions>,
+        protocol::message::Unsuback<TMessage, TOptions>,
         protocol::message::Pingreq<TMessage, TOptions>,
         protocol::message::Pingresp<TMessage>,
         protocol::message::Disconnect<TMessage>,
-        protocol::message::Willtopicresp<TMessage>,
-        protocol::message::Willmsgresp<TMessage>
+        protocol::message::Willtopicresp<TMessage, TOptions>,
+        protocol::message::Willmsgresp<TMessage, TOptions>
     >;
 }  // namespace client
 

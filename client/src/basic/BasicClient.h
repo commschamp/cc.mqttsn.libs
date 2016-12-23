@@ -304,16 +304,16 @@ public:
     typedef mqttsn::protocol::message::Pubrel<Message> PubrelMsg;
     typedef mqttsn::protocol::message::Pubcomp<Message> PubcompMsg;
     typedef mqttsn::protocol::message::Subscribe<Message, TProtOpts> SubscribeMsg;
-    typedef mqttsn::protocol::message::Suback<Message> SubackMsg;
+    typedef mqttsn::protocol::message::Suback<Message, TProtOpts> SubackMsg;
     typedef mqttsn::protocol::message::Unsubscribe<Message, TProtOpts> UnsubscribeMsg;
-    typedef mqttsn::protocol::message::Unsuback<Message> UnsubackMsg;
+    typedef mqttsn::protocol::message::Unsuback<Message, TProtOpts> UnsubackMsg;
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
     typedef mqttsn::protocol::message::Disconnect<Message> DisconnectMsg;
     typedef mqttsn::protocol::message::Willtopicupd<Message, TProtOpts> WilltopicupdMsg;
-    typedef mqttsn::protocol::message::Willtopicresp<Message> WilltopicrespMsg;
+    typedef mqttsn::protocol::message::Willtopicresp<Message, TProtOpts> WilltopicrespMsg;
     typedef mqttsn::protocol::message::Willmsgupd<Message, TProtOpts> WillmsgupdMsg;
-    typedef mqttsn::protocol::message::Willmsgresp<Message> WillmsgrespMsg;
+    typedef mqttsn::protocol::message::Willmsgresp<Message, TProtOpts> WillmsgrespMsg;
 
     BasicClient() = default;
     virtual ~BasicClient() = default;

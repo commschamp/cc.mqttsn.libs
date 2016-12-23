@@ -75,16 +75,16 @@ using AllMessages =
         message::Pubrec<TMsgBase>,
         message::Pubrel<TMsgBase>,
         message::Subscribe<TMsgBase, TOptions>,
-        message::Suback<TMsgBase>,
+        message::Suback<TMsgBase, TOptions>,
         message::Unsubscribe<TMsgBase, TOptions>,
-        message::Unsuback<TMsgBase>,
+        message::Unsuback<TMsgBase, TOptions>,
         message::Pingreq<TMsgBase, TOptions>,
         message::Pingresp<TMsgBase>,
         message::Disconnect<TMsgBase>,
         message::Willtopicupd<TMsgBase, TOptions>,
-        message::Willtopicresp<TMsgBase>,
+        message::Willtopicresp<TMsgBase, TOptions>,
         message::Willmsgupd<TMsgBase, TOptions>,
-        message::Willmsgresp<TMsgBase>
+        message::Willmsgresp<TMsgBase, TOptions>
     >;
 
 }  // namespace protocol

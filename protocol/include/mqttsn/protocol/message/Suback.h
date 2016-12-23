@@ -31,6 +31,33 @@ namespace protocol
 namespace message
 {
 
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraSubackOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraSubackOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <>
+struct ExtraSubackOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <typename TOpts>
+using ExtraSubackOptionsT =
+    typename ExtraSubackOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
 template <typename TFieldBase>
 using SubackFields =
     std::tuple<
@@ -40,20 +67,22 @@ using SubackFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Suback : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
         comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Suback<TMsgBase> >
+        comms::option::DispatchImpl<Suback<TMsgBase, TOptions> >,
+        details::ExtraSubackOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
         comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Suback<TMsgBase> >
+        comms::option::DispatchImpl<Suback<TMsgBase, TOptions> >,
+        details::ExtraSubackOptionsT<TOptions>
     > Base;
 
 public:
