@@ -50,7 +50,7 @@ be compiled.
 Just like the [Client Library](#client-library) allows additional data
 packatisation for correct delivery, the gateway application must implement
 the same functionality. As the result there is a need for a gateway library,
-which provides the required functionality and allows implementation of any 
+which provides the required core functionality and allows implementation of any 
 gateway application, suitable for the type
 of I/O link to the client(s) being used.
 
