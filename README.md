@@ -6,7 +6,7 @@ if a message is received by the other end on the communication link, it is
 received **in full** and **correctly**. 
 
 There are multiple implementations of MQTT-SN client libraries and/or gateway 
-applications. However, most of them support only UDP/IP and/or ZigBee transport
+applications. Most of them support only UDP/IP and/or ZigBee transport
 layers. However, it is possible to use MQTT-SN protocol with any other I/O link, such as
 RS-232 serial or CAN bus, as long as additional "packatisation" of the native 
 MQTT-SN message is provided, to insure the message is delivered **in full**
