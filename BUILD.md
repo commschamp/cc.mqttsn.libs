@@ -97,6 +97,9 @@ provide path to QT5 libraries if differs from system default installation path. 
 provided and QT5 cannot be found on the system, the applications that use QT5 
 framework won't be built.
 
+- **CC_MQTTSN_NO_UNIT_TESTS**=ON/OFF - Exclude build of unit tests. Default value is 
+**OFF**, i.e. the unit tests get built.
+
 ## Configuration Examples
 
 - Build MQTT-SN client and gateway libraries, as well as available client/gateway
