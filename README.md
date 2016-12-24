@@ -12,8 +12,8 @@ RS-232 serial or CAN bus, as long as additional "packatisation" of the native
 MQTT-SN message is provided, to insure the message is delivered **in full**
 and **without errors**. 
 
-This repository provides single threaded, asynchronous, non-blocking, easy to
-use, suitable for embedded platforms, well documented libraries 
+This repository provides **single threaded**, **asynchronous**, **non-blocking**, easy to
+use, suitable for **embedded** platforms, well documented libraries 
 of MQTT-SN client and gateway, which are
 completely generic and allow usage of MQTT-SN protocol over any I/O link. See 
 details below.
