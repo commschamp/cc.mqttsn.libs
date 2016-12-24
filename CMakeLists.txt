@@ -6,30 +6,51 @@ option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-
 option (CC_MQTTSN_BUILD_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
 option (CC_MQTTSN_BUILD_PLUGINS "Build and install relevant plugins to CommsChampion suite" OFF)
 option (CC_MQTTSN_FULL_SOLUTION "Build and install full solution, including CommsChampion sources." OFF)
+option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
 
 if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
 endif()
 
-set (EXTERNALS_DIR "${CMAKE_SOURCE_DIR}/external")
-
-find_package (Git)
-
-if (GIT_FOUND)
-    execute_process (
-    COMMAND ${GIT_EXECUTABLE} submodule update --init
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-endif () 
-
-if (NOT CMAKE_CROSSCOMPILING)
-    set (CXXTEST_INCLUDE_DIR "${EXTERNALS_DIR}/cxxtest")
+while (TRUE)
+    if (CC_MQTTSN_NO_UNIT_TESTS)
+        message (STATUS "Unittests are disabled")
+        break()
+    endif ()
+    
+    if (CMAKE_CROSSCOMPILING)
+        message (STATUS "Not building unittests when cross-compiling")
+        break()
+    endif ()
+    
+    find_package (Git)
+    if (NOT GIT_FOUND)
+        message (WARNING "Git is required to check out cxxtest")
+        break()
+    endif ()
+    
+    set (cxx_tag "4.4")
+    if (EXISTS "${CMAKE_BINARY_DIR}/cxxtest")
+        execute_process (
+            COMMAND ${GIT_EXECUTABLE} checkout ${cxx_tag}
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/cxxtest)
+    else ()
+        execute_process (
+            COMMAND ${GIT_EXECUTABLE} clone -b ${cxx_tag} --depth 1 https://github.com/CxxTest/cxxtest.git
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    endif ()
+    
+    set (CXXTEST_INCLUDE_DIR "${CMAKE_BINARY_DIR}/cxxtest")
     set (CXXTEST_PYTHON_TESTGEN_EXECUTABLE "${CXXTEST_INCLUDE_DIR}/bin/cxxtestgen")
     
     find_package (CxxTest)
-    if (CXXTEST_FOUND)
-        enable_testing ()
+    if (NOT CXXTEST_FOUND)
+        message (FATAL_ERROR "Wrong cxxtest paths, must be fixed")
     endif ()
-endif ()
+    
+    enable_testing ()
+    break()
+endwhile ()
 
 if (UNIX AND (NOT CC_MQTTSN_NO_CCACHE))
     find_program(CCACHE_FOUND ccache)
@@ -89,7 +110,7 @@ set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
 macro (externals install_dir build_cc mqtt_headers)
         include(ExternalProject)
         
-        set (cc_tag "v0.10")
+        set (cc_tag "develop")
         set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
         set (cc_src_dir "${cc_main_dir}/src")
         set (cc_bin_dir "${cc_main_dir}/build")
@@ -118,6 +139,7 @@ macro (externals install_dir build_cc mqtt_headers)
             SOURCE_DIR "${cc_src_dir}"
             CMAKE_ARGS 
                 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_INSTALL_DIR=${install_dir} 
+                -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON
                 ${cc_qt_dir_opt} ${ct_lib_only_opt}
             BINARY_DIR "${cc_bin_dir}"
         )

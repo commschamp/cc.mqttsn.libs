@@ -1,9 +1,5 @@
 add_subdirectory (bare_metal_app)
 
-if (CMAKE_CROSSCOMPILING)
-    return ()
-endif ()
-
 if (NOT CXXTEST_FOUND)
     return ()
 endif ()
