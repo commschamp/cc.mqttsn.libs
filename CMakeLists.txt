@@ -45,7 +45,7 @@ while (TRUE)
     
     find_package (CxxTest)
     if (NOT CXXTEST_FOUND)
-        message (FATAL_ERROR "Wrong cxxtest paths, must be fixed")
+        message (WARNING "Wrong cxxtest paths, must be fixed")
     endif ()
     
     enable_testing ()
