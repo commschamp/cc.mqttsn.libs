@@ -52,6 +52,10 @@ struct MessageDataStaticStorageSize
     static const std::size_t Value = TSize;
 };
 
+struct ClientOnlyVariant {};
+
+struct GatewayOnlyVariant {};
+
 }  // namespace option
 
 }  // namespace protocol

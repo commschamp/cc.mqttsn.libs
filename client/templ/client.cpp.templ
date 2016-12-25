@@ -20,10 +20,9 @@
 #include "mqttsn/protocol/ParsedOptions.h"
 #include "BasicClient.h"
 #include "ClientMgr.h"
-#include "Message.h"
 #include "option.h"
 #include "ParsedOptions.h"
-#include "AllMessages.h"
+#include "InputMessages.h"
 
 namespace
 {
@@ -32,7 +31,10 @@ typedef std::tuple<
         ##PROT_OPTS##
     > ProtocolOptions;
 
-typedef mqttsn::protocol::ParsedOptions<ProtocolOptions> ParsedProtocolOptions;
+typedef mqttsn::protocol::ParsedOptions<
+    ProtocolOptions, 
+    mqttsn::protocol::option::ClientOnlyVariant
+> ParsedProtocolOptions;
 
 typedef std::tuple<
     ##CLIENT_OPTS##

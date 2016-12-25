@@ -31,26 +31,55 @@ namespace protocol
 namespace message
 {
 
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraConnackOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraConnackOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <>
+struct ExtraConnackOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <typename TOpts>
+using ExtraConnackOptionsT =
+    typename ExtraConnackOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
 template <typename TFieldBase>
 using ConnackFields =
     std::tuple<
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Connack : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNACK>,
         comms::option::FieldsImpl<ConnackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Connack<TMsgBase> >
+        comms::option::DispatchImpl<Connack<TMsgBase, TOptions> >,
+        details::ExtraConnackOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNACK>,
         comms::option::FieldsImpl<ConnackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Connack<TMsgBase> >
+        comms::option::DispatchImpl<Connack<TMsgBase, TOptions> >,
+        details::ExtraConnackOptionsT<TOptions>
     > Base;
 
 public:

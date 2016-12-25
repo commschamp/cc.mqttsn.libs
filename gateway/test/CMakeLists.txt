@@ -1,7 +1,3 @@
-if (CMAKE_CROSSCOMPILING)
-    return ()
-endif ()
-
 if (NOT CXXTEST_FOUND)
     return ()
 endif ()

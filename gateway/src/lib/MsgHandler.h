@@ -32,7 +32,7 @@ namespace gateway
 template<typename TMsgBase>
 using MqttsnMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqttsn::protocol::AllMessages<TMsgBase>
+    mqttsn::gateway::InputMqttsnMessages<TMsgBase>
 >;
 
 template<typename TMsgBase>
@@ -49,6 +49,8 @@ class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler
 public:
     using MqttsnBase::handle;
     using MqttBase::handle;
+
+    virtual ~MsgHandler() = default;
 };
 
 

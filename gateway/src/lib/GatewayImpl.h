@@ -36,7 +36,10 @@ public:
     typedef Gateway::NextTickProgramReqCb NextTickProgramReqCb;
     typedef Gateway::SendDataReqCb SendDataReqCb;
 
-    typedef protocol::MessageT<comms::option::WriteIterator<std::uint8_t*> > Message;
+    typedef protocol::MessageT<
+        comms::option::WriteIterator<std::uint8_t*>,
+        comms::option::LengthInfoInterface
+    > Message;
     typedef protocol::message::Advertise<Message> AdvertiseMsg;
     typedef std::tuple<AdvertiseMsg> AllMsgs;
     typedef protocol::Stack<Message, AllMsgs> ProtStack;

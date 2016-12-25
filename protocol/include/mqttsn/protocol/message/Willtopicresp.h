@@ -31,26 +31,56 @@ namespace protocol
 namespace message
 {
 
+
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraWilltopicupdOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraWilltopicupdOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <>
+struct ExtraWilltopicupdOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <typename TOpts>
+using ExtraWilltopicupdOptionsT =
+    typename ExtraWilltopicupdOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
 template <typename TFieldBase>
 using WilltopicrespFields =
     std::tuple<
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase>
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Willtopicresp : public
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
         comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicresp<TMsgBase> >
+        comms::option::DispatchImpl<Willtopicresp<TMsgBase, TOptions> >,
+        details::ExtraWilltopicupdOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
         comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicresp<TMsgBase> >
+        comms::option::DispatchImpl<Willtopicresp<TMsgBase, TOptions> >,
+        details::ExtraWilltopicupdOptionsT<TOptions>
     > Base;
 
 public:

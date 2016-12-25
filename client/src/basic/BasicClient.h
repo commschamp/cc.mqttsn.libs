@@ -30,8 +30,8 @@
 #include "mqttsn/protocol/Stack.h"
 #include "details/WriteBufStorageType.h"
 #include "mqttsn/protocol/field.h"
-#include "Message.h"
-#include "AllMessages.h"
+#include "mqttsn/protocol/Message.h"
+#include "InputMessages.h"
 
 //#include <iostream>
 
@@ -123,7 +123,14 @@ MqttsnQoS translateQosValue(mqttsn::protocol::field::QosType val)
 template <typename TClientOpts, typename TProtOpts>
 class BasicClient
 {
-    typedef MessageT<BasicClient<TClientOpts, TProtOpts> > Message;
+    typedef details::WriteBufStorageTypeT<TProtOpts> WriteBufStorage;
+
+    typedef protocol::MessageT<
+        comms::option::ReadIterator<const std::uint8_t*>,
+        comms::option::WriteIterator<std::uint8_t*>,
+        comms::option::Handler<BasicClient<TClientOpts, TProtOpts> >,
+        comms::option::LengthInfoInterface
+    > Message;
 
     typedef unsigned long long Timestamp;
 
@@ -280,14 +287,14 @@ public:
 
     typedef details::GwInfoStorageTypeT<GwInfo, TClientOpts> GwInfoStorage;
 
-    typedef mqttsn::protocol::message::Advertise<Message> AdvertiseMsg;
-    typedef mqttsn::protocol::message::Searchgw<Message> SearchgwMsg;
+    typedef mqttsn::protocol::message::Advertise<Message, TProtOpts> AdvertiseMsg;
+    typedef mqttsn::protocol::message::Searchgw<Message, TProtOpts> SearchgwMsg;
     typedef mqttsn::protocol::message::Gwinfo<Message, TProtOpts> GwinfoMsg;
     typedef mqttsn::protocol::message::Connect<Message, TProtOpts> ConnectMsg;
-    typedef mqttsn::protocol::message::Connack<Message> ConnackMsg;
-    typedef mqttsn::protocol::message::Willtopicreq<Message> WilltopicreqMsg;
+    typedef mqttsn::protocol::message::Connack<Message, TProtOpts> ConnackMsg;
+    typedef mqttsn::protocol::message::Willtopicreq<Message, TProtOpts> WilltopicreqMsg;
     typedef mqttsn::protocol::message::Willtopic<Message, TProtOpts> WilltopicMsg;
-    typedef mqttsn::protocol::message::Willmsgreq<Message> WillmsgreqMsg;
+    typedef mqttsn::protocol::message::Willmsgreq<Message, TProtOpts> WillmsgreqMsg;
     typedef mqttsn::protocol::message::Willmsg<Message, TProtOpts> WillmsgMsg;
     typedef mqttsn::protocol::message::Register<Message, TProtOpts> RegisterMsg;
     typedef mqttsn::protocol::message::Regack<Message> RegackMsg;
@@ -297,16 +304,16 @@ public:
     typedef mqttsn::protocol::message::Pubrel<Message> PubrelMsg;
     typedef mqttsn::protocol::message::Pubcomp<Message> PubcompMsg;
     typedef mqttsn::protocol::message::Subscribe<Message, TProtOpts> SubscribeMsg;
-    typedef mqttsn::protocol::message::Suback<Message> SubackMsg;
+    typedef mqttsn::protocol::message::Suback<Message, TProtOpts> SubackMsg;
     typedef mqttsn::protocol::message::Unsubscribe<Message, TProtOpts> UnsubscribeMsg;
-    typedef mqttsn::protocol::message::Unsuback<Message> UnsubackMsg;
+    typedef mqttsn::protocol::message::Unsuback<Message, TProtOpts> UnsubackMsg;
     typedef mqttsn::protocol::message::Pingreq<Message, TProtOpts> PingreqMsg;
     typedef mqttsn::protocol::message::Pingresp<Message> PingrespMsg;
     typedef mqttsn::protocol::message::Disconnect<Message> DisconnectMsg;
     typedef mqttsn::protocol::message::Willtopicupd<Message, TProtOpts> WilltopicupdMsg;
-    typedef mqttsn::protocol::message::Willtopicresp<Message> WilltopicrespMsg;
+    typedef mqttsn::protocol::message::Willtopicresp<Message, TProtOpts> WilltopicrespMsg;
     typedef mqttsn::protocol::message::Willmsgupd<Message, TProtOpts> WillmsgupdMsg;
-    typedef mqttsn::protocol::message::Willmsgresp<Message> WillmsgrespMsg;
+    typedef mqttsn::protocol::message::Willmsgresp<Message, TProtOpts> WillmsgrespMsg;
 
     BasicClient() = default;
     virtual ~BasicClient() = default;
@@ -505,14 +512,16 @@ public:
                 break;
             }
 
-            if (es != comms::ErrorStatus::Success) {
+            if (es == comms::ErrorStatus::ProtocolError) {
                 ++iter;
                 continue;
             }
 
-            GASSERT(msg);
-            m_lastMsgTimestamp = m_timestamp;
-            msg->dispatch(*this);
+            if (es == comms::ErrorStatus::Success) {
+                GASSERT(msg);
+                m_lastMsgTimestamp = m_timestamp;
+                msg->dispatch(*this);
+            }
 
             consumed += static_cast<std::size_t>(std::distance(iter, iterTmp));
             iter = iterTmp;
@@ -1712,7 +1721,7 @@ private:
     >::Type OpStorageType;
 
 
-    typedef protocol::Stack<Message, AllMessages<Message, TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
+    typedef protocol::Stack<Message, InputMessages<Message, TProtOpts>, comms::option::InPlaceAllocation> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
 
     struct RegInfo
@@ -2121,12 +2130,10 @@ private:
             return;
         }
 
-        typedef details::WriteBufStorageTypeT<TProtOpts> DataStorage;
-
-        DataStorage data(m_stack.length(msg));
-        GASSERT(!data.empty());
-        typename ProtStack::WriteIterator writeIter = &data[0];
-        auto es = m_stack.write(msg, writeIter, data.size());
+        m_writeBuf.resize(std::max(m_writeBuf.size(), m_stack.length(msg)));
+        GASSERT(!m_writeBuf.empty());
+        typename ProtStack::WriteIterator writeIter = &m_writeBuf[0];
+        auto es = m_stack.write(msg, writeIter, m_writeBuf.size());
         GASSERT(es == comms::ErrorStatus::Success);
         if (es != comms::ErrorStatus::Success) {
             // Buffer is too small
@@ -2134,9 +2141,9 @@ private:
         }
 
         auto writtenBytes = static_cast<std::size_t>(
-            std::distance(typename ProtStack::WriteIterator(&data[0]), writeIter));
+            std::distance(typename ProtStack::WriteIterator(&m_writeBuf[0]), writeIter));
 
-        m_sendOutputDataFn(m_sendOutputDataData, &data[0], writtenBytes, broadcast);
+        m_sendOutputDataFn(m_sendOutputDataData, &m_writeBuf[0], writtenBytes, broadcast);
     }
 
     template <typename TOp>
@@ -2926,6 +2933,8 @@ private:
 
     MqttsnMessageReportFn m_msgReportFn = nullptr;
     void* m_msgReportData = nullptr;
+
+    WriteBufStorage m_writeBuf;
 
     static const unsigned DefaultAdvertisePeriod = 30 * 60 * 1000;
     static const unsigned DefaultRetryPeriod = 15 * 1000;

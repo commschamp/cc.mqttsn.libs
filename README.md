@@ -6,14 +6,14 @@ if a message is received by the other end on the communication link, it is
 received **in full** and **correctly**. 
 
 There are multiple implementations of MQTT-SN client libraries and/or gateway 
-applications. However, most of them support only UDP/IP and/or ZigBee transport
+applications. Most of them support only UDP/IP and/or ZigBee transport
 layers. However, it is possible to use MQTT-SN protocol with any other I/O link, such as
 RS-232 serial or CAN bus, as long as additional "packatisation" of the native 
 MQTT-SN message is provided, to insure the message is delivered **in full**
 and **without errors**. 
 
-This repository provides single threaded, asynchronous, non-blocking, easy to
-use, suitable for embedded platforms, well documented libraries 
+This repository provides **single threaded**, **asynchronous**, **non-blocking**, easy to
+use, suitable for **embedded** platforms, well documented libraries 
 of MQTT-SN client and gateway, which are
 completely generic and allow usage of MQTT-SN protocol over any I/O link. See 
 details below.
@@ -50,7 +50,7 @@ be compiled.
 Just like the [Client Library](#client-library) allows additional data
 packatisation for correct delivery, the gateway application must implement
 the same functionality. As the result there is a need for a gateway library,
-which provides the required functionality and allows implementation of any 
+which provides the required core functionality and allows implementation of any 
 gateway application, suitable for the type
 of I/O link to the client(s) being used.
 

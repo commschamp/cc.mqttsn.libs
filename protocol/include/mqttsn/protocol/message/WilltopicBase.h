@@ -32,6 +32,33 @@ namespace protocol
 namespace message
 {
 
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraWilltopicOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraWilltopicOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <>
+struct ExtraWilltopicOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <typename TOpts>
+using ExtraWilltopicOptionsT =
+    typename ExtraWilltopicOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
 template <typename TFieldBase, typename TOptions>
 using WilltopicBaseFields =
     std::tuple<
@@ -46,12 +73,14 @@ template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class WilltopicFieldsBase : public
     comms::MessageBase<
         TMsgBase,
-        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >
+        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
+        details::ExtraWilltopicOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
-        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >
+        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
+        details::ExtraWilltopicOptionsT<TOptions>
     > Base;
 
 public:
@@ -70,6 +99,37 @@ public:
 protected:
     comms::ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override
     {
+        return readInternal(iter, len, ReadTag());
+    }
+
+    bool refreshImpl() override
+    {
+        return refreshInternal(RefreshTag());
+    }
+
+private:
+    struct NoReadTag {};
+    struct HasReadTag {};
+    struct NoRefreshTag {};
+    struct HasRefreshTag {};
+
+    typedef typename std::conditional<
+        TOptions::ClientOnlyVariant && (!TOptions::GatewayOnlyVariant),
+        NoReadTag,
+        HasReadTag
+    >::type ReadTag;
+
+    typedef typename std::conditional<
+        (!TOptions::ClientOnlyVariant) && TOptions::GatewayOnlyVariant,
+        NoRefreshTag,
+        HasRefreshTag
+    >::type RefreshTag;
+
+    comms::ErrorStatus doRead(ReadIterator& iter, std::size_t len)
+    {
+        static_assert(!Base::ImplOptions::HasNoDefaultFieldsReadImpl,
+            "Expected to have read implementation in the base");
+
         auto& allFields = Base::fields();
         auto& flagsField = std::get<FieldIdx_flags>(allFields);
         auto mode = comms::field::OptionalMode::Missing;
@@ -80,7 +140,19 @@ protected:
         return Base::readImpl(iter, len);
     }
 
-    bool refreshImpl() override
+    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, NoReadTag)
+    {
+        static_assert(Base::ImplOptions::HasNoDefaultFieldsReadImpl,
+            "Expected to have not supported read");
+        return Base::readImpl(iter, len);
+    }
+
+    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, HasReadTag)
+    {
+        return doRead(iter, len);
+    }
+
+    bool doRefresh()
     {
         auto& allFields = Base::fields();
         auto& flagsField = std::get<FieldIdx_flags>(allFields);
@@ -98,6 +170,16 @@ protected:
         }
 
         return refreshed;
+    }
+
+    bool refreshInternal(NoRefreshTag)
+    {
+        return Base::refreshImpl();
+    }
+
+    bool refreshInternal(HasRefreshTag)
+    {
+        return doRefresh();
     }
 };
 

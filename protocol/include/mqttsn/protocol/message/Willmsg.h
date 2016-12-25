@@ -32,6 +32,35 @@ namespace protocol
 namespace message
 {
 
+
+namespace details
+{
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraWillmsgOptions
+{
+    typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraWillmsgOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <>
+struct ExtraWillmsgOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <typename TOpts>
+using ExtraWillmsgOptionsT =
+    typename ExtraWillmsgOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+}  // namespace details
+
+
 template <typename TFieldBase, typename TOptions>
 using WillmsgFields =
     std::tuple<
@@ -44,14 +73,16 @@ class Willmsg : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
         comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >
+        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >,
+        details::ExtraWillmsgOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
         comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >
+        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >,
+        details::ExtraWillmsgOptionsT<TOptions>
     > Base;
 
 public:
