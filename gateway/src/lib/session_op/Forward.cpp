@@ -100,22 +100,15 @@ void Forward::handle(PublishMsg_SN& msg)
     m_lastPubTopicId = topicIdField.value();
 
     PublishMsg fwdMsg;
-    auto& fwdFields =fwdMsg.fields();
-    auto& fwdFlagsField = std::get<decltype(fwdMsg)::FieldIdx_PublishFlags>(fwdFields);
-    auto& fwdFlagsMembers = fwdFlagsField.value();
-    auto& fwdRetainFlagsField = std::get<mqtt::message::PublishActualFlagIdx_Retain>(fwdFlagsMembers);
-    auto& fwdQosField = std::get<mqtt::message::PublishActualFlagIdx_QoS>(fwdFlagsMembers);
-    auto& fwdDupFlagsField = std::get<mqtt::message::PublishActualFlagIdx_Dup>(fwdFlagsMembers);
-    auto& fwdTopicField = std::get<decltype(fwdMsg)::FieldIdx_Topic>(fwdFields);
-    auto& fwdPacketIdField = std::get<decltype(fwdMsg)::FieldIdx_PacketId>(fwdFields);
-    auto& fwdPayloadField = std::get<decltype(fwdMsg)::FieldIdx_Payload>(fwdFields);
+    auto fwdFields = fwdMsg.fieldsAsStruct();
+    auto fwdFlags = fwdFields.publishFlags.fieldsAsStruct();
 
-    fwdRetainFlagsField.setBitValue(0, retain);
-    fwdQosField.value() = translateQosForBroker(translateQos(qosField.value()));
-    fwdDupFlagsField.setBitValue(0, dup);
-    fwdTopicField.value() = topic;
-    fwdPacketIdField.field().value() = msgIdField.value();
-    fwdPayloadField.value() = dataField.value();
+    fwdFlags.retain.setBitValue(0, retain);
+    fwdFlags.qos.value() = translateQosForBroker(translateQos(qosField.value()));
+    fwdFlags.dup.setBitValue(0, dup);
+    fwdFields.topic.value() = topic;
+    fwdFields.packetId.field().value() = msgIdField.value();
+    fwdFields.payload.value() = dataField.value();
     fwdMsg.refresh();
     sendToBroker(fwdMsg);
 }
@@ -127,10 +120,8 @@ void Forward::handle(PubrelMsg_SN& msg)
     auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
 
     PubrelMsg fwdMsg;
-    auto& fwdFields = fwdMsg.fields();
-    auto& packetIdField = std::get<decltype(fwdMsg)::FieldIdx_PacketId>(fwdFields);
-
-    packetIdField.value() = msgIdField.value();
+    auto fwdFields = fwdMsg.fieldsAsStruct();
+    fwdFields.packetId.value() = msgIdField.value();
     sendToBroker(fwdMsg);
 }
 
@@ -237,12 +228,9 @@ void Forward::handle(SubscribeMsg_SN& msg)
     m_subs.push_back(info);
 
     SubscribeMsg fwdMsg;
-    auto& fwdFields = fwdMsg.fields();
-    auto& packetIdField = std::get<decltype(fwdMsg)::FieldIdx_PacketId>(fwdFields);
-    auto& payloadField = std::get<decltype(fwdMsg)::FieldIdx_Payload>(fwdFields);
-
-    packetIdField.value() = msgIdField.value();
-    auto& payloadContainer = payloadField.value();
+    auto fwdFields = fwdMsg.fieldsAsStruct();
+    fwdFields.packetId.value() = msgIdField.value();
+    auto& payloadContainer = fwdFields.payload.value();
     typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type SubElemBundle;
 
@@ -295,12 +283,9 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
     } while (false);
 
     UnsubscribeMsg fwdMsg;
-    auto& fwdFields = fwdMsg.fields();
-    auto& packetIdField = std::get<decltype(fwdMsg)::FieldIdx_PacketId>(fwdFields);
-    auto& payloadField = std::get<decltype(fwdMsg)::FieldIdx_Payload>(fwdFields);
-
-    packetIdField.value() = msgIdField.value();
-    auto& payloadContainer = payloadField.value();
+    auto fwdFields = fwdMsg.fieldsAsStruct();
+    fwdFields.packetId.value() = msgIdField.value();
+    auto& payloadContainer = fwdFields.payload.value();
     typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type UnsubString;
 
@@ -334,16 +319,12 @@ void Forward::handle(ConnackMsg&)
         }
 
         PublishMsg msg;
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<decltype(msg)::FieldIdx_PublishFlags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& qosField = std::get<mqtt::message::PublishActualFlagIdx_QoS>(flagsMembers);
-        auto& topicField = std::get<decltype(msg)::FieldIdx_Topic>(fields);
-        auto& payloadField = std::get<decltype(msg)::FieldIdx_Payload>(fields);
+        auto fields = msg.fieldsAsStruct();
+        auto flags = fields.publishFlags.fieldsAsStruct();
 
-        qosField.value() = mqtt::field::QosType::AtMostOnceDelivery;
-        topicField.value() = topic;
-        payloadField.value() = std::move(pub.m_data);
+        flags.qos.value() = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
+        fields.topic.value() = topic;
+        fields.payload.value() = std::move(pub.m_data);
         msg.refresh();
         sendToBroker(msg);
     }
@@ -351,41 +332,34 @@ void Forward::handle(ConnackMsg&)
 
 void Forward::handle(PubackMsg& msg)
 {
-    typedef PubackMsg MsgType;
-    auto& fields = msg.fields();
-    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-
+    auto fields = msg.fieldsAsStruct();
     sendPubackToClient(
         m_lastPubTopicId,
-        packetIdField.value(),
+        fields.packetId.value(),
         mqttsn::protocol::field::ReturnCodeVal_Accepted);
 }
 
 void Forward::handle(PubrecMsg& msg)
 {
-    typedef PubrecMsg MsgType;
-    auto& fields = msg.fields();
-    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+    auto fields = msg.fieldsAsStruct();
 
     PubrecMsg_SN respMsg;
     auto& respFields = respMsg.fields();
     auto& msgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
 
-    msgIdField.value() = packetIdField.value();
+    msgIdField.value() = fields.packetId.value();
     sendToClient(respMsg);
 }
 
 void Forward::handle(PubcompMsg& msg)
 {
-    typedef PubcompMsg MsgType;
-    auto& fields = msg.fields();
-    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+    auto fields = msg.fieldsAsStruct();
 
     PubcompMsg_SN respMsg;
     auto& respFields = respMsg.fields();
     auto& msgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
 
-    msgIdField.value() = packetIdField.value();
+    msgIdField.value() = fields.packetId.value();
     sendToClient(respMsg);
 }
 
@@ -412,11 +386,9 @@ void Forward::handle(PingrespMsg& msg)
 
 void Forward::handle(SubackMsg& msg)
 {
-    typedef SubackMsg MsgType;
-    auto& fields = msg.fields();
-    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+    auto fields = msg.fieldsAsStruct();
 
-    std::uint16_t msgId = packetIdField.value();
+    std::uint16_t msgId = fields.packetId.value();
     std::uint16_t topicId = 0U;
 
     auto iter =
@@ -441,19 +413,18 @@ void Forward::handle(SubackMsg& msg)
     auto qos = mqttsn::protocol::field::QosType::AtMostOnceDelivery;
     auto rc = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
     do {
-        auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
-        auto& retCodesList = payloadField.value();
+        auto& retCodesList = fields.payload.value();
         if (retCodesList.empty()) {
             break;
         }
 
         auto& ackRetCode = retCodesList.front();
-        if (ackRetCode.value() == mqtt::message::SubackReturnCode::Failure) {
+        if (ackRetCode.value() == mqtt::protocol::field::SubackReturnCode::Failure) {
             break;
         }
 
-        auto adjustedRetCode = std::min(ackRetCode.value(), mqtt::message::SubackReturnCode::SuccessQos2);
-        auto reportedQos = static_cast<mqtt::field::QosType>(adjustedRetCode);
+        auto adjustedRetCode = std::min(ackRetCode.value(), mqtt::protocol::field::SubackReturnCode::SuccessQos2);
+        auto reportedQos = static_cast<mqtt::protocol::field::QosVal>(adjustedRetCode);
         qos = translateQosForClient(translateQos(reportedQos));
         rc = mqttsn::protocol::field::ReturnCodeVal_Accepted;
     } while (false);
@@ -476,15 +447,13 @@ void Forward::handle(SubackMsg& msg)
 
 void Forward::handle(UnsubackMsg& msg)
 {
-    typedef UnsubackMsg MsgType;
-    auto& fields = msg.fields();
-    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+    auto fields = msg.fieldsAsStruct();
 
     UnsubackMsg_SN fwdMsg;
     auto& fwdFields = fwdMsg.fields();
     auto& fwdMsgIdField = std::get<decltype(fwdMsg)::FieldIdx_msgId>(fwdFields);
 
-    fwdMsgIdField.value() = packetIdField.value();
+    fwdMsgIdField.value() = fields.packetId.value();
     sendToClient(fwdMsg);
 }
 

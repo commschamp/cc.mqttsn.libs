@@ -165,12 +165,10 @@ void WillUpdate::handle(ConnackMsg& msg)
         return;
     }
 
-    typedef ConnackMsg MsgType;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<MsgType::FieldIdx_Flags>(fields);
-    auto& responseField = std::get<MsgType::FieldIdx_Response>(fields);
-    if ((responseField.value() != mqtt::message::ConnackResponseCode::Accepted) ||
-        (!flagsField.getBitValue(0))) {
+    auto fields = msg.fieldsAsStruct();
+    typedef typename std::decay<decltype(fields.response)>::type ResponseFieldType;
+    if ((fields.response.value() != ResponseFieldType::ValueType::Accepted) ||
+        (!fields.flags.getBitValue(0))) {
         sendFailureAndTerm();
         return;
     }
@@ -248,39 +246,31 @@ void WillUpdate::sendResp(mqttsn::protocol::field::ReturnCodeVal rc)
 void WillUpdate::sendConnectMsg()
 {
     ConnectMsg msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_Flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& lowFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsLow>(flagsMembers);
-    auto& highFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsHigh>(flagsMembers);
-    auto& keepAliveField = std::get<decltype(msg)::FieldIdx_KeepAlive>(fields);
-    auto& clientIdField = std::get<decltype(msg)::FieldIdx_ClientId>(fields);
+    auto fields = msg.fieldsAsStruct();
+    auto flags = fields.flags.fieldsAsStruct();
 
     auto& st = state();
-    clientIdField.value() = st.m_clientId;
-    keepAliveField.value() = st.m_keepAlive;
+    fields.clientId.value() = st.m_clientId;
+    fields.keepAlive.value() = st.m_keepAlive;
+
+    typedef typename std::decay<decltype(flags.flagsLow)>::type FlagsLowFieldType;
+    typedef typename std::decay<decltype(flags.flagsHigh)>::type FlagsHighFieldType;
 
     if (!m_will.m_topic.empty()) {
-        auto& willTopicField = std::get<decltype(msg)::FieldIdx_WillTopic>(fields);
-        auto& willMsgField = std::get<decltype(msg)::FieldIdx_WillMessage>(fields);
-        auto& willQosField = std::get<mqtt::message::ConnectFlagsMemberIdx_WillQos>(flagsMembers);
-
-        lowFlagsField.setBitValue(mqtt::message::ConnectFlagsLowBitIdx_WillFlag, true);
-        willTopicField.field().value() = m_will.m_topic;
-        willMsgField.field().value() = m_will.m_msg;
-        willQosField.value() = translateQosForBroker(m_will.m_qos);
-        highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain, m_will.m_retain);
+        flags.flagsLow.setBitValue(FlagsLowFieldType::BitIdx_willFlag, true);
+        fields.willTopic.field().value() = m_will.m_topic;
+        fields.willMessage.field().value() = m_will.m_msg;
+        flags.willQos.value() = translateQosForBroker(m_will.m_qos);
+        flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_willRetain, m_will.m_retain);
     }
 
     if (!st.m_username.empty()) {
-        auto& usernameField = std::get<decltype(msg)::FieldIdx_UserName>(fields);
-        usernameField.field().value() = state().m_username;
-        highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_UserNameFlag, true);
+        fields.userName.field().value() = state().m_username;
+        flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_username, true);
 
         if (!state().m_password.empty()) {
-            auto& passwordField = std::get<decltype(msg)::FieldIdx_Password>(fields);
-            passwordField.field().value() = state().m_password;
-            highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_PasswordFlag, true);
+            fields.password.field().value() = state().m_password;
+            flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_password, true);
         }
     }
 

@@ -38,27 +38,19 @@ PubRecv::~PubRecv() = default;
 
 void PubRecv::handle(PublishMsg& msg)
 {
-    typedef PublishMsg MsgType;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<MsgType::FieldIdx_PublishFlags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& retainFlagField = std::get<mqtt::message::PublishActualFlagIdx_Retain>(flagsMembers);
-    auto& qosField = std::get<mqtt::message::PublishActualFlagIdx_QoS>(flagsMembers);
-    auto& dupFlagField = std::get<mqtt::message::PublishActualFlagIdx_Dup>(flagsMembers);
-    auto& topicField = std::get<MsgType::FieldIdx_Topic>(fields);
-    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-    auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
+    auto fields = msg.fieldsAsStruct();
+    auto flags = fields.publishFlags.fieldsAsStruct();
 
-    bool retain = (retainFlagField.value() != 0);
-    bool dup = (dupFlagField.value() != 0);
+    bool retain = (flags.retain.value() != 0);
+    bool dup = (flags.dup.value() != 0);
 
-    if (qosField.value() == mqtt::field::QosType::AtLeastOnceDelivery) {
+    typedef typename std::decay<decltype(flags.qos)>::type QosFieldType;
+    if (flags.qos.value() == QosFieldType::ValueType::AtLeastOnceDelivery) {
         PubackMsg respMsg;
-        auto& respFields = respMsg.fields();
-        auto& respPacketIdField = std::get<decltype(respMsg)::FieldIdx_PacketId>(respFields);
+        auto respFields = respMsg.fieldsAsStruct();
 
-        assert(packetIdField.getMode() == comms::field::OptionalMode::Exists);
-        respPacketIdField.value() = packetIdField.field().value();
+        assert(fields.packetId.doesExist());
+        respFields.packetId.value() = fields.packetId.field().value();
         sendToBroker(respMsg);
     }
 
@@ -73,41 +65,40 @@ void PubRecv::handle(PublishMsg& msg)
         };
 
     auto cleanPubsFunc =
-        [this, &packetIdField, cleanIncompleteFunc]()
+        [this, &fields, cleanIncompleteFunc]()
         {
             cleanIncompleteFunc();
 
-            if (packetIdField.getMode() != comms::field::OptionalMode::Exists) {
+            if (!fields.packetId.doesExist()) {
                 return;
             }
 
             m_recvMsgs.remove_if(
-                [packetIdField](BrokPubInfosList::const_reference elem) -> bool
+                [&fields](BrokPubInfosList::const_reference elem) -> bool
                 {
-                    return elem.m_packetId == packetIdField.field().value();
+                    return elem.m_packetId == fields.packetId.field().value();
                 });
         };
 
-    if (qosField.value() <= mqtt::field::QosType::AtLeastOnceDelivery) {
+    if (flags.qos.value() <= QosFieldType::ValueType::AtLeastOnceDelivery) {
         cleanPubsFunc();
         PubInfoPtr pubInfo(new PubInfo);
-        pubInfo->m_topic = topicField.value();
-        pubInfo->m_msg = payloadField.value();
-        pubInfo->m_qos = translateQos(qosField.value());
+        pubInfo->m_topic = fields.topic.value();
+        pubInfo->m_msg = fields.payload.value();
+        pubInfo->m_qos = translateQos(flags.qos.value());
         pubInfo->m_retain = retain;
         pubInfo->m_dup = dup;
         addPubInfo(std::move(pubInfo));
         return;
     }
 
-    assert(packetIdField.getMode() == comms::field::OptionalMode::Exists);
+    assert(fields.packetId.doesExist());
     auto sendRecFunc =
-        [this, &packetIdField]()
+        [this, &fields]()
         {
             PubrecMsg respMsg;
-            auto& respFields = respMsg.fields();
-            auto& respPacketIdField = std::get<decltype(respMsg)::FieldIdx_PacketId>(respFields);
-            respPacketIdField.value() = packetIdField.field().value();
+            auto respFields = respMsg.fieldsAsStruct();
+            respFields.packetId.value() = fields.packetId.field().value();
             sendToBroker(respMsg);
         };
 
@@ -118,17 +109,17 @@ void PubRecv::handle(PublishMsg& msg)
 
         auto iter = std::find_if(
             m_recvMsgs.begin(), m_recvMsgs.end(),
-            [&packetIdField](BrokPubInfosList::const_reference elem) -> bool
+            [&fields](BrokPubInfosList::const_reference elem) -> bool
             {
-                return packetIdField.field().value() == elem.m_packetId;
+                return fields.packetId.field().value() == elem.m_packetId;
             });
 
         if (iter == m_recvMsgs.end()) {
             break;
         }
 
-        iter->m_topic = topicField.value();
-        iter->m_msg = payloadField.value();
+        iter->m_topic = fields.topic.value();
+        iter->m_msg = fields.payload.value();
         iter->m_dup = dup;
         iter->m_retain = retain;
         iter->m_timestamp = state().m_timestamp;
@@ -140,11 +131,11 @@ void PubRecv::handle(PublishMsg& msg)
     cleanPubsFunc();
 
     BrokPubInfo info;
-    info.m_topic = topicField.value();
-    info.m_msg = payloadField.value();
+    info.m_topic = fields.topic.value();
+    info.m_msg = fields.payload.value();
     info.m_dup = dup;
     info.m_retain = retain;
-    info.m_packetId = packetIdField.field().value();
+    info.m_packetId = fields.packetId.field().value();
     info.m_timestamp = state().m_timestamp;
     m_recvMsgs.push_back(std::move(info));
     sendRecFunc();
@@ -152,15 +143,13 @@ void PubRecv::handle(PublishMsg& msg)
 
 void PubRecv::handle(PubrelMsg& msg)
 {
-    typedef PubrelMsg MsgType;
-    auto& fields = msg.fields();
-    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
+    auto fields = msg.fieldsAsStruct();
 
     auto iter = std::find_if(
         m_recvMsgs.begin(), m_recvMsgs.end(),
-        [&packetIdField](BrokPubInfosList::const_reference elem) -> bool
+        [&fields](BrokPubInfosList::const_reference elem) -> bool
         {
-            return packetIdField.value() == elem.m_packetId;
+            return fields.packetId.value() == elem.m_packetId;
         });
 
     if (iter != m_recvMsgs.end()) {
@@ -175,9 +164,8 @@ void PubRecv::handle(PubrelMsg& msg)
     }
 
     PubcompMsg respMsg;
-    auto& respFields = respMsg.fields();
-    auto& respPacketIdField = std::get<decltype(respMsg)::FieldIdx_PacketId>(respFields);
-    respPacketIdField.value() = packetIdField.value();
+    auto respFields = respMsg.fieldsAsStruct();
+    respFields.packetId.value() = fields.packetId.value();
     sendToBroker(respMsg);
 }
 

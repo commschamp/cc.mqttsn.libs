@@ -24,7 +24,7 @@
 #include <memory>
 #include <limits>
 
-#include "mqtt/field/QoS.h"
+#include "mqtt/protocol/field.h"
 #include "mqttsn/protocol/field.h"
 #include "RegMgr.h"
 
@@ -45,9 +45,9 @@ enum QoS
 };
 
 inline
-mqtt::field::QosType translateQosForBroker(QoS val)
+mqtt::protocol::field::QosVal translateQosForBroker(QoS val)
 {
-    return static_cast<mqtt::field::QosType>(val);
+    return static_cast<mqtt::protocol::field::QosVal>(val);
 }
 
 inline
@@ -57,7 +57,7 @@ mqttsn::protocol::field::QosType translateQosForClient(QoS val)
 }
 
 inline
-QoS translateQos(mqtt::field::QosType val)
+QoS translateQos(mqtt::protocol::field::QosVal val)
 {
     return static_cast<QoS>(val);
 }
