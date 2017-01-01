@@ -70,7 +70,8 @@ class Searchgw : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SEARCHGW>,
         comms::option::FieldsImpl<SearchgwFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Searchgw<TMsgBase, TOptions> >,
+        comms::option::MsgType<Searchgw<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraSearchgwOptionsT<TOptions>
     >
 {
@@ -78,19 +79,13 @@ class Searchgw : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SEARCHGW>,
         comms::option::FieldsImpl<SearchgwFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Searchgw<TMsgBase, TOptions> >,
+        comms::option::MsgType<Searchgw<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraSearchgwOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_radius,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, radius);
 };
 
 }  // namespace message

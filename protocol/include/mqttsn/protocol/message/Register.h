@@ -46,27 +46,20 @@ class Register : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
         comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Register<TMsgBase, TOptions> >
+        comms::option::MsgType<Register<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
         comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Register<TMsgBase, TOptions> >
+        comms::option::MsgType<Register<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_topicId,
-        FieldIdx_msgId,
-        FieldIdx_topicName,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, topicName);
 };
 
 }  // namespace message

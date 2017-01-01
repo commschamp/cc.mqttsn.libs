@@ -71,7 +71,8 @@ class Willtopicresp : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
         comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicresp<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willtopicresp<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWilltopicupdOptionsT<TOptions>
     >
 {
@@ -79,19 +80,13 @@ class Willtopicresp : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
         comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicresp<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willtopicresp<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWilltopicupdOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_returnCode,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, returnCode);
 };
 
 }  // namespace message

@@ -70,7 +70,8 @@ class Connack : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNACK>,
         comms::option::FieldsImpl<ConnackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Connack<TMsgBase, TOptions> >,
+        comms::option::MsgType<Connack<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraConnackOptionsT<TOptions>
     >
 {
@@ -78,19 +79,13 @@ class Connack : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNACK>,
         comms::option::FieldsImpl<ConnackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Connack<TMsgBase, TOptions> >,
+        comms::option::MsgType<Connack<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraConnackOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_returnCode,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, returnCode);
 };
 
 }  // namespace message

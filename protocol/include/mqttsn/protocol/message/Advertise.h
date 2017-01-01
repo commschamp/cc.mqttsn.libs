@@ -72,7 +72,8 @@ class Advertise : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_ADVERTISE>,
         comms::option::FieldsImpl<AdvertiseFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Advertise<TMsgBase, TOptions> >,
+        comms::option::MsgType<Advertise<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraAdvertiseOptionsT<TOptions>
     >
 {
@@ -80,20 +81,13 @@ class Advertise : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_ADVERTISE>,
         comms::option::FieldsImpl<AdvertiseFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Advertise<TMsgBase, TOptions> >,
+        comms::option::MsgType<Advertise<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraAdvertiseOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_gwId,
-        FieldIdx_duration,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, gwId, duration);
 };
 
 }  // namespace message

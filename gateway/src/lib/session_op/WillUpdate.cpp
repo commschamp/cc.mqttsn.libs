@@ -274,7 +274,7 @@ void WillUpdate::sendConnectMsg()
         }
     }
 
-    msg.refresh();
+    msg.doRefresh();
     sendToBroker(msg);
 }
 

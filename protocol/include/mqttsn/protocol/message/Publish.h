@@ -47,28 +47,20 @@ class Publish : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
         comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Publish<TMsgBase, TOptions> >
+        comms::option::MsgType<Publish<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
         comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Publish<TMsgBase, TOptions> >
+        comms::option::MsgType<Publish<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_flags,
-        FieldIdx_topicId,
-        FieldIdx_msgId,
-        FieldIdx_data,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, data);
 };
 
 }  // namespace message

@@ -43,25 +43,20 @@ class Pubrec : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBREC>,
         comms::option::FieldsImpl<PubrecFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pubrec<TMsgBase> >
+        comms::option::MsgType<Pubrec<TMsgBase> >,
+        comms::option::DispatchImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBREC>,
         comms::option::FieldsImpl<PubrecFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pubrec<TMsgBase> >
+        comms::option::MsgType<Pubrec<TMsgBase> >,
+        comms::option::DispatchImpl
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_msgId,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, msgId);
 };
 
 }  // namespace message

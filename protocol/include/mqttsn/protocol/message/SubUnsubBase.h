@@ -36,15 +36,41 @@ namespace details
 {
 
 template <bool TClientOnly, bool TGatewayOnly>
-struct ExtraSubUnsubOptions
+struct ExtraSubUnsubBaseOptions
 {
     typedef std::tuple<> Type;
 };
 
 template <>
-struct ExtraSubUnsubOptions<false, true>
+struct ExtraSubUnsubBaseOptions<false, true>
 {
     typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <typename TOpts>
+using ExtraSubUnsubBaseOptionsT =
+    typename ExtraSubUnsubBaseOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraSubUnsubOptions
+{
+    typedef comms::option::MsgDoRead Type;
+};
+
+template <>
+struct ExtraSubUnsubOptions<true, false>
+{
+    typedef comms::option::NoDefaultFieldsReadImpl Type;
+};
+
+template <>
+struct ExtraSubUnsubOptions<false, true>
+{
+    typedef std::tuple<
+        comms::option::MsgDoRead,
+        comms::option::NoDefaultFieldsWriteImpl
+    >Type;
 };
 
 template <typename TOpts>
@@ -52,6 +78,7 @@ using ExtraSubUnsubOptionsT =
     typename ExtraSubUnsubOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
 
 }  // namespace details
+
 
 
 template <typename TFieldBase, typename TOptions>
@@ -75,65 +102,22 @@ class SubUnsubFieldsBase : public
         TMsgBase,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
         comms::option::NoDefaultFieldsReadImpl,
-        details::ExtraSubUnsubOptionsT<TOptions>
+        details::ExtraSubUnsubBaseOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
         comms::option::NoDefaultFieldsReadImpl,
-        details::ExtraSubUnsubOptionsT<TOptions>
+        details::ExtraSubUnsubBaseOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
+    COMMS_MSG_FIELDS_ACCESS(Base, flags, msgId, topicId, topicName);
+
+    template <typename TIter>
+    comms::ErrorStatus doRead(TIter& iter, std::size_t len)
     {
-        FieldIdx_flags,
-        FieldIdx_msgId,
-        FieldIdx_topicId,
-        FieldIdx_topicName,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
-
-    typedef typename Base::ReadIterator ReadIterator;
-
-protected:
-    comms::ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override
-    {
-        return readInternal(iter, len, ReadTag());
-    }
-
-    bool refreshImpl() override
-    {
-        return refreshInternal(RefreshTag());
-    }
-
-private:
-    struct NoReadTag {};
-    struct HasReadTag {};
-    struct NoRefreshTag {};
-    struct HasRefreshTag {};
-
-    typedef typename std::conditional<
-        TOptions::ClientOnlyVariant && (!TOptions::GatewayOnlyVariant),
-        NoReadTag,
-        HasReadTag
-    >::type ReadTag;
-
-    typedef typename std::conditional<
-        (!TOptions::ClientOnlyVariant) && TOptions::GatewayOnlyVariant,
-        NoRefreshTag,
-        HasRefreshTag
-    >::type RefreshTag;
-
-    comms::ErrorStatus doRead(ReadIterator& iter, std::size_t len)
-    {
-        static_assert(Base::ImplOptions::HasNoDefaultFieldsReadImpl,
-            "Expected to have read implementation in the base");
-
         auto es = Base::template readFieldsUntil<FieldIdx_msgId>(iter, len);
         if (es != comms::ErrorStatus::Success) {
             return es;
@@ -156,18 +140,6 @@ private:
         }
 
         return Base::template readFieldsFrom<FieldIdx_msgId>(iter, len);
-    }
-
-    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, NoReadTag)
-    {
-        static_assert(Base::ImplOptions::HasNoDefaultFieldsReadImpl,
-            "Expected to have not supported read");
-        return Base::readImpl(iter, len);
-    }
-
-    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, HasReadTag)
-    {
-        return doRead(iter, len);
     }
 
     bool doRefresh()
@@ -199,16 +171,6 @@ private:
 
         return refreshed;
     }
-
-    bool refreshInternal(NoRefreshTag)
-    {
-        return Base::refreshImpl();
-    }
-
-    bool refreshInternal(HasRefreshTag)
-    {
-        return doRefresh();
-    }
 };
 
 
@@ -221,7 +183,10 @@ class SubUnsubBase : public
     comms::MessageBase<
         SubUnsubFieldsBase<TMsgBase, TOptions>,
         comms::option::StaticNumIdImpl<TId>,
-        comms::option::DispatchImpl<TActual>
+        comms::option::MsgType<TActual>,
+        comms::option::DispatchImpl,
+        comms::option::MsgDoRefresh,
+        details::ExtraSubUnsubOptionsT<TOptions>
     >
 {
 };

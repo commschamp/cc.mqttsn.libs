@@ -36,9 +36,25 @@ namespace details
 {
 
 template <bool TClientOnly, bool TGatewayOnly>
-struct ExtraWilltopicOptions
+struct ExtraWilltopicBaseOptions
 {
     typedef std::tuple<> Type;
+};
+
+template <>
+struct ExtraWilltopicBaseOptions<false, true>
+{
+    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+};
+
+template <typename TOpts>
+using ExtraWilltopicBaseOptionsT =
+    typename ExtraWilltopicBaseOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
+template <bool TClientOnly, bool TGatewayOnly>
+struct ExtraWilltopicOptions
+{
+    typedef comms::option::MsgDoRead Type;
 };
 
 template <>
@@ -50,12 +66,16 @@ struct ExtraWilltopicOptions<true, false>
 template <>
 struct ExtraWilltopicOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef std::tuple<
+        comms::option::MsgDoRead,
+        comms::option::NoDefaultFieldsWriteImpl
+    > Type;
 };
 
 template <typename TOpts>
 using ExtraWilltopicOptionsT =
     typename ExtraWilltopicOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
+
 
 }  // namespace details
 
@@ -74,62 +94,23 @@ class WilltopicFieldsBase : public
     comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        details::ExtraWilltopicOptionsT<TOptions>
+        comms::option::NoDefaultFieldsReadImpl,
+        details::ExtraWilltopicBaseOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        details::ExtraWilltopicOptionsT<TOptions>
+        comms::option::NoDefaultFieldsReadImpl,
+        details::ExtraWilltopicBaseOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
+    COMMS_MSG_FIELDS_ACCESS(Base, flags, willTopic);
+
+    template <typename TIter>
+    comms::ErrorStatus doRead(TIter& iter, std::size_t len)
     {
-        FieldIdx_flags,
-        FieldIdx_willTopic,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
-
-    typedef typename Base::ReadIterator ReadIterator;
-
-protected:
-    comms::ErrorStatus readImpl(ReadIterator& iter, std::size_t len) override
-    {
-        return readInternal(iter, len, ReadTag());
-    }
-
-    bool refreshImpl() override
-    {
-        return refreshInternal(RefreshTag());
-    }
-
-private:
-    struct NoReadTag {};
-    struct HasReadTag {};
-    struct NoRefreshTag {};
-    struct HasRefreshTag {};
-
-    typedef typename std::conditional<
-        TOptions::ClientOnlyVariant && (!TOptions::GatewayOnlyVariant),
-        NoReadTag,
-        HasReadTag
-    >::type ReadTag;
-
-    typedef typename std::conditional<
-        (!TOptions::ClientOnlyVariant) && TOptions::GatewayOnlyVariant,
-        NoRefreshTag,
-        HasRefreshTag
-    >::type RefreshTag;
-
-    comms::ErrorStatus doRead(ReadIterator& iter, std::size_t len)
-    {
-        static_assert(!Base::ImplOptions::HasNoDefaultFieldsReadImpl,
-            "Expected to have read implementation in the base");
-
         auto& allFields = Base::fields();
         auto& flagsField = std::get<FieldIdx_flags>(allFields);
         auto mode = comms::field::OptionalMode::Missing;
@@ -137,19 +118,7 @@ private:
             mode = comms::field::OptionalMode::Exists;
         }
         flagsField.setMode(mode);
-        return Base::readImpl(iter, len);
-    }
-
-    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, NoReadTag)
-    {
-        static_assert(Base::ImplOptions::HasNoDefaultFieldsReadImpl,
-            "Expected to have not supported read");
-        return Base::readImpl(iter, len);
-    }
-
-    comms::ErrorStatus readInternal(ReadIterator& iter, std::size_t len, HasReadTag)
-    {
-        return doRead(iter, len);
+        return Base::doRead(iter, len);
     }
 
     bool doRefresh()
@@ -171,16 +140,6 @@ private:
 
         return refreshed;
     }
-
-    bool refreshInternal(NoRefreshTag)
-    {
-        return Base::refreshImpl();
-    }
-
-    bool refreshInternal(HasRefreshTag)
-    {
-        return doRefresh();
-    }
 };
 
 template <
@@ -192,7 +151,10 @@ class WilltopicBase : public
     comms::MessageBase<
         WilltopicFieldsBase<TMsgBase, TOptions>,
         comms::option::StaticNumIdImpl<TId>,
-        comms::option::DispatchImpl<TActual>
+        comms::option::MsgType<TActual>,
+        comms::option::DispatchImpl,
+        comms::option::MsgDoRefresh,
+        details::ExtraWilltopicOptionsT<TOptions>
     >
 {
 };

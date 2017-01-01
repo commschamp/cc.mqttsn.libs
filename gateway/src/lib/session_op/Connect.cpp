@@ -360,7 +360,7 @@ void Connect::forwardConnectionReq()
         }
     }
 
-    msg.refresh();
+    msg.doRefresh();
     sendToBroker(msg);
 }
 

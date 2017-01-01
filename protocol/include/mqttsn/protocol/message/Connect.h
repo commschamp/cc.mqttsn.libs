@@ -74,7 +74,8 @@ class Connect : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
         comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >,
+        comms::option::MsgType<Connect<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraConnectOptionsT<TOptions>
     >
 {
@@ -82,22 +83,13 @@ class Connect : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
         comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Connect<TMsgBase, TOptions> >,
+        comms::option::MsgType<Connect<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraConnectOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_flags,
-        FieldIdx_protocolId,
-        FieldIdx_duration,
-        FieldIdx_clientId,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, flags, protocolId, duration, clientId);
 };
 
 }  // namespace message

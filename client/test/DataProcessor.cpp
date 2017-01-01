@@ -303,6 +303,12 @@ void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
     ProtStack::MsgPtr msg;
     auto es = m_stack.read(msg, readIter, len);
     static_cast<void>(es);
+    if (es != comms::ErrorStatus::Success) {
+        std::cout << "es = " << static_cast<unsigned>(es) << std::endl;
+        std::cout << "Data: " << std::hex;
+        std::copy_n(buf, len, std::ostream_iterator<unsigned>(std::cout, " "));
+        std::cout << std::dec << std::endl;
+    }
     assert(es == comms::ErrorStatus::Success);
     assert(msg);
     msg->dispatch(*this);

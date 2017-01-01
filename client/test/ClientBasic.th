@@ -685,6 +685,14 @@ private:
         auto oldCb = dataProc.setWilltopicMsgReportCallback(
             [&sent, &topic, qos, retain](const WilltopicMsg& msg)
             {
+                typedef typename std::decay<decltype(msg)>::type MsgType;
+                static_assert(MsgType::InterfaceOptions::HasReadIterator,
+                    "Does not define read iterator");
+                static_assert(MsgType::ImplOptions::HasMsgDoRead,
+                    "Does not implement read");
+                static_assert(MsgType::ImplOptions::HasMsgType,
+                    "Does not define message type");
+
                 sent = true;
                 TS_TRACE("<-- WILLTOPIC");
                 auto& fields = msg.fields();

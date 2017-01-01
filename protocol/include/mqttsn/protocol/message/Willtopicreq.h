@@ -67,7 +67,8 @@ class Willtopicreq : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICREQ>,
         comms::option::FieldsImpl<WilltopicreqFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicreq<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willtopicreq<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWilltopicreqOptionsT<TOptions>
     >
 {
@@ -75,7 +76,8 @@ class Willtopicreq : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICREQ>,
         comms::option::FieldsImpl<WilltopicreqFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicreq<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willtopicreq<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWilltopicreqOptionsT<TOptions>
     > Base;
 

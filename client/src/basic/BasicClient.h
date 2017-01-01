@@ -2321,7 +2321,7 @@ private:
         dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
         msgIdField.value() = op->m_msgId;
         topicIdField.field().value() = op->m_topicId;
-        msg.refresh();
+        msg.doRefresh();
         GASSERT(topicIdField.getMode() == comms::field::OptionalMode::Exists);
         sendMessage(msg);
         return true;
@@ -2376,7 +2376,7 @@ private:
         qosField.value() = details::translateQosValue(op->m_qos);
         dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
         msgIdField.value() = op->m_msgId;
-        msg.refresh();
+        msg.doRefresh();
         GASSERT((op->m_topicId != 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Exists));
         GASSERT((op->m_topicId != 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Missing));
         GASSERT((op->m_topicId == 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Missing));
@@ -2408,7 +2408,7 @@ private:
         topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
         msgIdField.value() = op->m_msgId;
         topicIdField.field().value() = op->m_topicId;
-        msg.refresh();
+        msg.doRefresh();
         GASSERT(topicIdField.getMode() == comms::field::OptionalMode::Exists);
         sendMessage(msg);
         return true;
@@ -2458,7 +2458,7 @@ private:
         }
 
         msgIdField.value() = op->m_msgId;
-        msg.refresh();
+        msg.doRefresh();
         GASSERT((op->m_topicId != 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Exists));
         GASSERT((op->m_topicId != 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Missing));
         GASSERT((op->m_topicId == 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Missing));
@@ -2492,7 +2492,7 @@ private:
             midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_retain);
             topicField.value() = op->m_topic;
 
-            msg.refresh();
+            msg.doRefresh();
             GASSERT(flagsField.getMode() == comms::field::OptionalMode::Exists);
         }
 
@@ -2606,7 +2606,7 @@ private:
             qosField.value() = details::translateQosValue(qos);
             topicField.value() = topic;
         }
-        msg.refresh();
+        msg.doRefresh();
         sendMessage(msg);
     }
 

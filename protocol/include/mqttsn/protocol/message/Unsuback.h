@@ -70,7 +70,8 @@ class Unsuback : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
         comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Unsuback<TMsgBase, TOptions> >,
+        comms::option::MsgType<Unsuback<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraUnsubackOptionsT<TOptions>
     >
 {
@@ -78,19 +79,13 @@ class Unsuback : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
         comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Unsuback<TMsgBase, TOptions> >,
+        comms::option::MsgType<Unsuback<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraUnsubackOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_msgId,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, msgId);
 };
 
 }  // namespace message

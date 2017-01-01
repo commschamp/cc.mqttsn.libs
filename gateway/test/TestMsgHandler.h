@@ -31,14 +31,16 @@ typedef mqttsn::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
     comms::option::Handler<TestMsgHandler>,
-    comms::option::LengthInfoInterface
+    comms::option::LengthInfoInterface,
+    comms::option::RefreshInterface
 > TestMqttsnMessage;
 
 typedef mqtt::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
     comms::option::Handler<TestMsgHandler>,
-    comms::option::LengthInfoInterface
+    comms::option::LengthInfoInterface,
+    comms::option::RefreshInterface
 > TestMqttMessage;
 
 typedef mqttsn::protocol::message::Advertise<TestMqttsnMessage> AdvertiseMsg_SN;

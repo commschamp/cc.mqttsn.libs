@@ -69,7 +69,8 @@ class Willmsgreq : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGREQ>,
         comms::option::FieldsImpl<WillmsgreqFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willmsgreq<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willmsgreq<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWillmsgreqOptionsT<TOptions>
     >
 {
@@ -77,7 +78,8 @@ class Willmsgreq : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGREQ>,
         comms::option::FieldsImpl<WillmsgreqFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willmsgreq<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willmsgreq<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWillmsgreqOptionsT<TOptions>
     > Base;
 

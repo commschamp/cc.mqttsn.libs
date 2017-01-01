@@ -45,25 +45,20 @@ class Disconnect : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_DISCONNECT>,
         comms::option::FieldsImpl<DisconnectFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Disconnect<TMsgBase> >
+        comms::option::MsgType<Disconnect<TMsgBase> >,
+        comms::option::DispatchImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_DISCONNECT>,
         comms::option::FieldsImpl<DisconnectFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Disconnect<TMsgBase> >
+        comms::option::MsgType<Disconnect<TMsgBase> >,
+        comms::option::DispatchImpl
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_duration,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, duration);
 };
 
 }  // namespace message

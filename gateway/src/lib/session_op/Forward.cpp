@@ -109,7 +109,7 @@ void Forward::handle(PublishMsg_SN& msg)
     fwdFields.topic.value() = topic;
     fwdFields.packetId.field().value() = msgIdField.value();
     fwdFields.payload.value() = dataField.value();
-    fwdMsg.refresh();
+    fwdMsg.doRefresh();
     sendToBroker(fwdMsg);
 }
 
@@ -325,7 +325,7 @@ void Forward::handle(ConnackMsg&)
         flags.qos.value() = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
         fields.topic.value() = topic;
         fields.payload.value() = std::move(pub.m_data);
-        msg.refresh();
+        msg.doRefresh();
         sendToBroker(msg);
     }
 }

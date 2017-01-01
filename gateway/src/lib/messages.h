@@ -42,7 +42,6 @@ typedef mqtt::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
     comms::option::Handler<MsgHandler>,
-    comms::option::ValidCheckInterface,
     comms::option::LengthInfoInterface
 > MqttMessage;
 

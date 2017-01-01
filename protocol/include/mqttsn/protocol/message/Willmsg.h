@@ -73,7 +73,8 @@ class Willmsg : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
         comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willmsg<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWillmsgOptionsT<TOptions>
     >
 {
@@ -81,19 +82,13 @@ class Willmsg : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
         comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >,
+        comms::option::MsgType<Willmsg<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraWillmsgOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_willMsg,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, willMsg);
 };
 
 }  // namespace message

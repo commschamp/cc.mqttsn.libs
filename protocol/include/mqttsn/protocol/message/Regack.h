@@ -45,27 +45,20 @@ class Regack : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGACK>,
         comms::option::FieldsImpl<RegackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Regack<TMsgBase> >
+        comms::option::MsgType<Regack<TMsgBase> >,
+        comms::option::DispatchImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGACK>,
         comms::option::FieldsImpl<RegackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Regack<TMsgBase> >
+        comms::option::MsgType<Regack<TMsgBase> >,
+        comms::option::DispatchImpl
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_topicId,
-        FieldIdx_msgId,
-        FieldIdx_returnCode,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, returnCode);
 };
 
 }  // namespace message

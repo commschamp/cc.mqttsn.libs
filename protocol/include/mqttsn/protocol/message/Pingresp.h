@@ -40,14 +40,16 @@ class Pingresp : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PINGRESP>,
         comms::option::FieldsImpl<PingrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pingresp<TMsgBase> >
+        comms::option::MsgType<Pingresp<TMsgBase> >,
+        comms::option::DispatchImpl
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PINGRESP>,
         comms::option::FieldsImpl<PingrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pingresp<TMsgBase> >
+        comms::option::MsgType<Pingresp<TMsgBase> >,
+        comms::option::DispatchImpl
     > Base;
 
 public:

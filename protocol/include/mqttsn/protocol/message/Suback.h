@@ -73,7 +73,8 @@ class Suback : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
         comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Suback<TMsgBase, TOptions> >,
+        comms::option::MsgType<Suback<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraSubackOptionsT<TOptions>
     >
 {
@@ -81,22 +82,13 @@ class Suback : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
         comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Suback<TMsgBase, TOptions> >,
+        comms::option::MsgType<Suback<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraSubackOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_flags,
-        FieldIdx_topicId,
-        FieldIdx_msgId,
-        FieldIdx_returnCode,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, returnCode);
 };
 
 }  // namespace message

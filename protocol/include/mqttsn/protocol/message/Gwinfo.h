@@ -72,7 +72,8 @@ class Gwinfo : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >,
+        comms::option::MsgType<Gwinfo<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraGwinfoOptionsT<TOptions>
     >
 {
@@ -80,20 +81,13 @@ class Gwinfo : public
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >,
+        comms::option::MsgType<Gwinfo<TMsgBase, TOptions> >,
+        comms::option::DispatchImpl,
         details::ExtraGwinfoOptionsT<TOptions>
     > Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_gwId,
-        FieldIdx_gwAdd,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, gwId, gwAdd);
 };
 
 }  // namespace message
