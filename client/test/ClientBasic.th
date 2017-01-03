@@ -692,8 +692,6 @@ private:
                     "Does not implement read");
                 static_assert(MsgType::ImplOptions::HasMsgType,
                     "Does not define message type");
-                static_assert(MsgType::ImplOptions::HasAssumeFieldsExistence,
-                    "Does assume fields existence");
 
                 sent = true;
                 TS_TRACE("<-- WILLTOPIC");

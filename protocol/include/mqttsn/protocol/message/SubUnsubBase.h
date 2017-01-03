@@ -186,7 +186,6 @@ class SubUnsubBase : public
         comms::option::NoValidImpl,
         comms::option::NoLengthImpl,
         comms::option::HasDoRefresh,
-        comms::option::AssumeFieldsExistence,
         details::ExtraSubUnsubOptionsT<TOptions>
     >
 {
