@@ -44,13 +44,13 @@ struct ExtraWillmsgrespOptions
 template <>
 struct ExtraWillmsgrespOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraWillmsgrespOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -66,25 +66,20 @@ using WillmsgrespFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Willmsgresp : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using WillmsgrespBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGRESP>,
         comms::option::FieldsImpl<WillmsgrespFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Willmsgresp<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraWillmsgrespOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Willmsgresp : public WillmsgrespBase<TMsgBase, TOptions, Willmsgresp>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGRESP>,
-        comms::option::FieldsImpl<WillmsgrespFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Willmsgresp<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraWillmsgrespOptionsT<TOptions>
-    > Base;
+    typedef WillmsgrespBase<TMsgBase, TOptions, Willmsgresp> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, returnCode);

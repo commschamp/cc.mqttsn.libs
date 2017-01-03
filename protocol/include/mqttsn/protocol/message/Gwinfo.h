@@ -44,13 +44,13 @@ struct ExtraGwinfoOptions
 template <>
 struct ExtraGwinfoOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraGwinfoOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -66,25 +66,20 @@ using GwinfoFields =
         field::GwAdd<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Gwinfo : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using GwinfoBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Gwinfo<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraGwinfoOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Gwinfo : public GwinfoBase<TMsgBase, TOptions, Gwinfo>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
-        comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Gwinfo<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraGwinfoOptionsT<TOptions>
-    > Base;
+    typedef GwinfoBase<TMsgBase, TOptions, Gwinfo> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, gwId, gwAdd);

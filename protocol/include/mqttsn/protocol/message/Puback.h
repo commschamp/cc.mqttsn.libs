@@ -39,23 +39,19 @@ using PubackFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase>
-class Puback : public
+template <typename TMsgBase, template<class> class TActual>
+using PubackBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBACK>,
         comms::option::FieldsImpl<PubackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Puback<TMsgBase> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Puback : public PubackBase<TMsgBase, Puback>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PUBACK>,
-        comms::option::FieldsImpl<PubackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Puback<TMsgBase> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef PubackBase<TMsgBase, Puback> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, returnCode);

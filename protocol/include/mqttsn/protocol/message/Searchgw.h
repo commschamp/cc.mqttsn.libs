@@ -43,13 +43,13 @@ struct ExtraSearchgwOptions
 template <>
 struct ExtraSearchgwOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <>
 struct ExtraSearchgwOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -64,25 +64,20 @@ using SearchgwFields =
         field::Radius<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Searchgw : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using SearchgwBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SEARCHGW>,
         comms::option::FieldsImpl<SearchgwFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Searchgw<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraSearchgwOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Searchgw : public SearchgwBase<TMsgBase, TOptions, Searchgw>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_SEARCHGW>,
-        comms::option::FieldsImpl<SearchgwFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Searchgw<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraSearchgwOptionsT<TOptions>
-    > Base;
+    typedef SearchgwBase<TMsgBase, TOptions, Searchgw> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, radius);

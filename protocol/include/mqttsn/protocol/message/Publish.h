@@ -41,23 +41,19 @@ using PublishFields =
         field::Data<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Publish : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using PublishBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
         comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Publish<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Publish : public PublishBase<TMsgBase, TOptions, Publish>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
-        comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Publish<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef PublishBase<TMsgBase, TOptions, Publish> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, data);

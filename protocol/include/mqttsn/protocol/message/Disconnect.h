@@ -39,23 +39,19 @@ using DisconnectFields =
         >
     >;
 
-template <typename TMsgBase>
-class Disconnect : public
+template <typename TMsgBase, template<class> class TActual>
+using DisconnectBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_DISCONNECT>,
         comms::option::FieldsImpl<DisconnectFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Disconnect<TMsgBase> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Disconnect : public DisconnectBase<TMsgBase, Disconnect>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_DISCONNECT>,
-        comms::option::FieldsImpl<DisconnectFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Disconnect<TMsgBase> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef DisconnectBase<TMsgBase, Disconnect> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, duration);

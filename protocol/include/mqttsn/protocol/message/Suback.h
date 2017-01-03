@@ -43,13 +43,13 @@ struct ExtraSubackOptions
 template <>
 struct ExtraSubackOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraSubackOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -67,25 +67,20 @@ using SubackFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Suback : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using SubackBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
         comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Suback<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraSubackOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Suback : public SubackBase<TMsgBase, TOptions, Suback>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
-        comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Suback<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraSubackOptionsT<TOptions>
-    > Base;
+    typedef SubackBase<TMsgBase, TOptions, Suback> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, returnCode);

@@ -40,23 +40,19 @@ using RegisterFields =
         field::TopicName<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Register : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using RegisterBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
         comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Register<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Register : public RegisterBase<TMsgBase, TOptions, Register>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
-        comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Register<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef RegisterBase<TMsgBase, TOptions, Register> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, topicName);

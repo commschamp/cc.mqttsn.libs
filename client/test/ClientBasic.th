@@ -688,10 +688,12 @@ private:
                 typedef typename std::decay<decltype(msg)>::type MsgType;
                 static_assert(MsgType::InterfaceOptions::HasReadIterator,
                     "Does not define read iterator");
-                static_assert(MsgType::ImplOptions::HasMsgDoRead,
+                static_assert(!MsgType::ImplOptions::HasNoReadImpl,
                     "Does not implement read");
                 static_assert(MsgType::ImplOptions::HasMsgType,
                     "Does not define message type");
+                static_assert(MsgType::ImplOptions::HasAssumeFieldsExistence,
+                    "Does assume fields existence");
 
                 sent = true;
                 TS_TRACE("<-- WILLTOPIC");

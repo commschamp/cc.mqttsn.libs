@@ -43,13 +43,13 @@ struct ExtraUnsubackOptions
 template <>
 struct ExtraUnsubackOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraUnsubackOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -64,25 +64,20 @@ using UnsubackFields =
         field::MsgId<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Unsuback : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using UnsubackBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
         comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Unsuback<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraUnsubackOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Unsuback : public UnsubackBase<TMsgBase, TOptions, Unsuback>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
-        comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Unsuback<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraUnsubackOptionsT<TOptions>
-    > Base;
+    typedef UnsubackBase<TMsgBase, TOptions, Unsuback> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, msgId);

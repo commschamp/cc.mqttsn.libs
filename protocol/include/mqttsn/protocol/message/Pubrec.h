@@ -37,23 +37,19 @@ using PubrecFields =
         field::MsgId<TFieldBase>
     >;
 
-template <typename TMsgBase>
-class Pubrec : public
+template <typename TMsgBase, template<class> class TActual>
+using PubrecBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBREC>,
         comms::option::FieldsImpl<PubrecFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Pubrec<TMsgBase> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Pubrec : public PubrecBase<TMsgBase, Pubrec>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PUBREC>,
-        comms::option::FieldsImpl<PubrecFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Pubrec<TMsgBase> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef PubrecBase<TMsgBase, Pubrec> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, msgId);

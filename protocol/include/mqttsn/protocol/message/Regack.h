@@ -39,23 +39,19 @@ using RegackFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase>
-class Regack : public
+template <typename TMsgBase, template<class> class TActual>
+using RegackBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGACK>,
         comms::option::FieldsImpl<RegackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Regack<TMsgBase> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Regack : public RegackBase<TMsgBase, Regack>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_REGACK>,
-        comms::option::FieldsImpl<RegackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Regack<TMsgBase> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef RegackBase<TMsgBase, Regack> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, returnCode);

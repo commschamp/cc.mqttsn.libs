@@ -44,7 +44,7 @@ struct ExtraSubUnsubBaseOptions
 template <>
 struct ExtraSubUnsubBaseOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -55,21 +55,20 @@ using ExtraSubUnsubBaseOptionsT =
 template <bool TClientOnly, bool TGatewayOnly>
 struct ExtraSubUnsubOptions
 {
-    typedef comms::option::MsgDoRead Type;
+    typedef std::tuple<> Type;
 };
 
 template <>
 struct ExtraSubUnsubOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <>
 struct ExtraSubUnsubOptions<false, true>
 {
     typedef std::tuple<
-        comms::option::MsgDoRead,
-        comms::option::NoDefaultFieldsWriteImpl
+        comms::option::NoWriteImpl
     >Type;
 };
 
@@ -101,14 +100,14 @@ class SubUnsubFieldsBase : public
     comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoDefaultFieldsReadImpl,
+        comms::option::NoReadImpl,
         details::ExtraSubUnsubBaseOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoDefaultFieldsReadImpl,
+        comms::option::NoReadImpl,
         details::ExtraSubUnsubBaseOptionsT<TOptions>
     > Base;
 
@@ -184,8 +183,10 @@ class SubUnsubBase : public
         SubUnsubFieldsBase<TMsgBase, TOptions>,
         comms::option::StaticNumIdImpl<TId>,
         comms::option::MsgType<TActual>,
-        comms::option::DispatchImpl,
-        comms::option::MsgDoRefresh,
+        comms::option::NoValidImpl,
+        comms::option::NoLengthImpl,
+        comms::option::HasDoRefresh,
+        comms::option::AssumeFieldsExistence,
         details::ExtraSubUnsubOptionsT<TOptions>
     >
 {

@@ -37,23 +37,19 @@ using PubcompFields =
         field::MsgId<TFieldBase>
     >;
 
-template <typename TMsgBase>
-class Pubcomp : public
+template <typename TMsgBase, template<class> class TActual>
+using PubcompBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBCOMP>,
         comms::option::FieldsImpl<PubcompFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Pubcomp<TMsgBase> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Pubcomp : public PubcompBase<TMsgBase, Pubcomp>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PUBCOMP>,
-        comms::option::FieldsImpl<PubcompFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Pubcomp<TMsgBase> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef PubcompBase<TMsgBase, Pubcomp> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, msgId);

@@ -44,7 +44,7 @@ struct ExtraWilltopicBaseOptions
 template <>
 struct ExtraWilltopicBaseOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -54,22 +54,19 @@ using ExtraWilltopicBaseOptionsT =
 template <bool TClientOnly, bool TGatewayOnly>
 struct ExtraWilltopicOptions
 {
-    typedef comms::option::MsgDoRead Type;
+    typedef std::tuple<> Type;
 };
 
 template <>
 struct ExtraWilltopicOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <>
 struct ExtraWilltopicOptions<false, true>
 {
-    typedef std::tuple<
-        comms::option::MsgDoRead,
-        comms::option::NoDefaultFieldsWriteImpl
-    > Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -94,14 +91,14 @@ class WilltopicFieldsBase : public
     comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoDefaultFieldsReadImpl,
+        comms::option::NoReadImpl,
         details::ExtraWilltopicBaseOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoDefaultFieldsReadImpl,
+        comms::option::NoReadImpl,
         details::ExtraWilltopicBaseOptionsT<TOptions>
     > Base;
 
@@ -152,8 +149,10 @@ class WilltopicBase : public
         WilltopicFieldsBase<TMsgBase, TOptions>,
         comms::option::StaticNumIdImpl<TId>,
         comms::option::MsgType<TActual>,
-        comms::option::DispatchImpl,
-        comms::option::MsgDoRefresh,
+        comms::option::NoValidImpl,
+        comms::option::NoLengthImpl,
+        comms::option::HasDoRefresh,
+        comms::option::AssumeFieldsExistence,
         details::ExtraWilltopicOptionsT<TOptions>
     >
 {

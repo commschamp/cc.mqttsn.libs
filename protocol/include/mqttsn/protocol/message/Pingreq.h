@@ -38,23 +38,19 @@ using PingreqFields =
         field::ClientId<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Pingreq : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using PingreqBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PINGREQ>,
         comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Pingreq<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl
-    >
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Pingreq : public PingreqBase<TMsgBase, TOptions, Pingreq>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PINGREQ>,
-        comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Pingreq<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl
-    > Base;
+    typedef PingreqBase<TMsgBase, TOptions, Pingreq> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, clientId);

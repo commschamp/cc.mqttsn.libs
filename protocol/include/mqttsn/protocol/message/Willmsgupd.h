@@ -44,13 +44,13 @@ struct ExtraWillmsgupdOptions
 template <>
 struct ExtraWillmsgupdOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <>
 struct ExtraWillmsgupdOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -65,25 +65,20 @@ using WillmsgupdFields =
         field::WillMsg<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willmsgupd : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using WillmsgupdBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGUPD>,
         comms::option::FieldsImpl<WillmsgupdFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Willmsgupd<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraWillmsgupdOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Willmsgupd : public WillmsgupdBase<TMsgBase, TOptions, Willmsgupd>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLMSGUPD>,
-        comms::option::FieldsImpl<WillmsgupdFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Willmsgupd<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraWillmsgupdOptionsT<TOptions>
-    > Base;
+    typedef WillmsgupdBase<TMsgBase, TOptions, Willmsgupd> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, willMsg);

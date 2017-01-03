@@ -44,13 +44,13 @@ struct ExtraConnectOptions
 template <>
 struct ExtraConnectOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <>
 struct ExtraConnectOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -68,25 +68,20 @@ using ConnectFields =
         field::ClientId<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Connect : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using ConnectBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
         comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Connect<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraConnectOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Connect : public ConnectBase<TMsgBase, TOptions, Connect>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_CONNECT>,
-        comms::option::FieldsImpl<ConnectFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::MsgType<Connect<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraConnectOptionsT<TOptions>
-    > Base;
+    typedef ConnectBase<TMsgBase, TOptions, Connect> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, flags, protocolId, duration, clientId);

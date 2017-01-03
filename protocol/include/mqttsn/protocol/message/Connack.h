@@ -43,13 +43,13 @@ struct ExtraConnackOptions
 template <>
 struct ExtraConnackOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraConnackOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -64,25 +64,20 @@ using ConnackFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Connack : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using ConnackBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_CONNACK>,
         comms::option::FieldsImpl<ConnackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Connack<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraConnackOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Connack : public ConnackBase<TMsgBase, TOptions, Connack>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_CONNACK>,
-        comms::option::FieldsImpl<ConnackFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Connack<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraConnackOptionsT<TOptions>
-    > Base;
+    typedef ConnackBase<TMsgBase, TOptions, Connack> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, returnCode);

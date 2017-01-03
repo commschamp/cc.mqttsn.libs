@@ -44,13 +44,13 @@ struct ExtraAdvertiseOptions
 template <>
 struct ExtraAdvertiseOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraAdvertiseOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -66,25 +66,20 @@ using AdvertiseFields =
         field::Duration<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Advertise : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using AdvertiseBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_ADVERTISE>,
         comms::option::FieldsImpl<AdvertiseFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Advertise<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraAdvertiseOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Advertise : public AdvertiseBase<TMsgBase, TOptions, Advertise>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_ADVERTISE>,
-        comms::option::FieldsImpl<AdvertiseFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Advertise<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraAdvertiseOptionsT<TOptions>
-    > Base;
+    typedef AdvertiseBase<TMsgBase, TOptions, Advertise> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, gwId, duration);

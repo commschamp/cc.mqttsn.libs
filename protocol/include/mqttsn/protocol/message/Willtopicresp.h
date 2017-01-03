@@ -44,13 +44,13 @@ struct ExtraWilltopicupdOptions
 template <>
 struct ExtraWilltopicupdOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraWilltopicupdOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -65,25 +65,20 @@ using WilltopicrespFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Willtopicresp : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using WilltopicrespBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
         comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Willtopicresp<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraWilltopicupdOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Willtopicresp : public WilltopicrespBase<TMsgBase, TOptions, Willtopicresp>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
-        comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::MsgType<Willtopicresp<TMsgBase, TOptions> >,
-        comms::option::DispatchImpl,
-        details::ExtraWilltopicupdOptionsT<TOptions>
-    > Base;
+    typedef WilltopicrespBase<TMsgBase, TOptions, Willtopicresp> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, returnCode);
