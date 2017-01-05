@@ -81,7 +81,7 @@ using ConnectBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Connect : public ConnectBase<TMsgBase, TOptions, Connect>
 {
-    typedef ConnectBase<TMsgBase, TOptions, Connect> Base;
+    typedef ConnectBase<TMsgBase, TOptions, mqttsn::protocol::message::Connect> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, flags, protocolId, duration, clientId);

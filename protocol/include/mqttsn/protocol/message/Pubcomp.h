@@ -49,7 +49,7 @@ using PubcompBase =
 template <typename TMsgBase>
 class Pubcomp : public PubcompBase<TMsgBase, Pubcomp>
 {
-    typedef PubcompBase<TMsgBase, Pubcomp> Base;
+    typedef PubcompBase<TMsgBase, mqttsn::protocol::message::Pubcomp> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, msgId);

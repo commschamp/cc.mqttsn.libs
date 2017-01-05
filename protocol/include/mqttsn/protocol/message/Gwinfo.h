@@ -79,7 +79,7 @@ using GwinfoBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Gwinfo : public GwinfoBase<TMsgBase, TOptions, Gwinfo>
 {
-    typedef GwinfoBase<TMsgBase, TOptions, Gwinfo> Base;
+    typedef GwinfoBase<TMsgBase, TOptions, mqttsn::protocol::message::Gwinfo> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, gwId, gwAdd);

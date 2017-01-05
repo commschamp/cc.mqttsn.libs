@@ -74,7 +74,7 @@ using WilltopicreqBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Willtopicreq : public WilltopicreqBase<TMsgBase, TOptions, Willtopicreq>
 {
-    typedef WilltopicreqBase<TMsgBase, TOptions, Willtopicreq> Base;
+    typedef WilltopicreqBase<TMsgBase, TOptions, mqttsn::protocol::message::Willtopicreq> Base;
 
 public:
     enum FieldIdx

@@ -80,7 +80,7 @@ using WillmsgBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Willmsg : public WillmsgBase<TMsgBase, TOptions, Willmsg>
 {
-    typedef WillmsgBase<TMsgBase, TOptions, Willmsg> Base;
+    typedef WillmsgBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsg> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, willMsg);

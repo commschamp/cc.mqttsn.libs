@@ -79,7 +79,7 @@ using AdvertiseBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Advertise : public AdvertiseBase<TMsgBase, TOptions, Advertise>
 {
-    typedef AdvertiseBase<TMsgBase, TOptions, Advertise> Base;
+    typedef AdvertiseBase<TMsgBase, TOptions, mqttsn::protocol::message::Advertise> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, gwId, duration);

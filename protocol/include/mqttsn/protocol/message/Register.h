@@ -52,7 +52,7 @@ using RegisterBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Register : public RegisterBase<TMsgBase, TOptions, Register>
 {
-    typedef RegisterBase<TMsgBase, TOptions, Register> Base;
+    typedef RegisterBase<TMsgBase, TOptions, mqttsn::protocol::message::Register> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, topicName);

@@ -50,7 +50,7 @@ using PingreqBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Pingreq : public PingreqBase<TMsgBase, TOptions, Pingreq>
 {
-    typedef PingreqBase<TMsgBase, TOptions, Pingreq> Base;
+    typedef PingreqBase<TMsgBase, TOptions, mqttsn::protocol::message::Pingreq> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, clientId);

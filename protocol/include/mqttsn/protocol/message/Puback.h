@@ -51,7 +51,7 @@ using PubackBase =
 template <typename TMsgBase>
 class Puback : public PubackBase<TMsgBase, Puback>
 {
-    typedef PubackBase<TMsgBase, Puback> Base;
+    typedef PubackBase<TMsgBase, mqttsn::protocol::message::Puback> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, returnCode);

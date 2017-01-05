@@ -46,7 +46,7 @@ using PingrespBase =
 template <typename TMsgBase>
 class Pingresp : public PingrespBase<TMsgBase, Pingresp>
 {
-    typedef PingrespBase<TMsgBase, Pingresp> Base;
+    typedef PingrespBase<TMsgBase, mqttsn::protocol::message::Pingresp> Base;
 
 public:
     enum FieldIdx

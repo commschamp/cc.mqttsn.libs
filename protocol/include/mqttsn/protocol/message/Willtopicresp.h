@@ -78,7 +78,7 @@ using WilltopicrespBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Willtopicresp : public WilltopicrespBase<TMsgBase, TOptions, Willtopicresp>
 {
-    typedef WilltopicrespBase<TMsgBase, TOptions, Willtopicresp> Base;
+    typedef WilltopicrespBase<TMsgBase, TOptions, mqttsn::protocol::message::Willtopicresp> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, returnCode);

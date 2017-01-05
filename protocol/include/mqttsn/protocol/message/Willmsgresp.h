@@ -79,7 +79,7 @@ using WillmsgrespBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Willmsgresp : public WillmsgrespBase<TMsgBase, TOptions, Willmsgresp>
 {
-    typedef WillmsgrespBase<TMsgBase, TOptions, Willmsgresp> Base;
+    typedef WillmsgrespBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsgresp> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, returnCode);

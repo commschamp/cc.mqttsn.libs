@@ -77,7 +77,7 @@ using UnsubackBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Unsuback : public UnsubackBase<TMsgBase, TOptions, Unsuback>
 {
-    typedef UnsubackBase<TMsgBase, TOptions, Unsuback> Base;
+    typedef UnsubackBase<TMsgBase, TOptions, mqttsn::protocol::message::Unsuback> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, msgId);

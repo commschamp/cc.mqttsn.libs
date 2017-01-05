@@ -77,7 +77,7 @@ using ConnackBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Connack : public ConnackBase<TMsgBase, TOptions, Connack>
 {
-    typedef ConnackBase<TMsgBase, TOptions, Connack> Base;
+    typedef ConnackBase<TMsgBase, TOptions, mqttsn::protocol::message::Connack> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, returnCode);

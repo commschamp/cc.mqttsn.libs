@@ -51,7 +51,7 @@ using DisconnectBase =
 template <typename TMsgBase>
 class Disconnect : public DisconnectBase<TMsgBase, Disconnect>
 {
-    typedef DisconnectBase<TMsgBase, Disconnect> Base;
+    typedef DisconnectBase<TMsgBase, mqttsn::protocol::message::Disconnect> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, duration);

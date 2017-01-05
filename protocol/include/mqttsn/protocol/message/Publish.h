@@ -53,7 +53,7 @@ using PublishBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Publish : public PublishBase<TMsgBase, TOptions, Publish>
 {
-    typedef PublishBase<TMsgBase, TOptions, Publish> Base;
+    typedef PublishBase<TMsgBase, TOptions, mqttsn::protocol::message::Publish> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, data);

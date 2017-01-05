@@ -49,7 +49,7 @@ using PubrecBase =
 template <typename TMsgBase>
 class Pubrec : public PubrecBase<TMsgBase, Pubrec>
 {
-    typedef PubrecBase<TMsgBase, Pubrec> Base;
+    typedef PubrecBase<TMsgBase, mqttsn::protocol::message::Pubrec> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, msgId);

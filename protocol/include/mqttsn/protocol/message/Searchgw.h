@@ -77,7 +77,7 @@ using SearchgwBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Searchgw : public SearchgwBase<TMsgBase, TOptions, Searchgw>
 {
-    typedef SearchgwBase<TMsgBase, TOptions, Searchgw> Base;
+    typedef SearchgwBase<TMsgBase, TOptions, mqttsn::protocol::message::Searchgw> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, radius);

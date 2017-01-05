@@ -78,7 +78,7 @@ using WillmsgupdBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Willmsgupd : public WillmsgupdBase<TMsgBase, TOptions, Willmsgupd>
 {
-    typedef WillmsgupdBase<TMsgBase, TOptions, Willmsgupd> Base;
+    typedef WillmsgupdBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsgupd> Base;
 
 public:
     COMMS_MSG_FIELDS_ACCESS(Base, willMsg);

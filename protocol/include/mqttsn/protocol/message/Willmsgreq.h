@@ -76,7 +76,7 @@ using WillmsgreqBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Willmsgreq : public WillmsgreqBase<TMsgBase, TOptions, Willmsgreq>
 {
-    typedef WillmsgreqBase<TMsgBase, TOptions, Willmsgreq> Base;
+    typedef WillmsgreqBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsgreq> Base;
 
 public:
     enum FieldIdx
