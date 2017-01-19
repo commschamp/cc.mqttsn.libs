@@ -43,13 +43,13 @@ struct ExtraSearchgwOptions
 template <>
 struct ExtraSearchgwOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <>
 struct ExtraSearchgwOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -64,33 +64,23 @@ using SearchgwFields =
         field::Radius<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Searchgw : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using SearchgwBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SEARCHGW>,
         comms::option::FieldsImpl<SearchgwFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Searchgw<TMsgBase, TOptions> >,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraSearchgwOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Searchgw : public SearchgwBase<TMsgBase, TOptions, Searchgw>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_SEARCHGW>,
-        comms::option::FieldsImpl<SearchgwFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Searchgw<TMsgBase, TOptions> >,
-        details::ExtraSearchgwOptionsT<TOptions>
-    > Base;
+    typedef SearchgwBase<TMsgBase, TOptions, mqttsn::protocol::message::Searchgw> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_radius,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, radius);
 };
 
 }  // namespace message

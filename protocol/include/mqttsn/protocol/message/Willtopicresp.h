@@ -44,13 +44,13 @@ struct ExtraWilltopicupdOptions
 template <>
 struct ExtraWilltopicupdOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraWilltopicupdOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -65,33 +65,23 @@ using WilltopicrespFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Willtopicresp : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using WilltopicrespBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
         comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicresp<TMsgBase, TOptions> >,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraWilltopicupdOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Willtopicresp : public WilltopicrespBase<TMsgBase, TOptions, Willtopicresp>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICRESP>,
-        comms::option::FieldsImpl<WilltopicrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicresp<TMsgBase, TOptions> >,
-        details::ExtraWilltopicupdOptionsT<TOptions>
-    > Base;
+    typedef WilltopicrespBase<TMsgBase, TOptions, mqttsn::protocol::message::Willtopicresp> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_returnCode,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, returnCode);
 };
 
 }  // namespace message

@@ -22,8 +22,8 @@
 
 #include "comms/comms.h"
 #include "mqttsn/protocol/Stack.h"
-#include "mqtt/Message.h"
-#include "mqtt/Stack.h"
+#include "mqtt/protocol/Message.h"
+#include "mqtt/protocol/Stack.h"
 
 class TestMsgHandler;
 
@@ -31,18 +31,16 @@ typedef mqttsn::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
     comms::option::Handler<TestMsgHandler>,
-    comms::option::LengthInfoInterface
+    comms::option::LengthInfoInterface,
+    comms::option::RefreshInterface
 > TestMqttsnMessage;
 
-typedef mqtt::MessageT<
-    comms::option::BigEndian,
+typedef mqtt::protocol::MessageT<
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
-    comms::option::MsgIdType<mqtt::MsgId>,
     comms::option::Handler<TestMsgHandler>,
-    comms::option::RefreshInterface,
-    comms::option::ValidCheckInterface,
-    comms::option::LengthInfoInterface
+    comms::option::LengthInfoInterface,
+    comms::option::RefreshInterface
 > TestMqttMessage;
 
 typedef mqttsn::protocol::message::Advertise<TestMqttsnMessage> AdvertiseMsg_SN;
@@ -74,21 +72,21 @@ typedef mqttsn::protocol::message::Willmsgupd<TestMqttsnMessage> WillmsgupdMsg_S
 typedef mqttsn::protocol::message::Willmsgresp<TestMqttsnMessage> WillmsgrespMsg_SN;
 typedef mqttsn::protocol::Stack<TestMqttsnMessage> TestMqttsnProtStack;
 
-typedef mqtt::message::Connect<TestMqttMessage> ConnectMsg;
-typedef mqtt::message::Connack<TestMqttMessage> ConnackMsg;
-typedef mqtt::message::Publish<TestMqttMessage> PublishMsg;
-typedef mqtt::message::Puback<TestMqttMessage> PubackMsg;
-typedef mqtt::message::Pubrec<TestMqttMessage> PubrecMsg;
-typedef mqtt::message::Pubrel<TestMqttMessage> PubrelMsg;
-typedef mqtt::message::Pubcomp<TestMqttMessage> PubcompMsg;
-typedef mqtt::message::Subscribe<TestMqttMessage> SubscribeMsg;
-typedef mqtt::message::Suback<TestMqttMessage> SubackMsg;
-typedef mqtt::message::Unsubscribe<TestMqttMessage> UnsubscribeMsg;
-typedef mqtt::message::Unsuback<TestMqttMessage> UnsubackMsg;
-typedef mqtt::message::Pingreq<TestMqttMessage> PingreqMsg;
-typedef mqtt::message::Pingresp<TestMqttMessage> PingrespMsg;
-typedef mqtt::message::Disconnect<TestMqttMessage> DisconnectMsg;
-typedef mqtt::Stack<TestMqttMessage> TestMqttProtStack;
+typedef mqtt::protocol::message::Connect<TestMqttMessage> ConnectMsg;
+typedef mqtt::protocol::message::Connack<TestMqttMessage> ConnackMsg;
+typedef mqtt::protocol::message::Publish<TestMqttMessage> PublishMsg;
+typedef mqtt::protocol::message::Puback<TestMqttMessage> PubackMsg;
+typedef mqtt::protocol::message::Pubrec<TestMqttMessage> PubrecMsg;
+typedef mqtt::protocol::message::Pubrel<TestMqttMessage> PubrelMsg;
+typedef mqtt::protocol::message::Pubcomp<TestMqttMessage> PubcompMsg;
+typedef mqtt::protocol::message::Subscribe<TestMqttMessage> SubscribeMsg;
+typedef mqtt::protocol::message::Suback<TestMqttMessage> SubackMsg;
+typedef mqtt::protocol::message::Unsubscribe<TestMqttMessage> UnsubscribeMsg;
+typedef mqtt::protocol::message::Unsuback<TestMqttMessage> UnsubackMsg;
+typedef mqtt::protocol::message::Pingreq<TestMqttMessage> PingreqMsg;
+typedef mqtt::protocol::message::Pingresp<TestMqttMessage> PingrespMsg;
+typedef mqtt::protocol::message::Disconnect<TestMqttMessage> DisconnectMsg;
+typedef mqtt::protocol::Stack<TestMqttMessage> TestMqttProtStack;
 
 using TestMqttsnMsgHandler = comms::GenericHandler<
     TestMqttsnMessage,
@@ -97,7 +95,7 @@ using TestMqttsnMsgHandler = comms::GenericHandler<
 
 using TestMqttMsgHandler = comms::GenericHandler<
     TestMqttMessage,
-    mqtt::AllMessages<TestMqttMessage>
+    mqtt::protocol::AllMessages<TestMqttMessage>
 >;
 
 
@@ -295,7 +293,7 @@ public:
 
 
 
-    DataBuf prepareBrokerConnack(mqtt::message::ConnackResponseCode rc, bool sessionPresent = false);
+    DataBuf prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal rc, bool sessionPresent = false);
     DataBuf prepareBrokerDisconnect();
     DataBuf prepareBrokerPingreq();
     DataBuf prepareBrokerPingresp();
@@ -303,14 +301,14 @@ public:
         const std::string& topic,
         const DataBuf& msgData,
         std::uint16_t packetId,
-        mqtt::field::QosType qos,
+        mqtt::protocol::field::QosVal qos,
         bool retain,
         bool duplicate);
     DataBuf prepareBrokerPuback(std::uint16_t packetId);
     DataBuf prepareBrokerPubrec(std::uint16_t packetId);
     DataBuf prepareBrokerPubrel(std::uint16_t packetId);
     DataBuf prepareBrokerPubcomp(std::uint16_t packetId);
-    DataBuf prepareBrokerSuback(std::uint16_t packetId, mqtt::message::SubackReturnCode rc);
+    DataBuf prepareBrokerSuback(std::uint16_t packetId, mqtt::protocol::field::SubackReturnCode rc);
     DataBuf prepareBrokerUnsuback(std::uint16_t packetId);
 
 

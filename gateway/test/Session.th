@@ -87,7 +87,7 @@ private:
     {
         std::string m_topic;
         DataBuf m_msg;
-        mqtt::field::QosType m_qos = mqtt::field::QosType::AtMostOnceDelivery;
+        mqtt::protocol::field::QosVal m_qos = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
         bool m_retain = false;
     };
 
@@ -1012,57 +1012,49 @@ private:
                     sent = true;
                     TS_TRACE("(BROKER) <-- CONNECT");
 
-                    typedef ConnectMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& flagsField = std::get<MsgType::FieldIdx_Flags>(fields);
-                    auto& flagsMembers = flagsField.value();
-                    auto& lowFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsLow>(flagsMembers);
-                    auto& willQosField = std::get<mqtt::message::ConnectFlagsMemberIdx_WillQos>(flagsMembers);
-                    auto& highFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsHigh>(flagsMembers);
-                    auto& keepAliveField = std::get<MsgType::FieldIdx_KeepAlive>(fields);
-                    auto& clientIdField = std::get<MsgType::FieldIdx_ClientId>(fields);
-                    auto& willTopicField = std::get<MsgType::FieldIdx_WillTopic>(fields);
-                    auto& willMsgField = std::get<MsgType::FieldIdx_WillMessage>(fields);
-                    auto& usernameField = std::get<MsgType::FieldIdx_UserName>(fields);
-                    auto& passwordField = std::get<MsgType::FieldIdx_Password>(fields);
+                    auto fields = msg.fieldsAsStruct();
+                    auto flags = fields.flags.fieldsAsStruct();
 
-                    TS_ASSERT_EQUALS(keepAliveField.value(), keepAlive);
-                    TS_ASSERT_EQUALS(clientIdField.value(), clientId);
-                    TS_ASSERT_EQUALS(lowFlagsField.getBitValue(mqtt::message::ConnectFlagsLowBitIdx_CleanSession), cleanSession);
+                    typedef typename std::decay<decltype(flags.flagsLow)>::type FlagsLowFieldType;
+                    typedef typename std::decay<decltype(flags.flagsHigh)>::type FlagsHighFieldType;
+
+                    TS_ASSERT_EQUALS(fields.keepAlive.value(), keepAlive);
+                    TS_ASSERT_EQUALS(fields.clientId.value(), clientId);
+                    TS_ASSERT_EQUALS(flags.flagsLow.getBitValue(FlagsLowFieldType::BitIdx_cleanSession), cleanSession);
 
                     bool hasWill = ((willInfo != nullptr) && (!willInfo->m_topic.empty()));
-                    TS_ASSERT_EQUALS(lowFlagsField.getBitValue(mqtt::message::ConnectFlagsLowBitIdx_WillFlag), hasWill);
+                    TS_ASSERT_EQUALS(flags.flagsLow.getBitValue(FlagsLowFieldType::BitIdx_willFlag), hasWill);
 
                     if (hasWill) {
-                        TS_ASSERT_EQUALS(willQosField.value(), willInfo->m_qos);
-                        TS_ASSERT_EQUALS(highFlagsField.getBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain), willInfo->m_retain);
-                        TS_ASSERT_EQUALS(willTopicField.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(willMsgField.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(willTopicField.field().value(), willInfo->m_topic);
-                        TS_ASSERT_EQUALS(willMsgField.field().value(), willInfo->m_msg);
+                        TS_ASSERT_EQUALS(flags.willQos.value(), willInfo->m_qos);
+                        TS_ASSERT_EQUALS(flags.flagsHigh.getBitValue(FlagsHighFieldType::BitIdx_willRetain), willInfo->m_retain);
+                        TS_ASSERT_EQUALS(fields.willTopic.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(fields.willMessage.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(fields.willTopic.field().value(), willInfo->m_topic);
+                        TS_ASSERT_EQUALS(fields.willMessage.field().value(), willInfo->m_msg);
                     }
                     else {
-                        TS_ASSERT_EQUALS(willTopicField.getMode(), comms::field::OptionalMode::Missing);
-                        TS_ASSERT_EQUALS(willMsgField.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(fields.willTopic.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(fields.willMessage.getMode(), comms::field::OptionalMode::Missing);
                     }
 
-                    TS_ASSERT_EQUALS(highFlagsField.getBitValue(mqtt::message::ConnectFlagsHighBitIdx_UserNameFlag), !username.empty());
-                    TS_ASSERT_EQUALS(highFlagsField.getBitValue(mqtt::message::ConnectFlagsHighBitIdx_PasswordFlag), !password.empty());
+                    TS_ASSERT_EQUALS(flags.flagsHigh.getBitValue(FlagsHighFieldType::BitIdx_username), !username.empty());
+                    TS_ASSERT_EQUALS(flags.flagsHigh.getBitValue(FlagsHighFieldType::BitIdx_password), !password.empty());
 
                     if (!username.empty()) {
-                        TS_ASSERT_EQUALS(usernameField.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(usernameField.field().value(), username);
+                        TS_ASSERT_EQUALS(fields.userName.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(fields.userName.field().value(), username);
                     }
                     else {
-                        TS_ASSERT_EQUALS(usernameField.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(fields.userName.getMode(), comms::field::OptionalMode::Missing);
                     }
 
                     if (!password.empty()) {
-                        TS_ASSERT_EQUALS(passwordField.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(passwordField.field().value(), password);
+                        TS_ASSERT_EQUALS(fields.password.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(fields.password.field().value(), password);
                     }
                     else {
-                        TS_ASSERT_EQUALS(passwordField.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(fields.password.getMode(), comms::field::OptionalMode::Missing);
                     }
 
                 });
@@ -1158,7 +1150,7 @@ private:
         const std::string& topic,
         const DataBuf& data,
         std::uint16_t packetId,
-        mqtt::field::QosType qos,
+        mqtt::protocol::field::QosVal qos,
         bool retain,
         bool dup)
     {
@@ -1174,29 +1166,21 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBLISH");
-                    typedef PublishMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& flagsField = std::get<MsgType::FieldIdx_PublishFlags>(fields);
-                    auto& flagsMembers = flagsField.value();
-                    auto& retainField = std::get<mqtt::message::PublishActualFlagIdx_Retain>(flagsMembers);
-                    auto& qosField = std::get<mqtt::message::PublishActualFlagIdx_QoS>(flagsMembers);
-                    auto& dupField = std::get<mqtt::message::PublishActualFlagIdx_Dup>(flagsMembers);
-                    auto& topicField = std::get<MsgType::FieldIdx_Topic>(fields);
-                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-                    auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
+                    auto fields = msg.fieldsAsStruct();
+                    auto flags = fields.publishFlags.fieldsAsStruct();
 
-                    TS_ASSERT_EQUALS(retainField.getBitValue(0), retain);
-                    TS_ASSERT_EQUALS(qosField.value(), qos);
-                    TS_ASSERT_EQUALS(dupField.getBitValue(0), dup);
-                    TS_ASSERT_EQUALS(topicField.value(), topic);
-                    TS_ASSERT_EQUALS(payloadField.value(), data);
+                    TS_ASSERT_EQUALS(flags.retain.getBitValue(0), retain);
+                    TS_ASSERT_EQUALS(flags.qos.value(), qos);
+                    TS_ASSERT_EQUALS(flags.dup.getBitValue(0), dup);
+                    TS_ASSERT_EQUALS(fields.topic.value(), topic);
+                    TS_ASSERT_EQUALS(fields.payload.value(), data);
 
-                    if (qos == mqtt::field::QosType::AtMostOnceDelivery) {
-                        TS_ASSERT_EQUALS(packetIdField.getMode(), comms::field::OptionalMode::Missing);
+                    if (qos == mqtt::protocol::field::QosVal::AtMostOnceDelivery) {
+                        TS_ASSERT_EQUALS(fields.packetId.getMode(), comms::field::OptionalMode::Missing);
                     }
                     else {
-                        TS_ASSERT_EQUALS(packetIdField.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(packetIdField.field().value(), packetId);
+                        TS_ASSERT_EQUALS(fields.packetId.getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(fields.packetId.field().value(), packetId);
                     }
 
                 });
@@ -1225,11 +1209,8 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBACK");
-                    typedef PubackMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-
-                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                    auto fields = msg.fieldsAsStruct();
+                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1256,11 +1237,8 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBREC");
-                    typedef PubrecMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-
-                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                    auto fields = msg.fieldsAsStruct();
+                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1287,11 +1265,8 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBREL");
-                    typedef PubrecMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-
-                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                    auto fields = msg.fieldsAsStruct();
+                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1318,11 +1293,8 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBCOMP");
-                    typedef PubcompMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-
-                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
+                    auto fields = msg.fieldsAsStruct();
+                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1336,7 +1308,7 @@ private:
         State& state,
         TestMsgHandler& handler,
         const std::string& topic,
-        mqtt::field::QosType qos,
+        mqtt::protocol::field::QosVal qos,
         std::uint16_t packetId)
     {
         if (state.m_sentToBroker.empty()) {
@@ -1351,13 +1323,10 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- SUBSCRIBE");
-                    typedef SubscribeMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-                    auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
+                    auto fields = msg.fieldsAsStruct();
 
-                    TS_ASSERT(packetIdField.value() == packetId);
-                    auto& payload = payloadField.value();
+                    TS_ASSERT(fields.packetId.value() == packetId);
+                    auto& payload = fields.payload.value();
                     if (payload.empty()) {
                         TS_FAIL("Payload musn't be empty");
                         return;
@@ -1397,13 +1366,10 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- UNSUBSCRIBE");
-                    typedef SubscribeMsg MsgType;
-                    auto& fields = msg.fields();
-                    auto& packetIdField = std::get<MsgType::FieldIdx_PacketId>(fields);
-                    auto& payloadField = std::get<MsgType::FieldIdx_Payload>(fields);
+                    auto fields = msg.fieldsAsStruct();
 
-                    TS_ASSERT_EQUALS(packetIdField.value(), packetId);
-                    auto& payload = payloadField.value();
+                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
+                    auto& payload = fields.payload.value();
                     if (payload.empty()) {
                         TS_FAIL("Payload musn't be empty");
                         return;
@@ -1489,18 +1455,18 @@ private:
         }
     }
 
-    static mqttsn::protocol::field::QosType translateQos(mqtt::field::QosType val)
+    static mqttsn::protocol::field::QosType translateQos(mqtt::protocol::field::QosVal val)
     {
         return static_cast<mqttsn::protocol::field::QosType>(val);
     }
 
-    static mqtt::field::QosType translateQos(mqttsn::protocol::field::QosType val)
+    static mqtt::protocol::field::QosVal translateQos(mqttsn::protocol::field::QosType val)
     {
         if (val == mqttsn::protocol::field::QosType::NoGwPublish) {
-            return mqtt::field::QosType::AtMostOnceDelivery;
+            return mqtt::protocol::field::QosVal::AtMostOnceDelivery;
         }
 
-        return static_cast<mqtt::field::QosType>(val);
+        return static_cast<mqtt::protocol::field::QosVal>(val);
     }
 
     static void doTick(State& state, mqttsn::gateway::Session& session, unsigned ms = 0)
@@ -1577,7 +1543,7 @@ private:
         verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, cleanSession, willInfo, username, pass);
         verifyNoOtherEvent(state, handler);
 
-        auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+        auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
         dataFromBroker(session, connackMsg, "CONNACK");
         verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
         if (expectClientReport) {
@@ -1628,7 +1594,7 @@ void SessionTest::test2()
     verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession);
     verifyNoOtherEvent(state, handler);
 
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyConnectedClient(state, ClientId);
@@ -1653,7 +1619,7 @@ void SessionTest::test3()
     verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession);
     verifyNoOtherEvent(state, handler);
 
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyConnectedClient(state, ClientId);
@@ -1726,7 +1692,7 @@ void SessionTest::test4()
     WillInfo willInfo;
     willInfo.m_topic = WillTopic;
     willInfo.m_msg = WillMsg;
-    willInfo.m_qos = mqtt::field::QosType::AtLeastOnceDelivery;
+    willInfo.m_qos = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
     willInfo.m_retain = WillRetain;
 
     state.m_elapsed.push_back(1000);
@@ -1734,7 +1700,7 @@ void SessionTest::test4()
     dataFromClient(*session, willmsgMsg, "WILLMSG");
     verifySentToBroker_ConnectMsg(state, handler, ClientId, KeepAlive, CleanSession, &willInfo, Username, Password);
 
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::BadUsernameOrPassword);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::BadUsernameOrPassword);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
     verifyNoOtherEvent(state, handler);
@@ -1852,7 +1818,7 @@ void SessionTest::test8()
 
     static const std::string WillTopic("will/topic");
     static const DataBuf WillMsg = {0x1, 0x2, 0x3};
-    static const auto WillQos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const auto WillQos = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
     static const bool WillRetain = false;
     WillInfo willInfo;
     willInfo.m_topic = WillTopic;
@@ -1898,7 +1864,7 @@ void SessionTest::test8()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
@@ -1975,7 +1941,7 @@ void SessionTest::test11()
 
     static const DataBuf Data = {0, 1, 2, 3, 4 };
     static const std::uint16_t MsgId = 1234;
-    static const auto Qos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const auto Qos = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
     static const bool Retain = false;
     static const bool Dup = false;
     auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, Dup);
@@ -1998,7 +1964,7 @@ void SessionTest::test12()
 
     static const DataBuf Data = {0, 1, 2, 3, 4 };
     static const std::uint16_t MsgId = 1234;
-    static const auto Qos = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const auto Qos = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
     static const bool Retain = false;
     auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
     dataFromBroker(*session, publishMsg, "PUBLISH");
@@ -2040,7 +2006,7 @@ void SessionTest::test13()
     static const std::string Topic("topic/bla/bla");
     static const DataBuf Data = {0, 1, 2, 3, 4};
     static const std::uint16_t MsgId = 0x1234;
-    static const auto Qos = mqtt::field::QosType::ExactlyOnceDelivery;
+    static const auto Qos = mqtt::protocol::field::QosVal::ExactlyOnceDelivery;
     static const bool Retain = true;
 
     auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
@@ -2110,7 +2076,7 @@ void SessionTest::test14()
     static const std::string Topic("topic/bla/bla");
     static const DataBuf Data = {0, 1, 2, 3, 4};
     static const std::uint16_t MsgId = 0x1234;
-    static const auto Qos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const auto Qos = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
     static const bool Retain = true;
 
     auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
@@ -2131,7 +2097,7 @@ void SessionTest::test14()
     verifySentToClient_PublishMsg(state, handler, topicId, Data, mqttsn::protocol::field::TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
     verifyNoOtherEvent(state, handler);
 
-    static const auto Qos2 = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const auto Qos2 = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
     publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos2, Retain, false);
     dataFromBroker(*session, publishMsg, "PUBLISH");
     verifySentToBroker_PubackMsg(state, handler, MsgId);
@@ -2170,7 +2136,7 @@ void SessionTest::test15()
     static const std::string Topic("topic/bla/bla");
     static const DataBuf Data = {0, 1, 2, 3, 4};
     static const std::uint16_t MsgId = 0x1234;
-    static const auto Qos = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const auto Qos = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
     static const bool Retain = false;
 
     auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
@@ -2253,7 +2219,7 @@ void SessionTest::test16()
 
     static const DataBuf Data = {0, 1, 2, 3, 4 };
     static const std::uint16_t MsgId = 1234;
-    static const auto Qos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const auto Qos = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
     static const bool Retain = false;
 
     state.m_elapsed.push_back(1000);
@@ -2464,9 +2430,9 @@ void SessionTest::test19()
     static const DataBuf Data2 = {10, 11, 12, 13, 14, 15, 16};
     static const DataBuf Data3 = {20, 21, 22, 23, 24, 25, 26};
     static const DataBuf Data4 = {30, 31, 32, 33, 34, 35, 36};
-    static const auto Qos0 = mqtt::field::QosType::AtMostOnceDelivery;
-    static const auto Qos1 = mqtt::field::QosType::AtLeastOnceDelivery;
-    static const auto Qos2 = mqtt::field::QosType::ExactlyOnceDelivery;
+    static const auto Qos0 = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
+    static const auto Qos1 = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
+    static const auto Qos2 = mqtt::protocol::field::QosVal::ExactlyOnceDelivery;
     static const bool Retain = true;
     static const bool Dup = false;
 
@@ -2602,7 +2568,7 @@ void SessionTest::test21()
     verifySentToBroker_SubscribeMsg(state, handler, PredefinedTopic, translateQos(Qos), SubMsgId1);
     verifyNoOtherEvent(state, handler);
 
-    auto subackMsg1 = handler.prepareBrokerSuback(SubMsgId1, mqtt::message::SubackReturnCode::SuccessQos2);
+    auto subackMsg1 = handler.prepareBrokerSuback(SubMsgId1, mqtt::protocol::field::SubackReturnCode::SuccessQos2);
     dataFromBroker(*session, subackMsg1, "SUBACK");
     verifySentToClient_SubackMsg(state, handler, PredefinedTopicId, SubMsgId1, Qos, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
@@ -2631,7 +2597,7 @@ void SessionTest::test21()
     verifySentToBroker_SubscribeMsg(state, handler, Topic, translateQos(Qos), SubMsgId3);
     verifyNoOtherEvent(state, handler);
 
-    auto subackMsg2 = handler.prepareBrokerSuback(SubMsgId3, mqtt::message::SubackReturnCode::SuccessQos1);
+    auto subackMsg2 = handler.prepareBrokerSuback(SubMsgId3, mqtt::protocol::field::SubackReturnCode::SuccessQos1);
     dataFromBroker(*session, subackMsg2, "SUBACK");
     verifySentToClient_SubackMsg(state, handler, topicId, SubMsgId3, mqttsn::protocol::field::QosType::AtLeastOnceDelivery, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
@@ -2642,7 +2608,7 @@ void SessionTest::test21()
     verifySentToBroker_SubscribeMsg(state, handler, Topic, translateQos(Qos), SubMsgId4);
     verifyNoOtherEvent(state, handler);
 
-    auto subackMsg3 = handler.prepareBrokerSuback(SubMsgId4, mqtt::message::SubackReturnCode::SuccessQos2);
+    auto subackMsg3 = handler.prepareBrokerSuback(SubMsgId4, mqtt::protocol::field::SubackReturnCode::SuccessQos2);
     dataFromBroker(*session, subackMsg3, "SUBACK");
     verifySentToClient_SubackMsg(state, handler, topicId, SubMsgId4, Qos, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
@@ -2694,7 +2660,7 @@ void SessionTest::test22()
 
     static const std::string WillTopic1("will/topic/1");
     static const DataBuf WillData1 = {0, 1, 2};
-    static const auto WillQos1 = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const auto WillQos1 = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
     static const bool WillRetain1 = true;
     WillInfo will1;
     will1.m_topic = WillTopic1;
@@ -2720,7 +2686,7 @@ void SessionTest::test23()
 
     static const std::string WillTopic1("will/topic/1");
     static const DataBuf WillData1 = {0, 1, 2};
-    static const auto WillQos1 = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const auto WillQos1 = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
     static const bool WillRetain1 = true;
     WillInfo will1;
     will1.m_topic = WillTopic1;
@@ -2761,12 +2727,12 @@ void SessionTest::test23()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto connackMsg1 = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted, true);
+    auto connackMsg1 = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted, true);
     dataFromBroker(*session, connackMsg1, "CONNACK");
     verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
 
-    static const auto WillQos2 = mqtt::field::QosType::ExactlyOnceDelivery;
+    static const auto WillQos2 = mqtt::protocol::field::QosVal::ExactlyOnceDelivery;
     auto willTopicUpdMsg3 = handler.prepareClientWilltopicupd(WillTopic2, translateQos(WillQos2), WillRetain1);
     dataFromClient(*session, willTopicUpdMsg3, "WILLTOPICUPD");
     verifySentToBroker_DisconnectMsg(state, handler);
@@ -2790,7 +2756,7 @@ void SessionTest::test23()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto connackMsg2 = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::BadUsernameOrPassword, false);
+    auto connackMsg2 = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::BadUsernameOrPassword, false);
     dataFromBroker(*session, connackMsg2, "CONNACK");
     verifySentToClient_WilltopicrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
     verifySentToClient_DisconnectMsg(state, handler);
@@ -2843,7 +2809,7 @@ void SessionTest::test24()
 
     static const std::string WillTopic("will/topic");
     static const DataBuf WillData1 = {0, 1, 2};
-    static const auto WillQos = mqtt::field::QosType::AtLeastOnceDelivery;
+    static const auto WillQos = mqtt::protocol::field::QosVal::AtLeastOnceDelivery;
     static const bool WillRetain = true;
 
     WillInfo will;
@@ -2881,7 +2847,7 @@ void SessionTest::test24()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto connackMsg1 = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted, true);
+    auto connackMsg1 = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted, true);
     dataFromBroker(*session, connackMsg1, "CONNACK");
     verifySentToClient_WillmsgrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyNoOtherEvent(state, handler);
@@ -2905,7 +2871,7 @@ void SessionTest::test24()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto connackMsg2 = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted, false);
+    auto connackMsg2 = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted, false);
     dataFromBroker(*session, connackMsg2, "CONNACK");
     verifySentToClient_WillmsgrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
     verifySentToClient_DisconnectMsg(state, handler);
@@ -2934,7 +2900,7 @@ void SessionTest::test24()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto connackMsg3 = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::NotAuthorized, false);
+    auto connackMsg3 = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::NotAuthorized, false);
     dataFromBroker(*session, connackMsg3, "CONNACK");
     verifySentToClient_WillmsgrespMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_NotSupported);
     verifySentToClient_DisconnectMsg(state, handler);
@@ -2972,7 +2938,7 @@ void SessionTest::test25()
 
     static const DataBuf Data = {0, 1, 2, 3, 4 };
     static const std::uint16_t MsgId = 1234;
-    static const auto Qos = mqtt::field::QosType::AtMostOnceDelivery;
+    static const auto Qos = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
     static const bool Retain = false;
 
     state.m_elapsed.push_back(1000);
@@ -3050,15 +3016,15 @@ void SessionTest::test26()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted, false);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted, false);
     dataFromBroker(*session, connackMsg, "CONNACK");
-    verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
-    verifySentToBroker_PublishMsg(state, handler, Topic, Data2, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
+    verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::protocol::field::QosVal::AtMostOnceDelivery, false, false);
+    verifySentToBroker_PublishMsg(state, handler, Topic, Data2, 0, mqtt::protocol::field::QosVal::AtMostOnceDelivery, false, false);
     verifyConnectedClient(state, ClientId);
     verifyNoOtherEvent(state, handler);
 
     dataFromClient(*session, pub1, "PUBLISH");
-    verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::field::QosType::AtMostOnceDelivery, false, false);
+    verifySentToBroker_PublishMsg(state, handler, Topic, Data1, 0, mqtt::protocol::field::QosVal::AtMostOnceDelivery, false, false);
     verifyNoOtherEvent(state, handler);
 }
 
@@ -3080,7 +3046,7 @@ void SessionTest::test27()
     verifySentToBroker_ConnectMsg(state, handler, ClientId, DefaultKeepAlivePeriod, true);
     verifyNoOtherEvent(state, handler);
 
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyConnectedClient(state, ClientId);
@@ -3114,7 +3080,7 @@ void SessionTest::test28()
     verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, true);
     verifyNoOtherEvent(state, handler);
 
-    auto connackMsg = handler.prepareBrokerConnack(mqtt::message::ConnackResponseCode::Accepted);
+    auto connackMsg = handler.prepareBrokerConnack(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, mqttsn::protocol::field::ReturnCodeVal_Accepted);
     verifyConnectedClient(state, DefaultClientId);

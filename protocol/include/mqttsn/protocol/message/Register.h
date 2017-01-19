@@ -40,33 +40,22 @@ using RegisterFields =
         field::TopicName<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Register : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using RegisterBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
         comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Register<TMsgBase, TOptions> >
-    >
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Register : public RegisterBase<TMsgBase, TOptions, Register>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_REGISTER>,
-        comms::option::FieldsImpl<RegisterFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Register<TMsgBase, TOptions> >
-    > Base;
+    typedef RegisterBase<TMsgBase, TOptions, mqttsn::protocol::message::Register> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_topicId,
-        FieldIdx_msgId,
-        FieldIdx_topicName,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, topicName);
 };
 
 }  // namespace message

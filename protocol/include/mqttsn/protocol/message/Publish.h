@@ -41,34 +41,22 @@ using PublishFields =
         field::Data<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Publish : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using PublishBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
         comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Publish<TMsgBase, TOptions> >
-    >
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Publish : public PublishBase<TMsgBase, TOptions, Publish>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PUBLISH>,
-        comms::option::FieldsImpl<PublishFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Publish<TMsgBase, TOptions> >
-    > Base;
+    typedef PublishBase<TMsgBase, TOptions, mqttsn::protocol::message::Publish> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_flags,
-        FieldIdx_topicId,
-        FieldIdx_msgId,
-        FieldIdx_data,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, data);
 };
 
 }  // namespace message

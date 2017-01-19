@@ -43,13 +43,13 @@ struct ExtraUnsubackOptions
 template <>
 struct ExtraUnsubackOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraUnsubackOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -64,33 +64,23 @@ using UnsubackFields =
         field::MsgId<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Unsuback : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using UnsubackBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
         comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Unsuback<TMsgBase, TOptions> >,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraUnsubackOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Unsuback : public UnsubackBase<TMsgBase, TOptions, Unsuback>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_UNSUBACK>,
-        comms::option::FieldsImpl<UnsubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Unsuback<TMsgBase, TOptions> >,
-        details::ExtraUnsubackOptionsT<TOptions>
-    > Base;
+    typedef UnsubackBase<TMsgBase, TOptions, mqttsn::protocol::message::Unsuback> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_msgId,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, msgId);
 };
 
 }  // namespace message

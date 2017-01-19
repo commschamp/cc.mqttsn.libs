@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 3.0)
 project ("mqttsn")
 
 option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
@@ -110,7 +110,7 @@ set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
 macro (externals install_dir build_cc mqtt_headers)
         include(ExternalProject)
         
-        set (cc_tag "v0.11")
+        set (cc_tag "v0.12")
         set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
         set (cc_src_dir "${cc_main_dir}/src")
         set (cc_bin_dir "${cc_main_dir}/build")
@@ -147,7 +147,7 @@ macro (externals install_dir build_cc mqtt_headers)
         set (CC_COMMS_FOUND TRUE)
         
         if (${mqtt_headers})
-            set (cc_mqtt_tag "v0.4.1")
+            set (cc_mqtt_tag "v0.5")
             ExternalProject_Add(
                 "${CC_MQTT_EXTERNAL_TGT}"
                 PREFIX "${cc_mqtt_bin_dir}"

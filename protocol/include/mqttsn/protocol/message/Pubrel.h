@@ -37,31 +37,22 @@ using PubrelFields =
         field::MsgId<TFieldBase>
     >;
 
-template <typename TMsgBase>
-class Pubrel : public
+template <typename TMsgBase, template<class> class TActual>
+using PubrelBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PUBREL>,
         comms::option::FieldsImpl<PubrelFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pubrel<TMsgBase> >
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Pubrel : public PubrelBase<TMsgBase, Pubrel>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PUBREL>,
-        comms::option::FieldsImpl<PubrelFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pubrel<TMsgBase> >
-    > Base;
+    typedef PubrelBase<TMsgBase, mqttsn::protocol::message::Pubrel> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_msgId,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, msgId);
 };
 
 }  // namespace message

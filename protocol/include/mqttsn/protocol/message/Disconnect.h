@@ -39,31 +39,22 @@ using DisconnectFields =
         >
     >;
 
-template <typename TMsgBase>
-class Disconnect : public
+template <typename TMsgBase, template<class> class TActual>
+using DisconnectBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_DISCONNECT>,
         comms::option::FieldsImpl<DisconnectFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Disconnect<TMsgBase> >
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Disconnect : public DisconnectBase<TMsgBase, Disconnect>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_DISCONNECT>,
-        comms::option::FieldsImpl<DisconnectFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Disconnect<TMsgBase> >
-    > Base;
+    typedef DisconnectBase<TMsgBase, mqttsn::protocol::message::Disconnect> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_duration,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, duration);
 };
 
 }  // namespace message

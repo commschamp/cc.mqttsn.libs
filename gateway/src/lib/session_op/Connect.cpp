@@ -215,7 +215,7 @@ void Connect::handle(ConnackMsg& msg)
 
     typedef ConnackMsg MsgType;
     auto& fields = msg.fields();
-    auto& responseField = std::get<MsgType::FieldIdx_Response>(fields);
+    auto& responseField = std::get<MsgType::FieldIdx_response>(fields);
     processAck(responseField.value());
 }
 
@@ -232,7 +232,7 @@ void Connect::doNextStep()
     ++m_internalState.m_attempt;
 
     if (m_internalState.m_waitingForReconnect) {
-        processAck(mqtt::message::ConnackResponseCode::ServerUnavailable);
+        processAck(mqtt::protocol::field::ConnackResponseCodeVal::ServerUnavailable);
         termRequest();
         return;
     }
@@ -245,7 +245,7 @@ void Connect::doNextStep()
         auto& st = state();
         do {
             if ((!st.m_clientId.empty()) && (st.m_clientId != m_clientId)) {
-                processAck(mqtt::message::ConnackResponseCode::IdentifierRejected);
+                processAck(mqtt::protocol::field::ConnackResponseCodeVal::IdentifierRejected);
                 return;
             }
 
@@ -265,7 +265,7 @@ void Connect::doNextStep()
 
             if (st.m_pendingClientDisconnect) {
                 // Emulate successful connection, Disconnect will be sent from PubSend op
-                processAck(mqtt::message::ConnackResponseCode::Accepted);
+                processAck(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
                 return;
             }
 
@@ -282,12 +282,12 @@ void Connect::doNextStep()
                 st.m_regMgr.clearRegistrations();
             }
 
-            processAck(mqtt::message::ConnackResponseCode::Accepted);
+            processAck(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
             return;
         } while (false);
 
         if (!st.m_brokerConnected) {
-            processAck(mqtt::message::ConnackResponseCode::ServerUnavailable);
+            processAck(mqtt::protocol::field::ConnackResponseCodeVal::ServerUnavailable);
             return;
         }
 
@@ -330,49 +330,41 @@ void Connect::doNextStep()
 void Connect::forwardConnectionReq()
 {
     ConnectMsg msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_Flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& lowFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsLow>(flagsMembers);
-    auto& highFlagsField = std::get<mqtt::message::ConnectFlagsMemberIdx_FlagsHigh>(flagsMembers);
-    auto& keepAliveField = std::get<decltype(msg)::FieldIdx_KeepAlive>(fields);
-    auto& clientIdField = std::get<decltype(msg)::FieldIdx_ClientId>(fields);
+    auto fields = msg.fieldsAsStruct();
+    auto flags = fields.flags.fieldsAsStruct();
 
-    clientIdField.value() = m_clientId;
-    keepAliveField.value() = m_keepAlive;
-    lowFlagsField.setBitValue(mqtt::message::ConnectFlagsLowBitIdx_CleanSession, m_clean);
+    typedef typename std::decay<decltype(flags.flagsLow)>::type LowFlagsFieldType;
+    typedef typename std::decay<decltype(flags.flagsHigh)>::type HighFlagsFieldType;
+
+    fields.clientId.value() = m_clientId;
+    fields.keepAlive.value() = m_keepAlive;
+    flags.flagsLow.setBitValue(LowFlagsFieldType::BitIdx_cleanSession, m_clean);
 
     if (!m_will.m_topic.empty()) {
-        auto& willTopicField = std::get<decltype(msg)::FieldIdx_WillTopic>(fields);
-        auto& willMsgField = std::get<decltype(msg)::FieldIdx_WillMessage>(fields);
-        auto& willQosField = std::get<mqtt::message::ConnectFlagsMemberIdx_WillQos>(flagsMembers);
-
-        lowFlagsField.setBitValue(mqtt::message::ConnectFlagsLowBitIdx_WillFlag, true);
-        willTopicField.field().value() = m_will.m_topic;
-        willMsgField.field().value() = m_will.m_msg;
-        willQosField.value() = translateQosForBroker(m_will.m_qos);
-        highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_WillRetain, m_will.m_retain);
+        flags.flagsLow.setBitValue(LowFlagsFieldType::BitIdx_willFlag, true);
+        fields.willTopic.field().value() = m_will.m_topic;
+        fields.willMessage.field().value() = m_will.m_msg;
+        flags.willQos.value() = translateQosForBroker(m_will.m_qos);
+        flags.flagsHigh.setBitValue(HighFlagsFieldType::BitIdx_willRetain, m_will.m_retain);
     }
 
     auto& username = m_authInfo.first;
     if (!username.empty()) {
-        auto& usernameField = std::get<decltype(msg)::FieldIdx_UserName>(fields);
-        usernameField.field().value() = username;
-        highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_UserNameFlag, true);
+        fields.userName.field().value() = username;
+        flags.flagsHigh.setBitValue(HighFlagsFieldType::BitIdx_username, true);
 
         auto& password = m_authInfo.second;
         if (!password.empty()) {
-            auto& passwordField = std::get<decltype(msg)::FieldIdx_Password>(fields);
-            passwordField.field().value() = password;
-            highFlagsField.setBitValue(mqtt::message::ConnectFlagsHighBitIdx_PasswordFlag, true);
+            fields.password.field().value() = password;
+            flags.flagsHigh.setBitValue(HighFlagsFieldType::BitIdx_password, true);
         }
     }
 
-    msg.refresh();
+    msg.doRefresh();
     sendToBroker(msg);
 }
 
-void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
+void Connect::processAck(mqtt::protocol::field::ConnackResponseCodeVal respCode)
 {
     static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
         /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
@@ -386,7 +378,7 @@ void Connect::processAck(mqtt::message::ConnackResponseCode respCode)
     static const std::size_t RetCodeMapSize =
                         std::extent<decltype(RetCodeMap)>::value;
 
-    static_assert(RetCodeMapSize == (std::size_t)mqtt::message::ConnackResponseCode::NumOfValues,
+    static_assert(RetCodeMapSize == (std::size_t)mqtt::protocol::field::ConnackResponseCodeVal::NumOfValues,
         "Incorrect map");
 
     auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;

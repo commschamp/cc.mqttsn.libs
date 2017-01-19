@@ -43,13 +43,13 @@ struct ExtraSubackOptions
 template <>
 struct ExtraSubackOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraSubackOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -67,36 +67,23 @@ using SubackFields =
         field::ReturnCode<TFieldBase>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Suback : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using SubackBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
         comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Suback<TMsgBase, TOptions> >,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraSubackOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Suback : public SubackBase<TMsgBase, TOptions, Suback>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_SUBACK>,
-        comms::option::FieldsImpl<SubackFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Suback<TMsgBase, TOptions> >,
-        details::ExtraSubackOptionsT<TOptions>
-    > Base;
+    typedef SubackBase<TMsgBase, TOptions, mqttsn::protocol::message::Suback> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_flags,
-        FieldIdx_topicId,
-        FieldIdx_msgId,
-        FieldIdx_returnCode,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, returnCode);
 };
 
 }  // namespace message

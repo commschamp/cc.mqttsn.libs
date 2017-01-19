@@ -34,21 +34,19 @@ namespace message
 template <typename TFieldBase>
 using PingrespFields = std::tuple<>;
 
-template <typename TMsgBase>
-class Pingresp : public
+template <typename TMsgBase, template<class> class TActual>
+using PingrespBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PINGRESP>,
         comms::option::FieldsImpl<PingrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pingresp<TMsgBase> >
-    >
+        comms::option::MsgType<TActual<TMsgBase> >
+    >;
+
+template <typename TMsgBase>
+class Pingresp : public PingrespBase<TMsgBase, Pingresp>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PINGRESP>,
-        comms::option::FieldsImpl<PingrespFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Pingresp<TMsgBase> >
-    > Base;
+    typedef PingrespBase<TMsgBase, mqttsn::protocol::message::Pingresp> Base;
 
 public:
     enum FieldIdx

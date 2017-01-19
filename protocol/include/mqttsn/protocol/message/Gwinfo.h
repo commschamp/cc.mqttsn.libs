@@ -44,13 +44,13 @@ struct ExtraGwinfoOptions
 template <>
 struct ExtraGwinfoOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraGwinfoOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -66,34 +66,23 @@ using GwinfoFields =
         field::GwAdd<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Gwinfo : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using GwinfoBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
         comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraGwinfoOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Gwinfo : public GwinfoBase<TMsgBase, TOptions, Gwinfo>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_GWINFO>,
-        comms::option::FieldsImpl<GwinfoFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Gwinfo<TMsgBase, TOptions> >,
-        details::ExtraGwinfoOptionsT<TOptions>
-    > Base;
+    typedef GwinfoBase<TMsgBase, TOptions, mqttsn::protocol::message::Gwinfo> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_gwId,
-        FieldIdx_gwAdd,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, gwId, gwAdd);
 };
 
 }  // namespace message

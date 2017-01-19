@@ -43,13 +43,13 @@ struct ExtraWilltopicreqOptions
 template <>
 struct ExtraWilltopicreqOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <>
 struct ExtraWilltopicreqOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <typename TOpts>
@@ -61,23 +61,20 @@ using ExtraWilltopicreqOptionsT =
 template <typename TFieldBase>
 using WilltopicreqFields = std::tuple<>;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Willtopicreq : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using WilltopicreqBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICREQ>,
         comms::option::FieldsImpl<WilltopicreqFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicreq<TMsgBase, TOptions> >,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraWilltopicreqOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Willtopicreq : public WilltopicreqBase<TMsgBase, TOptions, Willtopicreq>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLTOPICREQ>,
-        comms::option::FieldsImpl<WilltopicreqFields<typename TMsgBase::Field> >,
-        comms::option::DispatchImpl<Willtopicreq<TMsgBase, TOptions> >,
-        details::ExtraWilltopicreqOptionsT<TOptions>
-    > Base;
+    typedef WilltopicreqBase<TMsgBase, TOptions, mqttsn::protocol::message::Willtopicreq> Base;
 
 public:
     enum FieldIdx

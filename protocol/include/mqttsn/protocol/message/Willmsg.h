@@ -45,13 +45,13 @@ struct ExtraWillmsgOptions
 template <>
 struct ExtraWillmsgOptions<true, false>
 {
-    typedef comms::option::NoDefaultFieldsReadImpl Type;
+    typedef comms::option::NoReadImpl Type;
 };
 
 template <>
 struct ExtraWillmsgOptions<false, true>
 {
-    typedef comms::option::NoDefaultFieldsWriteImpl Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -67,33 +67,23 @@ using WillmsgFields =
         field::WillMsg<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class Willmsg : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using WillmsgBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
         comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >,
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >,
         details::ExtraWillmsgOptionsT<TOptions>
-    >
+    >;
+
+template <typename TMsgBase, typename TOptions = ParsedOptions<> >
+class Willmsg : public WillmsgBase<TMsgBase, TOptions, Willmsg>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_WILLMSG>,
-        comms::option::FieldsImpl<WillmsgFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Willmsg<TMsgBase, TOptions> >,
-        details::ExtraWillmsgOptionsT<TOptions>
-    > Base;
+    typedef WillmsgBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsg> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_willMsg,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, willMsg);
 };
 
 }  // namespace message

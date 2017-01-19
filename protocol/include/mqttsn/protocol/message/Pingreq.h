@@ -38,31 +38,22 @@ using PingreqFields =
         field::ClientId<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
-class Pingreq : public
+template <typename TMsgBase, typename TOptions, template<class, class> class TActual>
+using PingreqBase =
     comms::MessageBase<
         TMsgBase,
         comms::option::StaticNumIdImpl<MsgTypeId_PINGREQ>,
         comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Pingreq<TMsgBase, TOptions> >
-    >
+        comms::option::MsgType<TActual<TMsgBase, TOptions> >
+    >;
+
+template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
+class Pingreq : public PingreqBase<TMsgBase, TOptions, Pingreq>
 {
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::StaticNumIdImpl<MsgTypeId_PINGREQ>,
-        comms::option::FieldsImpl<PingreqFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::DispatchImpl<Pingreq<TMsgBase, TOptions> >
-    > Base;
+    typedef PingreqBase<TMsgBase, TOptions, mqttsn::protocol::message::Pingreq> Base;
 
 public:
-    enum FieldIdx
-    {
-        FieldIdx_clientId,
-        FieldIdx_numOfValues
-    };
-
-    static_assert(std::tuple_size<typename Base::AllFields>::value == FieldIdx_numOfValues,
-        "Number of fields is incorrect");
+    COMMS_MSG_FIELDS_ACCESS(Base, clientId);
 };
 
 }  // namespace message
