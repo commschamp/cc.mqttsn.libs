@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -81,10 +81,10 @@ using ConnectBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Connect : public ConnectBase<TMsgBase, TOptions, Connect>
 {
-    typedef ConnectBase<TMsgBase, TOptions, mqttsn::protocol::message::Connect> Base;
+//    typedef ConnectBase<TMsgBase, TOptions, mqttsn::protocol::message::Connect> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, flags, protocolId, duration, clientId);
+    COMMS_MSG_FIELDS_ACCESS(flags, protocolId, duration, clientId);
 };
 
 }  // namespace message

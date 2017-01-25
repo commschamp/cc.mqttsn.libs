@@ -51,10 +51,10 @@ using RegackBase =
 template <typename TMsgBase>
 class Regack : public RegackBase<TMsgBase, Regack>
 {
-    typedef RegackBase<TMsgBase, mqttsn::protocol::message::Regack> Base;
+//    typedef RegackBase<TMsgBase, mqttsn::protocol::message::Regack> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, returnCode);
+    COMMS_MSG_FIELDS_ACCESS(topicId, msgId, returnCode);
 };
 
 }  // namespace message

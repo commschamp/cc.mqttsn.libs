@@ -100,28 +100,22 @@ void Forward::handle(PublishMsg_SN& msg)
     m_lastPubTopicId = topicIdField.value();
 
     PublishMsg fwdMsg;
-    auto fwdFields = fwdMsg.fieldsAsStruct();
-    auto fwdFlags = fwdFields.publishFlags.fieldsAsStruct();
+    auto& fwdFlags = fwdMsg.field_publishFlags();
 
-    fwdFlags.retain.setBitValue(0, retain);
-    fwdFlags.qos.value() = translateQosForBroker(translateQos(qosField.value()));
-    fwdFlags.dup.setBitValue(0, dup);
-    fwdFields.topic.value() = topic;
-    fwdFields.packetId.field().value() = msgIdField.value();
-    fwdFields.payload.value() = dataField.value();
+    fwdFlags.field_retain().setBitValue(0, retain);
+    fwdFlags.field_qos().value() = translateQosForBroker(translateQos(qosField.value()));
+    fwdFlags.field_dup().setBitValue(0, dup);
+    fwdMsg.field_topic().value() = topic;
+    fwdMsg.field_packetId().field().value() = msgIdField.value();
+    fwdMsg.field_payload().value() = dataField.value();
     fwdMsg.doRefresh();
     sendToBroker(fwdMsg);
 }
 
 void Forward::handle(PubrelMsg_SN& msg)
 {
-    typedef PubrelMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-
     PubrelMsg fwdMsg;
-    auto fwdFields = fwdMsg.fieldsAsStruct();
-    fwdFields.packetId.value() = msgIdField.value();
+    fwdMsg.field_packetId().value() = msg.field_msgId().value();
     sendToBroker(fwdMsg);
 }
 
@@ -228,9 +222,8 @@ void Forward::handle(SubscribeMsg_SN& msg)
     m_subs.push_back(info);
 
     SubscribeMsg fwdMsg;
-    auto fwdFields = fwdMsg.fieldsAsStruct();
-    fwdFields.packetId.value() = msgIdField.value();
-    auto& payloadContainer = fwdFields.payload.value();
+    fwdMsg.field_packetId().value() = msgIdField.value();
+    auto& payloadContainer = fwdMsg.field_payload().value();
     typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type SubElemBundle;
 
@@ -283,9 +276,8 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
     } while (false);
 
     UnsubscribeMsg fwdMsg;
-    auto fwdFields = fwdMsg.fieldsAsStruct();
-    fwdFields.packetId.value() = msgIdField.value();
-    auto& payloadContainer = fwdFields.payload.value();
+    fwdMsg.field_packetId().value() = msgIdField.value();
+    auto& payloadContainer = fwdMsg.field_payload().value();
     typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type UnsubString;
 
@@ -319,12 +311,11 @@ void Forward::handle(ConnackMsg&)
         }
 
         PublishMsg msg;
-        auto fields = msg.fieldsAsStruct();
-        auto flags = fields.publishFlags.fieldsAsStruct();
+        auto& flags = msg.field_publishFlags();
 
-        flags.qos.value() = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
-        fields.topic.value() = topic;
-        fields.payload.value() = std::move(pub.m_data);
+        flags.field_qos().value() = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
+        msg.field_topic().value() = topic;
+        msg.field_payload().value() = std::move(pub.m_data);
         msg.doRefresh();
         sendToBroker(msg);
     }
@@ -332,34 +323,23 @@ void Forward::handle(ConnackMsg&)
 
 void Forward::handle(PubackMsg& msg)
 {
-    auto fields = msg.fieldsAsStruct();
     sendPubackToClient(
         m_lastPubTopicId,
-        fields.packetId.value(),
+        msg.field_packetId().value(),
         mqttsn::protocol::field::ReturnCodeVal_Accepted);
 }
 
 void Forward::handle(PubrecMsg& msg)
 {
-    auto fields = msg.fieldsAsStruct();
-
     PubrecMsg_SN respMsg;
-    auto& respFields = respMsg.fields();
-    auto& msgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
-
-    msgIdField.value() = fields.packetId.value();
+    respMsg.field_msgId().value() = msg.field_packetId().value();
     sendToClient(respMsg);
 }
 
 void Forward::handle(PubcompMsg& msg)
 {
-    auto fields = msg.fieldsAsStruct();
-
     PubcompMsg_SN respMsg;
-    auto& respFields = respMsg.fields();
-    auto& msgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
-
-    msgIdField.value() = fields.packetId.value();
+    respMsg.field_msgId().value() = msg.field_packetId().value();
     sendToClient(respMsg);
 }
 
@@ -386,9 +366,7 @@ void Forward::handle(PingrespMsg& msg)
 
 void Forward::handle(SubackMsg& msg)
 {
-    auto fields = msg.fieldsAsStruct();
-
-    std::uint16_t msgId = fields.packetId.value();
+    std::uint16_t msgId = msg.field_packetId().value();
     std::uint16_t topicId = 0U;
 
     auto iter =
@@ -413,7 +391,7 @@ void Forward::handle(SubackMsg& msg)
     auto qos = mqttsn::protocol::field::QosType::AtMostOnceDelivery;
     auto rc = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
     do {
-        auto& retCodesList = fields.payload.value();
+        auto& retCodesList = msg.field_payload().value();
         if (retCodesList.empty()) {
             break;
         }
@@ -447,13 +425,8 @@ void Forward::handle(SubackMsg& msg)
 
 void Forward::handle(UnsubackMsg& msg)
 {
-    auto fields = msg.fieldsAsStruct();
-
     UnsubackMsg_SN fwdMsg;
-    auto& fwdFields = fwdMsg.fields();
-    auto& fwdMsgIdField = std::get<decltype(fwdMsg)::FieldIdx_msgId>(fwdFields);
-
-    fwdMsgIdField.value() = fields.packetId.value();
+    fwdMsg.field_msgId().value() = msg.field_packetId().value();
     sendToClient(fwdMsg);
 }
 
@@ -463,18 +436,11 @@ void Forward::sendPubackToClient(
     mqttsn::protocol::field::ReturnCodeVal rc)
 {
     PubackMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    topicIdField.value() = topicId;
-    msgIdField.value() = msgId;
-    retCodeField.value() = rc;
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_returnCode().value() = rc;
     sendToClient(msg);
 }
-
-
 
 }  // namespace session_op
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -78,10 +78,10 @@ using WillmsgupdBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Willmsgupd : public WillmsgupdBase<TMsgBase, TOptions, Willmsgupd>
 {
-    typedef WillmsgupdBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsgupd> Base;
+//    typedef WillmsgupdBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsgupd> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, willMsg);
+    COMMS_MSG_FIELDS_ACCESS(willMsg);
 };
 
 }  // namespace message

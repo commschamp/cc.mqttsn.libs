@@ -165,10 +165,9 @@ void WillUpdate::handle(ConnackMsg& msg)
         return;
     }
 
-    auto fields = msg.fieldsAsStruct();
-    typedef typename std::decay<decltype(fields.response)>::type ResponseFieldType;
-    if ((fields.response.value() != ResponseFieldType::ValueType::Accepted) ||
-        (!fields.flags.getBitValue(0))) {
+    typedef typename std::decay<decltype(msg.field_response())>::type ResponseFieldType;
+    if ((msg.field_response().value() != ResponseFieldType::ValueType::Accepted) ||
+        (!msg.field_flags().getBitValue(0))) {
         sendFailureAndTerm();
         return;
     }
@@ -246,31 +245,31 @@ void WillUpdate::sendResp(mqttsn::protocol::field::ReturnCodeVal rc)
 void WillUpdate::sendConnectMsg()
 {
     ConnectMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    auto flags = fields.flags.fieldsAsStruct();
 
     auto& st = state();
-    fields.clientId.value() = st.m_clientId;
-    fields.keepAlive.value() = st.m_keepAlive;
+    msg.field_clientId().value() = st.m_clientId;
+    msg.field_keepAlive().value() = st.m_keepAlive;
 
-    typedef typename std::decay<decltype(flags.flagsLow)>::type FlagsLowFieldType;
-    typedef typename std::decay<decltype(flags.flagsHigh)>::type FlagsHighFieldType;
+    auto& flagsField = msg.field_flags();
+
+    typedef typename std::decay<decltype(flagsField.field_flagsLow())>::type FlagsLowFieldType;
+    typedef typename std::decay<decltype(flagsField.field_flagsHigh())>::type FlagsHighFieldType;
 
     if (!m_will.m_topic.empty()) {
-        flags.flagsLow.setBitValue(FlagsLowFieldType::BitIdx_willFlag, true);
-        fields.willTopic.field().value() = m_will.m_topic;
-        fields.willMessage.field().value() = m_will.m_msg;
-        flags.willQos.value() = translateQosForBroker(m_will.m_qos);
-        flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_willRetain, m_will.m_retain);
+        flagsField.field_flagsLow().setBitValue(FlagsLowFieldType::BitIdx_willFlag, true);
+        msg.field_willTopic().field().value() = m_will.m_topic;
+        msg.field_willMessage().field().value() = m_will.m_msg;
+        flagsField.field_willQos().value() = translateQosForBroker(m_will.m_qos);
+        flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_willRetain, m_will.m_retain);
     }
 
     if (!st.m_username.empty()) {
-        fields.userName.field().value() = state().m_username;
-        flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_username, true);
+        msg.field_userName().field().value() = state().m_username;
+        flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_username, true);
 
         if (!state().m_password.empty()) {
-            fields.password.field().value() = state().m_password;
-            flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_password, true);
+            msg.field_password().field().value() = state().m_password;
+            flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_password, true);
         }
     }
 

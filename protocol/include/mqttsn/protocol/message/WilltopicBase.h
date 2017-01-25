@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -103,7 +103,7 @@ class WilltopicFieldsBase : public
     > Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, flags, willTopic);
+    COMMS_MSG_FIELDS_ACCESS(flags, willTopic);
 
     template <typename TIter>
     comms::ErrorStatus doRead(TIter& iter, std::size_t len)

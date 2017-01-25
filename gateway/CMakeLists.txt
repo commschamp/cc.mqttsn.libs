@@ -13,6 +13,7 @@ if (NOT CC_MQTT_FOUND)
 endif ()
 
 include_directories(
+    BEFORE
     ${CMAKE_SOURCE_DIR}/protocol/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )

@@ -838,10 +838,8 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
     bool sessionPresent)
 {
     ConnackMsg msg;
-    auto fields = msg.fieldsAsStruct();
-
-    fields.flags.setBitValue(0, sessionPresent);
-    fields.response.value() = rc;
+    msg.field_flags().setBitValue(0, sessionPresent);
+    msg.field_response().value() = rc;
     return prepareInput(msg);
 }
 
@@ -869,53 +867,48 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
     bool duplicate)
 {
     PublishMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    auto flags = fields.publishFlags.fieldsAsStruct();
+    auto& flags = msg.field_publishFlags();
 
-    fields.topic.value() = topic;
-    fields.payload.value() = msgData;
-    fields.packetId.field().value() = packetId;
-    flags.qos.value() = qos;
-    flags.retain.setBitValue(0, retain);
-    flags.dup.setBitValue(0, duplicate);
+    msg.field_topic().value() = topic;
+    msg.field_payload().value() = msgData;
+    msg.field_packetId().field().value() = packetId;
+    flags.field_qos().value() = qos;
+    flags.field_retain().setBitValue(0, retain);
+    flags.field_dup().setBitValue(0, duplicate);
 
-    msg.refresh();
+    msg.doRefresh();
     assert((qos == mqtt::protocol::field::QosVal::AtMostOnceDelivery) ||
-           (fields.packetId.doesExist()));
+           (msg.field_packetId().doesExist()));
     assert((mqtt::protocol::field::QosVal::AtMostOnceDelivery < qos) ||
-           (fields.packetId.isMissing()));
+           (msg.field_packetId().isMissing()));
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPuback(std::uint16_t packetId)
 {
     PubackMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    fields.packetId.value() = packetId;
+    msg.field_packetId().value() = packetId;
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubrec(std::uint16_t packetId)
 {
     PubrecMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    fields.packetId.value() = packetId;
+    msg.field_packetId().value() = packetId;
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubrel(std::uint16_t packetId)
 {
     PubrelMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    fields.packetId.value() = packetId;
+    msg.field_packetId().value() = packetId;
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubcomp(std::uint16_t packetId)
 {
     PubcompMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    fields.packetId.value() = packetId;
+    msg.field_packetId().value() = packetId;
     return prepareInput(msg);
 }
 
@@ -924,14 +917,13 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerSuback(
     mqtt::protocol::field::SubackReturnCode rc)
 {
     SubackMsg msg;
-    auto fields = msg.fieldsAsStruct();
 
-    fields.packetId.value() = packetId;
-    typedef std::decay<decltype(fields.payload.value())>::type PayloadListType;
+    msg.field_packetId().value() = packetId;
+    typedef std::decay<decltype(msg.field_payload().value())>::type PayloadListType;
     typedef PayloadListType::value_type RcElemType;
     RcElemType rcElem;
     rcElem.value() = rc;
-    fields.payload.value().push_back(rcElem);
+    msg.field_payload().value().push_back(rcElem);
     return prepareInput(msg);
 }
 
@@ -939,8 +931,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerUnsuback(
     std::uint16_t packetId)
 {
     UnsubackMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    fields.packetId.value() = packetId;
+    msg.field_packetId().value() = packetId;
     return prepareInput(msg);
 }
 

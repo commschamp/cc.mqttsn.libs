@@ -1012,49 +1012,48 @@ private:
                     sent = true;
                     TS_TRACE("(BROKER) <-- CONNECT");
 
-                    auto fields = msg.fieldsAsStruct();
-                    auto flags = fields.flags.fieldsAsStruct();
+                    auto& flags = msg.field_flags();
 
-                    typedef typename std::decay<decltype(flags.flagsLow)>::type FlagsLowFieldType;
-                    typedef typename std::decay<decltype(flags.flagsHigh)>::type FlagsHighFieldType;
+                    typedef typename std::decay<decltype(flags.field_flagsLow())>::type FlagsLowFieldType;
+                    typedef typename std::decay<decltype(flags.field_flagsHigh())>::type FlagsHighFieldType;
 
-                    TS_ASSERT_EQUALS(fields.keepAlive.value(), keepAlive);
-                    TS_ASSERT_EQUALS(fields.clientId.value(), clientId);
-                    TS_ASSERT_EQUALS(flags.flagsLow.getBitValue(FlagsLowFieldType::BitIdx_cleanSession), cleanSession);
+                    TS_ASSERT_EQUALS(msg.field_keepAlive().value(), keepAlive);
+                    TS_ASSERT_EQUALS(msg.field_clientId().value(), clientId);
+                    TS_ASSERT_EQUALS(flags.field_flagsLow().getBitValue(FlagsLowFieldType::BitIdx_cleanSession), cleanSession);
 
                     bool hasWill = ((willInfo != nullptr) && (!willInfo->m_topic.empty()));
-                    TS_ASSERT_EQUALS(flags.flagsLow.getBitValue(FlagsLowFieldType::BitIdx_willFlag), hasWill);
+                    TS_ASSERT_EQUALS(flags.field_flagsLow().getBitValue(FlagsLowFieldType::BitIdx_willFlag), hasWill);
 
                     if (hasWill) {
-                        TS_ASSERT_EQUALS(flags.willQos.value(), willInfo->m_qos);
-                        TS_ASSERT_EQUALS(flags.flagsHigh.getBitValue(FlagsHighFieldType::BitIdx_willRetain), willInfo->m_retain);
-                        TS_ASSERT_EQUALS(fields.willTopic.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(fields.willMessage.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(fields.willTopic.field().value(), willInfo->m_topic);
-                        TS_ASSERT_EQUALS(fields.willMessage.field().value(), willInfo->m_msg);
+                        TS_ASSERT_EQUALS(flags.field_willQos().value(), willInfo->m_qos);
+                        TS_ASSERT_EQUALS(flags.field_flagsHigh().getBitValue(FlagsHighFieldType::BitIdx_willRetain), willInfo->m_retain);
+                        TS_ASSERT_EQUALS(msg.field_willTopic().getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(msg.field_willMessage().getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(msg.field_willTopic().field().value(), willInfo->m_topic);
+                        TS_ASSERT_EQUALS(msg.field_willMessage().field().value(), willInfo->m_msg);
                     }
                     else {
-                        TS_ASSERT_EQUALS(fields.willTopic.getMode(), comms::field::OptionalMode::Missing);
-                        TS_ASSERT_EQUALS(fields.willMessage.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(msg.field_willTopic().getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(msg.field_willMessage().getMode(), comms::field::OptionalMode::Missing);
                     }
 
-                    TS_ASSERT_EQUALS(flags.flagsHigh.getBitValue(FlagsHighFieldType::BitIdx_username), !username.empty());
-                    TS_ASSERT_EQUALS(flags.flagsHigh.getBitValue(FlagsHighFieldType::BitIdx_password), !password.empty());
+                    TS_ASSERT_EQUALS(flags.field_flagsHigh().getBitValue(FlagsHighFieldType::BitIdx_username), !username.empty());
+                    TS_ASSERT_EQUALS(flags.field_flagsHigh().getBitValue(FlagsHighFieldType::BitIdx_password), !password.empty());
 
                     if (!username.empty()) {
-                        TS_ASSERT_EQUALS(fields.userName.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(fields.userName.field().value(), username);
+                        TS_ASSERT_EQUALS(msg.field_userName().getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(msg.field_userName().field().value(), username);
                     }
                     else {
-                        TS_ASSERT_EQUALS(fields.userName.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(msg.field_userName().getMode(), comms::field::OptionalMode::Missing);
                     }
 
                     if (!password.empty()) {
-                        TS_ASSERT_EQUALS(fields.password.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(fields.password.field().value(), password);
+                        TS_ASSERT_EQUALS(msg.field_password().getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(msg.field_password().field().value(), password);
                     }
                     else {
-                        TS_ASSERT_EQUALS(fields.password.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(msg.field_password().getMode(), comms::field::OptionalMode::Missing);
                     }
 
                 });
@@ -1166,21 +1165,20 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBLISH");
-                    auto fields = msg.fieldsAsStruct();
-                    auto flags = fields.publishFlags.fieldsAsStruct();
+                    auto& flags = msg.field_publishFlags();
 
-                    TS_ASSERT_EQUALS(flags.retain.getBitValue(0), retain);
-                    TS_ASSERT_EQUALS(flags.qos.value(), qos);
-                    TS_ASSERT_EQUALS(flags.dup.getBitValue(0), dup);
-                    TS_ASSERT_EQUALS(fields.topic.value(), topic);
-                    TS_ASSERT_EQUALS(fields.payload.value(), data);
+                    TS_ASSERT_EQUALS(flags.field_retain().getBitValue(0), retain);
+                    TS_ASSERT_EQUALS(flags.field_qos().value(), qos);
+                    TS_ASSERT_EQUALS(flags.field_dup().getBitValue(0), dup);
+                    TS_ASSERT_EQUALS(msg.field_topic().value(), topic);
+                    TS_ASSERT_EQUALS(msg.field_payload().value(), data);
 
                     if (qos == mqtt::protocol::field::QosVal::AtMostOnceDelivery) {
-                        TS_ASSERT_EQUALS(fields.packetId.getMode(), comms::field::OptionalMode::Missing);
+                        TS_ASSERT_EQUALS(msg.field_packetId().getMode(), comms::field::OptionalMode::Missing);
                     }
                     else {
-                        TS_ASSERT_EQUALS(fields.packetId.getMode(), comms::field::OptionalMode::Exists);
-                        TS_ASSERT_EQUALS(fields.packetId.field().value(), packetId);
+                        TS_ASSERT_EQUALS(msg.field_packetId().getMode(), comms::field::OptionalMode::Exists);
+                        TS_ASSERT_EQUALS(msg.field_packetId().field().value(), packetId);
                     }
 
                 });
@@ -1209,8 +1207,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBACK");
-                    auto fields = msg.fieldsAsStruct();
-                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
+                    TS_ASSERT_EQUALS(msg.field_packetId().value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1237,8 +1234,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBREC");
-                    auto fields = msg.fieldsAsStruct();
-                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
+                    TS_ASSERT_EQUALS(msg.field_packetId().value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1265,8 +1261,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBREL");
-                    auto fields = msg.fieldsAsStruct();
-                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
+                    TS_ASSERT_EQUALS(msg.field_packetId().value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1293,8 +1288,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- PUBCOMP");
-                    auto fields = msg.fieldsAsStruct();
-                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
+                    TS_ASSERT_EQUALS(msg.field_packetId().value(), packetId);
                 });
 
         handler.processDataForBroker(state.m_sentToBroker.front());
@@ -1323,10 +1317,9 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- SUBSCRIBE");
-                    auto fields = msg.fieldsAsStruct();
 
-                    TS_ASSERT(fields.packetId.value() == packetId);
-                    auto& payload = fields.payload.value();
+                    TS_ASSERT(msg.field_packetId().value() == packetId);
+                    auto& payload = msg.field_payload().value();
                     if (payload.empty()) {
                         TS_FAIL("Payload musn't be empty");
                         return;
@@ -1366,10 +1359,9 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(BROKER) <-- UNSUBSCRIBE");
-                    auto fields = msg.fieldsAsStruct();
 
-                    TS_ASSERT_EQUALS(fields.packetId.value(), packetId);
-                    auto& payload = fields.payload.value();
+                    TS_ASSERT_EQUALS(msg.field_packetId().value(), packetId);
+                    auto& payload = msg.field_payload().value();
                     if (payload.empty()) {
                         TS_FAIL("Payload musn't be empty");
                         return;

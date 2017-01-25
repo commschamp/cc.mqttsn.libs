@@ -330,33 +330,30 @@ void Connect::doNextStep()
 void Connect::forwardConnectionReq()
 {
     ConnectMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    auto flags = fields.flags.fieldsAsStruct();
+    typedef typename std::decay<decltype(msg.field_flags().field_flagsLow())>::type LowFlagsFieldType;
+    typedef typename std::decay<decltype(msg.field_flags().field_flagsHigh())>::type HighFlagsFieldType;
 
-    typedef typename std::decay<decltype(flags.flagsLow)>::type LowFlagsFieldType;
-    typedef typename std::decay<decltype(flags.flagsHigh)>::type HighFlagsFieldType;
-
-    fields.clientId.value() = m_clientId;
-    fields.keepAlive.value() = m_keepAlive;
-    flags.flagsLow.setBitValue(LowFlagsFieldType::BitIdx_cleanSession, m_clean);
+    msg.field_clientId().value() = m_clientId;
+    msg.field_keepAlive().value() = m_keepAlive;
+    msg.field_flags().field_flagsLow().setBitValue(LowFlagsFieldType::BitIdx_cleanSession, m_clean);
 
     if (!m_will.m_topic.empty()) {
-        flags.flagsLow.setBitValue(LowFlagsFieldType::BitIdx_willFlag, true);
-        fields.willTopic.field().value() = m_will.m_topic;
-        fields.willMessage.field().value() = m_will.m_msg;
-        flags.willQos.value() = translateQosForBroker(m_will.m_qos);
-        flags.flagsHigh.setBitValue(HighFlagsFieldType::BitIdx_willRetain, m_will.m_retain);
+        msg.field_flags().field_flagsLow().setBitValue(LowFlagsFieldType::BitIdx_willFlag, true);
+        msg.field_willTopic().field().value() = m_will.m_topic;
+        msg.field_willMessage().field().value() = m_will.m_msg;
+        msg.field_flags().field_willQos().value() = translateQosForBroker(m_will.m_qos);
+        msg.field_flags().field_flagsHigh().setBitValue(HighFlagsFieldType::BitIdx_willRetain, m_will.m_retain);
     }
 
     auto& username = m_authInfo.first;
     if (!username.empty()) {
-        fields.userName.field().value() = username;
-        flags.flagsHigh.setBitValue(HighFlagsFieldType::BitIdx_username, true);
+        msg.field_userName().field().value() = username;
+        msg.field_flags().field_flagsHigh().setBitValue(HighFlagsFieldType::BitIdx_username, true);
 
         auto& password = m_authInfo.second;
         if (!password.empty()) {
-            fields.password.field().value() = password;
-            flags.flagsHigh.setBitValue(HighFlagsFieldType::BitIdx_password, true);
+            msg.field_password().field().value() = password;
+            msg.field_flags().field_flagsHigh().setBitValue(HighFlagsFieldType::BitIdx_password, true);
         }
     }
 

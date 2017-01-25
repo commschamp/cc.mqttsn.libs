@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -52,10 +52,10 @@ using RegisterBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Register : public RegisterBase<TMsgBase, TOptions, Register>
 {
-    typedef RegisterBase<TMsgBase, TOptions, mqttsn::protocol::message::Register> Base;
+//    typedef RegisterBase<TMsgBase, TOptions, mqttsn::protocol::message::Register> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, topicName);
+    COMMS_MSG_FIELDS_ACCESS(topicId, msgId, topicName);
 };
 
 }  // namespace message
