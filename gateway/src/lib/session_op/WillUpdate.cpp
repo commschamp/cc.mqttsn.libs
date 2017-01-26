@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -95,19 +95,14 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
         return;
     }
 
-    typedef WilltopicupdMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.field().value();
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& topicField = std::get<MsgType::FieldIdx_willTopic>(fields);
+    auto& midFlagsField = msg.field_flags().field().field_midFlags();
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    auto qos = translateQos(qosField.value());
-    bool retain =  midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+    auto qos = translateQos(msg.field_flags().field().field_qos().value());
+    bool retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
 
     auto& st = state();
-    if ((st.m_will.m_topic == topicField.value()) &&
+    if ((st.m_will.m_topic == msg.field_willTopic().value()) &&
         (st.m_will.m_qos == qos) &&
         (st.m_will.m_retain == retain)) {
         sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
@@ -116,7 +111,7 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
     }
 
 
-    m_will.m_topic = topicField.value();
+    m_will.m_topic = msg.field_willTopic().value();
     m_will.m_msg = st.m_will.m_msg;
     m_will.m_qos = qos;
     m_will.m_retain = retain;
@@ -141,19 +136,15 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
         return;
     }
 
-    typedef WillmsgupdMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& msgField = std::get<MsgType::FieldIdx_willMsg>(fields);
-
     auto& st = state();
-    if (st.m_will.m_msg == msgField.value()) {
+    if (st.m_will.m_msg == msg.field_willMsg().value()) {
         sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
         sendToBroker(PingreqMsg());
         return;
     }
 
     m_will.m_topic = st.m_will.m_topic;
-    m_will.m_msg = msgField.value();
+    m_will.m_msg = msg.field_willMsg().value();
     m_will.m_qos = st.m_will.m_qos;
     m_will.m_retain = st.m_will.m_retain;
     startOp(Op::MsgUpd);
@@ -211,20 +202,14 @@ void WillUpdate::cancelOp()
 void WillUpdate::sendTopicResp(mqttsn::protocol::field::ReturnCodeVal rc)
 {
     WilltopicrespMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    retCodeField.value() = rc;
+    msg.field_returnCode().value() = rc;
     sendToClient(msg);
 }
 
 void WillUpdate::sendMsgResp(mqttsn::protocol::field::ReturnCodeVal rc)
 {
     WillmsgrespMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    retCodeField.value() = rc;
+    msg.field_returnCode().value() = rc;
     sendToClient(msg);
 }
 

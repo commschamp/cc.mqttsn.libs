@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -46,12 +46,8 @@ void AsleepMonitor::tickImpl()
 
 void AsleepMonitor::handle(DisconnectMsg_SN& msg)
 {
-    typedef DisconnectMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& durationField = std::get<MsgType::FieldIdx_duration>(fields);
-
-    if (durationField.getMode() != comms::field::OptionalMode::Exists) {
-        // Monotor disconnect with duration in Disconnect op
+    if (!msg.field_duration().doesExist()) {
+        // Monitor disconnect with duration in Disconnect op
         return;
     }
 
@@ -61,7 +57,7 @@ void AsleepMonitor::handle(DisconnectMsg_SN& msg)
     }
 
     m_lastPing = state().m_timestamp;
-    m_duration = ((static_cast<unsigned>(durationField.field().value()) * 3000) / 2);
+    m_duration = ((static_cast<unsigned>(msg.field_duration().field().value()) * 3000) / 2);
     reqNextTick();
 }
 

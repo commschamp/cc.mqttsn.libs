@@ -122,20 +122,13 @@ public:
             return es;
         }
 
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<field::FlagsMemberIdx_topicId>(flagsMembers);
-
-        auto& topicIdField = std::get<FieldIdx_topicId>(allFields);
-        auto& topicNameField = std::get<FieldIdx_topicName>(allFields);
-        if (topicIdTypeField.value() == field::TopicIdTypeVal::Name) {
-            topicIdField.setMode(comms::field::OptionalMode::Missing);
-            topicNameField.setMode(comms::field::OptionalMode::Exists);
+        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::Name) {
+            field_topicId().setMissing();
+            field_topicName().setExists();
         }
         else {
-            topicIdField.setMode(comms::field::OptionalMode::Exists);
-            topicNameField.setMode(comms::field::OptionalMode::Missing);
+            field_topicId().setExists();
+            field_topicName().setMissing();
         }
 
         return Base::template readFieldsFrom<FieldIdx_msgId>(iter, len);
@@ -143,28 +136,21 @@ public:
 
     bool doRefresh()
     {
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<field::FlagsMemberIdx_topicId>(flagsMembers);
-
         auto expectedTopicIdMode = comms::field::OptionalMode::Exists;
         auto expectedTopicNameMode = comms::field::OptionalMode::Missing;
-        if (topicIdTypeField.value() == field::TopicIdTypeVal::Name) {
+        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::Name) {
             expectedTopicIdMode = comms::field::OptionalMode::Missing;
             expectedTopicNameMode = comms::field::OptionalMode::Exists;
         }
 
         bool refreshed = false;
-        auto& topicIdField = std::get<FieldIdx_topicId>(allFields);
-        if (topicIdField.getMode() != expectedTopicIdMode) {
-            topicIdField.setMode(expectedTopicIdMode);
+        if (field_topicId().getMode() != expectedTopicIdMode) {
+            field_topicId().setMode(expectedTopicIdMode);
             refreshed = true;
         }
 
-        auto& topicNameField = std::get<FieldIdx_topicName>(allFields);
-        if (topicNameField.getMode() != expectedTopicNameMode) {
-            topicNameField.setMode(expectedTopicNameMode);
+        if (field_topicName().getMode() != expectedTopicNameMode) {
+            field_topicName().setMode(expectedTopicNameMode);
             refreshed = true;
         }
 

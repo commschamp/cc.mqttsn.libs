@@ -157,33 +157,25 @@ using Data =
 template <typename TFieldBase>
 using Duration = comms::field::IntValue<TFieldBase, std::uint16_t>;
 
-enum DupFlagsBits
-{
-    DupFlagsBits_dup,
-    DupFlagsBits_numOfValues
-};
-
 template <typename TFieldBase>
-using DupFlags =
+struct DupFlags : public
     comms::field::BitmaskValue<
         TFieldBase,
         comms::option::FixedLength<1U>,
-        comms::option::FixedBitLength<1> >;
-
-enum MidFlagsBits
+        comms::option::FixedBitLength<1> >
 {
-    MidFlagsBits_cleanSession,
-    MidFlagsBits_will,
-    MidFlagsBits_retain,
-    MidFlagsBits_numOfValues
+    COMMS_BITMASK_BITS(bit);
 };
 
 template <typename TFieldBase>
-using MidFlags =
+struct MidFlags : public
     comms::field::BitmaskValue<
         TFieldBase,
         comms::option::FixedLength<1>,
-        comms::option::FixedBitLength<3> >;
+        comms::option::FixedBitLength<3> >
+{
+    COMMS_BITMASK_BITS(cleanSession, will, retain);
+};
 
 enum class QosType : std::uint8_t
 {
@@ -217,17 +209,8 @@ using TopicIdType = comms::field::EnumValue<
         comms::option::FixedBitLength<2>
     >;
 
-enum FlagsMemberIdx
-{
-    FlagsMemberIdx_topicId,
-    FlagsMemberIdx_midFlags,
-    FlagsMemberIdx_qos,
-    FlagsMemberIdx_dupFlags,
-    FlagsMemberIdx_numOfValues
-};
-
 template <typename TFieldBase>
-using Flags =
+struct Flags : public
     comms::field::Bitfield<
         TFieldBase,
         std::tuple<
@@ -236,7 +219,10 @@ using Flags =
             QoS<TFieldBase>,
             DupFlags<TFieldBase>
         >
-    >;
+    >
+{
+    COMMS_FIELD_MEMBERS_ACCESS(topicId, midFlags, qos, dupFlags)
+};
 
 template <typename TFieldBase, typename TOptions = ParsedOptions<> >
 using GwAdd = details::GwAdd<TFieldBase, details::GwAddExtraOptsT<TOptions> >;

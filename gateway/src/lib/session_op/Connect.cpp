@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -56,16 +56,11 @@ void Connect::brokerConnectionUpdatedImpl()
 
 void Connect::handle(ConnectMsg_SN& msg)
 {
-    typedef ConnectMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& keepAliveField = std::get<MsgType::FieldIdx_duration>(fields);
-    auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
+    auto& midFlagsField = msg.field_flags().field_midFlags();
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
     auto& st = state();
-    auto* reqClientId = &(clientIdField.value());
+    auto* reqClientId = &(msg.field_clientId().value());
     if (reqClientId->empty()) {
         reqClientId = &(st.m_defaultClientId);
     }
@@ -87,11 +82,11 @@ void Connect::handle(ConnectMsg_SN& msg)
     m_internalState.m_hasClientId = true;
 
     m_clientId = *reqClientId;
-    m_keepAlive = keepAliveField.value();
-    m_clean = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession);
+    m_keepAlive = msg.field_duration().value();
+    m_clean = midFlagsField.getBitValue(MidFlags::BitIdx_cleanSession);
 
     do {
-        if (midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_will)) {
+        if (midFlagsField.getBitValue(MidFlags::BitIdx_will)) {
             break;
         }
 
@@ -127,17 +122,12 @@ void Connect::handle(WilltopicMsg_SN& msg)
     m_internalState.m_hasWillTopic = true;
     m_internalState.m_attempt = 0;
 
-    typedef WilltopicMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.field().value();
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& willTopicField = std::get<MsgType::FieldIdx_willTopic>(fields);
+    auto& midFlagsField = msg.field_flags().field().field_midFlags();
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    m_will.m_topic = willTopicField.value();
-    m_will.m_qos = translateQos(qosField.value());
-    m_will.m_retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+    m_will.m_topic = msg.field_willTopic().value();
+    m_will.m_qos = translateQos(msg.field_flags().field().field_qos().value());
+    m_will.m_retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
 
     if (m_will.m_topic.empty()) {
         m_internalState.m_hasWillMsg = true;
@@ -160,11 +150,7 @@ void Connect::handle(WillmsgMsg_SN& msg)
     m_internalState.m_hasWillMsg = true;
     m_internalState.m_attempt = 0;
 
-    typedef WillmsgMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& willMsgField = std::get<MsgType::FieldIdx_willMsg>(fields);
-
-    m_will.m_msg = willMsgField.value();
+    m_will.m_msg = msg.field_willMsg().value();
     doNextStep();
 }
 
@@ -178,13 +164,7 @@ void Connect::handle(PublishMsg_SN& msg)
         return;
     }
 
-    typedef PublishMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-
-    if (qosField.value() != mqttsn::protocol::field::QosType::NoGwPublish) {
+    if (msg.field_flags().field_qos().value() != mqttsn::protocol::field::QosType::NoGwPublish) {
         return;
     }
 
@@ -213,10 +193,7 @@ void Connect::handle(ConnackMsg& msg)
         return;
     }
 
-    typedef ConnackMsg MsgType;
-    auto& fields = msg.fields();
-    auto& responseField = std::get<MsgType::FieldIdx_response>(fields);
-    processAck(responseField.value());
+    processAck(msg.field_response().value());
 }
 
 void Connect::doNextStep()
@@ -385,9 +362,7 @@ void Connect::processAck(mqtt::protocol::field::ConnackResponseCodeVal respCode)
 
     if (!m_internalState.m_pubOnlyClient) {
         ConnackMsg_SN respMsg;
-        auto& respFields = respMsg.fields();
-        auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
-        respRetCodeField.value() = retCode;
+        respMsg.field_returnCode().value() = retCode;
         sendToClient(respMsg);
     }
     else {

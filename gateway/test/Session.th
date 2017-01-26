@@ -407,12 +407,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- GWINFO");
-
-                    typedef GwinfoMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& gwIdField = std::get<MsgType::FieldIdx_gwId>(fields);
-
-                    TS_ASSERT_EQUALS(gwIdField.value(), gwId);
+                    TS_ASSERT_EQUALS(msg.field_gwId().value(), gwId);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -439,12 +434,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- CONNACK");
-
-                    typedef ConnackMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
-                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                    TS_ASSERT_EQUALS(msg.field_returnCode().value(), rc);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -517,10 +507,7 @@ private:
                     sent = true;
                     TS_TRACE("(CLIENT) <-- DISCONNECT");
 
-                    typedef DisconnectMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& duration = std::get<MsgType::FieldIdx_duration>(fields);
-                    TS_ASSERT_EQUALS(duration.getMode(), comms::field::OptionalMode::Missing);
+                    TS_ASSERT(msg.field_duration().isMissing());
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -550,15 +537,9 @@ private:
                     sent = true;
                     TS_TRACE("(CLIENT) <-- REGACK");
 
-                    typedef RegackMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
-                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
-                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
-                    topicId = topicIdField.value();
+                    TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
+                    TS_ASSERT_EQUALS(msg.field_returnCode().value(), rc);
+                    topicId = msg.field_topicId().value();
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -589,16 +570,9 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- REGISTER");
-
-                    typedef RegisterMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-                    auto& topicNameField = std::get<MsgType::FieldIdx_topicName>(fields);
-
-                    TS_ASSERT_EQUALS(topicNameField.value(), topic);
-                    topicId = topicIdField.value();
-                    msgId = msgIdField.value();
+                    TS_ASSERT_EQUALS(msg.field_topicName().value(), topic);
+                    topicId = msg.field_topicId().value();
+                    msgId = msg.field_msgId().value();
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -635,25 +609,19 @@ private:
                     sent = true;
                     TS_TRACE("(CLIENT) <-- PUBLISH");
 
-                    typedef PublishMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-                    auto& flagsMembers = flagsField.value();
-                    auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-                    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-                    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-                    auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-                    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-                    auto& dataField = std::get<MsgType::FieldIdx_data>(fields);
+                    auto& midFlagsField = msg.field_flags().field_midFlags();
+                    auto& dupFlagsField = msg.field_flags().field_dupFlags();
 
-                    TS_ASSERT_EQUALS(topicIdTypeField.value(), topicType);
-                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
-                    TS_ASSERT_EQUALS(qosField.value(), qos);
-                    TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), duplicate);
-                    TS_ASSERT_EQUALS(topicIdField.value(), topicId);
-                    TS_ASSERT_EQUALS(dataField.value(), msgData);
-                    msgId = msgIdField.value();
+                    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
+                    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
+
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), topicType);
+                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(MidFlags::BitIdx_retain), retain);
+                    TS_ASSERT_EQUALS(msg.field_flags().field_qos().value(), qos);
+                    TS_ASSERT_EQUALS(dupFlagsField.getBitValue(DupFlags::BitIdx_bit), duplicate);
+                    TS_ASSERT_EQUALS(msg.field_topicId().value(), topicId);
+                    TS_ASSERT_EQUALS(msg.field_data().value(), msgData);
+                    msgId = msg.field_msgId().value();
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -684,16 +652,9 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- PUBACK");
-
-                    typedef PubackMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
-                    TS_ASSERT_EQUALS(topicIdField.value(), topicId);
-                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
-                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                    TS_ASSERT_EQUALS(msg.field_topicId().value(), topicId);
+                    TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
+                    TS_ASSERT_EQUALS(msg.field_returnCode().value(), rc);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -720,12 +681,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- PUBREC");
-
-                    typedef PubrecMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-
-                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                    TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -752,12 +708,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- PUBREL");
-
-                    typedef PubrelMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-
-                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                    TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -784,12 +735,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- PUBCOMP");
-
-                    typedef PubcompMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-
-                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                    TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -815,9 +761,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- PINGREQ");
-                    auto& fields = msg.fields();
-                    auto& clientIdField = std::get<PingreqMsg_SN::FieldIdx_clientId>(fields);
-                    TS_ASSERT(clientIdField.value().empty());
+                    TS_ASSERT(msg.field_clientId().value().empty());
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -873,19 +817,10 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- SUBACK");
-                    typedef SubackMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-                    auto& flagsMembers = flagsField.value();
-                    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-                    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
-                    TS_ASSERT_EQUALS(qosField.value(), qos);
-                    TS_ASSERT_EQUALS(topicIdField.value(), topicId);
-                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
-                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                    TS_ASSERT_EQUALS(msg.field_flags().field_qos().value(), qos);
+                    TS_ASSERT_EQUALS(msg.field_topicId().value(), topicId);
+                    TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
+                    TS_ASSERT_EQUALS(msg.field_returnCode().value(), rc);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -912,11 +847,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- UNSUBACK");
-                    typedef UnsubackMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-
-                    TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                    TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -943,11 +874,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- WILLTOPICRESP");
-                    typedef WilltopicrespMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
-                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                    TS_ASSERT_EQUALS(msg.field_returnCode().value(), rc);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());
@@ -974,11 +901,7 @@ private:
                 {
                     sent = true;
                     TS_TRACE("(CLIENT) <-- WILLMSGRESP");
-                    typedef WillmsgrespMsg_SN MsgType;
-                    auto& fields = msg.fields();
-                    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
-                    TS_ASSERT_EQUALS(retCodeField.value(), rc);
+                    TS_ASSERT_EQUALS(msg.field_returnCode().value(), rc);
                 });
 
         handler.processDataForClient(state.m_sentToClient.front());

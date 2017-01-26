@@ -507,9 +507,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareInput(const TestMqttMessage& msg)
 TestMsgHandler::DataBuf TestMsgHandler::prepareSearchgw(std::uint8_t radius)
 {
     SearchgwMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& radiusField = std::get<decltype(msg)::FieldIdx_radius>(fields);
-    radiusField.value() = radius;
+    msg.field_radius().value() = radius;
     return prepareInput(msg);
 }
 
@@ -520,17 +518,13 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientConnect(
     bool clean)
 {
     ConnectMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
-    auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
+    auto& midFlagsField = msg.field_flags().field_midFlags();
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    clientIdField.value() = id;
-    durationField.value() = keepAlive;
-    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
-    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession, clean);
+    msg.field_clientId().value() = id;
+    msg.field_duration().value() = keepAlive;
+    midFlagsField.setBitValue(MidFlags::BitIdx_will, hasWill);
+    midFlagsField.setBitValue(MidFlags::BitIdx_cleanSession, clean);
     return prepareInput(msg);
 }
 
@@ -540,16 +534,12 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
     bool retain)
 {
     WilltopicMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.field().value();
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+    auto& midFlagsField = msg.field_flags().field().field_midFlags();
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    qosField.value() = qos;
-    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
-    topicField.value() = topic;
+    msg.field_flags().field().field_qos().value() = qos;
+    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_willTopic().value() = topic;
     msg.refresh();
     return prepareInput(msg);
 }
@@ -557,23 +547,19 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsg(const DataBuf& data)
 {
     WillmsgMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgField = std::get<decltype(msg)::FieldIdx_willMsg>(fields);
-    msgField.value() = data;
+    msg.field_willMsg().value() = data;
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientDisconnect(std::uint16_t duration)
 {
     DisconnectMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
-    durationField.field().value() = duration;
+    msg.field_duration().field().value() = duration;
     auto mode = comms::field::OptionalMode::Missing;
     if (duration != 0) {
         mode = comms::field::OptionalMode::Exists;
     }
-    durationField.setMode(mode);
+    msg.field_duration().setMode(mode);
     return prepareInput(msg);
 }
 
@@ -582,12 +568,8 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegister(
     std::uint16_t msgId)
 {
     RegisterMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& topicField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
-
-    topicField.value() = topic;
-    msgIdField.value() = msgId;
+    msg.field_topicName().value() = topic;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
@@ -597,14 +579,9 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegack(
     mqttsn::protocol::field::ReturnCodeVal rc)
 {
     RegackMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    topicIdField.value() = topicId;
-    msgIdField.value() = msgId;
-    retCodeField.value() = rc;
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_returnCode().value() = rc;
     return prepareInput(msg);
 }
 
@@ -618,24 +595,19 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPublish(
     bool dup)
 {
     PublishMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& dupField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& dataField = std::get<decltype(msg)::FieldIdx_data>(fields);
+    auto& midFlagsField = msg.field_flags().field_midFlags();
+    auto& dupFlagsField = msg.field_flags().field_dupFlags();
 
-    topicIdTypeField.value() = topicIdType;
-    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
-    qosField.value() = qos;
-    dupField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, dup);
-    topicIdField.value() = topicId;
-    msgIdField.value() = msgId;
-    dataField.value() = data;
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
+    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
+
+    msg.field_flags().field_topicId().value() = topicIdType;
+    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_flags().field_qos().value() = qos;
+    dupFlagsField.setBitValue(DupFlags::BitIdx_bit, dup);
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_data().value() = data;
 
     return prepareInput(msg);
 }
@@ -646,44 +618,30 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
     mqttsn::protocol::field::ReturnCodeVal rc)
 {
     PubackMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    topicIdField.value() = topicId;
-    msgIdField.value() = msgId;
-    retCodeField.value() = rc;
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_returnCode().value() = rc;
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubrec(std::uint16_t msgId)
 {
     PubrecMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-
-    msgIdField.value() = msgId;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubrel(std::uint16_t msgId)
 {
     PubrelMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-
-    msgIdField.value() = msgId;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientPubcomp(std::uint16_t msgId)
 {
     PubcompMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-
-    msgIdField.value() = msgId;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
@@ -691,9 +649,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingreq(
     const std::string& clientId)
 {
     PingreqMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
-    clientIdField.value() = clientId;
+    msg.field_clientId().value() = clientId;
     return prepareInput(msg);
 }
 
@@ -709,25 +665,20 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     bool predefined)
 {
     SubscribeMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
 
-    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+    msg.field_flags().field_topicId().value() =
+        mqttsn::protocol::field::TopicIdTypeVal::Normal;
     if (predefined) {
-        topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        msg.field_flags().field_topicId().value() =
+            mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
     }
 
-    qosField.value() = qos;
-    msgIdField.value() = msgId;
-    topicIdField.field().value() = topicId;
+    msg.field_flags().field_qos().value() = qos;
+    msg.field_msgId().value() = msgId;
+    msg.field_topicId().field().value() = topicId;
 
-    msg.refresh();
-    assert(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+    msg.doRefresh();
+    assert(msg.field_topicId().doesExist());
     return prepareInput(msg);
 }
 
@@ -737,21 +688,13 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     mqttsn::protocol::field::QosType qos)
 {
     SubscribeMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
-
-    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
-    qosField.value() = qos;
-    msgIdField.value() = msgId;
-    topicNameField.field().value() = topic;
+    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+    msg.field_flags().field_qos().value() = qos;
+    msg.field_msgId().value() = msgId;
+    msg.field_topicName().field().value() = topic;
 
     msg.refresh();
-    assert(topicNameField.getMode() == comms::field::OptionalMode::Exists);
+    assert(msg.field_topicName().doesExist());
     return prepareInput(msg);
 }
 
@@ -761,23 +704,19 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
     bool predefined)
 {
     UnsubscribeMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
 
-    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+    msg.field_flags().field_topicId().value() =
+        mqttsn::protocol::field::TopicIdTypeVal::Normal;
     if (predefined) {
-        topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        msg.field_flags().field_topicId().value() =
+            mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
     }
 
-    msgIdField.value() = msgId;
-    topicIdField.field().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_topicId().field().value() = topicId;
 
     msg.refresh();
-    assert(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+    assert(msg.field_topicId().doesExist());
     return prepareInput(msg);
 }
 
@@ -786,19 +725,12 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
     std::uint16_t msgId)
 {
     UnsubscribeMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& topicType = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
-
-    topicType.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
-    msgIdField.value() = msgId;
-    topicNameField.field().value() = topic;
+    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+    msg.field_msgId().value() = msgId;
+    msg.field_topicName().field().value() = topic;
 
     msg.refresh();
-    assert(topicNameField.getMode() == comms::field::OptionalMode::Exists);
+    assert(msg.field_topicName().doesExist());
     return prepareInput(msg);
 }
 
@@ -808,16 +740,12 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(
     bool retain)
 {
     WilltopicupdMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.field().value();
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+    auto& midFlagsField = msg.field_flags().field().field_midFlags();
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    qosField.value() = qos;
-    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
-    topicField.value() = topic;
+    msg.field_flags().field().field_qos().value() = qos;
+    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_willTopic().value() = topic;
 
     msg.refresh();
     return prepareInput(msg);
@@ -826,10 +754,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsgupd(const DataBuf& data)
 {
     WillmsgupdMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgField = std::get<decltype(msg)::FieldIdx_willMsg>(fields);
-
-    msgField.value() = data;
+    msg.field_willMsg().value() = data;
     return prepareInput(msg);
 }
 

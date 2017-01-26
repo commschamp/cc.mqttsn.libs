@@ -333,9 +333,7 @@ DataProcessor::DataBuf DataProcessor::prepareInput(const TestMessage& msg)
 DataProcessor::DataBuf DataProcessor::prepareGwinfoMsg(std::uint8_t id)
 {
     GwinfoMsg msg;
-    auto& fields = msg.fields();
-    auto& gwIdField = std::get<GwinfoMsg::FieldIdx_gwId>(fields);
-    gwIdField.value() = id;
+    msg.field_gwId().value() = id;
     assert(msg.length() == 1U);
     auto buf = prepareInput(msg);
     assert(buf.size() == 3U);
@@ -345,11 +343,8 @@ DataProcessor::DataBuf DataProcessor::prepareGwinfoMsg(std::uint8_t id)
 DataProcessor::DataBuf DataProcessor::prepareAdvertiseMsg(std::uint8_t id, unsigned short duration)
 {
     AdvertiseMsg msg;
-    auto& fields = msg.fields();
-    auto& gwIdField = std::get<AdvertiseMsg::FieldIdx_gwId>(fields);
-    auto& durationField = std::get<AdvertiseMsg::FieldIdx_duration>(fields);
-    gwIdField.value() = id;
-    durationField.value() = duration;
+    msg.field_gwId().value() = id;
+    msg.field_duration().value() = duration;
     auto buf = prepareInput(msg);
     assert(buf.size() == 5U);
     return buf;
@@ -358,9 +353,7 @@ DataProcessor::DataBuf DataProcessor::prepareAdvertiseMsg(std::uint8_t id, unsig
 DataProcessor::DataBuf DataProcessor::prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal val)
 {
     ConnackMsg msg;
-    auto& fields = msg.fields();
-    auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
-    retCodeField.value() = val;
+    msg.field_returnCode().value() = val;
     auto buf = prepareInput(msg);
     assert(buf.size() == 3U);
     return buf;
@@ -382,10 +375,9 @@ DataProcessor::DataBuf DataProcessor::prepareRegisterMsg(
     const std::string& topicName)
 {
     RegisterMsg msg;
-    auto& fields = msg.fields();
-    std::get<decltype(msg)::FieldIdx_topicId>(fields).value() = topicId;
-    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
-    std::get<decltype(msg)::FieldIdx_topicName>(fields).value() = topicName;
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_topicName().value() = topicName;
     return prepareInput(msg);
 }
 
@@ -395,10 +387,9 @@ DataProcessor::DataBuf DataProcessor::prepareRegackMsg(
     mqttsn::protocol::field::ReturnCodeVal retCode)
 {
     RegackMsg msg;
-    auto& fields = msg.fields();
-    std::get<RegackMsg::FieldIdx_topicId>(fields).value() = topicId;
-    std::get<RegackMsg::FieldIdx_msgId>(fields).value() = msgId;
-    std::get<RegackMsg::FieldIdx_returnCode>(fields).value() = retCode;
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_returnCode().value() = retCode;
     return prepareInput(msg);
 }
 
@@ -412,24 +403,19 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
     bool duplicate)
 {
     PublishMsg msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-    auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
-    auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
+    auto& midFlagsField = msg.field_flags().field_midFlags();
+    auto& dupFlagsField = msg.field_flags().field_dupFlags();
 
-    topicIdTypeField.value() = topicIdType;
-    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
-    qosField.value() = qos;
-    dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, duplicate);
-    topicIdField.value() = topicId;
-    msgIdField.value() = msgId;
-    dataField.value().assign(data.begin(), data.end());
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
+    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
+
+    msg.field_flags().field_topicId().value() = topicIdType;
+    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_flags().field_qos().value() = qos;
+    dupFlagsField.setBitValue(DupFlags::BitIdx_bit, duplicate);
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_data().value().assign(data.begin(), data.end());
 
     return prepareInput(msg);
 }
@@ -440,34 +426,30 @@ DataProcessor::DataBuf DataProcessor::preparePubackMsg(
     mqttsn::protocol::field::ReturnCodeVal retCode)
 {
     PubackMsg msg;
-    auto& fields = msg.fields();
-    std::get<PubackMsg::FieldIdx_topicId>(fields).value() = topicId;
-    std::get<PubackMsg::FieldIdx_msgId>(fields).value() = msgId;
-    std::get<PubackMsg::FieldIdx_returnCode>(fields).value() = retCode;
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_returnCode().value() = retCode;
     return prepareInput(msg);
 }
 
 DataProcessor::DataBuf DataProcessor::preparePubrecMsg(std::uint16_t msgId)
 {
     PubrecMsg msg;
-    auto& fields = msg.fields();
-    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
 DataProcessor::DataBuf DataProcessor::preparePubrelMsg(std::uint16_t msgId)
 {
     PubrelMsg msg;
-    auto& fields = msg.fields();
-    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
 DataProcessor::DataBuf DataProcessor::preparePubcompMsg(std::uint16_t msgId)
 {
     PubcompMsg msg;
-    auto& fields = msg.fields();
-    std::get<decltype(msg)::FieldIdx_msgId>(fields).value() = msgId;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
@@ -478,18 +460,10 @@ DataProcessor::DataBuf DataProcessor::prepareSubackMsg(
     mqttsn::protocol::field::ReturnCodeVal retCode)
 {
     SubackMsg msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    qosField.value() = qos;
-    topicIdField.value() = topicId;
-    msgIdField.value() = msgId;
-    retCodeField.value() = retCode;
+    msg.field_flags().field_qos().value() = qos;
+    msg.field_topicId().value() = topicId;
+    msg.field_msgId().value() = msgId;
+    msg.field_returnCode().value() = retCode;
     return prepareInput(msg);
 }
 
@@ -497,10 +471,7 @@ DataProcessor::DataBuf DataProcessor::prepareUnsubackMsg(
     std::uint16_t msgId)
 {
     UnsubackMsg msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-
-    msgIdField.value() = msgId;
+    msg.field_msgId().value() = msgId;
     return prepareInput(msg);
 }
 
@@ -517,15 +488,13 @@ DataProcessor::DataBuf DataProcessor::preparePingrespMsg()
 DataProcessor::DataBuf DataProcessor::prepareDisconnectMsg(std::uint16_t duration)
 {
     DisconnectMsg msg;
-    auto& fields = msg.fields();
-    auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
 
     if (duration != 0U) {
-        durationField.setMode(comms::field::OptionalMode::Exists);
-        durationField.field().value() = duration;
+        msg.field_duration().setExists();
+        msg.field_duration().field().value() = duration;
     }
     else {
-        durationField.setMode(comms::field::OptionalMode::Missing);
+        msg.field_duration().setMissing();
     }
     return prepareInput(msg);
 }
@@ -534,9 +503,7 @@ DataProcessor::DataBuf DataProcessor::prepareWilltopicrespMsg(
     mqttsn::protocol::field::ReturnCodeVal retCode)
 {
     WilltopicrespMsg msg;
-    auto& fields = msg.fields();
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-    retCodeField.value() = retCode;
+    msg.field_returnCode().value() = retCode;
     return prepareInput(msg);
 }
 
@@ -544,9 +511,7 @@ DataProcessor::DataBuf DataProcessor::prepareWillmsgrespMsg(
     mqttsn::protocol::field::ReturnCodeVal retCode)
 {
     WillmsgrespMsg msg;
-    auto& fields = msg.fields();
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-    retCodeField.value() = retCode;
+    msg.field_returnCode().value() = retCode;
     return prepareInput(msg);
 }
 
