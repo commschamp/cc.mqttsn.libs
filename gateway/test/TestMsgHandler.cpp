@@ -26,10 +26,10 @@ template <typename TStack>
 void TestMsgHandler::processOutputInternal(TStack& stack, const DataBuf& data)
 {
     typedef typename std::decay<decltype(stack)>::type StackType;
-    typedef typename StackType::ReadIterator ReadIter;
     typedef typename StackType::MsgPtr MsgPtr;
+    typedef typename MsgPtr::element_type MsgType;
 
-    ReadIter iter = &data[0];
+    auto iter = comms::readIteratorFor<MsgType>(&data[0]);
     MsgPtr msg;
 
     auto es = stack.read(msg, iter, data.size());
@@ -41,7 +41,7 @@ void TestMsgHandler::processOutputInternal(TStack& stack, const DataBuf& data)
     }
     assert(es == comms::ErrorStatus::Success);
     assert(msg);
-    assert((unsigned)std::distance(ReadIter(&data[0]), iter) == data.size());
+    assert((unsigned)std::distance(comms::readIteratorFor<MsgType>(&data[0]), iter) == data.size());
     msg->dispatch(*this);
 }
 
@@ -50,16 +50,16 @@ template <typename TStack, typename TMsg>
 TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TStack& stack, const TMsg& msg)
 {
     typedef typename std::decay<decltype(stack)>::type StackType;
-    typedef typename StackType::WriteIterator WriteIter;
+    typedef typename StackType::MsgPtr::element_type MsgType;
 
     DataBuf buf;
     buf.resize(stack.length(msg));
 
-    WriteIter iter = &buf[0];
+    auto iter = comms::writeIteratorFor<MsgType>(&buf[0]);
     auto es = stack.write(msg, iter, buf.size());
     static_cast<void>(es);
     assert(es == comms::ErrorStatus::Success);
-    assert(buf.size() == (unsigned)(std::distance(WriteIter(&buf[0]), iter)));
+    assert(buf.size() == (unsigned)(std::distance(comms::writeIteratorFor<MsgType>(&buf[0]), iter)));
     return buf;
 }
 

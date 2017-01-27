@@ -2075,7 +2075,7 @@ private:
 
         m_writeBuf.resize(std::max(m_writeBuf.size(), m_stack.length(msg)));
         GASSERT(!m_writeBuf.empty());
-        typename ProtStack::WriteIterator writeIter = &m_writeBuf[0];
+        auto writeIter = comms::writeIteratorFor<Message>(&m_writeBuf[0]);
         auto es = m_stack.write(msg, writeIter, m_writeBuf.size());
         GASSERT(es == comms::ErrorStatus::Success);
         if (es != comms::ErrorStatus::Success) {
@@ -2084,7 +2084,7 @@ private:
         }
 
         auto writtenBytes = static_cast<std::size_t>(
-            std::distance(typename ProtStack::WriteIterator(&m_writeBuf[0]), writeIter));
+            std::distance(comms::writeIteratorFor<Message>(&m_writeBuf[0]), writeIter));
 
         m_sendOutputDataFn(m_sendOutputDataData, &m_writeBuf[0], writtenBytes, broadcast);
     }

@@ -299,8 +299,8 @@ void DataProcessor::handle(TestMessage& msg)
 
 void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)
 {
-    ProtStack::ReadIterator readIter = buf;
     ProtStack::MsgPtr msg;
+    auto readIter = comms::readIteratorFor<ProtStack::MsgPtr::element_type>(buf);
     auto es = m_stack.read(msg, readIter, len);
     static_cast<void>(es);
     if (es != comms::ErrorStatus::Success) {
@@ -323,7 +323,7 @@ DataProcessor::DataBuf DataProcessor::prepareInput(const TestMessage& msg)
 {
     DataBuf buf(m_stack.length(msg));
     assert(buf.size() == m_stack.length(msg));
-    ProtStack::WriteIterator writeIter = &buf[0];
+    auto writeIter = comms::writeIteratorFor<TestMessage>(&buf[0]);
     auto es = m_stack.write(msg, writeIter, buf.size());
     static_cast<void>(es);
     assert(es == comms::ErrorStatus::Success);

@@ -70,11 +70,11 @@ void GatewayImpl::refresh()
     gwIdField.value() = m_gwId;
     durationField.value() = m_advertisePeriod;
 
-    ProtStack::WriteIterator iter = &m_outputData[0];
+    auto iter = &m_outputData[0];
     auto es = m_protStack.write(msg, iter, m_outputData.size());
     static_cast<void>(es);
     assert(es == comms::ErrorStatus::Success);
-    assert(std::distance(ProtStack::WriteIterator(&m_outputData[0]), iter) == AdvertiseLength);
+    assert(std::distance(&m_outputData[0], iter) == AdvertiseLength);
 }
 
 void GatewayImpl::sendAndReprogram()

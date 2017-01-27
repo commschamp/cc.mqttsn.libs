@@ -95,15 +95,16 @@ class MsgSizeLayer : public comms::protocol::ProtocolLayerBase<LengthField, TNex
     typedef comms::protocol::ProtocolLayerBase<LengthField, TNextLayer> Base;
 public:
     typedef typename Base::MsgPtr MsgPtr;
-    typedef typename Base::Message Message;
-    typedef typename Base::ReadIterator ReadIterator;
-    typedef typename Base::WriteIterator WriteIterator;
+
+    static_assert(!std::is_void<MsgPtr>::value,
+        "The inner layers must define MsgPtr type");
+    typedef typename MsgPtr::element_type Message;
     typedef typename Base::Field Field;
 
-    template <typename TMsgPtr>
+    template <typename TMsgPtr, typename TIter>
     comms::ErrorStatus read(
         TMsgPtr& msgPtr,
-        ReadIterator& iter,
+        TIter& iter,
         std::size_t size,
         std::size_t* missingSize = nullptr)
     {
@@ -118,11 +119,11 @@ public:
                 Base::createNextLayerReader());
     }
 
-    template <std::size_t TIdx, typename TAllFields, typename TMsgPtr>
+    template <std::size_t TIdx, typename TAllFields, typename TMsgPtr, typename TIter>
     comms::ErrorStatus readFieldsCached(
         TAllFields& allFields,
         TMsgPtr& msgPtr,
-        ReadIterator& iter,
+        TIter& iter,
         std::size_t size,
         std::size_t* missingSize = nullptr)
     {
@@ -138,20 +139,21 @@ public:
                 Base::template createNextLayerCachedFieldsReader<TIdx>(allFields));
     }
 
+    template <typename TMsg, typename TIter>
     comms::ErrorStatus write(
-            const Message& msg,
-            WriteIterator& iter,
+            const TMsg& msg,
+            TIter& iter,
             std::size_t size) const
     {
         Field field;
         return writeInternal(field, msg, iter, size, Base::createNextLayerWriter());
     }
 
-    template <std::size_t TIdx, typename TAllFields>
+    template <std::size_t TIdx, typename TAllFields, typename TMsg, typename TIter>
     comms::ErrorStatus writeFieldsCached(
         TAllFields& allFields,
-        const Message& msg,
-        WriteIterator& iter,
+        const TMsg& msg,
+        TIter& iter,
         std::size_t size) const
     {
         auto& field = Base::template getField<TIdx>(allFields);
@@ -182,19 +184,20 @@ public:
 
 private:
 
-    template <typename TMsgPtr, typename TReader>
+    template <typename TMsgPtr, typename TIter, typename TReader>
     comms::ErrorStatus readInternal(
         Field& field,
         TMsgPtr& msgPtr,
-        ReadIterator& iter,
+        TIter& iter,
         std::size_t size,
         std::size_t* missingSize,
         TReader&& reader)
     {
-        typedef typename std::iterator_traits<ReadIterator>::iterator_category IterTag;
+        typedef typename std::decay<decltype(iter)>::type IterType;
+        typedef typename std::iterator_traits<IterType>::iterator_category IterTag;
         static_assert(
             std::is_base_of<std::random_access_iterator_tag, IterTag>::value,
-            "Current implementation of MsgSizeLayer requires ReadIterator to be random-access one.");
+            "Current implementation of MsgSizeLayer requires iterator used for reading to be random-access one.");
 
         auto es = field.read(iter, size);
         if (es != comms::ErrorStatus::Success) {
@@ -238,11 +241,11 @@ private:
         return es;
     }
 
-    template <typename TWriter>
+    template <typename TMsg, typename TIter, typename TWriter>
     comms::ErrorStatus writeInternal(
         Field& field,
-        const Message& msg,
-        WriteIterator& iter,
+        const TMsg& msg,
+        TIter& iter,
         std::size_t size,
         TWriter&& nextLayerWriter) const
     {
