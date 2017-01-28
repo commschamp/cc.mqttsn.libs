@@ -36,23 +36,6 @@ namespace details
 {
 
 template <bool TClientOnly, bool TGatewayOnly>
-struct ExtraSubUnsubBaseOptions
-{
-    typedef std::tuple<> Type;
-};
-
-template <>
-struct ExtraSubUnsubBaseOptions<false, true>
-{
-    typedef comms::option::NoWriteImpl Type;
-};
-
-template <typename TOpts>
-using ExtraSubUnsubBaseOptionsT =
-    typename ExtraSubUnsubBaseOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
-
-
-template <bool TClientOnly, bool TGatewayOnly>
 struct ExtraSubUnsubOptions
 {
     typedef std::tuple<> Type;
@@ -67,9 +50,7 @@ struct ExtraSubUnsubOptions<true, false>
 template <>
 struct ExtraSubUnsubOptions<false, true>
 {
-    typedef std::tuple<
-        comms::option::NoWriteImpl
-    >Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -95,20 +76,28 @@ using SubUnsubBaseFields =
         >
     >;
 
-template <typename TMsgBase, typename TOptions>
-class SubUnsubFieldsBase : public
+template <
+    typename TMsgBase,
+    MsgTypeId TId,
+    typename TActual,
+    typename TOptions = ParsedOptions<> >
+class SubUnsubBase : public
     comms::MessageBase<
         TMsgBase,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraSubUnsubBaseOptionsT<TOptions>
+        comms::option::HasDoRefresh,
+        details::ExtraSubUnsubOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraSubUnsubBaseOptionsT<TOptions>
+        comms::option::HasDoRefresh,
+        details::ExtraSubUnsubOptionsT<TOptions>
     > Base;
 
 public:
@@ -156,25 +145,6 @@ public:
 
         return refreshed;
     }
-};
-
-
-template <
-    typename TMsgBase,
-    MsgTypeId TId,
-    typename TActual,
-    typename TOptions = ParsedOptions<> >
-class SubUnsubBase : public
-    comms::MessageBase<
-        SubUnsubFieldsBase<TMsgBase, TOptions>,
-        comms::option::StaticNumIdImpl<TId>,
-        comms::option::MsgType<TActual>,
-        comms::option::NoValidImpl,
-        comms::option::NoLengthImpl,
-        comms::option::HasDoRefresh,
-        details::ExtraSubUnsubOptionsT<TOptions>
-    >
-{
 };
 
 }  // namespace message

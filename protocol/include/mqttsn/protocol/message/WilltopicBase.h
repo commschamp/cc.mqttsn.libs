@@ -36,22 +36,6 @@ namespace details
 {
 
 template <bool TClientOnly, bool TGatewayOnly>
-struct ExtraWilltopicBaseOptions
-{
-    typedef std::tuple<> Type;
-};
-
-template <>
-struct ExtraWilltopicBaseOptions<false, true>
-{
-    typedef comms::option::NoWriteImpl Type;
-};
-
-template <typename TOpts>
-using ExtraWilltopicBaseOptionsT =
-    typename ExtraWilltopicBaseOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
-
-template <bool TClientOnly, bool TGatewayOnly>
 struct ExtraWilltopicOptions
 {
     typedef std::tuple<> Type;
@@ -86,20 +70,28 @@ using WilltopicBaseFields =
         field::WillTopic<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class WilltopicFieldsBase : public
+template <
+    typename TMsgBase,
+    MsgTypeId TId,
+    typename TActual,
+    typename TOptions = ParsedOptions<> >
+class WilltopicBase : public
     comms::MessageBase<
         TMsgBase,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraWilltopicBaseOptionsT<TOptions>
+        comms::option::HasDoRefresh,
+        details::ExtraWilltopicOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraWilltopicBaseOptionsT<TOptions>
+        comms::option::HasDoRefresh,
+        details::ExtraWilltopicOptionsT<TOptions>
     > Base;
 
 public:
@@ -108,55 +100,30 @@ public:
     template <typename TIter>
     comms::ErrorStatus doRead(TIter& iter, std::size_t len)
     {
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
         auto mode = comms::field::OptionalMode::Missing;
         if (0U < len) {
             mode = comms::field::OptionalMode::Exists;
         }
-        flagsField.setMode(mode);
+        field_flags().setMode(mode);
         return Base::doRead(iter, len);
     }
 
     bool doRefresh()
     {
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
-        auto& willTopicField = std::get<FieldIdx_willTopic>(allFields);
-
         auto expectedFlagsMode = comms::field::OptionalMode::Exists;
-        if (willTopicField.value().empty()) {
+        if (field_willTopic().value().empty()) {
             expectedFlagsMode = comms::field::OptionalMode::Missing;
         }
 
         bool refreshed = false;
-        if (flagsField.getMode() != expectedFlagsMode) {
-            flagsField.setMode(expectedFlagsMode);
+        if (field_flags().getMode() != expectedFlagsMode) {
+            field_flags().setMode(expectedFlagsMode);
             refreshed = true;
         }
 
         return refreshed;
     }
 };
-
-template <
-    typename TMsgBase,
-    MsgTypeId TId,
-    typename TActual,
-    typename TOptions = ParsedOptions<> >
-class WilltopicBase : public
-    comms::MessageBase<
-        WilltopicFieldsBase<TMsgBase, TOptions>,
-        comms::option::StaticNumIdImpl<TId>,
-        comms::option::MsgType<TActual>,
-        comms::option::NoValidImpl,
-        comms::option::NoLengthImpl,
-        comms::option::HasDoRefresh,
-        details::ExtraWilltopicOptionsT<TOptions>
-    >
-{
-};
-
 
 }  // namespace message
 

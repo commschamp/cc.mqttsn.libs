@@ -63,6 +63,18 @@ void unsubscribeCallback(void* data, MqttsnAsyncOpStatus status)
 {
 }
 
+void gwStatusReport(void* data, unsigned char gwId, MqttsnGwStatus status)
+{
+}
+
+void msgReport(void* data, const MqttsnMessageInfo* msgInfo)
+{
+}
+
+void willUpdated(void* data, MqttsnAsyncOpStatus status)
+{
+}
+
 int main(int argc, const char** argv)
 {
     static const unsigned char Seq[] = {0x00, 0xf0};
@@ -74,12 +86,15 @@ int main(int argc, const char** argv)
     static const unsigned DataSize = sizeof(Data)/sizeof(Data[0]);
     const unsigned char* from = &Seq[0];
     MqttsnClientHandle client = mqttsn_test_bare_metal_client_new();
+    MqttsnWillInfo willInfo;
 
 
     mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, NULL);
     mqttsn_test_bare_metal_client_set_cancel_next_tick_wait_callback(client, &cancelTick, NULL);
     mqttsn_test_bare_metal_client_set_send_output_data_callback(client, &sendOutputData, NULL);
     mqttsn_test_bare_metal_client_set_gw_disconnect_report_callback(client, &gwDisconnected, NULL);
+    mqttsn_test_bare_metal_client_set_gw_status_report_callback(client, &gwStatusReport, NULL);
+    mqttsn_test_bare_metal_client_set_message_report_callback(client, &msgReport, NULL);
     if (mqttsn_test_bare_metal_client_start(client) == 0) {
         return -1;
     }
@@ -146,7 +161,21 @@ int main(int argc, const char** argv)
         &unsubscribeCallback,
         NULL);
 
+    mqttsn_test_bare_metal_client_set_retry_period(client, 10);
+    mqttsn_test_bare_metal_client_set_retry_count(client, 3);
+    mqttsn_test_bare_metal_client_set_broadcast_radius(client, 0);
+    mqttsn_test_bare_metal_client_set_searchgw_enabled(client, true);
+    mqttsn_test_bare_metal_client_search_gw(client);
+    mqttsn_test_bare_metal_client_discard_gw(client, 0);
+    mqttsn_test_bare_metal_client_discard_all_gw(client);
+    mqttsn_test_bare_metal_client_reconnect(client, &connectComplete, NULL);
+
+    mqttsn_test_bare_metal_client_will_update(client, &willInfo, &willUpdated, NULL);
+    mqttsn_test_bare_metal_client_will_topic_update(client, Topic, MqttsnQoS_ExactlyOnceDelivery, false, &willUpdated, NULL);
+    mqttsn_test_bare_metal_client_will_msg_update(client, Data, DataSize, &willUpdated, NULL);
+
     mqttsn_test_bare_metal_client_disconnect(client, &disconnectComplete, NULL);
+    mqttsn_test_bare_metal_client_stop(client);
     mqttsn_test_bare_metal_client_free(client);
     while (true) {};
     return 0;
