@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -98,7 +98,6 @@ public:
 
     static_assert(!std::is_void<MsgPtr>::value,
         "The inner layers must define MsgPtr type");
-    typedef typename MsgPtr::element_type Message;
     typedef typename Base::Field Field;
 
     template <typename TMsgPtr, typename TIter>
@@ -249,8 +248,6 @@ private:
         std::size_t size,
         TWriter&& nextLayerWriter) const
     {
-        static_assert(Message::InterfaceOptions::HasLength,
-            "Message interface class is expected to provide serialisation length.");
         auto writeLength = Base::nextLayer().length(msg);
         auto& members = field.value();
         auto& shortLengthField = std::get<LengthFieldIdx_Short>(members);
