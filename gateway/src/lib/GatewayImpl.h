@@ -37,6 +37,7 @@ public:
     typedef Gateway::SendDataReqCb SendDataReqCb;
 
     typedef protocol::MessageT<
+        comms::option::IdInfoInterface,
         comms::option::WriteIterator<std::uint8_t*>,
         comms::option::LengthInfoInterface
     > Message;

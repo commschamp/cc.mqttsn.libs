@@ -126,6 +126,7 @@ class BasicClient
     typedef details::WriteBufStorageTypeT<TProtOpts> WriteBufStorage;
 
     typedef protocol::MessageT<
+        comms::option::IdInfoInterface,
         comms::option::ReadIterator<const std::uint8_t*>,
         comms::option::WriteIterator<std::uint8_t*>,
         comms::option::Handler<BasicClient<TClientOpts, TProtOpts> >,
