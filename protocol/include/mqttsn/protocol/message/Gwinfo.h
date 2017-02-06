@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -79,10 +79,10 @@ using GwinfoBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Gwinfo : public GwinfoBase<TMsgBase, TOptions, Gwinfo>
 {
-    typedef GwinfoBase<TMsgBase, TOptions, mqttsn::protocol::message::Gwinfo> Base;
+//    typedef GwinfoBase<TMsgBase, TOptions, mqttsn::protocol::message::Gwinfo> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, gwId, gwAdd);
+    COMMS_MSG_FIELDS_ACCESS(gwId, gwAdd);
 };
 
 }  // namespace message

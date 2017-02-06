@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -51,10 +51,10 @@ using DisconnectBase =
 template <typename TMsgBase>
 class Disconnect : public DisconnectBase<TMsgBase, Disconnect>
 {
-    typedef DisconnectBase<TMsgBase, mqttsn::protocol::message::Disconnect> Base;
+//    typedef DisconnectBase<TMsgBase, mqttsn::protocol::message::Disconnect> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, duration);
+    COMMS_MSG_FIELDS_ACCESS(duration);
 };
 
 }  // namespace message

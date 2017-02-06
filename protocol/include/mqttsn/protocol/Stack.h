@@ -37,8 +37,9 @@ using Stack =
     MsgSizeLayer<
         comms::protocol::MsgIdLayer<
             field::MsgType<typename TMsgBase::Field>,
+            TMsgBase,
             TAllMessages,
-            comms::protocol::MsgDataLayer<TMsgBase>,
+            comms::protocol::MsgDataLayer<>,
             TMsgAllocOptions
         >
     >;

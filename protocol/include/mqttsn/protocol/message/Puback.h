@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -51,10 +51,10 @@ using PubackBase =
 template <typename TMsgBase>
 class Puback : public PubackBase<TMsgBase, Puback>
 {
-    typedef PubackBase<TMsgBase, mqttsn::protocol::message::Puback> Base;
+//    typedef PubackBase<TMsgBase, mqttsn::protocol::message::Puback> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, topicId, msgId, returnCode);
+    COMMS_MSG_FIELDS_ACCESS(topicId, msgId, returnCode);
 };
 
 }  // namespace message

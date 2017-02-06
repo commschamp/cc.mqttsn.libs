@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -95,19 +95,14 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
         return;
     }
 
-    typedef WilltopicupdMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<MsgType::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.field().value();
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& topicField = std::get<MsgType::FieldIdx_willTopic>(fields);
+    auto& midFlagsField = msg.field_flags().field().field_midFlags();
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    auto qos = translateQos(qosField.value());
-    bool retain =  midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+    auto qos = translateQos(msg.field_flags().field().field_qos().value());
+    bool retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
 
     auto& st = state();
-    if ((st.m_will.m_topic == topicField.value()) &&
+    if ((st.m_will.m_topic == msg.field_willTopic().value()) &&
         (st.m_will.m_qos == qos) &&
         (st.m_will.m_retain == retain)) {
         sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
@@ -116,7 +111,7 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
     }
 
 
-    m_will.m_topic = topicField.value();
+    m_will.m_topic = msg.field_willTopic().value();
     m_will.m_msg = st.m_will.m_msg;
     m_will.m_qos = qos;
     m_will.m_retain = retain;
@@ -141,19 +136,15 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
         return;
     }
 
-    typedef WillmsgupdMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& msgField = std::get<MsgType::FieldIdx_willMsg>(fields);
-
     auto& st = state();
-    if (st.m_will.m_msg == msgField.value()) {
+    if (st.m_will.m_msg == msg.field_willMsg().value()) {
         sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
         sendToBroker(PingreqMsg());
         return;
     }
 
     m_will.m_topic = st.m_will.m_topic;
-    m_will.m_msg = msgField.value();
+    m_will.m_msg = msg.field_willMsg().value();
     m_will.m_qos = st.m_will.m_qos;
     m_will.m_retain = st.m_will.m_retain;
     startOp(Op::MsgUpd);
@@ -165,10 +156,9 @@ void WillUpdate::handle(ConnackMsg& msg)
         return;
     }
 
-    auto fields = msg.fieldsAsStruct();
-    typedef typename std::decay<decltype(fields.response)>::type ResponseFieldType;
-    if ((fields.response.value() != ResponseFieldType::ValueType::Accepted) ||
-        (!fields.flags.getBitValue(0))) {
+    typedef typename std::decay<decltype(msg.field_response())>::type ResponseFieldType;
+    if ((msg.field_response().value() != ResponseFieldType::ValueType::Accepted) ||
+        (!msg.field_flags().getBitValue(0))) {
         sendFailureAndTerm();
         return;
     }
@@ -212,20 +202,14 @@ void WillUpdate::cancelOp()
 void WillUpdate::sendTopicResp(mqttsn::protocol::field::ReturnCodeVal rc)
 {
     WilltopicrespMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    retCodeField.value() = rc;
+    msg.field_returnCode().value() = rc;
     sendToClient(msg);
 }
 
 void WillUpdate::sendMsgResp(mqttsn::protocol::field::ReturnCodeVal rc)
 {
     WillmsgrespMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& retCodeField = std::get<decltype(msg)::FieldIdx_returnCode>(fields);
-
-    retCodeField.value() = rc;
+    msg.field_returnCode().value() = rc;
     sendToClient(msg);
 }
 
@@ -246,31 +230,31 @@ void WillUpdate::sendResp(mqttsn::protocol::field::ReturnCodeVal rc)
 void WillUpdate::sendConnectMsg()
 {
     ConnectMsg msg;
-    auto fields = msg.fieldsAsStruct();
-    auto flags = fields.flags.fieldsAsStruct();
 
     auto& st = state();
-    fields.clientId.value() = st.m_clientId;
-    fields.keepAlive.value() = st.m_keepAlive;
+    msg.field_clientId().value() = st.m_clientId;
+    msg.field_keepAlive().value() = st.m_keepAlive;
 
-    typedef typename std::decay<decltype(flags.flagsLow)>::type FlagsLowFieldType;
-    typedef typename std::decay<decltype(flags.flagsHigh)>::type FlagsHighFieldType;
+    auto& flagsField = msg.field_flags();
+
+    typedef typename std::decay<decltype(flagsField.field_flagsLow())>::type FlagsLowFieldType;
+    typedef typename std::decay<decltype(flagsField.field_flagsHigh())>::type FlagsHighFieldType;
 
     if (!m_will.m_topic.empty()) {
-        flags.flagsLow.setBitValue(FlagsLowFieldType::BitIdx_willFlag, true);
-        fields.willTopic.field().value() = m_will.m_topic;
-        fields.willMessage.field().value() = m_will.m_msg;
-        flags.willQos.value() = translateQosForBroker(m_will.m_qos);
-        flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_willRetain, m_will.m_retain);
+        flagsField.field_flagsLow().setBitValue(FlagsLowFieldType::BitIdx_willFlag, true);
+        msg.field_willTopic().field().value() = m_will.m_topic;
+        msg.field_willMessage().field().value() = m_will.m_msg;
+        flagsField.field_willQos().value() = translateQosForBroker(m_will.m_qos);
+        flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_willRetain, m_will.m_retain);
     }
 
     if (!st.m_username.empty()) {
-        fields.userName.field().value() = state().m_username;
-        flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_username, true);
+        msg.field_userName().field().value() = state().m_username;
+        flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_username, true);
 
         if (!state().m_password.empty()) {
-            fields.password.field().value() = state().m_password;
-            flags.flagsHigh.setBitValue(FlagsHighFieldType::BitIdx_password, true);
+            msg.field_password().field().value() = state().m_password;
+            flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_password, true);
         }
     }
 

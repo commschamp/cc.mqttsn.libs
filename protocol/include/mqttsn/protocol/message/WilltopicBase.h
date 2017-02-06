@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -36,22 +36,6 @@ namespace details
 {
 
 template <bool TClientOnly, bool TGatewayOnly>
-struct ExtraWilltopicBaseOptions
-{
-    typedef std::tuple<> Type;
-};
-
-template <>
-struct ExtraWilltopicBaseOptions<false, true>
-{
-    typedef comms::option::NoWriteImpl Type;
-};
-
-template <typename TOpts>
-using ExtraWilltopicBaseOptionsT =
-    typename ExtraWilltopicBaseOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
-
-template <bool TClientOnly, bool TGatewayOnly>
 struct ExtraWilltopicOptions
 {
     typedef std::tuple<> Type;
@@ -86,59 +70,6 @@ using WilltopicBaseFields =
         field::WillTopic<TFieldBase, TOptions>
     >;
 
-template <typename TMsgBase, typename TOptions = ParsedOptions<> >
-class WilltopicFieldsBase : public
-    comms::MessageBase<
-        TMsgBase,
-        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraWilltopicBaseOptionsT<TOptions>
-    >
-{
-    typedef comms::MessageBase<
-        TMsgBase,
-        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraWilltopicBaseOptionsT<TOptions>
-    > Base;
-
-public:
-    COMMS_MSG_FIELDS_ACCESS(Base, flags, willTopic);
-
-    template <typename TIter>
-    comms::ErrorStatus doRead(TIter& iter, std::size_t len)
-    {
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
-        auto mode = comms::field::OptionalMode::Missing;
-        if (0U < len) {
-            mode = comms::field::OptionalMode::Exists;
-        }
-        flagsField.setMode(mode);
-        return Base::doRead(iter, len);
-    }
-
-    bool doRefresh()
-    {
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
-        auto& willTopicField = std::get<FieldIdx_willTopic>(allFields);
-
-        auto expectedFlagsMode = comms::field::OptionalMode::Exists;
-        if (willTopicField.value().empty()) {
-            expectedFlagsMode = comms::field::OptionalMode::Missing;
-        }
-
-        bool refreshed = false;
-        if (flagsField.getMode() != expectedFlagsMode) {
-            flagsField.setMode(expectedFlagsMode);
-            refreshed = true;
-        }
-
-        return refreshed;
-    }
-};
-
 template <
     typename TMsgBase,
     MsgTypeId TId,
@@ -146,17 +77,53 @@ template <
     typename TOptions = ParsedOptions<> >
 class WilltopicBase : public
     comms::MessageBase<
-        WilltopicFieldsBase<TMsgBase, TOptions>,
+        TMsgBase,
         comms::option::StaticNumIdImpl<TId>,
         comms::option::MsgType<TActual>,
-        comms::option::NoValidImpl,
-        comms::option::NoLengthImpl,
+        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
         comms::option::HasDoRefresh,
         details::ExtraWilltopicOptionsT<TOptions>
     >
 {
-};
+    typedef comms::MessageBase<
+        TMsgBase,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::MsgType<TActual>,
+        comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
+        comms::option::HasDoRefresh,
+        details::ExtraWilltopicOptionsT<TOptions>
+    > Base;
 
+public:
+    COMMS_MSG_FIELDS_ACCESS(flags, willTopic);
+
+    template <typename TIter>
+    comms::ErrorStatus doRead(TIter& iter, std::size_t len)
+    {
+        auto mode = comms::field::OptionalMode::Missing;
+        if (0U < len) {
+            mode = comms::field::OptionalMode::Exists;
+        }
+        field_flags().setMode(mode);
+        return Base::doRead(iter, len);
+    }
+
+    bool doRefresh()
+    {
+        auto expectedFlagsMode = comms::field::OptionalMode::Exists;
+        if (field_willTopic().value().empty()) {
+            expectedFlagsMode = comms::field::OptionalMode::Missing;
+        }
+
+        bool refreshed = false;
+        if (field_flags().getMode() != expectedFlagsMode) {
+            field_flags().setMode(expectedFlagsMode);
+            refreshed = true;
+        }
+
+        return refreshed;
+    }
+};
 
 }  // namespace message
 

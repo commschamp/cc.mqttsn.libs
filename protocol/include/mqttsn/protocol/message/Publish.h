@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -53,10 +53,10 @@ using PublishBase =
 template <typename TMsgBase, typename TOptions = ParsedOptions<> >
 class Publish : public PublishBase<TMsgBase, TOptions, Publish>
 {
-    typedef PublishBase<TMsgBase, TOptions, mqttsn::protocol::message::Publish> Base;
+//    typedef PublishBase<TMsgBase, TOptions, mqttsn::protocol::message::Publish> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, data);
+    COMMS_MSG_FIELDS_ACCESS(flags, topicId, msgId, data);
 };
 
 }  // namespace message

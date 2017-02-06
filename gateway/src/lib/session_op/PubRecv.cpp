@@ -38,19 +38,16 @@ PubRecv::~PubRecv() = default;
 
 void PubRecv::handle(PublishMsg& msg)
 {
-    auto fields = msg.fieldsAsStruct();
-    auto flags = fields.publishFlags.fieldsAsStruct();
+    auto& pubFlags = msg.field_publishFlags();
+    bool retain = (pubFlags.field_retain().value() != 0);
+    bool dup = (pubFlags.field_dup().value() != 0);
 
-    bool retain = (flags.retain.value() != 0);
-    bool dup = (flags.dup.value() != 0);
-
-    typedef typename std::decay<decltype(flags.qos)>::type QosFieldType;
-    if (flags.qos.value() == QosFieldType::ValueType::AtLeastOnceDelivery) {
+    typedef typename std::decay<decltype(pubFlags.field_qos())>::type QosFieldType;
+    if (pubFlags.field_qos().value() == QosFieldType::ValueType::AtLeastOnceDelivery) {
         PubackMsg respMsg;
-        auto respFields = respMsg.fieldsAsStruct();
 
-        assert(fields.packetId.doesExist());
-        respFields.packetId.value() = fields.packetId.field().value();
+        assert(msg.field_packetId().doesExist());
+        respMsg.field_packetId().value() = msg.field_packetId().field().value();
         sendToBroker(respMsg);
     }
 
@@ -65,40 +62,39 @@ void PubRecv::handle(PublishMsg& msg)
         };
 
     auto cleanPubsFunc =
-        [this, &fields, cleanIncompleteFunc]()
+        [this, &msg, cleanIncompleteFunc]()
         {
             cleanIncompleteFunc();
 
-            if (!fields.packetId.doesExist()) {
+            if (!msg.field_packetId().doesExist()) {
                 return;
             }
 
             m_recvMsgs.remove_if(
-                [&fields](BrokPubInfosList::const_reference elem) -> bool
+                [&msg](BrokPubInfosList::const_reference elem) -> bool
                 {
-                    return elem.m_packetId == fields.packetId.field().value();
+                    return elem.m_packetId == msg.field_packetId().field().value();
                 });
         };
 
-    if (flags.qos.value() <= QosFieldType::ValueType::AtLeastOnceDelivery) {
+    if (pubFlags.field_qos().value() <= QosFieldType::ValueType::AtLeastOnceDelivery) {
         cleanPubsFunc();
         PubInfoPtr pubInfo(new PubInfo);
-        pubInfo->m_topic = fields.topic.value();
-        pubInfo->m_msg = fields.payload.value();
-        pubInfo->m_qos = translateQos(flags.qos.value());
+        pubInfo->m_topic = msg.field_topic().value();
+        pubInfo->m_msg = msg.field_payload().value();
+        pubInfo->m_qos = translateQos(pubFlags.field_qos().value());
         pubInfo->m_retain = retain;
         pubInfo->m_dup = dup;
         addPubInfo(std::move(pubInfo));
         return;
     }
 
-    assert(fields.packetId.doesExist());
+    assert(msg.field_packetId().doesExist());
     auto sendRecFunc =
-        [this, &fields]()
+        [this, &msg]()
         {
             PubrecMsg respMsg;
-            auto respFields = respMsg.fieldsAsStruct();
-            respFields.packetId.value() = fields.packetId.field().value();
+            respMsg.field_packetId().value() = msg.field_packetId().field().value();
             sendToBroker(respMsg);
         };
 
@@ -109,17 +105,17 @@ void PubRecv::handle(PublishMsg& msg)
 
         auto iter = std::find_if(
             m_recvMsgs.begin(), m_recvMsgs.end(),
-            [&fields](BrokPubInfosList::const_reference elem) -> bool
+            [&msg](BrokPubInfosList::const_reference elem) -> bool
             {
-                return fields.packetId.field().value() == elem.m_packetId;
+                return msg.field_packetId().field().value() == elem.m_packetId;
             });
 
         if (iter == m_recvMsgs.end()) {
             break;
         }
 
-        iter->m_topic = fields.topic.value();
-        iter->m_msg = fields.payload.value();
+        iter->m_topic = msg.field_topic().value();
+        iter->m_msg = msg.field_payload().value();
         iter->m_dup = dup;
         iter->m_retain = retain;
         iter->m_timestamp = state().m_timestamp;
@@ -131,11 +127,11 @@ void PubRecv::handle(PublishMsg& msg)
     cleanPubsFunc();
 
     BrokPubInfo info;
-    info.m_topic = fields.topic.value();
-    info.m_msg = fields.payload.value();
+    info.m_topic = msg.field_topic().value();
+    info.m_msg = msg.field_payload().value();
     info.m_dup = dup;
     info.m_retain = retain;
-    info.m_packetId = fields.packetId.field().value();
+    info.m_packetId = msg.field_packetId().field().value();
     info.m_timestamp = state().m_timestamp;
     m_recvMsgs.push_back(std::move(info));
     sendRecFunc();
@@ -143,13 +139,11 @@ void PubRecv::handle(PublishMsg& msg)
 
 void PubRecv::handle(PubrelMsg& msg)
 {
-    auto fields = msg.fieldsAsStruct();
-
     auto iter = std::find_if(
         m_recvMsgs.begin(), m_recvMsgs.end(),
-        [&fields](BrokPubInfosList::const_reference elem) -> bool
+        [&msg](BrokPubInfosList::const_reference elem) -> bool
         {
-            return fields.packetId.value() == elem.m_packetId;
+            return msg.field_packetId().value() == elem.m_packetId;
         });
 
     if (iter != m_recvMsgs.end()) {
@@ -164,8 +158,7 @@ void PubRecv::handle(PubrelMsg& msg)
     }
 
     PubcompMsg respMsg;
-    auto respFields = respMsg.fieldsAsStruct();
-    respFields.packetId.value() = fields.packetId.value();
+    respMsg.field_packetId().value() = msg.field_packetId().value();
     sendToBroker(respMsg);
 }
 

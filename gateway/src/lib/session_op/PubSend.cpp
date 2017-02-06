@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -61,20 +61,14 @@ void PubSend::tickImpl()
 
 void PubSend::handle(RegackMsg_SN& msg)
 {
-    typedef RegackMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
     if ((!m_currPub) ||
-        (topicIdField.value() != m_currTopicInfo.m_topicId) ||
-        (msgIdField.value() != m_currMsgId)) {
+        (msg.field_topicId().value() != m_currTopicInfo.m_topicId) ||
+        (msg.field_msgId().value() != m_currMsgId)) {
         return;
     }
 
     cancelTick();
-    if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+    if (msg.field_returnCode().value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
         m_currPub.reset();
         checkSend();
         return;
@@ -89,29 +83,23 @@ void PubSend::handle(RegackMsg_SN& msg)
 
 void PubSend::handle(PubackMsg_SN& msg)
 {
-    typedef PubackMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& topicIdField = std::get<MsgType::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-    auto& retCodeField = std::get<MsgType::FieldIdx_returnCode>(fields);
-
-    if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
-        state().m_regMgr.discardRegistration(topicIdField.value());
+    if (msg.field_returnCode().value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+        state().m_regMgr.discardRegistration(msg.field_topicId().value());
     }
 
     if ((!m_currPub) ||
-        (topicIdField.value() != m_currTopicInfo.m_topicId) ||
-        (msgIdField.value() != m_currMsgId)) {
+        (msg.field_topicId().value() != m_currTopicInfo.m_topicId) ||
+        (msg.field_msgId().value() != m_currMsgId)) {
         return;
     }
 
-    if ((retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted) &&
+    if ((msg.field_returnCode().value() == mqttsn::protocol::field::ReturnCodeVal_Accepted) &&
         (m_currPub->m_qos == QoS_ExactlyOnceDelivery)) {
         return; // "PUBREC" is expected instead of "PUBACK"
     }
 
     cancelTick();
-    if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+    if (msg.field_returnCode().value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
         sendCurrent();
         return;
     }
@@ -122,10 +110,7 @@ void PubSend::handle(PubackMsg_SN& msg)
 
 void PubSend::handle(PubrecMsg_SN& msg)
 {
-    typedef PubrecMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-    if ((!m_currPub) || (msgIdField.value() != m_currMsgId)) {
+    if ((!m_currPub) || (msg.field_msgId().value() != m_currMsgId)) {
         return;
     }
 
@@ -137,10 +122,7 @@ void PubSend::handle(PubrecMsg_SN& msg)
 
 void PubSend::handle(PubcompMsg_SN& msg)
 {
-    typedef PubcompMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<MsgType::FieldIdx_msgId>(fields);
-    if ((!m_currPub) || (msgIdField.value() != m_currMsgId)) {
+    if ((!m_currPub) || (msg.field_msgId().value() != m_currMsgId)) {
         return;
     }
 
@@ -155,10 +137,7 @@ void PubSend::handle(PingreqMsg_SN& msg)
         return;
     }
 
-    typedef PingreqMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& clientIdField = std::get<MsgType::FieldIdx_clientId>(fields);
-    if (clientIdField.value() != state().m_clientId) {
+    if (msg.field_clientId().value() != state().m_clientId) {
         return;
     }
 
@@ -243,31 +222,21 @@ void PubSend::doSend()
         }
 
         RegisterMsg_SN msg;
-        auto& fields = msg.fields();
-        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-        auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
-
         m_currMsgId = allocMsgId();
-        topicIdField.value() = m_currTopicInfo.m_topicId;
-        msgIdField.value() = m_currMsgId;
-        topicNameField.value() = m_currPub->m_topic;
+        msg.field_topicId().value() = m_currTopicInfo.m_topicId;
+        msg.field_msgId().value() = m_currMsgId;
+        msg.field_topicName().value() = m_currPub->m_topic;
         sendToClient(msg);
         nextTickReq(st.m_retryPeriod);
         return;
     }
 
     PublishMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-    auto& flagsMembers = flagsField.value();
-    auto& topicTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-    auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-    auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    auto& dataField = std::get<decltype(msg)::FieldIdx_data>(fields);
+    auto& midFlagsField = msg.field_flags().field_midFlags();
+    auto& dupFlagsField = msg.field_flags().field_dupFlags();
+
+    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
+    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
     auto topicType = mqttsn::protocol::field::TopicIdTypeVal::Normal;
     if (m_currTopicInfo.m_predefined) {
@@ -276,13 +245,13 @@ void PubSend::doSend()
 
     bool dup = m_currPub->m_dup || (1U < m_attempt);
 
-    topicTypeField.value() = topicType;
-    midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, m_currPub->m_retain);
-    qosField.value() = translateQosForClient(m_currPub->m_qos);
-    dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, dup);
-    topicIdField.value() = m_currTopicInfo.m_topicId;
-    msgIdField.value() = m_currMsgId;
-    dataField.value() = m_currPub->m_msg;
+    msg.field_flags().field_topicId().value() = topicType;
+    midFlagsField.setBitValue(MidFlags::BitIdx_retain, m_currPub->m_retain);
+    msg.field_flags().field_qos().value() = translateQosForClient(m_currPub->m_qos);
+    dupFlagsField.setBitValue(DupFlags::BitIdx_bit, dup);
+    msg.field_topicId().value() = m_currTopicInfo.m_topicId;
+    msg.field_msgId().value() = m_currMsgId;
+    msg.field_data().value() = m_currPub->m_msg;
     sendToClient(msg);
 
     if (m_currPub->m_qos == QoS_AtMostOnceDelivery) {
@@ -307,9 +276,7 @@ void PubSend::sendDisconnect()
 void PubSend::sendPubrel()
 {
     PubrelMsg_SN msg;
-    auto& fields = msg.fields();
-    auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-    msgIdField.value() = m_currMsgId;
+    msg.field_msgId().value() = m_currMsgId;
     sendToClient(msg);
     nextTickReq(state().m_retryPeriod);
 }

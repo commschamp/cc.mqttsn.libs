@@ -126,6 +126,7 @@ class BasicClient
     typedef details::WriteBufStorageTypeT<TProtOpts> WriteBufStorage;
 
     typedef protocol::MessageT<
+        comms::option::IdInfoInterface,
         comms::option::ReadIterator<const std::uint8_t*>,
         comms::option::WriteIterator<std::uint8_t*>,
         comms::option::Handler<BasicClient<TClientOpts, TProtOpts> >,
@@ -1096,31 +1097,26 @@ public:
 
     void handle(AdvertiseMsg& msg)
     {
-        auto& fields = msg.fields();
-        auto& idField = std::get<AdvertiseMsg::FieldIdx_gwId>(fields);
-        auto& durationField = std::get<AdvertiseMsg::FieldIdx_duration>(fields);
-        auto durationVal =  durationField.value() * 3000U;
+        auto durationVal =  msg.field_duration().value() * 3000U;
 
-        auto iter = findGwInfo(idField.value());
+        auto iter = findGwInfo(msg.field_gwId().value());
         if (iter != m_gwInfos.end()) {
             iter->m_timestamp = m_timestamp;
             iter->m_duration = durationVal;
             return;
         }
 
-        if (!addNewGw(idField.value(), durationVal)) {
+        if (!addNewGw(msg.field_gwId().value(), durationVal)) {
             return;
         }
 
-        reportGwStatus(idField.value(), MqttsnGwStatus_Available);
+        reportGwStatus(msg.field_gwId().value(), MqttsnGwStatus_Available);
     }
 
     void handle(GwinfoMsg& msg)
     {
-        auto& fields = msg.fields();
-        auto& idField = std::get<GwinfoMsg::FieldIdx_gwId>(fields);
         //auto& addrField = std::get<GwinfoMsg::FieldIdx_gwAdd>(fields);
-        auto iter = findGwInfo(idField.value());
+        auto iter = findGwInfo(msg.field_gwId().value());
         if (iter != m_gwInfos.end()) {
             iter->m_timestamp = m_timestamp;
 //            if (!addrField.value().empty()) {
@@ -1129,7 +1125,7 @@ public:
             return;
         }
 
-        if (!addNewGw(idField.value(), std::numeric_limits<std::uint16_t>::max() * 1000)) {
+        if (!addNewGw(msg.field_gwId().value(), std::numeric_limits<std::uint16_t>::max() * 1000)) {
             return;
         }
 
@@ -1138,7 +1134,7 @@ public:
 //            iter->m_addr = addrField.value();
 //        }
 
-        reportGwStatus(idField.value(), MqttsnGwStatus_Available);
+        reportGwStatus(msg.field_gwId().value(), MqttsnGwStatus_Available);
     }
 
     void handle(ConnackMsg& msg)
@@ -1153,9 +1149,7 @@ public:
             return;
         }
 
-        auto& fields = msg.fields();
-        auto& retCodeField = std::get<ConnackMsg::FieldIdx_returnCode>(fields);
-        auto returnCode = retCodeField.value();
+        auto returnCode = msg.field_returnCode().value();
 
         if (returnCode == mqttsn::protocol::field::ReturnCodeVal_Accepted) {
             m_connectionStatus = ConnectionStatus::Connected;
@@ -1212,11 +1206,9 @@ public:
 
         op->m_lastMsgTimestamp = m_timestamp;
         WillmsgMsg outMsg;
-        auto& fields = outMsg.fields();
-        auto& willMsgField = std::get<WillmsgMsg::FieldIdx_willMsg>(fields);
 
         if (op->m_willInfo.msg != nullptr) {
-            willMsgField.value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+            outMsg.field_willMsg().value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
         }
 
         op->m_willMsgSent = true;
@@ -1225,21 +1217,12 @@ public:
 
     void handle(RegisterMsg& msg)
     {
-        auto& fields = msg.fields();
-        auto& topicIdField = std::get<RegisterMsg::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
-        auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
-
-        updateRegInfo(topicNameField.value().c_str(), topicIdField.value(), true);
+        updateRegInfo(msg.field_topicName().value().c_str(), msg.field_topicId().value(), true);
 
         RegackMsg ackMsg;
-        auto& ackFields = ackMsg.fields();
-        auto& ackTopicIdField = std::get<decltype(ackMsg)::FieldIdx_topicId>(ackFields);
-        auto& ackMsgIdField = std::get<decltype(ackMsg)::FieldIdx_msgId>(ackFields);
-        auto& ackRetCodeField = std::get<decltype(ackMsg)::FieldIdx_returnCode>(ackFields);
-        ackTopicIdField.value() = topicIdField.value();
-        ackMsgIdField.value() = msgIdField.value();
-        ackRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_Accepted;
+        ackMsg.field_topicId().value() = msg.field_topicId().value();
+        ackMsg.field_msgId().value() = msg.field_msgId().value();
+        ackMsg.field_returnCode().value() = mqttsn::protocol::field::ReturnCodeVal_Accepted;
         sendMessage(ackMsg);
     }
 
@@ -1255,24 +1238,20 @@ public:
             return;
         }
 
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<RegackMsg::FieldIdx_msgId>(fields);
-
-        if (msgIdField.value() != op->m_msgId) {
+        if (msg.field_msgId().value() != op->m_msgId) {
             return;
         }
 
-        auto& topicIdField = std::get<RegackMsg::FieldIdx_topicId>(fields);
-        auto& retCodeField = std::get<RegackMsg::FieldIdx_returnCode>(fields);
+        auto retCodeValue = msg.field_returnCode().value();
 
-        if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
-            finalisePublishOp(retCodeToStatus(retCodeField.value()));
+        if (retCodeValue != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+            finalisePublishOp(retCodeToStatus(retCodeValue));
             return;
         }
 
         op->m_lastMsgTimestamp = m_timestamp;
         op->m_registered = true;
-        op->m_topicId = topicIdField.value();
+        op->m_topicId = msg.field_topicId().value();
         op->m_attempt = 0;
 
         updateRegInfo(op->m_topic, op->m_topicId);
@@ -1283,46 +1262,39 @@ public:
 
     void handle(PublishMsg& msg)
     {
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-        auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
-        auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
-
         auto reportMsgFunc =
-            [this, &topicIdField, &dataField, &qosField, &midFlagsField](const char* topicName)
+            [this, &msg](const char* topicName)
             {
                 auto msgInfo = MqttsnMessageInfo();
 
                 msgInfo.topic = topicName;
                 if (topicName == nullptr) {
-                    msgInfo.topicId = topicIdField.value();
+                    msgInfo.topicId = msg.field_topicId().value();
                 }
-                msgInfo.msg = &(*dataField.value().begin());
-                msgInfo.msgLen = dataField.value().size();
-                msgInfo.qos = details::translateQosValue(qosField.value());
-                msgInfo.retain = midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+
+                auto& midFlags = msg.field_flags().field_midFlags();
+                typedef typename std::decay<decltype(midFlags)>::type MidFlags;
+
+                msgInfo.msg = &(*msg.field_data().value().begin());
+                msgInfo.msgLen = msg.field_data().value().size();
+                msgInfo.qos = details::translateQosValue(msg.field_flags().field_qos().value());
+                msgInfo.retain = midFlags.getBitValue(MidFlags::BitIdx_retain);
 
                 GASSERT(m_msgReportFn != nullptr);
                 m_msgReportFn(m_msgReportData, &msgInfo);
             };
 
         auto iter = m_regInfos.end();
-        if (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined) {
+        if (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined) {
             iter = std::find_if(
                 m_regInfos.begin(), m_regInfos.end(),
-                [&topicIdField](typename RegInfosList::const_reference elem) -> bool
+                [&msg](typename RegInfosList::const_reference elem) -> bool
                 {
-                    return elem.m_allocated && (elem.m_topicId == topicIdField.value());
+                    return elem.m_allocated && (elem.m_topicId == msg.field_topicId().value());
                 });
 
             if (iter == m_regInfos.end()) {
-                sendPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+                sendPuback(msg.field_topicId().value(), msg.field_msgId().value(), mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
             }
         }
 
@@ -1331,11 +1303,11 @@ public:
             topicName = iter->m_topic.c_str();
         }
 
-        if ((qosField.value() < mqttsn::protocol::field::QosType::AtLeastOnceDelivery) ||
-            (mqttsn::protocol::field::QosType::ExactlyOnceDelivery < qosField.value())) {
+        if ((msg.field_flags().field_qos().value() < mqttsn::protocol::field::QosType::AtLeastOnceDelivery) ||
+            (mqttsn::protocol::field::QosType::ExactlyOnceDelivery < msg.field_flags().field_qos().value())) {
 
             if ((iter == m_regInfos.end()) &&
-                (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
+                (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
                 return;
             }
 
@@ -1344,58 +1316,58 @@ public:
         }
 
         if ((iter == m_regInfos.end()) &&
-            (topicIdTypeField.value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
+            (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
             m_lastInMsg = LastInMsgInfo();
             return;
         }
 
-        if (qosField.value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
-            sendPuback(topicIdField.value(), msgIdField.value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        if (msg.field_flags().field_qos().value() == mqttsn::protocol::field::QosType::AtLeastOnceDelivery) {
+            sendPuback(msg.field_topicId().value(), msg.field_msgId().value(), mqttsn::protocol::field::ReturnCodeVal_Accepted);
             reportMsgFunc(topicName);
             return;
         }
 
-        GASSERT(qosField.value() == mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
+        GASSERT(msg.field_flags().field_qos().value() == mqttsn::protocol::field::QosType::ExactlyOnceDelivery);
+
+        auto& dupFlags = msg.field_flags().field_dupFlags();
+        typedef typename std::decay<decltype(dupFlags)>::type DupFlags;
 
         bool newMessage =
-            ((!dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup)) ||
-             (topicIdField.value() != m_lastInMsg.m_topicId) ||
-             (msgIdField.value() != m_lastInMsg.m_msgId) ||
+            ((!dupFlags.getBitValue(DupFlags::BitIdx_bit)) ||
+             (msg.field_topicId().value() != m_lastInMsg.m_topicId) ||
+             (msg.field_msgId().value() != m_lastInMsg.m_msgId) ||
              (m_lastInMsg.m_reported));
 
         if (newMessage) {
             m_lastInMsg = LastInMsgInfo();
 
-            m_lastInMsg.m_topicId = topicIdField.value();
-            m_lastInMsg.m_msgId = msgIdField.value();
+            auto& midFlags = msg.field_flags().field_midFlags();
+            typedef typename std::decay<decltype(midFlags)>::type MidFlags;
+
+            m_lastInMsg.m_topicId = msg.field_topicId().value();
+            m_lastInMsg.m_msgId = msg.field_msgId().value();
             m_lastInMsg.m_retain =
-                midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain);
+                midFlags.getBitValue(MidFlags::BitIdx_retain);
         }
 
-        m_lastInMsg.m_msgData = dataField.value();
+        m_lastInMsg.m_msgData = msg.field_data().value();
 
         PubrecMsg recMsg;
-        auto& recFields = recMsg.fields();
-        auto& recMsgIdField = std::get<decltype(recMsg)::FieldIdx_msgId>(recFields);
-
-        recMsgIdField.value() = msgIdField.value();
+        recMsg.field_msgId().value() = msg.field_msgId().value();
         sendMessage(recMsg);
     }
 
     void handle(PubackMsg& msg)
     {
-        auto& fields = msg.fields();
-        auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
-        auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
+        auto retCodeValue = msg.field_returnCode().value();
 
-        if (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+        if (retCodeValue == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
 
             auto iter = std::find_if(
                 m_regInfos.begin(), m_regInfos.end(),
-                [&topicIdField](typename RegInfosList::const_reference elem) -> bool
+                [&msg](typename RegInfosList::const_reference elem) -> bool
                 {
-                    return elem.m_allocated && (elem.m_topicId == topicIdField.value());
+                    return elem.m_allocated && (elem.m_topicId == msg.field_topicId().value());
                 });
 
             if (iter != m_regInfos.end()) {
@@ -1410,20 +1382,20 @@ public:
         auto* op = opPtr<PublishOpBase>();
 
 
-        if ((topicIdField.value() != op->m_topicId) ||
-            (msgIdField.value() != op->m_msgId)) {
+        if ((msg.field_topicId().value() != op->m_topicId) ||
+            (msg.field_msgId().value() != op->m_msgId)) {
             return;
         }
 
         if ((op->m_qos == MqttsnQoS_ExactlyOnceDelivery) &&
-            (retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted)) {
+            (retCodeValue == mqttsn::protocol::field::ReturnCodeVal_Accepted)) {
             // PUBREC is expected instead
             return;
         }
 
         do {
             if ((op->m_qos < MqttsnQoS_AtLeastOnceDelivery) ||
-                (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) ||
+                (retCodeValue != mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) ||
                 (m_currOp != Op::Publish) ||
                 (opPtr<PublishOp>()->m_didRegistration)) {
                 break;
@@ -1437,7 +1409,7 @@ public:
             return;
         } while (false);
 
-        finalisePublishOp(retCodeToStatus(retCodeField.value()));
+        finalisePublishOp(retCodeToStatus(retCodeValue));
     }
 
     void handle(PubrecMsg& msg)
@@ -1448,10 +1420,7 @@ public:
 
         auto* op = opPtr<PublishOpBase>();
 
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<PubrecMsg::FieldIdx_msgId>(fields);
-
-        if (msgIdField.value() != op->m_msgId) {
+        if (msg.field_msgId().value() != op->m_msgId) {
             return;
         }
 
@@ -1462,18 +1431,13 @@ public:
 
     void handle(PubrelMsg& msg)
     {
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
-
-        if (m_lastInMsg.m_msgId != msgIdField.value()) {
+        if (m_lastInMsg.m_msgId != msg.field_msgId().value()) {
             m_lastInMsg = LastInMsgInfo();
             return;
         }
 
         PubcompMsg compMsg;
-        auto& compFields = compMsg.fields();
-        auto& compMsgIdField = std::get<decltype(compMsg)::FieldIdx_msgId>(compFields);
-        compMsgIdField.value() = msgIdField.value();
+        compMsg.field_msgId().value() = msg.field_msgId().value();
         sendMessage(compMsg);
 
         if (!m_lastInMsg.m_reported) {
@@ -1511,10 +1475,7 @@ public:
 
         auto* op = opPtr<PublishOpBase>();
 
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<PubrecMsg::FieldIdx_msgId>(fields);
-
-        if ((msgIdField.value() != op->m_msgId) ||
+        if ((msg.field_msgId().value() != op->m_msgId) ||
             (!op->m_ackReceived)) {
             return;
         }
@@ -1530,19 +1491,12 @@ public:
 
         auto* op = opPtr<SubscribeOpBase>();
 
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<SubackMsg::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-        auto& topicIdField = std::get<SubackMsg::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<SubackMsg::FieldIdx_msgId>(fields);
-        auto& retCodeField = std::get<SubackMsg::FieldIdx_returnCode>(fields);
-
-        if (msgIdField.value() != op->m_msgId) {
+        if (msg.field_msgId().value() != op->m_msgId) {
             return;
         }
 
-        if ((retCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) &&
+        auto retCodeValue = msg.field_returnCode().value();
+        if ((retCodeValue == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) &&
             (m_currOp == Op::Subscribe) &&
             (opPtr<SubscribeOp>()->m_topicId != 0U)) {
 
@@ -1564,23 +1518,23 @@ public:
             return;
         }
 
-        auto qosValue = details::translateQosValue(qosField.value());
-        if (retCodeField.value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+        auto qosValue = details::translateQosValue(msg.field_flags().field_qos().value());
+        if (retCodeValue != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
             op->m_qos = qosValue;
-            finaliseSubscribeOp(retCodeToStatus(retCodeField.value()));
+            finaliseSubscribeOp(retCodeToStatus(retCodeValue));
             return;
         }
 
         if ((m_currOp == Op::SubscribeId) &&
-            (opPtr<SubscribeIdOp>()->m_topicId != topicIdField.value())) {
+            (opPtr<SubscribeIdOp>()->m_topicId != msg.field_topicId().value())) {
             if (!doSubscribeId()) {
                 finaliseSubscribeOp(MqttsnAsyncOpStatus_InvalidId);
             }
             return;
         }
 
-        if ((m_currOp == Op::Subscribe) && (topicIdField.value() != 0U)) {
-            updateRegInfo(opPtr<SubscribeOp>()->m_topic, topicIdField.value(), true);
+        if ((m_currOp == Op::Subscribe) && (msg.field_topicId().value() != 0U)) {
+            updateRegInfo(opPtr<SubscribeOp>()->m_topic, msg.field_topicId().value(), true);
         }
 
         op->m_qos = qosValue;
@@ -1595,10 +1549,7 @@ public:
 
         auto* op = opPtr<UnsubscribeOpBase>();
 
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<UnsubackMsg::FieldIdx_msgId>(fields);
-
-        if (msgIdField.value() != op->m_msgId) {
+        if (msg.field_msgId().value() != op->m_msgId) {
             return;
         }
 
@@ -1682,9 +1633,7 @@ public:
             return;
         }
 
-        auto& fields = msg.fields();
-        auto& retCodeField = std::get<WilltopicrespMsg::FieldIdx_returnCode>(fields);
-        finaliseWillTopicUpdateOp(retCodeToStatus(retCodeField.value()));
+        finaliseWillTopicUpdateOp(retCodeToStatus(msg.field_returnCode().value()));
     }
 
     void handle(WillmsgrespMsg& msg)
@@ -1693,9 +1642,7 @@ public:
             return;
         }
 
-        auto& fields = msg.fields();
-        auto& retCodeField = std::get<WillmsgrespMsg::FieldIdx_returnCode>(fields);
-        finaliseWillMsgUpdateOp(retCodeToStatus(retCodeField.value()));
+        finaliseWillMsgUpdateOp(retCodeToStatus(msg.field_returnCode().value()));
     }
 
     void handle(Message& msg)
@@ -2115,10 +2062,7 @@ private:
     void sendGwSearchReq()
     {
         SearchgwMsg msg;
-        auto& fields = msg.fields();
-        auto& radiusField = std::get<SearchgwMsg::FieldIdx_radius>(fields);
-        radiusField.value() = m_broadcastRadius;
-
+        msg.field_radius().value() = m_broadcastRadius;
         sendMessage(msg, true);
         m_lastGwSearchTimestamp = m_timestamp;
     }
@@ -2132,7 +2076,7 @@ private:
 
         m_writeBuf.resize(std::max(m_writeBuf.size(), m_stack.length(msg)));
         GASSERT(!m_writeBuf.empty());
-        typename ProtStack::WriteIterator writeIter = &m_writeBuf[0];
+        auto writeIter = comms::writeIteratorFor<Message>(&m_writeBuf[0]);
         auto es = m_stack.write(msg, writeIter, m_writeBuf.size());
         GASSERT(es == comms::ErrorStatus::Success);
         if (es != comms::ErrorStatus::Success) {
@@ -2141,7 +2085,7 @@ private:
         }
 
         auto writtenBytes = static_cast<std::size_t>(
-            std::distance(typename ProtStack::WriteIterator(&m_writeBuf[0]), writeIter));
+            std::distance(comms::writeIteratorFor<Message>(&m_writeBuf[0]), writeIter));
 
         m_sendOutputDataFn(m_sendOutputDataData, &m_writeBuf[0], writtenBytes, broadcast);
     }
@@ -2180,9 +2124,7 @@ private:
         ++op->m_attempt;
 
         DisconnectMsg msg;
-        auto& fields = msg.fields();
-        auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
-        durationField.setMode(comms::field::OptionalMode::Missing);
+        msg.field_duration().setMissing();
         sendMessage(msg);
         return true;
     }
@@ -2307,22 +2249,16 @@ private:
         ++op->m_attempt;
 
         SubscribeMsg msg;
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
+        auto& dupFlagsField = msg.field_flags().field_dupFlags();
+        typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
-        qosField.value() = details::translateQosValue(op->m_qos);
-        dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
-        msgIdField.value() = op->m_msgId;
-        topicIdField.field().value() = op->m_topicId;
+        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        msg.field_flags().field_qos().value() = details::translateQosValue(op->m_qos);
+        dupFlagsField.setBitValue(DupFlags::BitIdx_bit, !firstAttempt);
+        msg.field_msgId().value() = op->m_msgId;
+        msg.field_topicId().field().value() = op->m_topicId;
         msg.doRefresh();
-        GASSERT(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+        GASSERT(msg.field_topicId().doesExist());
         sendMessage(msg);
         return true;
     }
@@ -2354,33 +2290,26 @@ private:
         }
 
         SubscribeMsg msg;
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-        auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
+        auto& dupFlagsField = msg.field_flags().field_dupFlags();
+        typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
         if (op->m_topicId != 0U) {
-            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
-            topicIdField.field().value() = iter->m_topicId;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+            msg.field_topicId().field().value() = iter->m_topicId;
         }
         else {
-            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
-            topicNameField.field().value() = op->m_topic;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            msg.field_topicName().field().value() = op->m_topic;
         }
 
-        qosField.value() = details::translateQosValue(op->m_qos);
-        dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, !firstAttempt);
-        msgIdField.value() = op->m_msgId;
+        msg.field_flags().field_qos().value() = details::translateQosValue(op->m_qos);
+        dupFlagsField.setBitValue(DupFlags::BitIdx_bit, !firstAttempt);
+        msg.field_msgId().value() = op->m_msgId;
         msg.doRefresh();
-        GASSERT((op->m_topicId != 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Exists));
-        GASSERT((op->m_topicId != 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Missing));
-        GASSERT((op->m_topicId == 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Missing));
-        GASSERT((op->m_topicId == 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Exists));
+        GASSERT((op->m_topicId != 0U) || (msg.field_topicName().doesExist()));
+        GASSERT((op->m_topicId != 0U) || (msg.field_topicId().isMissing()));
+        GASSERT((op->m_topicId == 0U) || (msg.field_topicName().isMissing()));
+        GASSERT((op->m_topicId == 0U) || (msg.field_topicId().doesExist()));
 
         sendMessage(msg);
         return true;
@@ -2398,18 +2327,11 @@ private:
         ++op->m_attempt;
 
         UnsubscribeMsg msg;
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-
-        topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
-        msgIdField.value() = op->m_msgId;
-        topicIdField.field().value() = op->m_topicId;
+        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
+        msg.field_msgId().value() = op->m_msgId;
+        msg.field_topicId().field().value() = op->m_topicId;
         msg.doRefresh();
-        GASSERT(topicIdField.getMode() == comms::field::OptionalMode::Exists);
+        GASSERT(msg.field_topicId().doesExist());
         sendMessage(msg);
         return true;
     }
@@ -2440,29 +2362,22 @@ private:
         }
 
         UnsubscribeMsg msg;
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-        auto& topicIdField = std::get<decltype(msg)::FieldIdx_topicId>(fields);
-        auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
 
         if (op->m_topicId != 0U) {
-            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
-            topicIdField.field().value() = iter->m_topicId;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+            msg.field_topicId().field().value() = iter->m_topicId;
         }
         else {
-            topicIdTypeField.value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
-            topicNameField.field().value() = op->m_topic;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            msg.field_topicName().field().value() = op->m_topic;
         }
 
-        msgIdField.value() = op->m_msgId;
+        msg.field_msgId().value() = op->m_msgId;
         msg.doRefresh();
-        GASSERT((op->m_topicId != 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Exists));
-        GASSERT((op->m_topicId != 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Missing));
-        GASSERT((op->m_topicId == 0U) || (topicNameField.getMode() == comms::field::OptionalMode::Missing));
-        GASSERT((op->m_topicId == 0U) || (topicIdField.getMode() == comms::field::OptionalMode::Exists));
+        GASSERT((op->m_topicId != 0U) || (msg.field_topicName().doesExist()));
+        GASSERT((op->m_topicId != 0U) || (msg.field_topicId().isMissing()));
+        GASSERT((op->m_topicId == 0U) || (msg.field_topicName().isMissing()));
+        GASSERT((op->m_topicId == 0U) || (msg.field_topicId().doesExist()));
 
         sendMessage(msg);
         return true;
@@ -2479,21 +2394,17 @@ private:
 
         ++op->m_attempt;
         WilltopicupdMsg msg;
-        GASSERT(std::get<decltype(msg)::FieldIdx_flags>(msg.fields()).getMode() == comms::field::OptionalMode::Missing);
+        GASSERT(msg.field_flags().isMissing());
         if ((op->m_topic != nullptr) && (op->m_topic[0] != '\0')) {
-            auto& fields = msg.fields();
-            auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-            auto& flagsMembers = flagsField.field().value();
-            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-            auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+            auto& midFlagsField = msg.field_flags().field().field_midFlags();
+            typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-            qosField.value() = details::translateQosValue(op->m_qos);
-            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, op->m_retain);
-            topicField.value() = op->m_topic;
+            msg.field_flags().field().field_qos().value() = details::translateQosValue(op->m_qos);
+            midFlagsField.setBitValue(MidFlags::BitIdx_retain, op->m_retain);
+            msg.field_willTopic().value() = op->m_topic;
 
             msg.doRefresh();
-            GASSERT(flagsField.getMode() == comms::field::OptionalMode::Exists);
+            GASSERT(msg.field_flags().doesExist());
         }
 
         sendMessage(msg);
@@ -2512,12 +2423,10 @@ private:
         ++op->m_attempt;
 
         WillmsgupdMsg msg;
-        auto& fields = msg.fields();
-        auto& msgBodyField = std::get<WillmsgupdMsg::FieldIdx_willMsg>(fields);
         auto* msgBodyBeg = op->m_msg;
         if (msgBodyBeg != nullptr) {
             auto* msgBodyEnd = msgBodyBeg + op->m_msgLen;
-            msgBodyField.value().assign(msgBodyBeg, msgBodyEnd);
+            msg.field_willMsg().value().assign(msgBodyBeg, msgBodyEnd);
         }
         sendMessage(msg);
         return true;
@@ -2535,11 +2444,8 @@ private:
         ++op->m_attempt;
 
         DisconnectMsg msg;
-        auto& fields = msg.fields();
-        auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
-
-        durationField.setMode(comms::field::OptionalMode::Exists);
-        durationField.field().value() = op->m_duration;
+        msg.field_duration().setExists();
+        msg.field_duration().field().value() = op->m_duration;
         sendMessage(msg);
         return true;
     }
@@ -2556,10 +2462,7 @@ private:
         ++op->m_attempt;
 
         PingreqMsg msg;
-        auto& fields = msg.fields();
-        auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
-
-        clientIdField.value() = m_clientId;
+        msg.field_clientId().value() = m_clientId;
         sendMessage(msg);
         return true;
     }
@@ -2571,19 +2474,15 @@ private:
         bool hasWill)
     {
         ConnectMsg msg;
-        auto& fields = msg.fields();
-        auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-        auto& durationField = std::get<decltype(msg)::FieldIdx_duration>(fields);
-        auto& clientIdField = std::get<decltype(msg)::FieldIdx_clientId>(fields);
+        auto& midFlagsField = msg.field_flags().field_midFlags();
+        typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession, cleanSession);
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_will, hasWill);
+        midFlagsField.setBitValue(MidFlags::BitIdx_cleanSession, cleanSession);
+        midFlagsField.setBitValue(MidFlags::BitIdx_will, hasWill);
 
-        durationField.value() = keepAlivePeriod;
+        msg.field_duration().value() = keepAlivePeriod;
         if (clientId != nullptr) {
-            clientIdField.value() = clientId;
+            msg.field_clientId().value() = clientId;
         }
         sendMessage(msg);
     }
@@ -2595,16 +2494,12 @@ private:
     {
         WilltopicMsg msg;
         if (topic != nullptr) {
-            auto& fields = msg.fields();
-            auto& flagsField = std::get<decltype(msg)::FieldIdx_flags>(fields);
-            auto& flagsMembers = flagsField.field().value();
-            auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-            auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-            auto& topicField = std::get<decltype(msg)::FieldIdx_willTopic>(fields);
+            auto& midFlagsField = msg.field_flags().field().field_midFlags();
+            typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-            midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
-            qosField.value() = details::translateQosValue(qos);
-            topicField.value() = topic;
+            midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+            msg.field_flags().field().field_qos().value() = details::translateQosValue(qos);
+            msg.field_willTopic().value() = topic;
         }
         msg.doRefresh();
         sendMessage(msg);
@@ -2629,24 +2524,18 @@ private:
         bool duplicate)
     {
         PublishMsg pubMsg;
-        auto& fields = pubMsg.fields();
-        auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-        auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-        auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-        auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-        auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
-        auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
-        auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
+        auto& midFlagsField = pubMsg.field_flags().field_midFlags();
+        auto& dupFlagsField = pubMsg.field_flags().field_dupFlags();
+        typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
+        typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-        topicIdTypeField.value() = topicIdType;
-        midFlagsField.setBitValue(mqttsn::protocol::field::MidFlagsBits_retain, retain);
-        qosField.value() = qos;
-        dupFlagsField.setBitValue(mqttsn::protocol::field::DupFlagsBits_dup, duplicate);
-        topicIdField.value() = topicId;
-        msgIdField.value() = msgId;
-        dataField.value().assign(msg, msg + msgLen);
+        pubMsg.field_flags().field_topicId().value() = topicIdType;
+        midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+        pubMsg.field_flags().field_qos().value() = qos;
+        dupFlagsField.setBitValue(DupFlags::BitIdx_bit, duplicate);
+        pubMsg.field_topicId().value() = topicId;
+        pubMsg.field_msgId().value() = msgId;
+        pubMsg.field_data().value().assign(msg, msg + msgLen);
 
         sendMessage(pubMsg);
     }
@@ -2656,16 +2545,11 @@ private:
         std::uint16_t msgId,
         mqttsn::protocol::field::ReturnCodeVal retCode)
     {
-        PubackMsg ackMsg;
-        auto& ackFields = ackMsg.fields();
-        auto& ackTopicIdField = std::get<decltype(ackMsg)::FieldIdx_topicId>(ackFields);
-        auto& ackMsgIdField = std::get<decltype(ackMsg)::FieldIdx_msgId>(ackFields);
-        auto& ackRetCodeField = std::get<decltype(ackMsg)::FieldIdx_returnCode>(ackFields);
-
-        ackTopicIdField.value() = topicId;
-        ackMsgIdField.value() = msgId;
-        ackRetCodeField.value() = retCode;
-        sendMessage(ackMsg);
+        PubackMsg msg;
+        msg.field_topicId().value() = topicId;
+        msg.field_msgId().value() = msgId;
+        msg.field_returnCode().value() = retCode;
+        sendMessage(msg);
     }
 
     void sendRegister(
@@ -2673,21 +2557,15 @@ private:
         const char* topic)
     {
         RegisterMsg msg;
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-        auto& topicNameField = std::get<decltype(msg)::FieldIdx_topicName>(fields);
-
-        msgIdField.value() = msgId;
-        topicNameField.value() = topic;
+        msg.field_msgId().value() = msgId;
+        msg.field_topicName().value() = topic;
         sendMessage(msg);
     }
 
     void sendPubrel(std::uint16_t msgId)
     {
         PubrelMsg msg;
-        auto& fields = msg.fields();
-        auto& msgIdField = std::get<decltype(msg)::FieldIdx_msgId>(fields);
-        msgIdField.value() = msgId;
+        msg.field_msgId().value() = msgId;
         sendMessage(msg);
     }
 

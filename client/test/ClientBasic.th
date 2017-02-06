@@ -628,9 +628,7 @@ private:
             {
                 sent = true;
                 TS_TRACE("<-- SEARCHGW");
-                auto& fields = msg.fields();
-                auto& radiusField = std::get<SearchgwMsg::FieldIdx_radius>(fields);
-                TS_ASSERT_EQUALS(radiusField.value(), radius);
+                TS_ASSERT_EQUALS(msg.field_radius().value(), radius);
             });
 
         processOutput(state, dataProc, true);
@@ -653,19 +651,14 @@ private:
             {
                 sent = true;
                 TS_TRACE("<-- CONNECT");
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<ConnectMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
-                auto& midFlags = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-                auto& protocolIdField = std::get<ConnectMsg::FieldIdx_protocolId>(fields);
-                auto& durationField = std::get<ConnectMsg::FieldIdx_duration>(fields);
-                auto& clientIdField = std::get<ConnectMsg::FieldIdx_clientId>(fields);
+                auto& midFlags = msg.field_flags().field_midFlags();
+                typedef typename std::decay<decltype(midFlags)>::type MidFlags;
 
-                TS_ASSERT_EQUALS(midFlags.getBitValue(mqttsn::protocol::field::MidFlagsBits_cleanSession), cleanSession);
-                TS_ASSERT_EQUALS(midFlags.getBitValue(mqttsn::protocol::field::MidFlagsBits_will), hasWill);
-                TS_ASSERT_EQUALS(protocolIdField.value(), 1);
-                TS_ASSERT_EQUALS(durationField.value(), keepAlivePeriod);
-                TS_ASSERT_EQUALS(clientIdField.value(), clientId);
+                TS_ASSERT_EQUALS(midFlags.getBitValue(MidFlags::BitIdx_cleanSession), cleanSession);
+                TS_ASSERT_EQUALS(midFlags.getBitValue(MidFlags::BitIdx_will), hasWill);
+                TS_ASSERT_EQUALS(msg.field_protocolId().value(), 1);
+                TS_ASSERT_EQUALS(msg.field_duration().value(), keepAlivePeriod);
+                TS_ASSERT_EQUALS(msg.field_clientId().value(), clientId);
             });
 
         processOutput(state, dataProc);
@@ -695,21 +688,17 @@ private:
 
                 sent = true;
                 TS_TRACE("<-- WILLTOPIC");
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<WilltopicMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.field().value();
-                auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-                auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-                auto& topicField = std::get<WilltopicMsg::FieldIdx_willTopic>(fields);
+                auto& midFlagsField = msg.field_flags().field().field_midFlags();
+                typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-                TS_ASSERT_EQUALS(topicField.value(), topic);
+                TS_ASSERT_EQUALS(msg.field_willTopic().value(), topic);
                 if (!topic.empty()) {
-                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Exists);
-                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
-                    TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), qos);
+                    TS_ASSERT(msg.field_flags().doesExist());
+                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(MidFlags::BitIdx_retain), retain);
+                    TS_ASSERT_EQUALS(CommonTestClient::transformQos(msg.field_flags().field().field_qos().value()), qos);
                 }
                 else {
-                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Missing);
+                    TS_ASSERT(msg.field_flags().isMissing());
                 }
 
             });
@@ -730,10 +719,7 @@ private:
             {
                 sent = true;
                 TS_TRACE("<-- WILLMSG");
-                auto& fields = msg.fields();
-                auto& willMsgField = std::get<WillmsgMsg::FieldIdx_willMsg>(fields);
-
-                TS_ASSERT_EQUALS(willMsgField.value(), data);
+                TS_ASSERT_EQUALS(msg.field_willMsg().value(), data);
             });
 
         processOutput(state, dataProc);
@@ -753,14 +739,9 @@ private:
             {
                 sent = true;
                 TS_TRACE("<-- REGISTER");
-                auto& fields = msg.fields();
-                auto& topicIdField = std::get<RegisterMsg::FieldIdx_topicId>(fields);
-                auto& msgIdField = std::get<RegisterMsg::FieldIdx_msgId>(fields);
-                auto& topicNameField = std::get<RegisterMsg::FieldIdx_topicName>(fields);
-
-                TS_ASSERT_EQUALS(topicIdField.value(), 0U);
-                TS_ASSERT_EQUALS(topicNameField.value(), topic);
-                msgId = msgIdField.value();
+                TS_ASSERT_EQUALS(msg.field_topicId().value(), 0U);
+                TS_ASSERT_EQUALS(msg.field_topicName().value(), topic);
+                msgId = msg.field_msgId().value();
             });
 
         processOutput(state, dataProc);
@@ -784,14 +765,9 @@ private:
                 sent = true;
                 TS_TRACE("<-- REGACK");
 
-                auto& fields = msg.fields();
-                auto& topicIdField = std::get<RegackMsg::FieldIdx_topicId>(fields);
-                auto& msgIdField = std::get<RegackMsg::FieldIdx_msgId>(fields);
-                auto& retCodeField = std::get<RegackMsg::FieldIdx_returnCode>(fields);
-
-                TS_ASSERT_EQUALS(topicIdField.value(), topicId);
-                TS_ASSERT_EQUALS(msgIdField.value(), msgId);
-                TS_ASSERT_EQUALS(retCodeField.value(), retCode);
+                TS_ASSERT_EQUALS(msg.field_topicId().value(), topicId);
+                TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
+                TS_ASSERT_EQUALS(msg.field_returnCode().value(), retCode);
             });
 
         processOutput(state, dataProc);
@@ -817,25 +793,20 @@ private:
                 sent = true;
 
                 TS_TRACE("<-- PUBLISH");
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<PublishMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
-                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-                auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
-                auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-                auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-                auto& topicIdField = std::get<PublishMsg::FieldIdx_topicId>(fields);
-                auto& msgIdField = std::get<PublishMsg::FieldIdx_msgId>(fields);
-                auto& dataField = std::get<PublishMsg::FieldIdx_data>(fields);
+                auto& midFlagsField = msg.field_flags().field_midFlags();
+                auto& dupFlagsField = msg.field_flags().field_dupFlags();
 
-                TS_ASSERT_EQUALS(topicIdTypeField.value(), topicIdType);
-                TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
-                TS_ASSERT_EQUALS(CommonTestClient::transformQos(qosField.value()), qos);
-                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), duplicate);
-                TS_ASSERT_EQUALS(topicIdField.value(), topicId);
-                TS_ASSERT_EQUALS(dataField.value(), data);
+                typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
+                typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-                msgId = msgIdField.value();
+                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), topicIdType);
+                TS_ASSERT_EQUALS(midFlagsField.getBitValue(MidFlags::BitIdx_retain), retain);
+                TS_ASSERT_EQUALS(CommonTestClient::transformQos(msg.field_flags().field_qos().value()), qos);
+                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(DupFlags::BitIdx_bit), duplicate);
+                TS_ASSERT_EQUALS(msg.field_topicId().value(), topicId);
+                TS_ASSERT_EQUALS(msg.field_data().value(), data);
+
+                msgId = msg.field_msgId().value();
                 TS_TRACE("msg_id=" + std::to_string(msgId));
             });
 
@@ -859,14 +830,9 @@ private:
                 TS_TRACE("<-- PUBACK");
                 sent = true;
 
-                auto& fields = msg.fields();
-                auto& topicIdField = std::get<PubackMsg::FieldIdx_topicId>(fields);
-                auto& msgIdField = std::get<PubackMsg::FieldIdx_msgId>(fields);
-                auto& retCodeField = std::get<PubackMsg::FieldIdx_returnCode>(fields);
-
-                TS_ASSERT_EQUALS(topicIdField.value(), topicId);
-                TS_ASSERT_EQUALS(msgIdField.value(), msgId);
-                TS_ASSERT_EQUALS(retCodeField.value(), retCode);
+                TS_ASSERT_EQUALS(msg.field_topicId().value(), topicId);
+                TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
+                TS_ASSERT_EQUALS(msg.field_returnCode().value(), retCode);
             });
 
         processOutput(state, dataProc);
@@ -886,10 +852,7 @@ private:
                 TS_TRACE("<-- PUBREC");
                 sent = true;
 
-                auto& fields = msg.fields();
-                auto& msgIdField = std::get<PubrecMsg::FieldIdx_msgId>(fields);
-
-                TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
             });
 
         processOutput(state, dataProc);
@@ -908,11 +871,7 @@ private:
             {
                 sent = true;
                 TS_TRACE("<-- PUBREL");
-
-                auto& fields = msg.fields();
-                auto& msgIdField = std::get<PubrelMsg::FieldIdx_msgId>(fields);
-
-                TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
 
             });
 
@@ -932,11 +891,7 @@ private:
             {
                 TS_TRACE("<-- PUBCOMP");
                 sent = true;
-
-                auto& fields = msg.fields();
-                auto& msgIdField = std::get<PubcompMsg::FieldIdx_msgId>(fields);
-
-                TS_ASSERT_EQUALS(msgIdField.value(), msgId);
+                TS_ASSERT_EQUALS(msg.field_msgId().value(), msgId);
             });
 
         processOutput(state, dataProc);
@@ -959,24 +914,18 @@ private:
                 sent = true;
                 TS_TRACE("<-- SUBSRIBE");
 
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
-                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-                auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-                auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
-                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
-                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
+                auto& dupFlagsField = msg.field_flags().field_dupFlags();
 
-                TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
-                TS_ASSERT_EQUALS(transformQos(qosField.value()), qos);
-                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), duplicate);
-                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Missing);
-                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Exists);
-                TS_ASSERT_EQUALS(topicNameField.field().value(), topic);
+                typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-                msgId = msgIdField.value();
+                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
+                TS_ASSERT_EQUALS(transformQos(msg.field_flags().field_qos().value()), qos);
+                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(DupFlags::BitIdx_bit), duplicate);
+                TS_ASSERT(msg.field_topicId().isMissing());
+                TS_ASSERT(msg.field_topicName().doesExist());
+                TS_ASSERT_EQUALS(msg.field_topicName().field().value(), topic);
+
+                msgId = msg.field_msgId().value();
             });
 
         processOutput(state, dataProc);
@@ -1001,29 +950,23 @@ private:
                 sent = true;
                 TS_TRACE("<-- SUBSCRIBE");
 
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
-                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-                auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-                auto& dupFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_dupFlags>(flagsMembers);
-                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
-                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
-                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
+                auto& dupFlagsField = msg.field_flags().field_dupFlags();
+
+                typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
                 if (predefined) {
-                    TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
                 }
                 else {
-                    TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
                 }
-                TS_ASSERT_EQUALS(transformQos(qosField.value()), qos);
-                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(mqttsn::protocol::field::DupFlagsBits_dup), duplicate);
-                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Exists);
-                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Missing);
-                TS_ASSERT_EQUALS(topicIdField.field().value(), topicId);
+                TS_ASSERT_EQUALS(transformQos(msg.field_flags().field_qos().value()), qos);
+                TS_ASSERT_EQUALS(dupFlagsField.getBitValue(DupFlags::BitIdx_bit), duplicate);
+                TS_ASSERT(msg.field_topicId().doesExist());
+                TS_ASSERT(msg.field_topicName().isMissing());
+                TS_ASSERT_EQUALS(msg.field_topicId().field().value(), topicId);
 
-                msgId = msgIdField.value();
+                msgId = msg.field_msgId().value();
             });
 
         processOutput(state, dataProc);
@@ -1045,20 +988,12 @@ private:
                 sent = true;
                 TS_TRACE("<-- UNSUBSRIBE");
 
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
-                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
-                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
-                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
+                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
+                TS_ASSERT(msg.field_topicId().isMissing());
+                TS_ASSERT(msg.field_topicName().doesExist());
+                TS_ASSERT_EQUALS(msg.field_topicName().field().value(), topic);
 
-                TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
-                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Missing);
-                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Exists);
-                TS_ASSERT_EQUALS(topicNameField.field().value(), topic);
-
-                msgId = msgIdField.value();
+                msgId = msg.field_msgId().value();
             });
 
         processOutput(state, dataProc);
@@ -1081,25 +1016,17 @@ private:
                 sent = true;
                 TS_TRACE("<-- UNSUBSCRIBE");
 
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<SubscribeMsg::FieldIdx_flags>(fields);
-                auto& flagsMembers = flagsField.value();
-                auto& topicIdTypeField = std::get<mqttsn::protocol::field::FlagsMemberIdx_topicId>(flagsMembers);
-                auto& msgIdField = std::get<SubscribeMsg::FieldIdx_msgId>(fields);
-                auto& topicIdField = std::get<SubscribeMsg::FieldIdx_topicId>(fields);
-                auto& topicNameField = std::get<SubscribeMsg::FieldIdx_topicName>(fields);
-
                 if (predefined) {
-                    TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
                 }
                 else {
-                    TS_ASSERT_EQUALS(topicIdTypeField.value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
                 }
-                TS_ASSERT_EQUALS(topicIdField.getMode(), comms::field::OptionalMode::Exists);
-                TS_ASSERT_EQUALS(topicNameField.getMode(), comms::field::OptionalMode::Missing);
-                TS_ASSERT_EQUALS(topicIdField.field().value(), topicId);
+                TS_ASSERT(msg.field_topicId().doesExist());
+                TS_ASSERT(msg.field_topicName().isMissing());
+                TS_ASSERT_EQUALS(msg.field_topicId().field().value(), topicId);
 
-                msgId = msgIdField.value();
+                msgId = msg.field_msgId().value();
             });
 
         processOutput(state, dataProc);
@@ -1119,10 +1046,7 @@ private:
             {
                 sent = true;
                 TS_TRACE("<-- PINGREQ");
-
-                auto& fields = msg.fields();
-                auto& clientIdField = std::get<PingreqMsg::FieldIdx_clientId>(fields);
-                TS_ASSERT_EQUALS(clientIdField.value(), clientId);
+                TS_ASSERT_EQUALS(msg.field_clientId().value(), clientId);
             });
 
         processOutput(state, dataProc);
@@ -1162,10 +1086,8 @@ private:
                 TS_TRACE("<-- DISCONNECT");
 
                 if (duration != 0) {
-                    auto& fields = msg.fields();
-                    auto& durationField = std::get<DisconnectMsg::FieldIdx_duration>(fields);
-                    TS_ASSERT_EQUALS(durationField.getMode(), comms::field::OptionalMode::Exists);
-                    TS_ASSERT_EQUALS(durationField.field().value(), duration);
+                    TS_ASSERT(msg.field_duration().doesExist());
+                    TS_ASSERT_EQUALS(msg.field_duration().field().value(), duration);
                 }
             });
 
@@ -1189,23 +1111,17 @@ private:
                 static_cast<void>(msg);
                 TS_TRACE("<-- WILLTOPICUPD");
 
-                auto& fields = msg.fields();
-                auto& flagsField = std::get<WilltopicupdMsg::FieldIdx_flags>(fields);
-                auto& topicField = std::get<WilltopicupdMsg::FieldIdx_willTopic>(fields);
-
-                TS_ASSERT_EQUALS(topicField.value(), topic);
+                TS_ASSERT_EQUALS(msg.field_willTopic().value(), topic);
                 if (!topic.empty()) {
-                    auto& flagsMembers = flagsField.field().value();
-                    auto& qosField = std::get<mqttsn::protocol::field::FlagsMemberIdx_qos>(flagsMembers);
-                    auto& midFlagsField = std::get<mqttsn::protocol::field::FlagsMemberIdx_midFlags>(flagsMembers);
+                    auto& midFlagsField = msg.field_flags().field().field_midFlags();
+                    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-
-                    TS_ASSERT_EQUALS(transformQos(qosField.value()), qos);
-                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(mqttsn::protocol::field::MidFlagsBits_retain), retain);
-                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Exists);
+                    TS_ASSERT_EQUALS(transformQos(msg.field_flags().field().field_qos().value()), qos);
+                    TS_ASSERT_EQUALS(midFlagsField.getBitValue(MidFlags::BitIdx_retain), retain);
+                    TS_ASSERT(msg.field_flags().doesExist());
                 }
                 else {
-                    TS_ASSERT_EQUALS(flagsField.getMode(), comms::field::OptionalMode::Missing);
+                    TS_ASSERT(msg.field_flags().isMissing());
                 }
             });
 
@@ -1227,10 +1143,7 @@ private:
                 static_cast<void>(msg);
                 TS_TRACE("<-- WILLMSGUPD");
 
-                auto& fields = msg.fields();
-                auto& willMsgField = std::get<WillmsgupdMsg::FieldIdx_willMsg>(fields);
-
-                TS_ASSERT_EQUALS(willMsgField.value(), data);
+                TS_ASSERT_EQUALS(msg.field_willMsg().value(), data);
             });
 
         processOutput(state, dataProc);

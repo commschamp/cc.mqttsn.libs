@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -49,10 +49,10 @@ using PubcompBase =
 template <typename TMsgBase>
 class Pubcomp : public PubcompBase<TMsgBase, Pubcomp>
 {
-    typedef PubcompBase<TMsgBase, mqttsn::protocol::message::Pubcomp> Base;
+//    typedef PubcompBase<TMsgBase, mqttsn::protocol::message::Pubcomp> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, msgId);
+    COMMS_MSG_FIELDS_ACCESS(msgId);
 };
 
 }  // namespace message

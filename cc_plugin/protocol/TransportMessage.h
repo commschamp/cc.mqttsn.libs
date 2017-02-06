@@ -33,7 +33,7 @@ namespace protocol
 
 class TransportMessage : public
     comms_champion::TransportMessageBase<
-        cc_plugin::protocol::Stack::Message,
+        cc_plugin::protocol::Message,
         cc_plugin::protocol::Stack::AllFields>
 {
 public:

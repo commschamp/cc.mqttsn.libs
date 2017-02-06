@@ -96,7 +96,7 @@ QVariantMap createProps_flags()
         .add("Clean Session")
         .add("Will")
         .add("Retain");
-    assert(midFlagsProps.bits().size() == mqttsn::protocol::field::MidFlagsBits_numOfValues);
+    assert(midFlagsProps.bits().size() == MidFlagsField::BitIdx_numOfValues);
 
     typedef mqttsn::protocol::field::QoS<FieldBase> QoSField;
     cc::property::field::ForField<QoSField> qosProps;
@@ -113,7 +113,7 @@ QVariantMap createProps_flags()
     dupFlagsProps
         .serialisedHidden()
         .add("DUP");
-    assert(dupFlagsProps.bits().size() == mqttsn::protocol::field::DupFlagsBits_numOfValues);
+    assert(dupFlagsProps.bits().size() == DupFlagsField::BitIdx_numOfValues);
 
     typedef mqttsn::protocol::field::Flags<FieldBase> FlagsField;
     return

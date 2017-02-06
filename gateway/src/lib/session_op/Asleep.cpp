@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -58,11 +58,7 @@ void Asleep::brokerConnectionUpdatedImpl()
 
 void Asleep::handle(DisconnectMsg_SN& msg)
 {
-    typedef DisconnectMsg_SN MsgType;
-    auto& fields = msg.fields();
-    auto& durationField = std::get<MsgType::FieldIdx_duration>(fields);
-
-    if (durationField.getMode() != comms::field::OptionalMode::Exists) {
+    if (msg.field_duration().getMode() != comms::field::OptionalMode::Exists) {
         // Monotor disconnect with duration in Disconnect op
         return;
     }

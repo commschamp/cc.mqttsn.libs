@@ -54,8 +54,10 @@ std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t l
     auto guard = apiCall();
     const std::uint8_t* bufTmp = buf;
     while (true) {
-        typename TStack::ReadIterator iter = bufTmp;
         typename TStack::MsgPtr msg;
+
+        typedef typename TStack::MsgPtr::element_type MsgType;
+        auto iter = comms::readIteratorFor<MsgType>(bufTmp);
         auto consumedBytes =
             static_cast<std::size_t>(std::distance(buf, bufTmp));
         assert(consumedBytes <= len);
@@ -95,16 +97,16 @@ void SessionImpl::sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& fun
         return;
     }
 
-    typedef typename TStack::WriteIterator WriteIterator;
+    typedef typename TStack::MsgPtr::element_type MsgType;
 
     buf.resize(std::max(buf.size(), stack.length(msg)));
-    WriteIterator iter = &buf[0];
+    auto iter = comms::writeIteratorFor<MsgType>(&buf[0]);
     auto es = stack.write(msg, iter, buf.size());
     static_cast<void>(es);
     assert(es == comms::ErrorStatus::Success);
     auto writtenCount =
         static_cast<std::size_t>(
-            std::distance(WriteIterator(&buf[0]), iter));
+            std::distance(comms::writeIteratorFor<MsgType>(&buf[0]), iter));
 
     func(&buf[0], writtenCount);
 }

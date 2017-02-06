@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -79,10 +79,10 @@ using WillmsgrespBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Willmsgresp : public WillmsgrespBase<TMsgBase, TOptions, Willmsgresp>
 {
-    typedef WillmsgrespBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsgresp> Base;
+//    typedef WillmsgrespBase<TMsgBase, TOptions, mqttsn::protocol::message::Willmsgresp> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, returnCode);
+    COMMS_MSG_FIELDS_ACCESS(returnCode);
 };
 
 }  // namespace message

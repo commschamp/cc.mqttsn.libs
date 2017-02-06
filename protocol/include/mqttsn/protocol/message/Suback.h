@@ -80,10 +80,10 @@ using SubackBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Suback : public SubackBase<TMsgBase, TOptions, Suback>
 {
-    typedef SubackBase<TMsgBase, TOptions, mqttsn::protocol::message::Suback> Base;
+//    typedef SubackBase<TMsgBase, TOptions, mqttsn::protocol::message::Suback> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, flags, topicId, msgId, returnCode);
+    COMMS_MSG_FIELDS_ACCESS(flags, topicId, msgId, returnCode);
 };
 
 }  // namespace message

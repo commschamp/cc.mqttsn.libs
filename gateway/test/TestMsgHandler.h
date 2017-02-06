@@ -28,6 +28,7 @@
 class TestMsgHandler;
 
 typedef mqttsn::protocol::MessageT<
+    comms::option::IdInfoInterface,
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
     comms::option::Handler<TestMsgHandler>,
@@ -36,6 +37,7 @@ typedef mqttsn::protocol::MessageT<
 > TestMqttsnMessage;
 
 typedef mqtt::protocol::MessageT<
+    comms::option::IdInfoInterface,
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
     comms::option::Handler<TestMsgHandler>,

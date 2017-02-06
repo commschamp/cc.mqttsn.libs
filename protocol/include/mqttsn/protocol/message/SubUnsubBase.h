@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -36,23 +36,6 @@ namespace details
 {
 
 template <bool TClientOnly, bool TGatewayOnly>
-struct ExtraSubUnsubBaseOptions
-{
-    typedef std::tuple<> Type;
-};
-
-template <>
-struct ExtraSubUnsubBaseOptions<false, true>
-{
-    typedef comms::option::NoWriteImpl Type;
-};
-
-template <typename TOpts>
-using ExtraSubUnsubBaseOptionsT =
-    typename ExtraSubUnsubBaseOptions<TOpts::ClientOnlyVariant, TOpts::GatewayOnlyVariant>::Type;
-
-
-template <bool TClientOnly, bool TGatewayOnly>
 struct ExtraSubUnsubOptions
 {
     typedef std::tuple<> Type;
@@ -67,9 +50,7 @@ struct ExtraSubUnsubOptions<true, false>
 template <>
 struct ExtraSubUnsubOptions<false, true>
 {
-    typedef std::tuple<
-        comms::option::NoWriteImpl
-    >Type;
+    typedef comms::option::NoWriteImpl Type;
 };
 
 template <typename TOpts>
@@ -95,24 +76,32 @@ using SubUnsubBaseFields =
         >
     >;
 
-template <typename TMsgBase, typename TOptions>
-class SubUnsubFieldsBase : public
+template <
+    typename TMsgBase,
+    MsgTypeId TId,
+    typename TActual,
+    typename TOptions = ParsedOptions<> >
+class SubUnsubBase : public
     comms::MessageBase<
         TMsgBase,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraSubUnsubBaseOptionsT<TOptions>
+        comms::option::HasDoRefresh,
+        details::ExtraSubUnsubOptionsT<TOptions>
     >
 {
     typedef comms::MessageBase<
         TMsgBase,
+        comms::option::StaticNumIdImpl<TId>,
+        comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::NoReadImpl,
-        details::ExtraSubUnsubBaseOptionsT<TOptions>
+        comms::option::HasDoRefresh,
+        details::ExtraSubUnsubOptionsT<TOptions>
     > Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, flags, msgId, topicId, topicName);
+    COMMS_MSG_FIELDS_ACCESS(flags, msgId, topicId, topicName);
 
     template <typename TIter>
     comms::ErrorStatus doRead(TIter& iter, std::size_t len)
@@ -122,20 +111,13 @@ public:
             return es;
         }
 
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<field::FlagsMemberIdx_topicId>(flagsMembers);
-
-        auto& topicIdField = std::get<FieldIdx_topicId>(allFields);
-        auto& topicNameField = std::get<FieldIdx_topicName>(allFields);
-        if (topicIdTypeField.value() == field::TopicIdTypeVal::Name) {
-            topicIdField.setMode(comms::field::OptionalMode::Missing);
-            topicNameField.setMode(comms::field::OptionalMode::Exists);
+        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::Name) {
+            field_topicId().setMissing();
+            field_topicName().setExists();
         }
         else {
-            topicIdField.setMode(comms::field::OptionalMode::Exists);
-            topicNameField.setMode(comms::field::OptionalMode::Missing);
+            field_topicId().setExists();
+            field_topicName().setMissing();
         }
 
         return Base::template readFieldsFrom<FieldIdx_msgId>(iter, len);
@@ -143,52 +125,26 @@ public:
 
     bool doRefresh()
     {
-        auto& allFields = Base::fields();
-        auto& flagsField = std::get<FieldIdx_flags>(allFields);
-        auto& flagsMembers = flagsField.value();
-        auto& topicIdTypeField = std::get<field::FlagsMemberIdx_topicId>(flagsMembers);
-
         auto expectedTopicIdMode = comms::field::OptionalMode::Exists;
         auto expectedTopicNameMode = comms::field::OptionalMode::Missing;
-        if (topicIdTypeField.value() == field::TopicIdTypeVal::Name) {
+        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::Name) {
             expectedTopicIdMode = comms::field::OptionalMode::Missing;
             expectedTopicNameMode = comms::field::OptionalMode::Exists;
         }
 
         bool refreshed = false;
-        auto& topicIdField = std::get<FieldIdx_topicId>(allFields);
-        if (topicIdField.getMode() != expectedTopicIdMode) {
-            topicIdField.setMode(expectedTopicIdMode);
+        if (field_topicId().getMode() != expectedTopicIdMode) {
+            field_topicId().setMode(expectedTopicIdMode);
             refreshed = true;
         }
 
-        auto& topicNameField = std::get<FieldIdx_topicName>(allFields);
-        if (topicNameField.getMode() != expectedTopicNameMode) {
-            topicNameField.setMode(expectedTopicNameMode);
+        if (field_topicName().getMode() != expectedTopicNameMode) {
+            field_topicName().setMode(expectedTopicNameMode);
             refreshed = true;
         }
 
         return refreshed;
     }
-};
-
-
-template <
-    typename TMsgBase,
-    MsgTypeId TId,
-    typename TActual,
-    typename TOptions = ParsedOptions<> >
-class SubUnsubBase : public
-    comms::MessageBase<
-        SubUnsubFieldsBase<TMsgBase, TOptions>,
-        comms::option::StaticNumIdImpl<TId>,
-        comms::option::MsgType<TActual>,
-        comms::option::NoValidImpl,
-        comms::option::NoLengthImpl,
-        comms::option::HasDoRefresh,
-        details::ExtraSubUnsubOptionsT<TOptions>
-    >
-{
 };
 
 }  // namespace message

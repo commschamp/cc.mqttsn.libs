@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -79,10 +79,10 @@ using AdvertiseBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Advertise : public AdvertiseBase<TMsgBase, TOptions, Advertise>
 {
-    typedef AdvertiseBase<TMsgBase, TOptions, mqttsn::protocol::message::Advertise> Base;
+//    typedef AdvertiseBase<TMsgBase, TOptions, mqttsn::protocol::message::Advertise> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, gwId, duration);
+    COMMS_MSG_FIELDS_ACCESS(gwId, duration);
 };
 
 }  // namespace message

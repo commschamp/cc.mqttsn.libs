@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -77,10 +77,10 @@ using ConnackBase =
 template <typename TMsgBase, typename TOptions = protocol::ParsedOptions<> >
 class Connack : public ConnackBase<TMsgBase, TOptions, Connack>
 {
-    typedef ConnackBase<TMsgBase, TOptions, mqttsn::protocol::message::Connack> Base;
+//    typedef ConnackBase<TMsgBase, TOptions, mqttsn::protocol::message::Connack> Base;
 
 public:
-    COMMS_MSG_FIELDS_ACCESS(Base, returnCode);
+    COMMS_MSG_FIELDS_ACCESS(returnCode);
 };
 
 }  // namespace message
