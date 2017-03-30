@@ -61,7 +61,7 @@ of the MQTT protocol to connect to and communicate with the broker.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
-[Dropbox](https://dl.dropboxusercontent.com/u/46999418/mqttsn/doc_mqttsn_gateway.zip).
+[Dropbox](https://www.dropbox.com/s/skpkvwrdszbipgy/doc_mqttsn_gateway.zip?dl=0).
 
 # Gateway Applications
 The [Gateway Library](#gateway-library) described above is I/O link agnostic,
