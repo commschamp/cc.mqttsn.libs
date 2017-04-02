@@ -1,4 +1,5 @@
-if (NOT CC_MQTTSN_BUILD_PLUGINS)
+if ((NOT CC_MQTTSN_BUILD_PLUGINS) AND (NOT CC_MQTTSN_FULL_SOLUTION))
+    message (STATUS "Not building plugins for CommsChampion")
     return()
 endif ()
 

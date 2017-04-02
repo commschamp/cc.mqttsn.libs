@@ -33,7 +33,7 @@ how to do it.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
-[here](https://dl.dropboxusercontent.com/u/46999418/mqttsn/doc_mqttsn_client.zip).
+[Dropbox](https://www.dropbox.com/s/gq1i3wixo08unf6/doc_mqttsn_client_v0.7.zip).
 
 # Client Applications
 The [Client Library](#client-library) described above is I/O link agnostic,
@@ -61,7 +61,7 @@ of the MQTT protocol to connect to and communicate with the broker.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
-[here](https://dl.dropboxusercontent.com/u/46999418/mqttsn/doc_mqttsn_gateway.zip).
+[Dropbox](https://www.dropbox.com/s/dv2i25zddn13vh0/doc_mqttsn_gateway_v0.7.zip).
 
 # Gateway Applications
 The [Gateway Library](#gateway-library) described above is I/O link agnostic,

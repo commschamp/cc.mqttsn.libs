@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.1)
 project ("mqttsn")
 
 option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
@@ -11,6 +11,8 @@ option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
 if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
 endif()
+
+set (CMAKE_CXX_STANDARD 11)
 
 while (TRUE)
     if (CC_MQTTSN_NO_UNIT_TESTS)
@@ -62,7 +64,6 @@ endif ()
 
 if (CMAKE_COMPILER_IS_GNUCC)
     set (extra_flags_list
-        "--std=c++11"
         "-Wall" "-Wextra" "-Wcast-align" "-Wcast-qual" "-Wctor-dtor-privacy"
         "-Wmissing-include-dirs" "-Wnoexcept" "-Wlogical-op" "-Wstrict-null-sentinel"
         "-Woverloaded-virtual" "-Wredundant-decls" "-Wshadow" "-Wundef" "-Wunused"
@@ -86,13 +87,15 @@ if (NOT "${CC_MQTTSN_INSTALL_DIR}" STREQUAL "")
     set (INSTALL_DIR "${CC_MQTTSN_INSTALL_DIR}")
 endif ()
 
-set (LIB_INSTALL_DIR ${INSTALL_DIR}/lib)
-set (BIN_INSTALL_DIR ${INSTALL_DIR}/bin)
-set (ETC_INSTALL_DIR ${INSTALL_DIR}/etc)
+include(GNUInstallDirs)
+set (INSTALL_NAME "CC_Mqttsn")
+set (LIB_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR})
+set (BIN_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_BINDIR})
+set (ETC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_SYSCONFDIR})
+set (INC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
+set (CONFIG_INSTALL_DIR ${INSTALL_DIR}/config)
+set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/CommsChampion/plugin)
 set (DOC_INSTALL_DIR ${INSTALL_DIR}/doc)
-set (INC_INSTALL_DIR ${INSTALL_DIR}/include)
-set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/plugin)
-
 
 set (DEFAULT_CLIENT_LIB_TGT "cc_mqttsn_client")
 
@@ -110,7 +113,7 @@ set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
 macro (externals install_dir build_cc mqtt_headers)
         include(ExternalProject)
         
-        set (cc_tag "v0.14")
+        set (cc_tag "v0.15")
         set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
         set (cc_src_dir "${cc_main_dir}/src")
         set (cc_bin_dir "${cc_main_dir}/build")
@@ -126,6 +129,7 @@ macro (externals install_dir build_cc mqtt_headers)
         if (${build_cc})
             set (CC_PLUGIN_LIBRARIES "comms_champion")
             set (CC_COMMS_CHAMPION_FOUND TRUE)
+            set (CC_PLUGIN_LIBRARY_DIRS ${LIB_INSTALL_DIR})
         else ()
             set (ct_lib_only_opt -DCC_COMMS_LIB_ONLY=ON)
         endif ()
@@ -147,7 +151,7 @@ macro (externals install_dir build_cc mqtt_headers)
         set (CC_COMMS_FOUND TRUE)
         
         if (${mqtt_headers})
-            set (cc_mqtt_tag "v0.6")
+            set (cc_mqtt_tag "v0.6.1")
             ExternalProject_Add(
                 "${CC_MQTT_EXTERNAL_TGT}"
                 PREFIX "${cc_mqtt_bin_dir}"
@@ -180,20 +184,17 @@ while (TRUE)
         break()
     endif ()
     
-    
-    if (EXISTS "${INSTALL_DIR}/cmake/CommsChampionConfig.cmake")
-        list (APPEND CMAKE_PREFIX_PATH "${INSTALL_DIR}/cmake")
-    endif ()
-    
+    list (APPEND CMAKE_PREFIX_PATH "${INSTALL_DIR}")
+
     if (NOT "${CC_MAIN_INSTALL_DIR}" STREQUAL "")
-        list (APPEND CMAKE_PREFIX_PATH "${CC_MAIN_INSTALL_DIR}/cmake")
+        list (APPEND CMAKE_PREFIX_PATH "${CC_MAIN_INSTALL_DIR}")
     endif ()
     
     if (NOT "${CC_MQTT_INSTALL_DIR}" STREQUAL "")
-        list (APPEND CMAKE_PREFIX_PATH "${CC_MQTT_INSTALL_DIR}/cmake")
+        list (APPEND CMAKE_PREFIX_PATH "${CC_MQTT_INSTALL_DIR}")
     endif ()
     
-    find_package(CommsChampion QUIET)
+    find_package(CommsChampion QUIET NO_MODULE)
     
     if (NOT CC_COMMS_FOUND)
         set (externals_install "${CMAKE_BINARY_DIR}/ext_install")
@@ -211,18 +212,22 @@ while (TRUE)
         break()
     endif ()
 
-    find_package(CommsChampion)
-    include_directories(${CC_INCLUDE_DIRS})
+    find_package(CommsChampion NO_MODULE)
+    if (CC_COMMS_FOUND)
+        include_directories(${CC_INCLUDE_DIRS})
+    endif ()
         
     if (CC_COMMS_CHAMPION_FOUND)
         link_directories(${CC_PLUGIN_LIBRARY_DIRS})
+        file (RELATIVE_PATH rel_plugin_install_path "${CC_ROOT_DIR}" "${CC_PLUGIN_DIR}")
+        set (PLUGIN_INSTALL_DIR "${INSTALL_DIR}/${rel_plugin_install_path}")
     endif ()
     
     if (NOT CC_MQTTSN_BUILD_GATEWAY)
         break()
     endif()
    
-    find_package(CC_Mqtt)
+    find_package(CC_Mqtt NO_MODULE)
     
     if (CC_MQTT_FOUND)
         include_directories(${CC_MQTT_INCLUDE_DIRS})
