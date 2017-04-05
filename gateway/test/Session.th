@@ -353,7 +353,7 @@ private:
         TS_ASSERT(state.m_sentToBroker.empty());
         TS_ASSERT(state.m_tickReq.empty());
         TS_ASSERT(state.m_elapsed.empty());
-        return std::move(session);
+        return session;
     }
 
     static void dataFromClient(
