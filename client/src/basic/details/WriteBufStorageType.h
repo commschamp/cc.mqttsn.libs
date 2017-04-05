@@ -30,7 +30,7 @@ namespace details
 {
 
 template <typename TOpts, bool TAllStatic>
-struct WriteBufStorageType;
+class WriteBufStorageType;
 
 template <typename TOpts>
 class WriteBufStorageType<TOpts, true>
@@ -62,8 +62,9 @@ public:
 };
 
 template <typename TOpts>
-struct WriteBufStorageType<TOpts, false>
+class WriteBufStorageType<TOpts, false>
 {
+public:
     typedef std::vector<std::uint8_t> Type;
 };
 

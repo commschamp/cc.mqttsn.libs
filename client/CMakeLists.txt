@@ -173,3 +173,5 @@ if (DOXYGEN_FOUND AND CC_MQTTSN_CLIENT_DEFAULT_LIB)
     add_dependencies("doc_mqttsn_client" ${MQTTSN_CLIENT_HEADER_TGT})           
 endif ()
 
+FILE(GLOB_RECURSE headers "*.h")
+add_custom_target(mqttsn_client.headers SOURCES ${headers})

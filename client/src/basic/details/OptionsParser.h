@@ -33,8 +33,9 @@ template <typename... TOptions>
 class OptionsParser;
 
 template <>
-struct OptionsParser<>
+class OptionsParser<>
 {
+public:
     static const bool HasClientsAllocLimit = false;
     static const bool HasTrackedGatewaysLimit = false;
     static const bool HasRegisteredTopicsLimit = false;

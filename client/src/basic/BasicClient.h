@@ -1078,7 +1078,7 @@ public:
             return MqttsnErrorCode_Busy;
         }
 
-        if ((callback == nullptr)) {
+        if (callback == nullptr) {
             return MqttsnErrorCode_BadParam;
         }
 
