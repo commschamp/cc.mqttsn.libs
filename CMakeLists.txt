@@ -12,7 +12,9 @@ if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
 endif()
 
-set (CMAKE_CXX_STANDARD 11)
+if (NOT CMAKE_CXX_STANDARD)
+    set (CMAKE_CXX_STANDARD 11)
+endif()
 
 while (TRUE)
     if (CC_MQTTSN_NO_UNIT_TESTS)
@@ -32,22 +34,40 @@ while (TRUE)
     endif ()
     
     set (cxx_tag "4.4")
-    if (EXISTS "${CMAKE_BINARY_DIR}/cxxtest")
+    set (cxxtest_stamp "${CMAKE_BINARY_DIR}/cxxtest.stamp")
+    if ((EXISTS ${cxxtest_stamp}) AND (EXISTS "${CMAKE_BINARY_DIR}/cxxtest"))
         execute_process (
             COMMAND ${GIT_EXECUTABLE} checkout ${cxx_tag}
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/cxxtest)
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/cxxtest
+        )
     else ()
         execute_process (
+            COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/cxxtest"
+        )
+
+        execute_process (
             COMMAND ${GIT_EXECUTABLE} clone -b ${cxx_tag} --depth 1 https://github.com/CxxTest/cxxtest.git
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            RESULT_VARIABLE git_result
+        )
+
+        if (NOT "${git_result}" STREQUAL "0")
+            message (WARNING "git clone/checkout failed")
+            break()
+        endif ()
+
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E touch "${cxxtest_stamp}"
+        )
     endif ()
-    
+
     set (CXXTEST_INCLUDE_DIR "${CMAKE_BINARY_DIR}/cxxtest")
     set (CXXTEST_PYTHON_TESTGEN_EXECUTABLE "${CXXTEST_INCLUDE_DIR}/bin/cxxtestgen")
     
     find_package (CxxTest)
     if (NOT CXXTEST_FOUND)
         message (WARNING "Wrong cxxtest paths, must be fixed")
+        break ()
     endif ()
     
     enable_testing ()
@@ -62,14 +82,24 @@ if (UNIX AND (NOT CC_MQTTSN_NO_CCACHE))
     endif(CCACHE_FOUND)
 endif ()    
 
-if (CMAKE_COMPILER_IS_GNUCC)
+if ((CMAKE_COMPILER_IS_GNUCC) OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
     set (extra_flags_list
         "-Wall" "-Wextra" "-Wcast-align" "-Wcast-qual" "-Wctor-dtor-privacy"
-        "-Wmissing-include-dirs" "-Wnoexcept" "-Wlogical-op" "-Wstrict-null-sentinel"
+        "-Wmissing-include-dirs"
         "-Woverloaded-virtual" "-Wredundant-decls" "-Wshadow" "-Wundef" "-Wunused"
         "-Wno-unknown-pragmas" "-fdiagnostics-show-option"
     )
-    
+
+    if (CMAKE_COMPILER_IS_GNUCC)
+        list (APPEND extra_flags_list
+            "-Wnoexcept" "-Wlogical-op" "-Wstrict-null-sentinel"
+        )
+    endif ()
+
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        list (APPEND extra_flags_list "-Wno-dangling-field")
+    endif ()
+
     if (NOT CC_MQTTSN_NO_WARN_AS_ERR)
         list (APPEND extra_flags_list "-Werror")
     endif ()
@@ -113,7 +143,7 @@ set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
 macro (externals install_dir build_cc mqtt_headers)
         include(ExternalProject)
         
-        set (cc_tag "v0.15")
+        set (cc_tag "v0.15.1")
         set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
         set (cc_src_dir "${cc_main_dir}/src")
         set (cc_bin_dir "${cc_main_dir}/build")
@@ -143,7 +173,8 @@ macro (externals install_dir build_cc mqtt_headers)
             SOURCE_DIR "${cc_src_dir}"
             CMAKE_ARGS 
                 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_INSTALL_DIR=${install_dir} 
-                -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON
+                -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
                 ${cc_qt_dir_opt} ${ct_lib_only_opt}
             BINARY_DIR "${cc_bin_dir}"
         )
@@ -151,7 +182,7 @@ macro (externals install_dir build_cc mqtt_headers)
         set (CC_COMMS_FOUND TRUE)
         
         if (${mqtt_headers})
-            set (cc_mqtt_tag "v0.6.1")
+            set (cc_mqtt_tag "v0.6.2")
             ExternalProject_Add(
                 "${CC_MQTT_EXTERNAL_TGT}"
                 PREFIX "${cc_mqtt_bin_dir}"
@@ -161,7 +192,9 @@ macro (externals install_dir build_cc mqtt_headers)
                 SOURCE_DIR "${cc_mqtt_src_dir}"
                 CMAKE_ARGS 
                     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_MQTT_INSTALL_DIR=${install_dir} 
-                    -DCC_MQTT_LIB_ONLY=ON ${cc_mqtt_qt_dir_opt}
+                    -DCC_MQTT_LIB_ONLY=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
+                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+                    ${cc_mqtt_qt_dir_opt}
                 BINARY_DIR "${cc_mqtt_bin_dir}"
             )
             set (CC_MQTT_EXTERNAL TRUE)
@@ -239,3 +272,4 @@ add_subdirectory(protocol)
 add_subdirectory(client)
 add_subdirectory(gateway)
 add_subdirectory(cc_plugin)
+

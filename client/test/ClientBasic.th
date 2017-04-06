@@ -498,7 +498,7 @@ private:
                 });
         }
 
-        return std::move(ptr);
+        return ptr;
     }
 
     static void doGwInfo(CommonTestClient& client, DataProcessor& dataProc, TestBasicState& state)

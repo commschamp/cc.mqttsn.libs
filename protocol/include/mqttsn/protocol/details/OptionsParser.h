@@ -32,11 +32,12 @@ namespace details
 {
 
 template <typename... TOptions>
-struct OptionsParser;
+class OptionsParser;
 
 template <>
-struct OptionsParser<>
+class OptionsParser<>
 {
+public:
     static const bool HasGwAddStaticStorageSize = false;
     static const bool HasClientIdStaticStorageSize = false;
     static const bool HasTopicNameStaticStorageSize = false;

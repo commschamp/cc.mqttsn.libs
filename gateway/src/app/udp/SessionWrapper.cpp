@@ -273,7 +273,7 @@ void SessionWrapper::addPredefinedTopicsFor(const std::string& clientId)
     auto& predefinedTopics = m_config.predefinedTopics();
     auto iter = std::lower_bound(
         predefinedTopics.begin(), predefinedTopics.end(), clientId,
-        [](const Config::PredefinedTopicsList::const_reference elem, const std::string& cId) -> bool
+        [](Config::PredefinedTopicsList::const_reference elem, const std::string& cId) -> bool
         {
             return elem.clientId < cId;
         });
