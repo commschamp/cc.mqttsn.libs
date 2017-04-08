@@ -110,6 +110,10 @@ if ((CMAKE_COMPILER_IS_GNUCC) OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined") 
 elseif (MSVC)
     add_definitions( "/wd4503" "/wd4309" "/wd4267" "-D_SCL_SECURE_NO_WARNINGS")
+    
+    if (NOT CC_NO_WARN_AS_ERR)
+        add_definitions("/WX")
+    endif ()
 endif ()
 
 set (INSTALL_DIR ${CMAKE_BINARY_DIR}/install)
