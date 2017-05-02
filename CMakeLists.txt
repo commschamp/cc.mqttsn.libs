@@ -110,6 +110,10 @@ if ((CMAKE_COMPILER_IS_GNUCC) OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined") 
 elseif (MSVC)
     add_definitions( "/wd4503" "/wd4309" "/wd4267" "-D_SCL_SECURE_NO_WARNINGS")
+    
+    if (NOT CC_NO_WARN_AS_ERR)
+        add_definitions("/WX")
+    endif ()
 endif ()
 
 set (INSTALL_DIR ${CMAKE_BINARY_DIR}/install)
@@ -143,7 +147,7 @@ set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
 macro (externals install_dir build_cc mqtt_headers)
         include(ExternalProject)
         
-        set (cc_tag "v0.15.2")
+        set (cc_tag "v0.17")
         set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
         set (cc_src_dir "${cc_main_dir}/src")
         set (cc_bin_dir "${cc_main_dir}/build")
@@ -182,7 +186,7 @@ macro (externals install_dir build_cc mqtt_headers)
         set (CC_COMMS_FOUND TRUE)
         
         if (${mqtt_headers})
-            set (cc_mqtt_tag "v0.6.2")
+            set (cc_mqtt_tag "v0.6.3")
             ExternalProject_Add(
                 "${CC_MQTT_EXTERNAL_TGT}"
                 PREFIX "${cc_mqtt_bin_dir}"
