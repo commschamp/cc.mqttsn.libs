@@ -759,12 +759,12 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsgupd(const DataBuf& d
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
-    mqtt::protocol::field::ConnackResponseCodeVal rc,
+    mqtt::protocol::v311::field::ConnackResponseCodeVal rc,
     bool sessionPresent)
 {
     ConnackMsg msg;
     msg.field_flags().setBitValue(0, sessionPresent);
-    msg.field_response().value() = rc;
+    msg.field_responseCode().value() = rc;
     return prepareInput(msg);
 }
 
@@ -787,7 +787,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
     const std::string& topic,
     const DataBuf& msgData,
     std::uint16_t packetId,
-    mqtt::protocol::field::QosVal qos,
+    mqtt::protocol::common::field::QosVal qos,
     bool retain,
     bool duplicate)
 {
@@ -802,9 +802,9 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
     flags.field_dup().setBitValue(0, duplicate);
 
     msg.doRefresh();
-    assert((qos == mqtt::protocol::field::QosVal::AtMostOnceDelivery) ||
+    assert((qos == mqtt::protocol::common::field::QosVal::AtMostOnceDelivery) ||
            (msg.field_packetId().doesExist()));
-    assert((mqtt::protocol::field::QosVal::AtMostOnceDelivery < qos) ||
+    assert((mqtt::protocol::common::field::QosVal::AtMostOnceDelivery < qos) ||
            (msg.field_packetId().isMissing()));
     return prepareInput(msg);
 }
@@ -839,7 +839,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubcomp(std::uint16_t packe
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerSuback(
     std::uint16_t packetId,
-    mqtt::protocol::field::SubackReturnCode rc)
+    mqtt::protocol::v311::field::SubackReturnCodeVal rc)
 {
     SubackMsg msg;
 

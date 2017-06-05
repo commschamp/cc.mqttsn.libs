@@ -47,3 +47,6 @@ endif ()
 if (CC_MQTT_EXTERNAL)
     add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_MQTT_EXTERNAL_TGT})
 endif ()    
+
+FILE(GLOB_RECURSE headers "*.h")
+add_custom_target(mqttsn_gateway.headers SOURCES ${headers})

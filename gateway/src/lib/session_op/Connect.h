@@ -80,7 +80,7 @@ private:
 
     void doNextStep();
     void forwardConnectionReq();
-    void processAck(mqtt::protocol::field::ConnackResponseCodeVal respCode);
+    void processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal respCode);
     void clearConnectionInfo(bool clearClientId = false);
     void clearInternalState();
 

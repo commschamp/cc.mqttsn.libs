@@ -285,7 +285,7 @@ void Forward::handle(ConnackMsg&)
         PublishMsg msg;
         auto& flags = msg.field_publishFlags();
 
-        flags.field_qos().value() = mqtt::protocol::field::QosVal::AtMostOnceDelivery;
+        flags.field_qos().value() = mqtt::protocol::common::field::QosVal::AtMostOnceDelivery;
         msg.field_topic().value() = topic;
         msg.field_payload().value() = std::move(pub.m_data);
         msg.doRefresh();
@@ -369,12 +369,12 @@ void Forward::handle(SubackMsg& msg)
         }
 
         auto& ackRetCode = retCodesList.front();
-        if (ackRetCode.value() == mqtt::protocol::field::SubackReturnCode::Failure) {
+        if (ackRetCode.value() == mqtt::protocol::v311::field::SubackReturnCodeVal::Failure) {
             break;
         }
 
-        auto adjustedRetCode = std::min(ackRetCode.value(), mqtt::protocol::field::SubackReturnCode::SuccessQos2);
-        auto reportedQos = static_cast<mqtt::protocol::field::QosVal>(adjustedRetCode);
+        auto adjustedRetCode = std::min(ackRetCode.value(), mqtt::protocol::v311::field::SubackReturnCodeVal::SuccessQos2);
+        auto reportedQos = static_cast<mqtt::protocol::common::field::QosVal>(adjustedRetCode);
         qos = translateQosForClient(translateQos(reportedQos));
         rc = mqttsn::protocol::field::ReturnCodeVal_Accepted;
     } while (false);

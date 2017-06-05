@@ -193,7 +193,7 @@ void Connect::handle(ConnackMsg& msg)
         return;
     }
 
-    processAck(msg.field_response().value());
+    processAck(msg.field_responseCode().value());
 }
 
 void Connect::doNextStep()
@@ -209,7 +209,7 @@ void Connect::doNextStep()
     ++m_internalState.m_attempt;
 
     if (m_internalState.m_waitingForReconnect) {
-        processAck(mqtt::protocol::field::ConnackResponseCodeVal::ServerUnavailable);
+        processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::ServerUnavailable);
         termRequest();
         return;
     }
@@ -222,7 +222,7 @@ void Connect::doNextStep()
         auto& st = state();
         do {
             if ((!st.m_clientId.empty()) && (st.m_clientId != m_clientId)) {
-                processAck(mqtt::protocol::field::ConnackResponseCodeVal::IdentifierRejected);
+                processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::IdentifierRejected);
                 return;
             }
 
@@ -242,7 +242,7 @@ void Connect::doNextStep()
 
             if (st.m_pendingClientDisconnect) {
                 // Emulate successful connection, Disconnect will be sent from PubSend op
-                processAck(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
+                processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::Accepted);
                 return;
             }
 
@@ -259,12 +259,12 @@ void Connect::doNextStep()
                 st.m_regMgr.clearRegistrations();
             }
 
-            processAck(mqtt::protocol::field::ConnackResponseCodeVal::Accepted);
+            processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::Accepted);
             return;
         } while (false);
 
         if (!st.m_brokerConnected) {
-            processAck(mqtt::protocol::field::ConnackResponseCodeVal::ServerUnavailable);
+            processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::ServerUnavailable);
             return;
         }
 
@@ -338,7 +338,7 @@ void Connect::forwardConnectionReq()
     sendToBroker(msg);
 }
 
-void Connect::processAck(mqtt::protocol::field::ConnackResponseCodeVal respCode)
+void Connect::processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal respCode)
 {
     static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
         /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
@@ -352,7 +352,7 @@ void Connect::processAck(mqtt::protocol::field::ConnackResponseCodeVal respCode)
     static const std::size_t RetCodeMapSize =
                         std::extent<decltype(RetCodeMap)>::value;
 
-    static_assert(RetCodeMapSize == (std::size_t)mqtt::protocol::field::ConnackResponseCodeVal::NumOfValues,
+    static_assert(RetCodeMapSize == (std::size_t)mqtt::protocol::v311::field::ConnackResponseCodeVal::NumOfValues,
         "Incorrect map");
 
     auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
