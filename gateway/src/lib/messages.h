@@ -20,8 +20,8 @@
 
 #include "mqttsn/protocol/Message.h"
 #include "mqttsn/protocol/Stack.h"
-#include "mqtt/protocol/Message.h"
-#include "mqtt/protocol/Stack.h"
+#include "mqtt/protocol/v311/Message.h"
+#include "mqtt/protocol/v311/Stack.h"
 
 namespace mqttsn
 {
@@ -39,7 +39,7 @@ typedef mqttsn::protocol::MessageT<
     comms::option::LengthInfoInterface
 > MqttsnMessage;
 
-typedef mqtt::protocol::MessageT<
+typedef mqtt::protocol::v311::MessageT<
     comms::option::IdInfoInterface,
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
@@ -104,21 +104,21 @@ using InputMqttsnMessages =
 
 typedef mqttsn::protocol::Stack<MqttsnMessage, InputMqttsnMessages<MqttsnMessage> > MqttsnProtStack;
 
-typedef mqtt::protocol::message::Connect<MqttMessage> ConnectMsg;
-typedef mqtt::protocol::message::Connack<MqttMessage> ConnackMsg;
-typedef mqtt::protocol::message::Publish<MqttMessage> PublishMsg;
-typedef mqtt::protocol::message::Puback<MqttMessage> PubackMsg;
-typedef mqtt::protocol::message::Pubrec<MqttMessage> PubrecMsg;
-typedef mqtt::protocol::message::Pubrel<MqttMessage> PubrelMsg;
-typedef mqtt::protocol::message::Pubcomp<MqttMessage> PubcompMsg;
-typedef mqtt::protocol::message::Subscribe<MqttMessage> SubscribeMsg;
-typedef mqtt::protocol::message::Suback<MqttMessage> SubackMsg;
-typedef mqtt::protocol::message::Unsubscribe<MqttMessage> UnsubscribeMsg;
-typedef mqtt::protocol::message::Unsuback<MqttMessage> UnsubackMsg;
-typedef mqtt::protocol::message::Pingreq<MqttMessage> PingreqMsg;
-typedef mqtt::protocol::message::Pingresp<MqttMessage> PingrespMsg;
-typedef mqtt::protocol::message::Disconnect<MqttMessage> DisconnectMsg;
-typedef mqtt::protocol::Stack<MqttMessage> MqttProtStack;
+typedef mqtt::protocol::v311::message::Connect<MqttMessage> ConnectMsg;
+typedef mqtt::protocol::v311::message::Connack<MqttMessage> ConnackMsg;
+typedef mqtt::protocol::v311::message::Publish<MqttMessage> PublishMsg;
+typedef mqtt::protocol::v311::message::Puback<MqttMessage> PubackMsg;
+typedef mqtt::protocol::v311::message::Pubrec<MqttMessage> PubrecMsg;
+typedef mqtt::protocol::v311::message::Pubrel<MqttMessage> PubrelMsg;
+typedef mqtt::protocol::v311::message::Pubcomp<MqttMessage> PubcompMsg;
+typedef mqtt::protocol::v311::message::Subscribe<MqttMessage> SubscribeMsg;
+typedef mqtt::protocol::v311::message::Suback<MqttMessage> SubackMsg;
+typedef mqtt::protocol::v311::message::Unsubscribe<MqttMessage> UnsubscribeMsg;
+typedef mqtt::protocol::v311::message::Unsuback<MqttMessage> UnsubackMsg;
+typedef mqtt::protocol::v311::message::Pingreq<MqttMessage> PingreqMsg;
+typedef mqtt::protocol::v311::message::Pingresp<MqttMessage> PingrespMsg;
+typedef mqtt::protocol::v311::message::Disconnect<MqttMessage> DisconnectMsg;
+typedef mqtt::protocol::v311::Stack<MqttMessage> MqttProtStack;
 
 }  // namespace gateway
 

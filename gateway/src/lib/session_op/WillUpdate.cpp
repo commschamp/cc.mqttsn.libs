@@ -156,8 +156,8 @@ void WillUpdate::handle(ConnackMsg& msg)
         return;
     }
 
-    typedef typename std::decay<decltype(msg.field_response())>::type ResponseFieldType;
-    if ((msg.field_response().value() != ResponseFieldType::ValueType::Accepted) ||
+    using ResponseFieldType = typename std::decay<decltype(msg.field_responseCode())>::type;
+    if ((msg.field_responseCode().value() != ResponseFieldType::ValueType::Accepted) ||
         (!msg.field_flags().getBitValue(0))) {
         sendFailureAndTerm();
         return;

@@ -20,7 +20,7 @@ details below.
 
 # Client Library
 This repository provides the MQTT-SN **client** library. It is implemented 
-uing C++(11) programming language, but provides **C** interface. The library's
+using C++(11) programming language, but provides **C** interface. The library's
 code doesn't use [RTTI](https://en.wikipedia.org/wiki/Run-time_type_information)
 or exceptions, but by default,
 the library's implementation uses C++ STL data types, such as 
@@ -33,7 +33,9 @@ how to do it.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
-[Dropbox](https://www.dropbox.com/s/gq1i3wixo08unf6/doc_mqttsn_client_v0.7.zip).
+[Dropbox](https://www.dropbox.com/s/gq1i3wixo08unf6/doc_mqttsn_client_v0.7.zip)
+or from 
+[release artefacts](https://github.com/arobenko/mqtt-sn/releases).
 
 # Client Applications
 The [Client Library](#client-library) described above is I/O link agnostic,
@@ -61,7 +63,9 @@ of the MQTT protocol to connect to and communicate with the broker.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
-[Dropbox](https://www.dropbox.com/s/dv2i25zddn13vh0/doc_mqttsn_gateway_v0.7.zip).
+[Dropbox](https://www.dropbox.com/s/dv2i25zddn13vh0/doc_mqttsn_gateway_v0.7.zip)
+or from 
+[release artefacts](https://github.com/arobenko/mqtt-sn/releases).
 
 # Gateway Applications
 The [Gateway Library](#gateway-library) described above is I/O link agnostic,
@@ -104,12 +108,15 @@ like the protocol specifies.
 All other behaviour is implemented as specified.
 
 # Licence 
-This work provided under the classic GPLv3 / Commercial dual licensing scheme. The
+This work provided under the classic **GPLv3** / **Commercial** dual licensing scheme. The
 source code is available for anyone to use as long as the derivative work
-remains open source with compatible licence. Download it, try it! If it works
+remains open source with compatible licence. **Download** it, **try** it! If it works
 as expected and commercial closed source licence is required for the final
-product, please send me an e-mail. As the author and full copyright owner I 
-will be able to provide one.
+product, it can be purchased on 
+[binpress](http://arobenko.binpress.com/product/mqttsn-clientgateway-libraries/4583). 
+If the offered licences do not satisfy your needs and special conditions need to 
+be included please send me an e-mail (see 
+[Contact Information](#contact-information) below).
 
 # How to Build
 Detailed instructions on how to build and install all the components can be

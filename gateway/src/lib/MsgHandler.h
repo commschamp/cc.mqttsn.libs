@@ -20,7 +20,7 @@
 
 #include "comms/comms.h"
 #include "mqttsn/protocol/AllMessages.h"
-#include "mqtt/protocol/AllMessages.h"
+#include "mqtt/protocol/v311/AllMessages.h"
 #include "messages.h"
 
 namespace mqttsn
@@ -38,7 +38,7 @@ using MqttsnMsgHandler = comms::GenericHandler<
 template<typename TMsgBase>
 using MqttMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqtt::protocol::AllMessages<TMsgBase>
+    mqtt::protocol::v311::AllMessages<TMsgBase>
 >;
 
 class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler<MqttMessage>
