@@ -125,7 +125,8 @@ void Connect::handle(WilltopicMsg_SN& msg)
     auto& midFlagsField = msg.field_flags().field().field_midFlags();
     typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    m_will.m_topic = msg.field_willTopic().value();
+    auto& topicView = msg.field_willTopic().value();
+    m_will.m_topic.assign(topicView.begin(), topicView.end());
     m_will.m_qos = translateQos(msg.field_flags().field().field_qos().value());
     m_will.m_retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
 
@@ -150,7 +151,8 @@ void Connect::handle(WillmsgMsg_SN& msg)
     m_internalState.m_hasWillMsg = true;
     m_internalState.m_attempt = 0;
 
-    m_will.m_msg = msg.field_willMsg().value();
+    auto& data = msg.field_willMsg().value();
+    m_will.m_msg.assign(data.begin(), data.end());
     doNextStep();
 }
 

@@ -102,7 +102,8 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
     bool retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
 
     auto& st = state();
-    if ((st.m_will.m_topic == msg.field_willTopic().value()) &&
+    auto& willTopic = msg.field_willTopic().value();
+    if ((st.m_will.m_topic == willTopic) &&
         (st.m_will.m_qos == qos) &&
         (st.m_will.m_retain == retain)) {
         sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
@@ -110,8 +111,7 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
         return;
     }
 
-
-    m_will.m_topic = msg.field_willTopic().value();
+    m_will.m_topic.assign(willTopic.begin(), willTopic.end());
     m_will.m_msg = st.m_will.m_msg;
     m_will.m_qos = qos;
     m_will.m_retain = retain;
@@ -137,14 +137,17 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
     }
 
     auto& st = state();
-    if (st.m_will.m_msg == msg.field_willMsg().value()) {
+    auto& willData = msg.field_willMsg().value();
+    using WillDataStorage = typename std::decay<decltype(willData)>::type;
+    WillDataStorage storedDataView(&(*st.m_will.m_msg.begin()), st.m_will.m_msg.size());
+    if (storedDataView == willData) {
         sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
         sendToBroker(PingreqMsg());
         return;
     }
 
     m_will.m_topic = st.m_will.m_topic;
-    m_will.m_msg = msg.field_willMsg().value();
+    m_will.m_msg.assign(willData.begin(), willData.end());
     m_will.m_qos = st.m_will.m_qos;
     m_will.m_retain = st.m_will.m_retain;
     startOp(Op::MsgUpd);
