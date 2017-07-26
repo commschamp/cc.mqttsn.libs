@@ -33,7 +33,8 @@ typedef std::tuple<
 
 typedef mqttsn::protocol::ParsedOptions<
     ProtocolOptions, 
-    mqttsn::protocol::option::ClientOnlyVariant
+    mqttsn::protocol::option::ClientOnlyVariant,
+    mqttsn::protocol::option::UseOrigDataView
 > ParsedProtocolOptions;
 
 typedef std::tuple<

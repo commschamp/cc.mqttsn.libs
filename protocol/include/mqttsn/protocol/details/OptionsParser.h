@@ -44,6 +44,7 @@ public:
     static const bool HasMessageDataStaticStorageSize = false;
     static const bool ClientOnlyVariant = false;
     static const bool GatewayOnlyVariant = false;
+    static const bool HasOrigDataView = false;
 };
 
 template <std::size_t TSize, typename... TOptions>
@@ -106,6 +107,15 @@ class OptionsParser<
 {
 public:
     static const bool GatewayOnlyVariant = true;
+};
+
+template <typename... TOptions>
+class OptionsParser<
+    option::UseOrigDataView,
+    TOptions...> : public OptionsParser<TOptions...>
+{
+public:
+    static const bool HasOrigDataView = true;
 };
 
 template <typename... TTupleOptions, typename... TOptions>

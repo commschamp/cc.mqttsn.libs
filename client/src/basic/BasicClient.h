@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <cstring>
 
 #include "comms/comms.h"
 #include "comms/util/ScopeGuard.h"
@@ -265,14 +266,16 @@ class BasicClient
 
     typedef void (BasicClient<TClientOpts, TProtOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
 
+    struct NoOrigDataViewProtOpts : TProtOpts
+    {
+        static const bool HasOrigDataView = false;
+    };
+
 public:
     typedef typename Message::Field FieldBase;
     typedef typename mqttsn::protocol::field::GwId<FieldBase>::ValueType GwIdValueType;
-    //typedef typename mqttsn::protocol::field::GwAdd<FieldBase, TProtOpts>::ValueType GwAddValueType;
-    typedef typename mqttsn::protocol::field::WillTopic<FieldBase, TProtOpts>::ValueType WillTopicType;
-    typedef typename mqttsn::protocol::field::WillMsg<FieldBase, TProtOpts>::ValueType WillMsgType;
-    typedef typename mqttsn::protocol::field::TopicName<FieldBase, TProtOpts>::ValueType TopicNameType;
-    typedef typename mqttsn::protocol::field::Data<FieldBase, TProtOpts>::ValueType DataType;
+    typedef typename mqttsn::protocol::field::TopicName<FieldBase, NoOrigDataViewProtOpts>::ValueType TopicNameType;
+    typedef typename mqttsn::protocol::field::Data<FieldBase, NoOrigDataViewProtOpts>::ValueType DataType;
     typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
     typedef typename mqttsn::protocol::field::ClientId<FieldBase, TProtOpts>::ValueType ClientIdType;
 
@@ -1208,7 +1211,9 @@ public:
         WillmsgMsg outMsg;
 
         if (op->m_willInfo.msg != nullptr) {
-            outMsg.field_willMsg().value().assign(op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
+            auto& dataStorage = outMsg.field_willMsg().value();
+            using DataStorage = typename std::decay<decltype(dataStorage)>::type;
+            dataStorage = DataStorage(op->m_willInfo.msg, op->m_willInfo.msgLen);
         }
 
         op->m_willMsgSent = true;
@@ -1217,7 +1222,8 @@ public:
 
     void handle(RegisterMsg& msg)
     {
-        updateRegInfo(msg.field_topicName().value().c_str(), msg.field_topicId().value(), true);
+        auto& topic = msg.field_topicName().value();
+        updateRegInfo(topic.data(), topic.size(), msg.field_topicId().value(), true);
 
         RegackMsg ackMsg;
         ackMsg.field_topicId().value() = msg.field_topicId().value();
@@ -1254,7 +1260,7 @@ public:
         op->m_topicId = msg.field_topicId().value();
         op->m_attempt = 0;
 
-        updateRegInfo(op->m_topic, op->m_topicId);
+        updateRegInfo(op->m_topic, std::strlen(op->m_topic), op->m_topicId);
         bool result = doPublish();
         static_cast<void>(result);
         GASSERT(result);
@@ -1350,7 +1356,8 @@ public:
                 midFlags.getBitValue(MidFlags::BitIdx_retain);
         }
 
-        m_lastInMsg.m_msgData = msg.field_data().value();
+        auto& msgData = msg.field_data().value();
+        m_lastInMsg.m_msgData.assign(msgData.begin(), msgData.end());
 
         PubrecMsg recMsg;
         recMsg.field_msgId().value() = msg.field_msgId().value();
@@ -1534,7 +1541,8 @@ public:
         }
 
         if ((m_currOp == Op::Subscribe) && (msg.field_topicId().value() != 0U)) {
-            updateRegInfo(opPtr<SubscribeOp>()->m_topic, msg.field_topicId().value(), true);
+            auto* topicStr = opPtr<SubscribeOp>()->m_topic;
+            updateRegInfo(topicStr, std::strlen(topicStr), msg.field_topicId().value(), true);
         }
 
         op->m_qos = qosValue;
@@ -1691,13 +1699,16 @@ private:
         bool m_reported = false;
     };
 
-    void updateRegInfo(const char* topic, TopicIdType topicId, bool locked = false)
+    void updateRegInfo(const char* topic, std::size_t topicLen, TopicIdType topicId, bool locked = false)
     {
         auto iter = std::find_if(
             m_regInfos.begin(), m_regInfos.end(),
-            [topic, topicId](typename RegInfosList::const_reference elem) -> bool
+            [topic, topicLen, topicId](typename RegInfosList::const_reference elem) -> bool
             {
-                return elem.m_allocated && (elem.m_topic == topic);
+                return
+                    elem.m_allocated &&
+                    elem.m_topic.size() == topicLen &&
+                    std::equal(elem.m_topic.begin(), elem.m_topic.end(), topic);
             });
 
         if (iter != m_regInfos.end()) {
@@ -1716,7 +1727,7 @@ private:
 
         if (iter != m_regInfos.end()) {
             iter->m_timestamp = m_timestamp;
-            iter->m_topic = topic;
+            iter->m_topic.assign(topic, topic + topicLen);
             iter->m_topicId = topicId;
             iter->m_allocated = true;
             iter->m_locked = locked;
@@ -1725,7 +1736,7 @@ private:
 
         RegInfo info;
         info.m_timestamp = m_timestamp;
-        info.m_topic = topic;
+        info.m_topic.assign(topic, topicLen);
         info.m_topicId = topicId;
         info.m_allocated = true;
         info.m_locked = locked;
@@ -2425,8 +2436,9 @@ private:
         WillmsgupdMsg msg;
         auto* msgBodyBeg = op->m_msg;
         if (msgBodyBeg != nullptr) {
-            auto* msgBodyEnd = msgBodyBeg + op->m_msgLen;
-            msg.field_willMsg().value().assign(msgBodyBeg, msgBodyEnd);
+            auto& dataStorage = msg.field_willMsg().value();
+            using DataStorage = typename std::decay<decltype(dataStorage)>::type;
+            dataStorage = DataStorage(msgBodyBeg, op->m_msgLen);
         }
         sendMessage(msg);
         return true;
@@ -2535,7 +2547,10 @@ private:
         dupFlagsField.setBitValue(DupFlags::BitIdx_bit, duplicate);
         pubMsg.field_topicId().value() = topicId;
         pubMsg.field_msgId().value() = msgId;
-        pubMsg.field_data().value().assign(msg, msg + msgLen);
+
+        auto& dataStorage = pubMsg.field_data().value();
+        using DataStorage = typename std::decay<decltype(dataStorage)>::type;
+        dataStorage = DataStorage(msg, msgLen);
 
         sendMessage(pubMsg);
     }
