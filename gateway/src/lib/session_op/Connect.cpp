@@ -60,13 +60,13 @@ void Connect::handle(ConnectMsg_SN& msg)
     typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
     auto& st = state();
-    auto* reqClientId = &(msg.field_clientId().value());
-    if (reqClientId->empty()) {
-        reqClientId = &(st.m_defaultClientId);
+    auto reqClientId = msg.field_clientId().value().substr();
+    if (reqClientId.empty()) {
+        reqClientId = st.m_defaultClientId;
     }
 
     if ((st.m_connStatus != ConnectionStatus::Disconnected) &&
-        (*reqClientId != st.m_clientId)) {
+        (reqClientId != st.m_clientId)) {
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
         termRequest();
@@ -74,14 +74,14 @@ void Connect::handle(ConnectMsg_SN& msg)
     }
 
 
-    assert(st.m_clientId.empty() || st.m_clientId == *reqClientId);
+    assert(st.m_clientId.empty() || (st.m_clientId == reqClientId));
     if (m_internalState.m_hasClientId) {
         m_internalState = State();
     }
 
     m_internalState.m_hasClientId = true;
 
-    m_clientId = *reqClientId;
+    m_clientId = std::move(reqClientId);
     m_keepAlive = msg.field_duration().value();
     m_clean = midFlagsField.getBitValue(MidFlags::BitIdx_cleanSession);
 

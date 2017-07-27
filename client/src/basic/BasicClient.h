@@ -277,7 +277,7 @@ public:
     typedef typename mqttsn::protocol::field::TopicName<FieldBase, NoOrigDataViewProtOpts>::ValueType TopicNameType;
     typedef typename mqttsn::protocol::field::Data<FieldBase, NoOrigDataViewProtOpts>::ValueType DataType;
     typedef typename mqttsn::protocol::field::TopicId<FieldBase>::ValueType TopicIdType;
-    typedef typename mqttsn::protocol::field::ClientId<FieldBase, TProtOpts>::ValueType ClientIdType;
+    typedef typename mqttsn::protocol::field::ClientId<FieldBase, NoOrigDataViewProtOpts>::ValueType ClientIdType;
 
     struct GwInfo
     {

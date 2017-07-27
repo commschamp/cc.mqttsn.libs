@@ -41,25 +41,45 @@ using ClientId =
     >;
 
 
-template <typename TOptions, bool THasClientIdStaticStorageSize>
-struct ClientIdExtraOpts;
+template <bool THasClientIdStaticStorageSize>
+struct ClientIdExtraOptsStaticStorage;
 
-template <typename TOptions>
-struct ClientIdExtraOpts<TOptions, true>
+template <>
+struct ClientIdExtraOptsStaticStorage<true>
 {
-    typedef comms::option::FixedSizeStorage<TOptions::ClientIdStaticStorageSize> Type;
+    template <typename TOptions>
+    using Type = comms::option::FixedSizeStorage<TOptions::ClientIdStaticStorageSize>;
 };
 
-template <typename TOptions>
-struct ClientIdExtraOpts<TOptions, false>
+template <>
+struct ClientIdExtraOptsStaticStorage<false>
 {
-    typedef comms::option::EmptyOption Type;
+    template <typename TOptions>
+    using Type = comms::option::EmptyOption;
+};
+
+template <bool THasOrigDataView>
+struct ClientIdExtraOptsDataView;
+
+template <>
+struct ClientIdExtraOptsDataView<true>
+{
+    template <typename TOptions>
+    using Type = comms::option::OrigDataView;
+};
+
+template <>
+struct ClientIdExtraOptsDataView<false>
+{
+    template <typename TOptions>
+    using Type =
+        typename ClientIdExtraOptsStaticStorage<TOptions::HasClientIdStaticStorageSize>::
+            template Type<TOptions>;
 };
 
 template <typename TOptions>
 using ClientIdExtraOptsT =
-    typename ClientIdExtraOpts<TOptions, TOptions::HasClientIdStaticStorageSize>::Type;
-
+    typename ClientIdExtraOptsDataView<TOptions::HasOrigDataView>:: template Type<TOptions>;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using GwAdd =
