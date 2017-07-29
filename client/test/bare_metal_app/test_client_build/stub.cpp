@@ -76,6 +76,18 @@ void* memcpy( void* dest, const void* src, std::size_t count )
 }
 
 extern "C"
+int memcmp(const void*, const void*, std::size_t)
+{
+    return 0;
+}
+
+extern "C"
+std::size_t strlen(const char*)
+{
+    return 0U;
+}
+
+extern "C"
 void  __aeabi_uidiv()
 {
 }

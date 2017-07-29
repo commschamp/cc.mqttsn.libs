@@ -320,7 +320,7 @@ public:
     typedef mqttsn::protocol::message::Willmsgresp<Message, TProtOpts> WillmsgrespMsg;
 
     BasicClient() = default;
-    virtual ~BasicClient() = default;
+    ~BasicClient() noexcept = default;
 
     typedef typename Message::ReadIterator ReadIterator;
 
@@ -2474,7 +2474,9 @@ private:
         ++op->m_attempt;
 
         PingreqMsg msg;
-        msg.field_clientId().value() = m_clientId;
+        auto& clientIdStorage = msg.field_clientId().value();
+        using ClientIdStorage = typename std::decay<decltype(clientIdStorage)>::type;
+        clientIdStorage = ClientIdStorage(m_clientId.c_str(), m_clientId.size());
         sendMessage(msg);
         return true;
     }
