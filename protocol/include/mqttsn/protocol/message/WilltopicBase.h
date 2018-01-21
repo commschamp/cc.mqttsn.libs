@@ -123,6 +123,9 @@ public:
 
         return refreshed;
     }
+
+protected:
+    ~WilltopicBase() noexcept = default;
 };
 
 }  // namespace message

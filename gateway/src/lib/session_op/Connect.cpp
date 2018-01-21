@@ -60,13 +60,13 @@ void Connect::handle(ConnectMsg_SN& msg)
     typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
     auto& st = state();
-    auto* reqClientId = &(msg.field_clientId().value());
-    if (reqClientId->empty()) {
-        reqClientId = &(st.m_defaultClientId);
+    auto reqClientId = msg.field_clientId().value().substr();
+    if (reqClientId.empty()) {
+        reqClientId = st.m_defaultClientId;
     }
 
     if ((st.m_connStatus != ConnectionStatus::Disconnected) &&
-        (*reqClientId != st.m_clientId)) {
+        (reqClientId != st.m_clientId)) {
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
         termRequest();
@@ -74,14 +74,14 @@ void Connect::handle(ConnectMsg_SN& msg)
     }
 
 
-    assert(st.m_clientId.empty() || st.m_clientId == *reqClientId);
+    assert(st.m_clientId.empty() || (st.m_clientId == reqClientId));
     if (m_internalState.m_hasClientId) {
         m_internalState = State();
     }
 
     m_internalState.m_hasClientId = true;
 
-    m_clientId = *reqClientId;
+    m_clientId = std::move(reqClientId);
     m_keepAlive = msg.field_duration().value();
     m_clean = midFlagsField.getBitValue(MidFlags::BitIdx_cleanSession);
 
@@ -125,7 +125,8 @@ void Connect::handle(WilltopicMsg_SN& msg)
     auto& midFlagsField = msg.field_flags().field().field_midFlags();
     typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
 
-    m_will.m_topic = msg.field_willTopic().value();
+    auto& topicView = msg.field_willTopic().value();
+    m_will.m_topic.assign(topicView.begin(), topicView.end());
     m_will.m_qos = translateQos(msg.field_flags().field().field_qos().value());
     m_will.m_retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
 
@@ -150,7 +151,8 @@ void Connect::handle(WillmsgMsg_SN& msg)
     m_internalState.m_hasWillMsg = true;
     m_internalState.m_attempt = 0;
 
-    m_will.m_msg = msg.field_willMsg().value();
+    auto& data = msg.field_willMsg().value();
+    m_will.m_msg.assign(data.begin(), data.end());
     doNextStep();
 }
 

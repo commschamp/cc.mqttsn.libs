@@ -225,7 +225,10 @@ void PubSend::doSend()
         m_currMsgId = allocMsgId();
         msg.field_topicId().value() = m_currTopicInfo.m_topicId;
         msg.field_msgId().value() = m_currMsgId;
-        msg.field_topicName().value() = m_currPub->m_topic;
+
+        auto& topicStorage = msg.field_topicName().value();
+        using TopicStorage = typename std::decay<decltype(topicStorage)>::type;
+        msg.field_topicName().value() = TopicStorage(m_currPub->m_topic.c_str(), m_currPub->m_topic.size());
         sendToClient(msg);
         nextTickReq(st.m_retryPeriod);
         return;
@@ -251,7 +254,9 @@ void PubSend::doSend()
     dupFlagsField.setBitValue(DupFlags::BitIdx_bit, dup);
     msg.field_topicId().value() = m_currTopicInfo.m_topicId;
     msg.field_msgId().value() = m_currMsgId;
-    msg.field_data().value() = m_currPub->m_msg;
+    auto& dataStorage = msg.field_data().value();
+    using DataStorage = typename std::decay<decltype(dataStorage)>::type;
+    msg.field_data().value() = DataStorage(&(*m_currPub->m_msg.begin()), m_currPub->m_msg.size());
     sendToClient(msg);
 
     if (m_currPub->m_qos == QoS_AtMostOnceDelivery) {

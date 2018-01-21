@@ -90,9 +90,19 @@ enum LengthFieldIdx
 };
 
 template <typename TNextLayer>
-class MsgSizeLayer : public comms::protocol::ProtocolLayerBase<LengthField, TNextLayer>
+class MsgSizeLayer : public
+    comms::protocol::ProtocolLayerBase<
+        LengthField,
+        TNextLayer,
+        MsgSizeLayer<TNextLayer>
+    >
 {
-    typedef comms::protocol::ProtocolLayerBase<LengthField, TNextLayer> Base;
+    typedef
+        comms::protocol::ProtocolLayerBase<
+            LengthField,
+            TNextLayer,
+            MsgSizeLayer<TNextLayer>
+        > Base;
 public:
     typedef typename Base::MsgPtr MsgPtr;
 
@@ -100,97 +110,14 @@ public:
         "The inner layers must define MsgPtr type");
     typedef typename Base::Field Field;
 
-    template <typename TMsgPtr, typename TIter>
-    comms::ErrorStatus read(
-        TMsgPtr& msgPtr,
-        TIter& iter,
-        std::size_t size,
-        std::size_t* missingSize = nullptr)
-    {
-        Field field;
-        return
-            readInternal(
-                field,
-                msgPtr,
-                iter,
-                size,
-                missingSize,
-                Base::createNextLayerReader());
-    }
-
-    template <std::size_t TIdx, typename TAllFields, typename TMsgPtr, typename TIter>
-    comms::ErrorStatus readFieldsCached(
-        TAllFields& allFields,
-        TMsgPtr& msgPtr,
-        TIter& iter,
-        std::size_t size,
-        std::size_t* missingSize = nullptr)
-    {
-        auto& field = Base::template getField<TIdx>(allFields);
-
-        return
-            readInternal(
-                field,
-                msgPtr,
-                iter,
-                size,
-                missingSize,
-                Base::template createNextLayerCachedFieldsReader<TIdx>(allFields));
-    }
-
-    template <typename TMsg, typename TIter>
-    comms::ErrorStatus write(
-            const TMsg& msg,
-            TIter& iter,
-            std::size_t size) const
-    {
-        Field field;
-        return writeInternal(field, msg, iter, size, Base::createNextLayerWriter());
-    }
-
-    template <std::size_t TIdx, typename TAllFields, typename TMsg, typename TIter>
-    comms::ErrorStatus writeFieldsCached(
-        TAllFields& allFields,
-        const TMsg& msg,
-        TIter& iter,
-        std::size_t size) const
-    {
-        auto& field = Base::template getField<TIdx>(allFields);
-        return
-            writeInternal(
-                field,
-                msg,
-                iter,
-                size,
-                Base::template createNextLayerCachedFieldsWriter<TIdx>(allFields));
-    }
-
-    constexpr std::size_t length() const
-    {
-        return ShortLengthField::minLength() + Base::nextLayer().length();
-    }
-
-    template <typename TMsg>
-    std::size_t length(const TMsg& msg) const
-    {
-        auto minLen = ShortLengthField::minLength() + Base::nextLayer().length(msg);
-        if (minLen <= std::numeric_limits<std::uint8_t>::max()) {
-            return minLen;
-        }
-
-        return minLen + sizeof(std::uint16_t);
-    }
-
-private:
-
-    template <typename TMsgPtr, typename TIter, typename TReader>
-    comms::ErrorStatus readInternal(
+    template <typename TMsgPtr, typename TIter, typename TNextLayerReader>
+    comms::ErrorStatus doRead(
         Field& field,
         TMsgPtr& msgPtr,
         TIter& iter,
         std::size_t size,
         std::size_t* missingSize,
-        TReader&& reader)
+        TNextLayerReader&& nextLayerReader)
     {
         typedef typename std::decay<decltype(iter)>::type IterType;
         typedef typename std::iterator_traits<IterType>::iterator_category IterTag;
@@ -226,7 +153,7 @@ private:
         }
 
         // not passing missingSize farther on purpose
-        es = reader.read(msgPtr, iter, requiredRemainingSize, nullptr);
+        es = nextLayerReader.read(msgPtr, iter, requiredRemainingSize, nullptr);
         if (es == comms::ErrorStatus::NotEnoughData) {
             return comms::ErrorStatus::ProtocolError;
         }
@@ -240,13 +167,13 @@ private:
         return es;
     }
 
-    template <typename TMsg, typename TIter, typename TWriter>
-    comms::ErrorStatus writeInternal(
+    template <typename TMsg, typename TIter, typename TNextLayerWriter>
+    comms::ErrorStatus doWrite(
         Field& field,
         const TMsg& msg,
         TIter& iter,
         std::size_t size,
-        TWriter&& nextLayerWriter) const
+        TNextLayerWriter&& nextLayerWriter) const
     {
         auto writeLength = Base::nextLayer().length(msg);
         auto& members = field.value();
@@ -278,6 +205,22 @@ private:
 
         GASSERT(field.length() <= size);
         return nextLayerWriter.write(msg, iter, size - field.length());
+    }
+
+    constexpr std::size_t length() const
+    {
+        return ShortLengthField::minLength() + Base::nextLayer().length();
+    }
+
+    template <typename TMsg>
+    std::size_t length(const TMsg& msg) const
+    {
+        auto minLen = ShortLengthField::minLength() + Base::nextLayer().length(msg);
+        if (minLen <= std::numeric_limits<std::uint8_t>::max()) {
+            return minLen;
+        }
+
+        return minLen + sizeof(std::uint16_t);
     }
 };
 

@@ -230,8 +230,9 @@ void SessionImpl::handle(RegisterMsg_SN& msg)
     auto& respMsgIdField = std::get<decltype(respMsg)::FieldIdx_msgId>(respFields);
     auto& respRetCodeField = std::get<decltype(respMsg)::FieldIdx_returnCode>(respFields);
 
+    auto& topicView = topicField.value();
     respTopicIdField.value() =
-        m_state.m_regMgr.mapTopicNoInfo(topicField.value());
+        m_state.m_regMgr.mapTopicNoInfo(std::string(topicView.data(), topicView.size()));
 
     respMsgIdField.value() = msgIdField.value();
     assert(respRetCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted);

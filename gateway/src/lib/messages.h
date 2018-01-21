@@ -48,7 +48,8 @@ typedef mqtt::protocol::v311::MessageT<
 > MqttMessage;
 
 typedef protocol::ParsedOptions<
-    protocol::option::GatewayOnlyVariant
+    protocol::option::GatewayOnlyVariant,
+    protocol::option::UseOrigDataView
 > GwOptions;
 
 typedef mqttsn::protocol::message::Advertise<MqttsnMessage, GwOptions> AdvertiseMsg_SN;

@@ -56,6 +56,8 @@ struct ClientOnlyVariant {};
 
 struct GatewayOnlyVariant {};
 
+struct UseOrigDataView {};
+
 }  // namespace option
 
 }  // namespace protocol

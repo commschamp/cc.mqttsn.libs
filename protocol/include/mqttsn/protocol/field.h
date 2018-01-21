@@ -41,25 +41,45 @@ using ClientId =
     >;
 
 
-template <typename TOptions, bool THasClientIdStaticStorageSize>
-struct ClientIdExtraOpts;
+template <bool THasClientIdStaticStorageSize>
+struct ClientIdExtraOptsStaticStorage;
 
-template <typename TOptions>
-struct ClientIdExtraOpts<TOptions, true>
+template <>
+struct ClientIdExtraOptsStaticStorage<true>
 {
-    typedef comms::option::FixedSizeStorage<TOptions::ClientIdStaticStorageSize> Type;
+    template <typename TOptions>
+    using Type = comms::option::FixedSizeStorage<TOptions::ClientIdStaticStorageSize>;
 };
 
-template <typename TOptions>
-struct ClientIdExtraOpts<TOptions, false>
+template <>
+struct ClientIdExtraOptsStaticStorage<false>
 {
-    typedef comms::option::EmptyOption Type;
+    template <typename TOptions>
+    using Type = comms::option::EmptyOption;
+};
+
+template <bool THasOrigDataView>
+struct ClientIdExtraOptsDataView;
+
+template <>
+struct ClientIdExtraOptsDataView<true>
+{
+    template <typename TOptions>
+    using Type = comms::option::OrigDataView;
+};
+
+template <>
+struct ClientIdExtraOptsDataView<false>
+{
+    template <typename TOptions>
+    using Type =
+        typename ClientIdExtraOptsStaticStorage<TOptions::HasClientIdStaticStorageSize>::
+            template Type<TOptions>;
 };
 
 template <typename TOptions>
 using ClientIdExtraOptsT =
-    typename ClientIdExtraOpts<TOptions, TOptions::HasClientIdStaticStorageSize>::Type;
-
+    typename ClientIdExtraOptsDataView<TOptions::HasOrigDataView>:: template Type<TOptions>;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using GwAdd =
@@ -69,46 +89,88 @@ using GwAdd =
         TExtraOpt...
     >;
 
-template <typename TOptions, bool THasGwAddStaticStorageSize>
-struct GwAddExtraOpts;
+template <bool THasGwAddStaticStorageSize>
+struct GwAddExtraOptsStaticStorage;
 
-template <typename TOptions>
-struct GwAddExtraOpts<TOptions, true>
+template <>
+struct GwAddExtraOptsStaticStorage<true>
 {
-    typedef comms::option::FixedSizeStorage<TOptions::GwAddStaticStorageSize> Type;
+    template <typename TOptions>
+    using Type = comms::option::FixedSizeStorage<TOptions::GwAddStaticStorageSize>;
 };
 
-template <typename TOptions>
-struct GwAddExtraOpts<TOptions, false>
+template <>
+struct GwAddExtraOptsStaticStorage<false>
 {
-    typedef comms::option::EmptyOption Type;
+    template <typename TOptions>
+    using Type = comms::option::EmptyOption;
+};
+
+template <bool THasOrigDataView>
+struct GwAddExtraOptsDataView;
+
+template <>
+struct GwAddExtraOptsDataView<true>
+{
+    template <typename TOptions>
+    using Type = comms::option::OrigDataView;
+};
+
+template <>
+struct GwAddExtraOptsDataView<false>
+{
+    template <typename TOptions>
+    using Type =
+        typename GwAddExtraOptsStaticStorage<TOptions::HasGwAddStaticStorageSize>::
+            template Type<TOptions>;
 };
 
 template <typename TOptions>
 using GwAddExtraOptsT =
-    typename GwAddExtraOpts<TOptions, TOptions::HasGwAddStaticStorageSize>::Type;
+    typename GwAddExtraOptsDataView<TOptions::HasOrigDataView>::template Type<TOptions>;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using TopicName = comms::field::String<TFieldBase, TExtraOpt...>;
 
-template <typename TOptions, bool THasTopicNameStaticStorageSize>
-struct TopicNameExtraOpts;
+template <bool THasTopicNameStaticStorageSize>
+struct TopicNameExtraOptsStaticStorage;
 
-template <typename TOptions>
-struct TopicNameExtraOpts<TOptions, true>
+template <>
+struct TopicNameExtraOptsStaticStorage<true>
 {
-    typedef comms::option::FixedSizeStorage<TOptions::TopicNameStaticStorageSize> Type;
+    template <typename TOptions>
+    using Type = comms::option::FixedSizeStorage<TOptions::TopicNameStaticStorageSize>;
 };
 
-template <typename TOptions>
-struct TopicNameExtraOpts<TOptions, false>
+template <>
+struct TopicNameExtraOptsStaticStorage<false>
 {
-    typedef comms::option::EmptyOption Type;
+    template <typename TOptions>
+    using Type = comms::option::EmptyOption;
+};
+
+template <bool THasUseOrigDataView>
+struct TopicNameExtraOptsDataView;
+
+template <>
+struct TopicNameExtraOptsDataView<true>
+{
+    template <typename TOptions>
+    using Type = comms::option::OrigDataView;
+};
+
+template <>
+struct TopicNameExtraOptsDataView<false>
+{
+    template <typename TOptions>
+    using Type =
+        typename TopicNameExtraOptsStaticStorage<TOptions::HasTopicNameStaticStorageSize>::
+            template Type<TOptions>;
 };
 
 template <typename TOptions>
 using TopicNameExtraOptsT =
-    typename TopicNameExtraOpts<TOptions, TOptions::HasTopicNameStaticStorageSize>::Type;
+    typename TopicNameExtraOptsDataView<TOptions::HasOrigDataView>::template Type<TOptions>;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using WillTopic = comms::field::String<TFieldBase, TExtraOpt...>;
@@ -121,24 +183,46 @@ using Data =
         TExtraOpt...
     >;
 
-template <typename TOptions, bool THasMessageDataStaticStorageSize>
-struct DataExtraOpts;
+template <bool THasMessageDataStaticStorageSize>
+struct DataExtraOptsStaticStorage;
 
-template <typename TOptions>
-struct DataExtraOpts<TOptions, true>
+template <>
+struct DataExtraOptsStaticStorage<true>
 {
-    typedef comms::option::FixedSizeStorage<TOptions::MessageDataStaticStorageSize> Type;
+    template <typename TOptions>
+    using Type = comms::option::FixedSizeStorage<TOptions::MessageDataStaticStorageSize>;
 };
 
-template <typename TOptions>
-struct DataExtraOpts<TOptions, false>
+template <>
+struct DataExtraOptsStaticStorage<false>
 {
-    typedef comms::option::EmptyOption Type;
+    template <typename TOptions>
+    using Type = comms::option::EmptyOption;
 };
+
+template <bool THasOrigDataView>
+struct DataExtraOptsDataView;
+
+template <>
+struct DataExtraOptsDataView<true>
+{
+    template <typename TOptions>
+    using Type = comms::option::OrigDataView;
+};
+
+template <>
+struct DataExtraOptsDataView<false>
+{
+    template <typename TOptions>
+    using Type =
+        typename DataExtraOptsStaticStorage<TOptions::HasMessageDataStaticStorageSize>::
+            template Type<TOptions>;
+};
+
 
 template <typename TOptions>
 using DataExtraOptsT =
-    typename DataExtraOpts<TOptions, TOptions::HasMessageDataStaticStorageSize>::Type;
+    typename DataExtraOptsDataView<TOptions::HasOrigDataView>::template Type<TOptions>;
 
 template <typename TFieldBase, typename... TExtraOpt>
 using WillMsg =

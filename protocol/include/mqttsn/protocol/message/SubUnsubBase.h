@@ -145,6 +145,9 @@ public:
 
         return refreshed;
     }
+
+protected:
+    ~SubUnsubBase() noexcept = default;
 };
 
 }  // namespace message

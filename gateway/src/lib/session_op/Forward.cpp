@@ -59,7 +59,8 @@ void Forward::handle(PublishMsg_SN& msg)
 
         NoGwPubInfo info;
         info.m_topicId = msg.field_topicId().value();
-        info.m_data = msg.field_data().value();
+        auto& data = msg.field_data().value();
+        info.m_data.assign(data.begin(), data.end());
         m_pubs.push_back(std::move(info));
         return;
     } while (false);
@@ -102,7 +103,8 @@ void Forward::handle(PublishMsg_SN& msg)
     fwdFlags.field_dup().setBitValue(0, dup);
     fwdMsg.field_topic().value() = topic;
     fwdMsg.field_packetId().field().value() = msg.field_msgId().value();
-    fwdMsg.field_payload().value() = msg.field_data().value();
+    auto& data = msg.field_data().value();
+    fwdMsg.field_payload().value().assign(data.begin(), data.end());
     fwdMsg.doRefresh();
     sendToBroker(fwdMsg);
 }
@@ -149,22 +151,22 @@ void Forward::handle(SubscribeMsg_SN& msg)
         return;
     }
 
-
-    const std::string* topic = nullptr;
+    std::string topic;
     std::uint16_t topicId = 0U;
     do {
         if (msg.field_topicName().doesExist()) {
             assert(msg.field_topicId().isMissing());
-            topic = &msg.field_topicName().field().value();
+            auto& topicStorage = msg.field_topicName().field().value();
+            topic.assign(topicStorage.begin(), topicStorage.end());
 
-            if (topic->empty()) {
+            if (topic.empty()) {
                 sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
                 sendToBroker(PingreqMsg());
                 return;
             }
 
             bool hasWildcards =
-                std::any_of(topic->begin(), topic->end(),
+                std::any_of(topic.begin(), topic.end(),
                     [](char ch) -> bool
                     {
                         return (ch == '#') || (ch == '+');
@@ -174,7 +176,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
                 break;
             }
 
-            topicId = state().m_regMgr.mapTopicNoInfo(*topic);
+            topicId = state().m_regMgr.mapTopicNoInfo(topic);
             break;
         }
 
@@ -183,7 +185,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
 
         auto& topicStr = state().m_regMgr.mapTopicId(msg.field_topicId().field().value());
         if (!topicStr.empty()) {
-            topic = &topicStr;
+            topic = topicStr;
             topicId = msg.field_topicId().field().value();
             break;
         }
@@ -210,8 +212,8 @@ void Forward::handle(SubscribeMsg_SN& msg)
     auto& subTopicField = std::get<0>(subMembers);
     auto& subQosField = std::get<1>(subMembers);
 
-    assert(topic != nullptr);
-    subTopicField.value() = *topic;
+    assert(!topic.empty());
+    subTopicField.value() = std::move(topic);
     subQosField.value() = translateQosForBroker(translateQos(msg.field_flags().field_qos().value()));
 
     payloadContainer.push_back(std::move(subElem));
@@ -224,13 +226,14 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
         return;
     }
 
-    const std::string* topic = nullptr;
+    std::string topic;
     do {
         if (msg.field_topicName().doesExist()) {
             assert(msg.field_topicId().isMissing());
-            topic = &msg.field_topicName().field().value();
+            auto& topicStorage = msg.field_topicName().field().value();
+            topic.assign(topicStorage.begin(), topicStorage.end());
 
-            if (topic->empty()) {
+            if (topic.empty()) {
                 return;
             }
 
@@ -244,7 +247,7 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
         if (topicStr.empty()) {
             return;
         }
-        topic = &topicStr;
+        topic = topicStr;
     } while (false);
 
     UnsubscribeMsg fwdMsg;
@@ -254,7 +257,7 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
     typedef ContainerType::value_type UnsubString;
 
     UnsubString unsubStr;
-    unsubStr.value() = *topic;
+    unsubStr.value() = std::move(topic);
     payloadContainer.push_back(std::move(unsubStr));
     sendToBroker(fwdMsg);
 }
