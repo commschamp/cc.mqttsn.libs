@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "version.h"
 #include "MsgSizeLayer.h"
 #include "field.h"
 #include "Message.h"
