@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "version.h"
 #include "MsgSizeLayer.h"
 #include "field.h"
 #include "Message.h"
@@ -32,14 +33,15 @@ namespace protocol
 template <
     typename TMsgBase = Message,
     typename TAllMessages = AllMessages<TMsgBase>,
-    typename TMsgAllocOptions = std::tuple<> >
+    typename TMsgAllocOptions = comms::option::EmptyOption,
+    typename TDataFieldStorageOptions = comms::option::EmptyOption>
 using Stack =
     MsgSizeLayer<
         comms::protocol::MsgIdLayer<
             field::MsgType<typename TMsgBase::Field>,
             TMsgBase,
             TAllMessages,
-            comms::protocol::MsgDataLayer<>,
+            comms::protocol::MsgDataLayer<TDataFieldStorageOptions>,
             TMsgAllocOptions
         >
     >;
