@@ -108,15 +108,13 @@ like the protocol specifies.
 All other behaviour is implemented as specified.
 
 # Licence 
-This work provided under the classic **GPLv3** / **Commercial** dual licensing scheme. The
+This work provided under the classic **GPLv3** / **Commercial** dual licensing scheme
+in the same way as [CommsChampion](https://github.com/arobenko/comms_champion) project
+(see [LICENSE.md](https://github.com/arobenko/comms_champion/blob/master/LICENSE.md) for details). The
 source code is available for anyone to use as long as the derivative work
 remains open source with compatible licence. **Download** it, **try** it! If it works
 as expected and commercial closed source licence is required for the final
-product, it can be purchased on 
-[binpress](http://arobenko.binpress.com/product/mqttsn-clientgateway-libraries/4583). 
-If the offered licences do not satisfy your needs and special conditions need to 
-be included please send me an e-mail (see 
-[Contact Information](#contact-information) below).
+product, please send me an e-mail (see [Contact Information](#contact-information) below).
 
 # How to Build
 Detailed instructions on how to build and install all the components can be
