@@ -31,7 +31,7 @@
 #define MQTTSN_MINOR_VERSION 8U
 
 /// @brief Patch level of the library
-#define MQTTSN_PATCH_VERSION 1U
+#define MQTTSN_PATCH_VERSION 3U
 
 /// @brief Version of the MQTTSN library as single numeric value
 #define MQTTSN_VERSION \
