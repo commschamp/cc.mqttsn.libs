@@ -106,7 +106,7 @@ public:
     template <typename TIter>
     comms::ErrorStatus doRead(TIter& iter, std::size_t len)
     {
-        auto es = Base::template readFieldsUntil<FieldIdx_msgId>(iter, len);
+        auto es = Base::template doReadUntil<FieldIdx_msgId>(iter, len);
         if (es != comms::ErrorStatus::Success) {
             return es;
         }
@@ -120,7 +120,7 @@ public:
             field_topicName().setMissing();
         }
 
-        return Base::template readFieldsFrom<FieldIdx_msgId>(iter, len);
+        return Base::template doReadFrom<FieldIdx_msgId>(iter, len);
     }
 
     bool doRefresh()
