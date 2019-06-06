@@ -176,7 +176,7 @@ macro (externals install_dir build_cc mqtt_headers)
             GIT_TAG "${cc_tag}"
             SOURCE_DIR "${cc_src_dir}"
             CMAKE_ARGS 
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_INSTALL_DIR=${install_dir} 
+                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${install_dir} 
                 -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
                 ${cc_qt_dir_opt} ${ct_lib_only_opt}

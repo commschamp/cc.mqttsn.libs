@@ -49,7 +49,7 @@ before_script:
   - mkdir build
   - cd build
   - source /opt/qt56/bin/qt56-env.sh
-  - CC=${_CC} CXX=${_CXX} cmake .. -DCC_MQTTSN_FULL_SOLUTION=ON ${_BUILD}
+  - CC=${_CC} CXX=${_CXX} cmake .. -DCC_MQTTSN_FULL_SOLUTION=ON -DCMAKE_INSTALL_PREFIX=install ${_BUILD}
 
 script:
   - VERBOSE=1 make install
