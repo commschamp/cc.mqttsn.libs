@@ -87,7 +87,7 @@ class SubUnsubBase : public
         comms::option::StaticNumIdImpl<TId>,
         comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::HasDoRefresh,
+        comms::option::HasCustomRefresh,
         details::ExtraSubUnsubOptionsT<TOptions>
     >
 {
@@ -96,7 +96,7 @@ class SubUnsubBase : public
         comms::option::StaticNumIdImpl<TId>,
         comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<SubUnsubBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::HasDoRefresh,
+        comms::option::HasCustomRefresh,
         details::ExtraSubUnsubOptionsT<TOptions>
     > Base;
 
@@ -106,7 +106,7 @@ public:
     template <typename TIter>
     comms::ErrorStatus doRead(TIter& iter, std::size_t len)
     {
-        auto es = Base::template doReadUntil<FieldIdx_msgId>(iter, len);
+        auto es = Base::template doReadUntilAndUpdateLen<FieldIdx_msgId>(iter, len);
         if (es != comms::ErrorStatus::Success) {
             return es;
         }
