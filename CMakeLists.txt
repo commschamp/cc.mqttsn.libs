@@ -186,7 +186,7 @@ macro (externals install_dir build_cc mqtt_headers)
         set (CC_COMMS_FOUND TRUE)
         
         if (${mqtt_headers})
-            set (cc_mqtt_tag "develop")
+            set (cc_mqtt_tag "v0.7.6")
             ExternalProject_Add(
                 "${CC_MQTT_EXTERNAL_TGT}"
                 PREFIX "${cc_mqtt_bin_dir}"
