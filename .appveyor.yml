@@ -33,7 +33,7 @@ install:
 build_script:
     - mkdir build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
     - cd build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
-    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCC_MQTTSN_QT_DIR=%QTDIR% -DCC_MQTTSN_FULL_SOLUTION=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCC_MQTTSN_QT_DIR=%QTDIR% -DCC_MQTTSN_FULL_SOLUTION=ON -DCMAKE_INSTALL_PREFIX=install
     - nmake install
 
 test_script:

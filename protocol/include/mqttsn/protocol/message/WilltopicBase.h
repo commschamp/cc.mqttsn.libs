@@ -81,7 +81,7 @@ class WilltopicBase : public
         comms::option::StaticNumIdImpl<TId>,
         comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::HasDoRefresh,
+        comms::option::HasCustomRefresh,
         details::ExtraWilltopicOptionsT<TOptions>
     >
 {
@@ -90,7 +90,7 @@ class WilltopicBase : public
         comms::option::StaticNumIdImpl<TId>,
         comms::option::MsgType<TActual>,
         comms::option::FieldsImpl<WilltopicBaseFields<typename TMsgBase::Field, TOptions> >,
-        comms::option::HasDoRefresh,
+        comms::option::HasCustomRefresh,
         details::ExtraWilltopicOptionsT<TOptions>
     > Base;
 

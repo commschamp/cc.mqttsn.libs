@@ -147,7 +147,7 @@ set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
 macro (externals install_dir build_cc mqtt_headers)
         include(ExternalProject)
         
-        set (cc_tag "v0.27")
+        set (cc_tag "v1.3")
         set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
         set (cc_src_dir "${cc_main_dir}/src")
         set (cc_bin_dir "${cc_main_dir}/build")
@@ -176,7 +176,7 @@ macro (externals install_dir build_cc mqtt_headers)
             GIT_TAG "${cc_tag}"
             SOURCE_DIR "${cc_src_dir}"
             CMAKE_ARGS 
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_INSTALL_DIR=${install_dir} 
+                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${install_dir} 
                 -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
                 ${cc_qt_dir_opt} ${ct_lib_only_opt}
@@ -186,7 +186,7 @@ macro (externals install_dir build_cc mqtt_headers)
         set (CC_COMMS_FOUND TRUE)
         
         if (${mqtt_headers})
-            set (cc_mqtt_tag "v0.7.5")
+            set (cc_mqtt_tag "v0.7.6")
             ExternalProject_Add(
                 "${CC_MQTT_EXTERNAL_TGT}"
                 PREFIX "${cc_mqtt_bin_dir}"
