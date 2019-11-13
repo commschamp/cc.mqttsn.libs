@@ -168,6 +168,12 @@ macro (externals install_dir build_cc mqtt_headers)
             set (ct_lib_only_opt -DCC_COMMS_LIB_ONLY=ON)
         endif ()
     
+        if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
+            set(cc_compiler_opt -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
+        else()
+            set(cc_compiler_opt -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+        endif ()
+
         ExternalProject_Add(
             "${CC_EXTERNAL_TGT}"
             PREFIX "${cc_bin_dir}"
@@ -178,7 +184,7 @@ macro (externals install_dir build_cc mqtt_headers)
             CMAKE_ARGS 
                 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${install_dir} 
                 -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
-                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+                ${cc_compiler_opt}
                 ${cc_qt_dir_opt} ${ct_lib_only_opt}
             BINARY_DIR "${cc_bin_dir}"
         )
@@ -197,7 +203,7 @@ macro (externals install_dir build_cc mqtt_headers)
                 CMAKE_ARGS 
                     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_MQTT_INSTALL_DIR=${install_dir} 
                     -DCC_MQTT_LIB_ONLY=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
-                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+                    ${cc_compiler_opt}
                     ${cc_mqtt_qt_dir_opt}
                 BINARY_DIR "${cc_mqtt_bin_dir}"
             )
