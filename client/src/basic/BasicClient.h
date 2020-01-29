@@ -461,7 +461,8 @@ public:
         m_regInfos.clear();
         m_nextTimeoutTimestamp = 0;
         m_lastGwSearchTimestamp = 0;
-        m_lastMsgTimestamp = 0;
+        m_lastRecvMsgTimestamp = 0;
+        m_lastSentMsgTimestamp = 0;
         m_lastPingTimestamp = 0;
 
         m_pingCount = 0;
@@ -523,7 +524,7 @@ public:
 
             if (es == comms::ErrorStatus::Success) {
                 GASSERT(msg);
-                m_lastMsgTimestamp = m_timestamp;
+                m_lastRecvMsgTimestamp = m_timestamp;
                 msg->dispatch(*this);
             }
 
@@ -1887,9 +1888,10 @@ private:
             return NoTimeout;
         }
 
-        auto pingTimestamp = m_lastMsgTimestamp + m_keepAlivePeriod;
-        if (0 < m_pingCount) {
-            pingTimestamp = m_lastPingTimestamp + m_retryPeriod;
+        auto pingTimestamp = m_lastPingTimestamp + m_retryPeriod;
+        if (m_pingCount == 0) {
+            pingTimestamp =
+                std::min(m_lastSentMsgTimestamp, m_lastRecvMsgTimestamp) + m_keepAlivePeriod;
         }
 
         if (pingTimestamp <= m_timestamp) {
@@ -1969,11 +1971,17 @@ private:
 
         if (m_pingCount == 0) {
             // first ping;
-            if (m_timestamp < (m_lastMsgTimestamp + m_keepAlivePeriod)) {
-                return;
+            GASSERT(m_lastSentMsgTimestamp != 0);
+            GASSERT(m_lastRecvMsgTimestamp != 0);
+
+            bool needsToSendPing =
+                ((m_lastSentMsgTimestamp + m_keepAlivePeriod) <= m_timestamp) ||
+                ((m_lastRecvMsgTimestamp + m_keepAlivePeriod) <= m_timestamp);
+
+            if (needsToSendPing) {
+                sendPing();
             }
 
-            sendPing();
             return;
         }
 
@@ -2098,6 +2106,7 @@ private:
         auto writtenBytes = static_cast<std::size_t>(
             std::distance(comms::writeIteratorFor<Message>(&m_writeBuf[0]), writeIter));
 
+        m_lastSentMsgTimestamp = m_timestamp;
         m_sendOutputDataFn(m_sendOutputDataData, &m_writeBuf[0], writtenBytes, broadcast);
     }
 
@@ -2787,7 +2796,8 @@ private:
     Timestamp m_timestamp = DefaultStartTimestamp;
     Timestamp m_nextTimeoutTimestamp = 0;
     Timestamp m_lastGwSearchTimestamp = 0;
-    Timestamp m_lastMsgTimestamp = 0;
+    Timestamp m_lastRecvMsgTimestamp = 0;
+    Timestamp m_lastSentMsgTimestamp = 0;
     Timestamp m_lastPingTimestamp = 0;
     ClientIdType m_clientId;
 
