@@ -225,7 +225,7 @@ QString getClientId(const QCommandLineParser& parser)
         return clientId;
     }
 
-    clientId = "mqttsn_pub_";
+    clientId = "mqttsn_sub_";
     std::random_device rd;
     std::mt19937 gen(rd());
     static const QString Map =
