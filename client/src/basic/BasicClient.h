@@ -2318,8 +2318,13 @@ private:
             msg.field_topicId().field().value() = iter->m_topicId;
         }
         else {
-            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
             msg.field_topicName().field().value() = op->m_topic;
+            if(strlen(op->m_topic) <= 2 && strpbrk(op->m_topic, "+#") == nullptr) {
+                msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+                uint16_t topicId = (static_cast<uint16_t>(op->m_topic[0]) << 8U) | op->m_topic[1];
+                updateRegInfo(op->m_topic, 2, topicId, true);
+            }
         }
 
         msg.field_flags().field_qos().value() = details::translateQosValue(op->m_qos);
@@ -2383,13 +2388,17 @@ private:
 
         UnsubscribeMsg msg;
 
-        if (op->m_topicId != 0U) {
+        if (op->m_topicId != 0U && strlen(op->m_topic) == 0) {
             msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
             msg.field_topicId().field().value() = iter->m_topicId;
         }
         else {
-            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
             msg.field_topicName().field().value() = op->m_topic;
+            if(strlen(op->m_topic) <= 2 && strpbrk(op->m_topic, "+#") == nullptr) {
+                msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            }
+            op->m_topicId = 0;
         }
 
         msg.field_msgId().value() = op->m_msgId;

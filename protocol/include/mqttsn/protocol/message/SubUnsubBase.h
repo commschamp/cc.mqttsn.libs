@@ -131,6 +131,11 @@ public:
             expectedTopicIdMode = comms::field::OptionalMode::Missing;
             expectedTopicNameMode = comms::field::OptionalMode::Exists;
         }
+        else if (field_flags().field_topicId().value() == field::TopicIdTypeVal::Normal &&
+                field_topicName().field().value().size()) {
+            expectedTopicIdMode = comms::field::OptionalMode::Missing;
+            expectedTopicNameMode = comms::field::OptionalMode::Exists;
+        }
 
         bool refreshed = false;
         if (field_topicId().getMode() != expectedTopicIdMode) {
