@@ -111,7 +111,7 @@ public:
             return es;
         }
 
-        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::Name) {
+        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::ShortName) {
             field_topicId().setMissing();
             field_topicName().setExists();
         }
@@ -127,7 +127,7 @@ public:
     {
         auto expectedTopicIdMode = comms::field::OptionalMode::Exists;
         auto expectedTopicNameMode = comms::field::OptionalMode::Missing;
-        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::Name) {
+        if (field_flags().field_topicId().value() == field::TopicIdTypeVal::ShortName) {
             expectedTopicIdMode = comms::field::OptionalMode::Missing;
             expectedTopicNameMode = comms::field::OptionalMode::Exists;
         }

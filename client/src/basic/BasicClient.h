@@ -200,6 +200,7 @@ class BasicClient
         const char* m_topic = nullptr;
         bool m_registered = false;
         bool m_didRegistration = false;
+        bool m_shortName = false;
     };
 
     struct SubscribeOpBase : public OpBase
@@ -755,6 +756,10 @@ public:
         pubOp->m_retain = retain;
         pubOp->m_cb = callback;
         pubOp->m_cbData = data;
+        pubOp->m_shortName = isShortTopicName(topic);
+        if (pubOp->m_shortName) {
+            pubOp->m_topicId = shortTopicToTopicId(topic);
+        }
 
         bool result = doPublish();
         static_cast<void>(result);
@@ -1292,7 +1297,7 @@ public:
             };
 
         auto iter = m_regInfos.end();
-        if (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined) {
+        if (msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::Normal) {
             iter = std::find_if(
                 m_regInfos.begin(), m_regInfos.end(),
                 [&msg](typename RegInfosList::const_reference elem) -> bool
@@ -1310,10 +1315,19 @@ public:
             topicName = iter->m_topic.c_str();
         }
 
+        char shortTopicName[3] = {0};
+        bool usingShortTopic =
+            msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::ShortName;
+        if (usingShortTopic) {
+            GASSERT(iter == m_regInfos.end());
+            topicIdToShortTopic(msg.field_topicId().value(), &shortTopicName[0]);
+            topicName = &shortTopicName[0];
+        }
+
         if ((msg.field_flags().field_qos().value() < mqttsn::protocol::field::QosType::AtLeastOnceDelivery) ||
             (mqttsn::protocol::field::QosType::ExactlyOnceDelivery < msg.field_flags().field_qos().value())) {
 
-            if ((iter == m_regInfos.end()) &&
+            if ((topicName == nullptr) &&
                 (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
                 return;
             }
@@ -1322,7 +1336,7 @@ public:
             return;
         }
 
-        if ((iter == m_regInfos.end()) &&
+        if ((topicName == nullptr) &&
             (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined)) {
             m_lastInMsg = LastInMsgInfo();
             return;
@@ -1343,7 +1357,8 @@ public:
             ((!dupFlags.getBitValue(DupFlags::BitIdx_bit)) ||
              (msg.field_topicId().value() != m_lastInMsg.m_topicId) ||
              (msg.field_msgId().value() != m_lastInMsg.m_msgId) ||
-             (m_lastInMsg.m_reported));
+             (m_lastInMsg.m_reported) ||
+             (usingShortTopic != m_lastInMsg.m_shortTopicName));
 
         if (newMessage) {
             m_lastInMsg = LastInMsgInfo();
@@ -1355,6 +1370,7 @@ public:
             m_lastInMsg.m_msgId = msg.field_msgId().value();
             m_lastInMsg.m_retain =
                 midFlags.getBitValue(MidFlags::BitIdx_retain);
+            m_lastInMsg.m_shortTopicName = usingShortTopic;
         }
 
         auto& msgData = msg.field_data().value();
@@ -1698,6 +1714,7 @@ private:
         std::uint16_t m_msgId = 0;
         bool m_retain = false;
         bool m_reported = false;
+        bool m_shortTopicName = false;
     };
 
     void updateRegInfo(const char* topic, std::size_t topicLen, TopicIdType topicId, bool locked = false)
@@ -2199,10 +2216,11 @@ private:
         }
 
         bool firstAttempt = (op->m_attempt == 0U);
+
         ++op->m_attempt;
 
         do {
-            if (op->m_registered) {
+            if (op->m_registered || op->m_shortName) {
                 break;
             }
 
@@ -2230,7 +2248,7 @@ private:
             op->m_msgId = allocMsgId();
         }
 
-        GASSERT(op->m_registered);
+        GASSERT((op->m_registered) || (op->m_shortName));
 
         if ((!firstAttempt) &&
             (op->m_ackReceived) &&
@@ -2239,12 +2257,17 @@ private:
             return true;
         }
 
+        auto topicIdType = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+        if (op->m_shortName) {
+            topicIdType = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
+        }
+
         sendPublish(
             op->m_topicId,
             op->m_msgId,
             op->m_msg,
             op->m_msgLen,
-            mqttsn::protocol::field::TopicIdTypeVal::Normal,
+            topicIdType,
             details::translateQosValue(op->m_qos),
             op->m_retain,
             !firstAttempt);
@@ -2318,7 +2341,7 @@ private:
             msg.field_topicId().field().value() = iter->m_topicId;
         }
         else {
-            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
             msg.field_topicName().field().value() = op->m_topic;
         }
 
@@ -2388,7 +2411,7 @@ private:
             msg.field_topicId().field().value() = iter->m_topicId;
         }
         else {
-            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+            msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
             msg.field_topicName().field().value() = op->m_topic;
         }
 
@@ -2788,6 +2811,43 @@ private:
     bool isTimerActive() const
     {
         return (m_tickDelay != 0U);
+    }
+
+    static bool isShortTopicName(const char* topic)
+    {
+        GASSERT(topic != nullptr);
+        auto checkCharFunc =
+            [](char ch)
+            {
+                return
+                    (ch != '\0') &&
+                    (ch != '+') &&
+                    (ch != '#');
+            };
+
+        if ((!checkCharFunc(topic[0])) ||
+            (!checkCharFunc(topic[1]))) {
+            return false;
+        }
+
+        return topic[2] == '\0';
+    }
+
+    static MqttsnTopicId shortTopicToTopicId(const char* topic)
+    {
+        GASSERT(topic[0] != '\0');
+        GASSERT(topic[1] != '\0');
+
+        return
+            static_cast<MqttsnTopicId>(
+                (static_cast<MqttsnTopicId>(topic[0]) << 8) | static_cast<std::uint8_t>(topic[1]));
+    }
+
+    static void topicIdToShortTopic(MqttsnTopicId topicId, char* topicOut)
+    {
+        topicOut[0] = static_cast<char>((topicId >> 8) & 0xff);
+        topicOut[1] = static_cast<char>(topicId & 0xff);
+        topicOut[2] = '\0';
     }
 
 

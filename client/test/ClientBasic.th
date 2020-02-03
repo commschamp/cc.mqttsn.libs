@@ -918,7 +918,7 @@ private:
 
                 typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
+                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::ShortName);
                 TS_ASSERT_EQUALS(transformQos(msg.field_flags().field_qos().value()), qos);
                 TS_ASSERT_EQUALS(dupFlagsField.getBitValue(DupFlags::BitIdx_bit), duplicate);
                 TS_ASSERT(msg.field_topicId().isMissing());
@@ -988,7 +988,7 @@ private:
                 sent = true;
                 TS_TRACE("<-- UNSUBSRIBE");
 
-                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Name);
+                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::ShortName);
                 TS_ASSERT(msg.field_topicId().isMissing());
                 TS_ASSERT(msg.field_topicName().doesExist());
                 TS_ASSERT_EQUALS(msg.field_topicName().field().value(), topic);

@@ -688,7 +688,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     mqttsn::protocol::field::QosType qos)
 {
     SubscribeMsg_SN msg;
-    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
     msg.field_flags().field_qos().value() = qos;
     msg.field_msgId().value() = msgId;
     msg.field_topicName().field().value() = topic;
@@ -725,7 +725,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
     std::uint16_t msgId)
 {
     UnsubscribeMsg_SN msg;
-    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Name;
+    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
     msg.field_msgId().value() = msgId;
     msg.field_topicName().field().value() = topic;
 
