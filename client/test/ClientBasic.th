@@ -918,12 +918,28 @@ private:
 
                 typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::ShortName);
+                bool shortName =
+                    (topic.size() == 2U) &&
+                    (topic.find_first_of("#+") == std::string::npos);
+
+                if (shortName) {
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::ShortName);
+                    TS_ASSERT(msg.field_topicId().doesExist());
+                    TS_ASSERT(msg.field_topicName().isMissing());
+                    TS_ASSERT_EQUALS(topic.size(), 2U);
+                    auto topicId = ((std::uint16_t)topic[0] << 8) | ((std::uint8_t)topic[1]);
+                    TS_ASSERT_EQUALS(msg.field_topicId().field().value(), topicId);
+                }
+                else {
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
+                    TS_ASSERT(msg.field_topicId().isMissing());
+                    TS_ASSERT(msg.field_topicName().doesExist());
+                    TS_ASSERT_EQUALS(msg.field_topicName().field().value(), topic);
+                }
+
                 TS_ASSERT_EQUALS(transformQos(msg.field_flags().field_qos().value()), qos);
                 TS_ASSERT_EQUALS(dupFlagsField.getBitValue(DupFlags::BitIdx_bit), duplicate);
-                TS_ASSERT(msg.field_topicId().isMissing());
-                TS_ASSERT(msg.field_topicName().doesExist());
-                TS_ASSERT_EQUALS(msg.field_topicName().field().value(), topic);
+
 
                 msgId = msg.field_msgId().value();
             });
@@ -939,13 +955,12 @@ private:
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
         MqttsnQoS qos,
-        bool duplicate,
-        bool predefined = true)
+        bool duplicate)
     {
         bool sent = false;
         std::uint16_t msgId = 0U;
         auto oldCb = dataProc.setSubscribeMsgReportCallback(
-            [&sent, &msgId, topicId, qos, duplicate, predefined](const SubscribeMsg& msg)
+            [&sent, &msgId, topicId, qos, duplicate](const SubscribeMsg& msg)
             {
                 sent = true;
                 TS_TRACE("<-- SUBSCRIBE");
@@ -954,12 +969,7 @@ private:
 
                 typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-                if (predefined) {
-                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
-                }
-                else {
-                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
-                }
+                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
                 TS_ASSERT_EQUALS(transformQos(msg.field_flags().field_qos().value()), qos);
                 TS_ASSERT_EQUALS(dupFlagsField.getBitValue(DupFlags::BitIdx_bit), duplicate);
                 TS_ASSERT(msg.field_topicId().doesExist());
@@ -988,10 +998,24 @@ private:
                 sent = true;
                 TS_TRACE("<-- UNSUBSRIBE");
 
-                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::ShortName);
-                TS_ASSERT(msg.field_topicId().isMissing());
-                TS_ASSERT(msg.field_topicName().doesExist());
-                TS_ASSERT_EQUALS(msg.field_topicName().field().value(), topic);
+                bool shortName =
+                    (topic.size() == 2U) &&
+                    (topic.find_first_of("#+") == std::string::npos);
+
+                if (shortName) {
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::ShortName);
+                    TS_ASSERT(msg.field_topicId().doesExist());
+                    TS_ASSERT(msg.field_topicName().isMissing());
+                    TS_ASSERT_EQUALS(topic.size(), 2U);
+                    auto topicId = ((std::uint16_t)topic[0] << 8) | ((std::uint8_t)topic[1]);
+                    TS_ASSERT_EQUALS(msg.field_topicId().field().value(), topicId);
+                }
+                else {
+                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
+                    TS_ASSERT(msg.field_topicId().isMissing());
+                    TS_ASSERT(msg.field_topicName().doesExist());
+                    TS_ASSERT_EQUALS(msg.field_topicName().field().value(), topic);
+                }
 
                 msgId = msg.field_msgId().value();
             });
@@ -1005,23 +1029,17 @@ private:
     static std::uint16_t verifySent_UnsubsribeMsg(
         const TestBasicState& state,
         DataProcessor& dataProc,
-        MqttsnTopicId topicId,
-        bool predefined = true)
+        MqttsnTopicId topicId)
     {
         bool sent = false;
         std::uint16_t msgId = 0U;
         auto oldCb = dataProc.setUnsubscribeMsgReportCallback(
-            [&sent, &msgId, topicId, predefined](const UnsubscribeMsg& msg)
+            [&sent, &msgId, topicId](const UnsubscribeMsg& msg)
             {
                 sent = true;
                 TS_TRACE("<-- UNSUBSCRIBE");
 
-                if (predefined) {
-                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
-                }
-                else {
-                    TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::Normal);
-                }
+                TS_ASSERT_EQUALS(msg.field_flags().field_topicId().value(), mqttsn::protocol::field::TopicIdTypeVal::PreDefined);
                 TS_ASSERT(msg.field_topicId().doesExist());
                 TS_ASSERT(msg.field_topicName().isMissing());
                 TS_ASSERT_EQUALS(msg.field_topicId().field().value(), topicId);
@@ -3011,7 +3029,8 @@ void ClientBasic::test30()
     state.m_nextElapsedTicks = 1000;
     auto result = client->subscribe(Topic, Qos);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    auto msgId = verifySent_SubsribeMsg(state, dataProc, TopicId, Qos, false, false);
+    // Even if topic is pre-registered, use subscribe by topic name
+    auto msgId = verifySent_SubsribeMsg(state, dataProc, Topic, Qos, false);
     verifyNoOtherEvent(state);
 
     clearState(state);
@@ -3209,7 +3228,8 @@ void ClientBasic::test33()
     state.m_nextElapsedTicks = 1000;
     auto result = client->unsubscribe(Topic);
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Success);
-    auto msgId = verifySent_UnsubsribeMsg(state, dataProc, TopicId, false);
+    // Unsubscribe by full topic even if pre-registered
+    auto msgId = verifySent_UnsubsribeMsg(state, dataProc, Topic);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 

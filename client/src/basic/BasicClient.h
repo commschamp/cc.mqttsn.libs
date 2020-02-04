@@ -209,33 +209,33 @@ class BasicClient
         MqttsnSubscribeCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         std::uint16_t m_msgId = 0U;
+        MqttsnTopicId m_topicId = 0U;
     };
 
     struct SubscribeIdOp : public SubscribeOpBase
     {
-        MqttsnTopicId m_topicId = 0U;
     };
 
     struct SubscribeOp : public SubscribeOpBase
     {
-        const char* m_topic = nullptr;
-        MqttsnTopicId m_topicId = 0U;
+       const char* m_topic = nullptr;
+       bool m_shortTopicName = false;
     };
 
     struct UnsubscribeOpBase : public AsyncOpBase
     {
         std::uint16_t m_msgId = 0U;
+        MqttsnTopicId m_topicId = 0U;
     };
 
     struct UnsubscribeIdOp : public UnsubscribeOpBase
     {
-        MqttsnTopicId m_topicId = 0U;
     };
 
     struct UnsubscribeOp : public UnsubscribeOpBase
     {
         const char* m_topic = nullptr;
-        MqttsnTopicId m_topicId = 0U;
+        bool m_shortTopicName = false;
     };
 
     struct WillTopicUpdateOp : public AsyncOpBase
@@ -831,6 +831,7 @@ public:
 
         if ((qos < MqttsnQoS_AtMostOnceDelivery) ||
             (MqttsnQoS_ExactlyOnceDelivery < qos) ||
+            (topic == nullptr) ||
             (callback == nullptr)) {
             return MqttsnErrorCode_BadParam;
         }
@@ -844,6 +845,10 @@ public:
         op->m_cb = callback;
         op->m_cbData = data;
         op->m_msgId = allocMsgId();
+        op->m_shortTopicName = isShortTopicName(topic);
+        if (op->m_shortTopicName) {
+            op->m_topicId = shortTopicToTopicId(topic);
+        }
 
         bool result = doSubscribe();
         static_cast<void>(result);
@@ -915,6 +920,10 @@ public:
         auto* op = newAsyncOp<UnsubscribeOp>(callback, data);
         op->m_topic = topic;
         op->m_msgId = allocMsgId();
+        op->m_shortTopicName = isShortTopicName(topic);
+        if (op->m_shortTopicName) {
+            op->m_topicId = shortTopicToTopicId(topic);
+        }
 
         bool result = doUnsubscribe();
         static_cast<void>(result);
@@ -2317,32 +2326,20 @@ private:
 
         bool firstAttempt = (op->m_attempt == 0U);
         ++op->m_attempt;
-
-        auto iter = std::find_if(
-            m_regInfos.begin(), m_regInfos.end(),
-            [op](typename RegInfosList::const_reference elem) -> bool
-            {
-                return elem.m_allocated && (elem.m_topic == op->m_topic);
-            });
-
-        if (iter != m_regInfos.end()) {
-            op->m_topicId = iter->m_topicId;
-        }
-        else {
-            op->m_topicId = 0U;
-        }
+\
+        GASSERT((op->m_topicId == 0) || (op->m_shortTopicName));
 
         SubscribeMsg msg;
         auto& dupFlagsField = msg.field_flags().field_dupFlags();
         typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-        if (op->m_topicId != 0U) {
+        if (op->m_topicId == 0U) {
             msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
-            msg.field_topicId().field().value() = iter->m_topicId;
+            msg.field_topicName().field().value() = op->m_topic;
         }
         else {
             msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
-            msg.field_topicName().field().value() = op->m_topic;
+            msg.field_topicId().field().value() = op->m_topicId;
         }
 
         msg.field_flags().field_qos().value() = details::translateQosValue(op->m_qos);
@@ -2389,30 +2386,17 @@ private:
         }
 
         ++op->m_attempt;
-
-        auto iter = std::find_if(
-            m_regInfos.begin(), m_regInfos.end(),
-            [op](typename RegInfosList::const_reference elem) -> bool
-            {
-                return elem.m_allocated && (elem.m_topic == op->m_topic);
-            });
-
-        if (iter != m_regInfos.end()) {
-            op->m_topicId = iter->m_topicId;
-        }
-        else {
-            op->m_topicId = 0U;
-        }
+        GASSERT((op->m_topicId == 0) || (op->m_shortTopicName));
 
         UnsubscribeMsg msg;
 
-        if (op->m_topicId != 0U) {
+        if (op->m_topicId == 0U) {
             msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
-            msg.field_topicId().field().value() = iter->m_topicId;
+            msg.field_topicName().field().value() = op->m_topic;
         }
         else {
             msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
-            msg.field_topicName().field().value() = op->m_topic;
+            msg.field_topicId().field().value() = op->m_topicId;
         }
 
         msg.field_msgId().value() = op->m_msgId;
