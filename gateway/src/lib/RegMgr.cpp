@@ -27,6 +27,26 @@ namespace mqttsn
 namespace gateway
 {
 
+namespace
+{
+
+bool isShortTopicName(const std::string& topic)
+{
+    return
+        (topic.size() == 2U) &&
+        (topic.find_first_of("#+") == std::string::npos);
+}
+
+std::uint16_t shortTopicNameToId(const std::string& topic)
+{
+    assert(isShortTopicName(topic));
+    return
+        static_cast<std::uint16_t>(
+            (static_cast<std::uint16_t>(topic[0]) << 8) | static_cast<std::uint8_t>(topic[1]));
+}
+
+} // namespace
+
 bool RegMgr::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal)
 {
     if (maxVal < minVal) {
@@ -51,14 +71,14 @@ bool RegMgr::regPredefined(const std::string& topic, std::uint16_t topicId)
         RegInfo info;
         info.m_topic = topic;
         info.m_topicId = topicId;
-        info.m_predefined = true;
+        info.m_topicIdType = TopicIdType::PreDefined;
         m_regInfos.push_back(std::move(info));
         auto lastIter = m_regInfos.end();
         --lastIter;
         assert(lastIter != m_regInfos.end());
         assert(lastIter->m_topic == topic);
         assert(lastIter->m_topicId == topicId);
-        assert(lastIter->m_predefined);
+        assert(lastIter->m_topicIdType == TopicIdType::PreDefined);
 
         m_regInfosMap.insert(std::make_pair(topic, lastIter));
         m_regInfosRevMap.insert(std::make_pair(topicId, lastIter));
@@ -74,7 +94,7 @@ bool RegMgr::regPredefined(const std::string& topic, std::uint16_t topicId)
         return false;
     }
 
-    infoIter->m_predefined = true;
+    infoIter->m_topicIdType = TopicIdType::PreDefined;
     return true;
 }
 
@@ -92,7 +112,14 @@ RegMgr::TopicInfo RegMgr::mapTopic(const std::string& topic)
         auto infoIter = iter->second;
         assert(infoIter->m_topic == topic);
         retInfo.m_topicId = infoIter->m_topicId;
-        retInfo.m_predefined = infoIter->m_predefined;
+        retInfo.m_topicIdType = infoIter->m_topicIdType;
+        retInfo.m_newInsersion = false;
+        return retInfo;
+    }
+
+    if (isShortTopicName(topic)) {
+        retInfo.m_topicId = shortTopicNameToId(topic);
+        retInfo.m_topicIdType = TopicIdType::ShortName;
         retInfo.m_newInsersion = false;
         return retInfo;
     }
@@ -140,7 +167,7 @@ RegMgr::TopicInfo RegMgr::mapTopic(const std::string& topic)
                 [this](decltype(m_regInfosRevMap)::const_reference elem) -> bool
                 {
                     auto regInfoIter = elem.second;
-                    return (!regInfoIter->m_predefined) &&
+                    return (regInfoIter->m_topicIdType != TopicIdType::PreDefined) &&
                            (m_minTopicId <= regInfoIter->m_topicId) &&
                            (regInfoIter->m_topicId <= m_maxTopicId);
                 });
@@ -156,7 +183,7 @@ RegMgr::TopicInfo RegMgr::mapTopic(const std::string& topic)
     RegInfo info;
     info.m_topic = topic;
     info.m_topicId = topicId;
-    info.m_predefined = false;
+    info.m_topicIdType = TopicIdType::Normal;
     m_regInfos.push_back(std::move(info));
     auto infoIter = m_regInfos.end();
     --infoIter;
@@ -164,7 +191,7 @@ RegMgr::TopicInfo RegMgr::mapTopic(const std::string& topic)
     m_regInfosRevMap.insert(std::make_pair(topicId, infoIter));
 
     retInfo.m_topicId = topicId;
-    retInfo.m_predefined = false;
+    retInfo.m_topicIdType = TopicIdType::Normal;
     retInfo.m_newInsersion = true;
     return retInfo;
 }
@@ -208,7 +235,7 @@ void RegMgr::clearRegistrations()
     m_regInfos.remove_if(
         [](RegInfosList::const_reference& elem) -> bool
         {
-            return !elem.m_predefined;
+            return elem.m_topicIdType != TopicIdType::PreDefined;
         });
 
     if (prevSize == m_regInfos.size()) {

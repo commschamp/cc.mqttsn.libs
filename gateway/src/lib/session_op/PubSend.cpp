@@ -212,7 +212,7 @@ void PubSend::doSend()
 
     assert(m_currTopicInfo.m_topicId != 0);
     if ((m_currTopicInfo.m_newInsersion) &&
-        (!m_currTopicInfo.m_predefined) &&
+        (m_currTopicInfo.m_topicIdType == RegMgr::TopicIdType::Normal) &&
         (!m_registered)) {
 
         if (st.m_retryCount <= m_registerCount) {
@@ -241,14 +241,9 @@ void PubSend::doSend()
     typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
     typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
-    auto topicType = mqttsn::protocol::field::TopicIdTypeVal::Normal;
-    if (m_currTopicInfo.m_predefined) {
-        topicType = mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
-    }
-
     bool dup = m_currPub->m_dup || (1U < m_attempt);
 
-    msg.field_flags().field_topicId().value() = topicType;
+    msg.field_flags().field_topicId().value() = m_currTopicInfo.m_topicIdType;
     midFlagsField.setBitValue(MidFlags::BitIdx_retain, m_currPub->m_retain);
     msg.field_flags().field_qos().value() = translateQosForClient(m_currPub->m_qos);
     dupFlagsField.setBitValue(DupFlags::BitIdx_bit, dup);

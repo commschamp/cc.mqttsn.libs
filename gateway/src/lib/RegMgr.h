@@ -24,6 +24,8 @@
 #include <map>
 #include <tuple>
 
+#include "mqttsn/protocol/field.h"
+
 namespace mqttsn
 {
 
@@ -34,10 +36,11 @@ class RegMgr
 {
 public:
 
+    using TopicIdType = mqttsn::protocol::field::TopicIdTypeVal;
     struct TopicInfo
     {
         std::uint16_t m_topicId = 0;
-        bool m_predefined = false;
+        TopicIdType m_topicIdType = TopicIdType::Normal;
         bool m_newInsersion = false;
     };
 
@@ -55,7 +58,7 @@ private:
     {
         std::string m_topic;
         std::uint16_t m_topicId = 0U;
-        bool m_predefined = false;
+        TopicIdType m_topicIdType = TopicIdType::Normal;
     };
     typedef std::list<RegInfo> RegInfosList;
 

@@ -22,6 +22,26 @@
 #include <cassert>
 #include <iterator>
 
+namespace
+{
+
+bool isShortTopicName(const std::string& topic)
+{
+    return
+        (topic.size() == 2U) &&
+        (topic.find_first_of("#+") == std::string::npos);
+}
+
+std::uint16_t shortTopicNameToId(const std::string& topic)
+{
+    assert(isShortTopicName(topic));
+    return
+        static_cast<std::uint16_t>(
+            (static_cast<std::uint16_t>(topic[0]) << 8) | static_cast<std::uint8_t>(topic[1]));
+}
+
+} // namespace
+
 template <typename TStack>
 void TestMsgHandler::processOutputInternal(TStack& stack, const DataBuf& data)
 {
@@ -661,17 +681,12 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingresp()
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::QosType qos,
-    bool predefined)
+    mqttsn::protocol::field::QosType qos)
 {
     SubscribeMsg_SN msg;
 
     msg.field_flags().field_topicId().value() =
-        mqttsn::protocol::field::TopicIdTypeVal::Normal;
-    if (predefined) {
-        msg.field_flags().field_topicId().value() =
-            mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
-    }
+        mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
 
     msg.field_flags().field_qos().value() = qos;
     msg.field_msgId().value() = msgId;
@@ -688,29 +703,36 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     mqttsn::protocol::field::QosType qos)
 {
     SubscribeMsg_SN msg;
-    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
     msg.field_flags().field_qos().value() = qos;
-    msg.field_msgId().value() = msgId;
-    msg.field_topicName().field().value() = topic;
 
+    bool shortName = isShortTopicName(topic);
+    if (shortName) {
+        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
+        msg.field_topicId().field().value() = shortTopicNameToId(topic);
+    }
+    else {
+        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+        msg.field_topicName().field().value() = topic;
+    }
+
+    msg.field_msgId().value() = msgId;
     msg.refresh();
-    assert(msg.field_topicName().doesExist());
+    assert(shortName || msg.field_topicName().doesExist());
+    assert((!shortName) || msg.field_topicId().doesExist());
+    assert(msg.field_topicName().doesExist() || msg.field_topicId().doesExist());
+    assert(msg.field_topicName().isMissing() || msg.field_topicId().isMissing());
+
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
     std::uint16_t topicId,
-    std::uint16_t msgId,
-    bool predefined)
+    std::uint16_t msgId)
 {
     UnsubscribeMsg_SN msg;
 
     msg.field_flags().field_topicId().value() =
-        mqttsn::protocol::field::TopicIdTypeVal::Normal;
-    if (predefined) {
-        msg.field_flags().field_topicId().value() =
-            mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
-    }
+        mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
 
     msg.field_msgId().value() = msgId;
     msg.field_topicId().field().value() = topicId;
@@ -725,13 +747,23 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
     std::uint16_t msgId)
 {
     UnsubscribeMsg_SN msg;
-    msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
-    msg.field_msgId().value() = msgId;
-    msg.field_topicName().field().value() = topic;
+    bool shortName = isShortTopicName(topic);
+    if (shortName) {
+        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
+        msg.field_topicId().field().value() = shortTopicNameToId(topic);
+    }
+    else {
+        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+        msg.field_topicName().field().value() = topic;
+    }
 
+    msg.field_msgId().value() = msgId;
     msg.refresh();
-    assert(msg.field_topicName().doesExist());
-    return prepareInput(msg);
+    assert(shortName || msg.field_topicName().doesExist());
+    assert((!shortName) || msg.field_topicId().doesExist());
+    assert(msg.field_topicName().doesExist() || msg.field_topicId().doesExist());
+    assert(msg.field_topicName().isMissing() || msg.field_topicId().isMissing());
+   return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(

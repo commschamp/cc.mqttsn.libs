@@ -274,16 +274,14 @@ public:
     DataBuf prepareClientSubscribe(
         std::uint16_t topicId,
         std::uint16_t msgId,
-        mqttsn::protocol::field::QosType qos,
-        bool predefined);
+        mqttsn::protocol::field::QosType qos);
     DataBuf prepareClientSubscribe(
         const std::string& topic,
         std::uint16_t msgId,
         mqttsn::protocol::field::QosType qos);
     DataBuf prepareClientUnsubscribe(
         std::uint16_t topicId,
-        std::uint16_t msgId,
-        bool predefined);
+        std::uint16_t msgId);
     DataBuf prepareClientUnsubscribe(
         const std::string& topic,
         std::uint16_t msgId);
