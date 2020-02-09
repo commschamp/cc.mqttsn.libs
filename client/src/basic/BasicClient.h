@@ -219,7 +219,7 @@ class BasicClient
     struct SubscribeOp : public SubscribeOpBase
     {
        const char* m_topic = nullptr;
-       bool m_shortTopicName = false;
+       bool m_usingShortTopicName = false;
     };
 
     struct UnsubscribeOpBase : public AsyncOpBase
@@ -235,7 +235,7 @@ class BasicClient
     struct UnsubscribeOp : public UnsubscribeOpBase
     {
         const char* m_topic = nullptr;
-        bool m_shortTopicName = false;
+        bool m_usingShortTopicName = false;
     };
 
     struct WillTopicUpdateOp : public AsyncOpBase
@@ -845,8 +845,8 @@ public:
         op->m_cb = callback;
         op->m_cbData = data;
         op->m_msgId = allocMsgId();
-        op->m_shortTopicName = isShortTopicName(topic);
-        if (op->m_shortTopicName) {
+        op->m_usingShortTopicName = isShortTopicName(topic);
+        if (op->m_usingShortTopicName) {
             op->m_topicId = shortTopicToTopicId(topic);
         }
 
@@ -920,8 +920,8 @@ public:
         auto* op = newAsyncOp<UnsubscribeOp>(callback, data);
         op->m_topic = topic;
         op->m_msgId = allocMsgId();
-        op->m_shortTopicName = isShortTopicName(topic);
-        if (op->m_shortTopicName) {
+        op->m_usingShortTopicName = isShortTopicName(topic);
+        if (op->m_usingShortTopicName) {
             op->m_topicId = shortTopicToTopicId(topic);
         }
 
@@ -1367,7 +1367,7 @@ public:
              (msg.field_topicId().value() != m_lastInMsg.m_topicId) ||
              (msg.field_msgId().value() != m_lastInMsg.m_msgId) ||
              (m_lastInMsg.m_reported) ||
-             (usingShortTopic != m_lastInMsg.m_shortTopicName));
+             (usingShortTopic != m_lastInMsg.m_usingShortTopicName));
 
         if (newMessage) {
             m_lastInMsg = LastInMsgInfo();
@@ -1379,7 +1379,10 @@ public:
             m_lastInMsg.m_msgId = msg.field_msgId().value();
             m_lastInMsg.m_retain =
                 midFlags.getBitValue(MidFlags::BitIdx_retain);
-            m_lastInMsg.m_shortTopicName = usingShortTopic;
+            m_lastInMsg.m_usingShortTopicName = usingShortTopic;
+            if (usingShortTopic) {
+                std::copy(std::begin(shortTopicName), std::end(shortTopicName), std::begin(m_lastInMsg.m_shortTopic));
+            }
         }
 
         auto& msgData = msg.field_data().value();
@@ -1474,20 +1477,26 @@ public:
         sendMessage(compMsg);
 
         if (!m_lastInMsg.m_reported) {
-            auto iter = std::find_if(
-                m_regInfos.begin(), m_regInfos.end(),
-                [this](typename RegInfosList::const_reference elem) -> bool
-                {
-                    return elem.m_allocated && (elem.m_topicId == m_lastInMsg.m_topicId);
-                });
-
             auto msgInfo = MqttsnMessageInfo();
 
-            if (iter != m_regInfos.end()) {
-                msgInfo.topic = iter->m_topic.c_str();
+            if (m_lastInMsg.m_usingShortTopicName) {
+                msgInfo.topic = &m_lastInMsg.m_shortTopic[0];
+            }
+            else {
+                auto iter = std::find_if(
+                    m_regInfos.begin(), m_regInfos.end(),
+                    [this](typename RegInfosList::const_reference elem) -> bool
+                    {
+                        return elem.m_allocated && (elem.m_topicId == m_lastInMsg.m_topicId);
+                    });
+
+                if (iter != m_regInfos.end()) {
+                    msgInfo.topic = iter->m_topic.c_str();
+                }
+
+                msgInfo.topicId = m_lastInMsg.m_topicId;
             }
 
-            msgInfo.topicId = m_lastInMsg.m_topicId;
             msgInfo.msg = &(*m_lastInMsg.m_msgData.begin());
             msgInfo.msgLen = m_lastInMsg.m_msgData.size();
             msgInfo.qos = MqttsnQoS_ExactlyOnceDelivery;
@@ -1721,9 +1730,10 @@ private:
         DataType m_msgData;
         MqttsnTopicId m_topicId = 0;
         std::uint16_t m_msgId = 0;
+        char m_shortTopic[3] = {0};
         bool m_retain = false;
         bool m_reported = false;
-        bool m_shortTopicName = false;
+        bool m_usingShortTopicName = false;
     };
 
     void updateRegInfo(const char* topic, std::size_t topicLen, TopicIdType topicId, bool locked = false)
@@ -2327,7 +2337,7 @@ private:
         bool firstAttempt = (op->m_attempt == 0U);
         ++op->m_attempt;
 \
-        GASSERT((op->m_topicId == 0) || (op->m_shortTopicName));
+        GASSERT((op->m_topicId == 0) || (op->m_usingShortTopicName));
 
         SubscribeMsg msg;
         auto& dupFlagsField = msg.field_flags().field_dupFlags();
@@ -2386,7 +2396,7 @@ private:
         }
 
         ++op->m_attempt;
-        GASSERT((op->m_topicId == 0) || (op->m_shortTopicName));
+        GASSERT((op->m_topicId == 0) || (op->m_usingShortTopicName));
 
         UnsubscribeMsg msg;
 
