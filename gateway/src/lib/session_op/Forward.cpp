@@ -153,9 +153,11 @@ void Forward::handle(SubscribeMsg_SN& msg)
 
     std::string topic;
     std::uint16_t topicId = 0U;
+
     do {
         if (msg.field_topicName().doesExist()) {
             assert(msg.field_topicId().isMissing());
+            assert(msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::Normal);
             auto& topicStorage = msg.field_topicName().field().value();
             topic.assign(topicStorage.begin(), topicStorage.end());
 
@@ -178,6 +180,22 @@ void Forward::handle(SubscribeMsg_SN& msg)
 
             topicId = state().m_regMgr.mapTopicNoInfo(topic);
             break;
+        }
+
+        if (msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::ShortName) {
+            assert(msg.field_topicId().doesExist());
+            auto firstChar = static_cast<char>((msg.field_topicId().field().value() >> 8) & 0xff);
+            auto secondChar = static_cast<char>(msg.field_topicId().field().value() & 0xff);
+            topic.push_back(firstChar);
+            topic.push_back(secondChar);
+            topicId = msg.field_topicId().field().value();
+            break;
+        }
+
+        if (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined) {
+            sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+            sendToBroker(PingreqMsg());
+            return;
         }
 
         assert(msg.field_topicId().doesExist());
@@ -242,6 +260,15 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
 
         assert(msg.field_topicId().doesExist());
         assert(msg.field_topicName().isMissing());
+
+        if (msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::ShortName) {
+            assert(msg.field_topicId().doesExist());
+            auto firstChar = static_cast<char>((msg.field_topicId().field().value() >> 8) & 0xff);
+            auto secondChar = static_cast<char>(msg.field_topicId().field().value() & 0xff);
+            topic.push_back(firstChar);
+            topic.push_back(secondChar);
+            break;
+        }
 
         auto& topicStr = state().m_regMgr.mapTopicId(msg.field_topicId().field().value());
         if (topicStr.empty()) {

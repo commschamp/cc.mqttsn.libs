@@ -281,7 +281,7 @@ enum class TopicIdTypeVal : std::uint8_t
 {
     Normal,
     PreDefined,
-    Name,
+    ShortName,
     NumOfValues
 };
 
