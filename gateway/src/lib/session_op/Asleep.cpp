@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -58,8 +58,8 @@ void Asleep::brokerConnectionUpdatedImpl()
 
 void Asleep::handle(DisconnectMsg_SN& msg)
 {
-    if (msg.field_duration().getMode() != comms::field::OptionalMode::Exists) {
-        // Monotor disconnect with duration in Disconnect op
+    if (msg.field_duration().isMissing()) {
+        // Monitor disconnect with duration in Disconnect op
         return;
     }
 

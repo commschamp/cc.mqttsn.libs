@@ -102,7 +102,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
         )
     endif ()
     
-    if (CC_EXTERNAL)
+    if (TARGET ${CC_EXTERNAL_TGT})
         add_dependencies(${lib_name} ${CC_EXTERNAL_TGT})
     endif ()
     

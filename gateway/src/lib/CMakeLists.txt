@@ -23,6 +23,19 @@ function (lib_mqttsn_gateway)
     )    
     
     add_library (${name} STATIC ${src})
+    if (TARGET cc::mqtt311)
+        target_link_libraries(${name} PRIVATE cc::mqtt311)    
+    endif ()
+    
+    target_link_libraries(${name} PRIVATE cc::comms)
+    
+    if (NOT "${CC_MQTT_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
+        target_include_directories(${name} PRIVATE ${CC_MQTT_EXTERNAL_TGT_INCLUDE})
+    endif ()
+    
+    if (TARGET ${CC_MQTT_EXTERNAL_TGT})
+        add_dependencies(${name} ${CC_MQTT_EXTERNAL_TGT})
+    endif ()
 
     install (
         TARGETS ${name}
@@ -40,13 +53,3 @@ include_directories(
 
 lib_mqttsn_gateway ()
 
-if (CC_EXTERNAL)
-    add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_EXTERNAL_TGT})
-endif ()
-
-if (CC_MQTT_EXTERNAL)
-    add_dependencies(${MQTTSN_GATEWAY_LIB_NAME} ${CC_MQTT_EXTERNAL_TGT})
-endif ()    
-
-FILE(GLOB_RECURSE headers "*.h")
-add_custom_target(mqttsn_gateway.headers SOURCES ${headers})

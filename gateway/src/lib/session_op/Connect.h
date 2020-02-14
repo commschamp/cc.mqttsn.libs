@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -80,7 +80,7 @@ private:
 
     void doNextStep();
     void forwardConnectionReq();
-    void processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal respCode);
+    void processAck(ConnackMsg::Field_returnCode::ValueType respCode);
     void clearConnectionInfo(bool clearClientId = false);
     void clearInternalState();
 

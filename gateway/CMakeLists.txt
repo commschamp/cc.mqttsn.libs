@@ -1,20 +1,54 @@
 if (NOT CC_MQTTSN_BUILD_GATEWAY)
     return ()
 endif ()
+
+######################################################################
+
+set (CC_MQTT_EXTERNAL_DIR "${EXTERNALS_DIR}/cc.mqtt311.generated")
+set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
+set (CC_MQTT_EXTERNAL_TGT_INCLUDE)
+
+if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
+    execute_process (
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}")
         
-if (NOT CC_COMMS_FOUND)
-    message (WARNING "Comms library wasn't found, cannot build gateway library and/or application.")
-    return ()
+    include(ExternalProject)
+    
+    set (cc_mqtt_generated_tag "v0.15.1")
+    set (cc_mqtt_main_dir "${CMAKE_CURRENT_BINARY_DIR}/cc.mqtt311.generated")
+    set (cc_mqtt_src_dir "${CC_MQTT_EXTERNAL_DIR}")
+    set (cc_mqtt_bin_dir "${cc_mqtt_main_dir}/build")
+    set (cc_mqtt_install_dir "${cc_mqtt_main_dir}/install")
+    
+    ExternalProject_Add(
+        "${CC_MQTT_EXTERNAL_TGT}"
+        PREFIX "${cc_mqtt_bin_dir}"
+        STAMP_DIR "${cc_mqtt_bin_dir}"    
+        GIT_REPOSITORY "https://github.com/arobenko/cc.mqtt311.generated.git"
+        GIT_TAG "${cc_mqtt_tag}"
+        SOURCE_DIR "${cc_mqtt_src_dir}"
+        CMAKE_ARGS 
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqtt_install_dir} 
+            -DOPT_NO_COMMS=ON -DOPT_BUILD_TEST=OFF -DOPT_BUILD_PLUGIN=OFF
+            -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+        BINARY_DIR "${cc_mqtt_bin_dir}"
+        UPDATE_DISCONNECTED 1
+    )
+    set (CC_MQTT_EXTERNAL_TGT_INCLUDE "${cc_mqtt_install_dir}/include") 
+else ()
+    list (APPEND CMAKE_PREFIX_PATH "${CC_MQTT311_GENERATED_INSTALL_DIR}")
+    find_package(mqtt311 NO_MODULE)
+    if (NOT TARGET cc::mqtt311)
+        message (FATAL_ERROR "Failed to find external mqtt311 library")
+    endif ()
 endif ()
 
-if (NOT CC_MQTT_FOUND)
-    message (WARNING "MQTT protocol library wasn't found, cannot build gateway library and/or application.")
-    return ()
-endif ()
-
+######################################################################
+        
 include_directories(
     BEFORE
-    ${CMAKE_SOURCE_DIR}/protocol/include
+    ${PROTOCOL_INC_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
@@ -36,6 +70,8 @@ install (
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/etc/
     DESTINATION ${ETC_INSTALL_DIR}/mqttsn/
 )
+
+######################################################################
 
 find_package (Doxygen)
 if (DOXYGEN_FOUND)

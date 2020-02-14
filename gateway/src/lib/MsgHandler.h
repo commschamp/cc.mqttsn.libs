@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 
 #include "comms/comms.h"
 #include "mqttsn/protocol/AllMessages.h"
-#include "mqtt/protocol/v311/AllMessages.h"
+#include "mqtt311/input/AllMessages.h"
 #include "messages.h"
 
 namespace mqttsn
@@ -38,7 +38,7 @@ using MqttsnMsgHandler = comms::GenericHandler<
 template<typename TMsgBase>
 using MqttMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqtt::protocol::v311::AllMessages<TMsgBase>
+    mqtt311::input::AllMessages<TMsgBase>
 >;
 
 class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler<MqttMessage>

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -19,15 +19,11 @@
 #include <iostream>
 #include <fstream>
 
-#include "comms/CompileControl.h"
-
-CC_DISABLE_WARNINGS()
 #include <QtCore/QCoreApplication>
 #include <QtCore/QPluginLoader>
 #include <QtCore/QDir>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QStringList>
-CC_ENABLE_WARNINGS()
 
 #include "Mgr.h"
 #include "mqttsn/gateway/Config.h"

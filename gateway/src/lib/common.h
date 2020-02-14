@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -24,8 +24,9 @@
 #include <memory>
 #include <limits>
 
-#include "mqtt/protocol/v311/field.h"
 #include "mqttsn/protocol/field.h"
+#include "mqtt311/field/QosCommon.h"
+
 #include "RegMgr.h"
 
 namespace mqttsn
@@ -45,9 +46,9 @@ enum QoS
 };
 
 inline
-mqtt::protocol::common::field::QosVal translateQosForBroker(QoS val)
+mqtt311::field::QosVal translateQosForBroker(QoS val)
 {
-    return static_cast<mqtt::protocol::common::field::QosVal>(val);
+    return static_cast<mqtt311::field::QosVal>(val);
 }
 
 inline
@@ -57,7 +58,7 @@ mqttsn::protocol::field::QosType translateQosForClient(QoS val)
 }
 
 inline
-QoS translateQos(mqtt::protocol::common::field::QosVal val)
+QoS translateQos(mqtt311::field::QosVal val)
 {
     return static_cast<QoS>(val);
 }

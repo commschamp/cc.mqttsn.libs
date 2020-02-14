@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -159,9 +159,8 @@ void WillUpdate::handle(ConnackMsg& msg)
         return;
     }
 
-    using ResponseFieldType = typename std::decay<decltype(msg.field_responseCode())>::type;
-    if ((msg.field_responseCode().value() != ResponseFieldType::ValueType::Accepted) ||
-        (!msg.field_flags().getBitValue(0))) {
+    if ((msg.field_returnCode().value() != ConnackMsg::Field_returnCode::ValueType::Accepted) ||
+        (!msg.field_flags().getBitValue_sp())) {
         sendFailureAndTerm();
         return;
     }
@@ -240,24 +239,22 @@ void WillUpdate::sendConnectMsg()
 
     auto& flagsField = msg.field_flags();
 
-    typedef typename std::decay<decltype(flagsField.field_flagsLow())>::type FlagsLowFieldType;
-    typedef typename std::decay<decltype(flagsField.field_flagsHigh())>::type FlagsHighFieldType;
 
     if (!m_will.m_topic.empty()) {
-        flagsField.field_flagsLow().setBitValue(FlagsLowFieldType::BitIdx_willFlag, true);
+        flagsField.field_low().setBitValue_willFlag(true);
         msg.field_willTopic().field().value() = m_will.m_topic;
         msg.field_willMessage().field().value() = m_will.m_msg;
         flagsField.field_willQos().value() = translateQosForBroker(m_will.m_qos);
-        flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_willRetain, m_will.m_retain);
+        flagsField.field_high().setBitValue_willRetain(m_will.m_retain);
     }
 
     if (!st.m_username.empty()) {
         msg.field_userName().field().value() = state().m_username;
-        flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_username, true);
+        flagsField.field_high().setBitValue_userNameFlag(true);
 
         if (!state().m_password.empty()) {
             msg.field_password().field().value() = state().m_password;
-            flagsField.field_flagsHigh().setBitValue(FlagsHighFieldType::BitIdx_password, true);
+            flagsField.field_high().setBitValue_passwordFlag(true);
         }
     }
 

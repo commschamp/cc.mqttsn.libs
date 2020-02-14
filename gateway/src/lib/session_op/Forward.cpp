@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -96,11 +96,11 @@ void Forward::handle(PublishMsg_SN& msg)
     m_lastPubTopicId = msg.field_topicId().value();
 
     PublishMsg fwdMsg;
-    auto& fwdFlags = fwdMsg.field_publishFlags();
+    auto& fwdFlags = fwdMsg.transportField_flags();
 
-    fwdFlags.field_retain().setBitValue(0, retain);
+    fwdFlags.field_retain().setBitValue_bit(retain);
     fwdFlags.field_qos().value() = translateQosForBroker(translateQos(msg.field_flags().field_qos().value()));
-    fwdFlags.field_dup().setBitValue(0, dup);
+    fwdFlags.field_dup().setBitValue_bit(dup);
     fwdMsg.field_topic().value() = topic;
     fwdMsg.field_packetId().field().value() = msg.field_msgId().value();
     auto& data = msg.field_data().value();
@@ -221,18 +221,15 @@ void Forward::handle(SubscribeMsg_SN& msg)
 
     SubscribeMsg fwdMsg;
     fwdMsg.field_packetId().value() = msg.field_msgId().value();
-    auto& payloadContainer = fwdMsg.field_payload().value();
+    auto& payloadContainer = fwdMsg.field_list().value();
     typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type SubElemBundle;
 
     SubElemBundle subElem;
-    auto& subMembers = subElem.value();
-    auto& subTopicField = std::get<0>(subMembers);
-    auto& subQosField = std::get<1>(subMembers);
-
     assert(!topic.empty());
-    subTopicField.value() = std::move(topic);
-    subQosField.value() = translateQosForBroker(translateQos(msg.field_flags().field_qos().value()));
+    subElem.field_topic().value() = std::move(topic);
+    subElem.field_qos().value() =
+            translateQosForBroker(translateQos(msg.field_flags().field_qos().value()));
 
     payloadContainer.push_back(std::move(subElem));
     sendToBroker(fwdMsg);
@@ -279,7 +276,7 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
 
     UnsubscribeMsg fwdMsg;
     fwdMsg.field_packetId().value() = msg.field_msgId().value();
-    auto& payloadContainer = fwdMsg.field_payload().value();
+    auto& payloadContainer = fwdMsg.field_list().value();
     typedef std::decay<decltype(payloadContainer)>::type ContainerType;
     typedef ContainerType::value_type UnsubString;
 
@@ -313,9 +310,9 @@ void Forward::handle(ConnackMsg&)
         }
 
         PublishMsg msg;
-        auto& flags = msg.field_publishFlags();
+        auto& flags = msg.transportField_flags();
 
-        flags.field_qos().value() = mqtt::protocol::common::field::QosVal::AtMostOnceDelivery;
+        flags.field_qos().value() = PublishMsg::TransportField_flags::Field_qos::ValueType::AtMostOnceDelivery;
         msg.field_topic().value() = topic;
         msg.field_payload().value() = std::move(pub.m_data);
         msg.doRefresh();
@@ -393,18 +390,19 @@ void Forward::handle(SubackMsg& msg)
     auto qos = mqttsn::protocol::field::QosType::AtMostOnceDelivery;
     auto rc = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
     do {
-        auto& retCodesList = msg.field_payload().value();
+        auto& retCodesList = msg.field_list().value();
         if (retCodesList.empty()) {
             break;
         }
 
         auto& ackRetCode = retCodesList.front();
-        if (ackRetCode.value() == mqtt::protocol::v311::field::SubackReturnCodeVal::Failure) {
+        using SubackRetCode = SubackMsg::Field_list::ValueType::value_type::ValueType;
+        if (ackRetCode.value() == SubackRetCode::Failure) {
             break;
         }
 
-        auto adjustedRetCode = std::min(ackRetCode.value(), mqtt::protocol::v311::field::SubackReturnCodeVal::SuccessQos2);
-        auto reportedQos = static_cast<mqtt::protocol::common::field::QosVal>(adjustedRetCode);
+        auto adjustedRetCode = std::min(ackRetCode.value(), SubackRetCode::Qos2);
+        auto reportedQos = static_cast<mqtt311::field::QosVal>(adjustedRetCode);
         qos = translateQosForClient(translateQos(reportedQos));
         rc = mqttsn::protocol::field::ReturnCodeVal_Accepted;
     } while (false);

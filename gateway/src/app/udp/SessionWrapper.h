@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -22,14 +22,10 @@
 #include <vector>
 #include <cstdint>
 
-#include "comms/CompileControl.h"
-
-CC_DISABLE_WARNINGS()
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QHostAddress>
-CC_ENABLE_WARNINGS()
 
 #include "mqttsn/gateway/Config.h"
 #include "mqttsn/gateway/Session.h"
