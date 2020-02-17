@@ -23,6 +23,10 @@ function (lib_common_test_session)
         target_include_directories(${COMMON_TEST_SESSION_LIB} PRIVATE ${CC_MQTT_EXTERNAL_TGT_INCLUDE})
     endif ()
     
+    if (TARGET ${CC_EXTERNAL_TGT})
+        add_dependencies(${COMMON_TEST_SESSION_LIB} ${CC_EXTERNAL_TGT})
+    endif ()
+    
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
         add_dependencies(${COMMON_TEST_SESSION_LIB} ${CC_MQTT_EXTERNAL_TGT})
     endif ()
@@ -47,6 +51,10 @@ function (test_func test_suite_name)
     
     if (NOT "${CC_MQTT_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
         target_include_directories(${name} PRIVATE ${CC_MQTT_EXTERNAL_TGT_INCLUDE})
+    endif ()
+    
+    if (TARGET ${CC_EXTERNAL_TGT})
+        add_dependencies(${name} ${CC_EXTERNAL_TGT})
     endif ()
     
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
