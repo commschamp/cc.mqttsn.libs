@@ -40,8 +40,9 @@ while (TRUE)
     endif ()
     
     set (cxx_tag "4.4")
-    set (cxxtest_stamp "${CMAKE_BINARY_DIR}/cxxtest.stamp")
+    set (cxxtest_stamp "${EXTERNALS_DIR}/cxxtest.stamp")
     if ((EXISTS ${cxxtest_stamp}) AND (EXISTS "${CXXTEST_EXTERNAL_DIR}"))
+        message (STATUS "Updating cxxtest")
         execute_process (
             COMMAND ${GIT_EXECUTABLE} checkout ${cxx_tag}
             WORKING_DIRECTORY ${CXXTEST_EXTERNAL_DIR}
@@ -51,6 +52,7 @@ while (TRUE)
             COMMAND ${CMAKE_COMMAND} -E remove_directory "${CXXTEST_EXTERNAL_DIR}"
         )
 
+        message (STATUS "Cloning cxxtest")
         execute_process (
             COMMAND ${GIT_EXECUTABLE} clone -b ${cxx_tag} --depth 1 https://github.com/CxxTest/cxxtest.git
             WORKING_DIRECTORY ${EXTERNALS_DIR}
@@ -197,6 +199,7 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
             -DCC_COMMS_LIB_ONLY=ON
         BINARY_DIR "${cc_bin_dir}"
+        UPDATE_DISCONNECTED 1
     )
     
     include (${ext_targets_inc_file})
@@ -213,7 +216,6 @@ endif ()
 
 include_directories(protocol/include)
 
-#add_subdirectory(client)
+add_subdirectory(client)
 add_subdirectory(gateway)
-#add_subdirectory(cc_plugin)
 

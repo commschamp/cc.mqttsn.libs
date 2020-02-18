@@ -76,6 +76,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
     message (STATUS "Defining library ${lib_name}") 
     add_library (${lib_name} STATIC ${src_output})
     target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_link_libraries(${lib_name} PRIVATE cc::comms)
     set_target_properties(
         ${lib_name} PROPERTIES 
         POSITION_INDEPENDENT_CODE TRUE
@@ -120,11 +121,6 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
 endfunction()
 
 ######################################################################
-
-if (NOT CC_COMMS_FOUND)
-    message (WARNING "Comms library wasn't found!, cannot compile client library and/or application.")
-    return ()
-endif ()
 
 include_directories(
     BEFORE
@@ -173,5 +169,3 @@ if (DOXYGEN_FOUND AND CC_MQTTSN_CLIENT_DEFAULT_LIB)
     add_dependencies("doc_mqttsn_client" ${MQTTSN_CLIENT_HEADER_TGT})           
 endif ()
 
-FILE(GLOB_RECURSE headers "*.h")
-add_custom_target(mqttsn_client.headers SOURCES ${headers})

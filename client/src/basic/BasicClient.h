@@ -1740,7 +1740,7 @@ private:
     {
         auto iter = std::find_if(
             m_regInfos.begin(), m_regInfos.end(),
-            [topic, topicLen, topicId](typename RegInfosList::const_reference elem) -> bool
+            [topic, topicLen](typename RegInfosList::const_reference elem) -> bool
             {
                 return
                     elem.m_allocated &&

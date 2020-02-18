@@ -16,6 +16,7 @@ function (lib_common_test_client)
     )
     add_library (${COMMON_TEST_CLIENT_LIB} STATIC ${src})
     add_dependencies(${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
+    target_link_libraries(${COMMON_TEST_CLIENT_LIB} PUBLIC cc::comms)
 endfunction ()
 
 #################################################################
