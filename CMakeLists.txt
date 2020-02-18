@@ -51,6 +51,10 @@ while (TRUE)
         execute_process (
             COMMAND ${CMAKE_COMMAND} -E remove_directory "${CXXTEST_EXTERNAL_DIR}"
         )
+        
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}"
+        )
 
         message (STATUS "Cloning cxxtest")
         execute_process (
