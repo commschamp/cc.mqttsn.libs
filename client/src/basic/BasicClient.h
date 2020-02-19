@@ -703,7 +703,7 @@ public:
         else {
             sendPublish(
                 topicId,
-                allocMsgId(),
+                qos < MqttsnQoS_AtLeastOnceDelivery ? 0 : allocMsgId(),
                 msg,
                 msgLen,
                 mqttsn::protocol::field::TopicIdTypeVal::PreDefined,
@@ -2198,7 +2198,7 @@ private:
         ++op->m_attempt;
 
         if (firstAttempt) {
-            op->m_msgId = allocMsgId();
+            op->m_msgId = (op->m_qos < MqttsnQoS_AtLeastOnceDelivery) ? 0 : allocMsgId();
         }
 
         if ((!firstAttempt) &&
@@ -2264,7 +2264,7 @@ private:
         } while (false);
 
         if (firstAttempt) {
-            op->m_msgId = allocMsgId();
+            op->m_msgId = (op->m_qos < MqttsnQoS_AtLeastOnceDelivery) ? 0 : allocMsgId();
         }
 
         GASSERT((op->m_registered) || (op->m_shortName));
