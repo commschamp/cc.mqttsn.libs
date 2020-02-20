@@ -211,7 +211,7 @@ void Connect::doNextStep()
     ++m_internalState.m_attempt;
 
     if (m_internalState.m_waitingForReconnect) {
-        processAck(ConnackMsg::Field_returnCode::ValueType::ServerUnavalable);
+        processAck(ConnackMsg::Field_returnCode::ValueType::ServerUnavailable);
         termRequest();
         return;
     }
@@ -266,7 +266,7 @@ void Connect::doNextStep()
         } while (false);
 
         if (!st.m_brokerConnected) {
-            processAck(ConnackMsg::Field_returnCode::ValueType::ServerUnavalable);
+            processAck(ConnackMsg::Field_returnCode::ValueType::ServerUnavailable);
             return;
         }
 
@@ -344,7 +344,7 @@ void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
         /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
         /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
         /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* ServerUnavalable */ mqttsn::protocol::field::ReturnCodeVal_Congestion,
+        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Congestion,
         /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
         /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
     };
