@@ -160,7 +160,7 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_tag "develop")
+    set (cc_tag "v2.3.2")
     set (cc_repo "https://github.com/arobenko/comms_champion.git")
     set (cc_main_dir "${CMAKE_CURRENT_BINARY_DIR}/comms_champion")
     set (cc_src_dir "${CC_EXTERNAL_DIR}")

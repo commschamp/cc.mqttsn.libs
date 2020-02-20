@@ -14,7 +14,7 @@ if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_mqtt_generated_tag "v0.15.1")
+    set (cc_mqtt_generated_tag "v0.15.2")
     set (cc_mqtt_main_dir "${CMAKE_CURRENT_BINARY_DIR}/cc.mqtt311.generated")
     set (cc_mqtt_src_dir "${CC_MQTT_EXTERNAL_DIR}")
     set (cc_mqtt_bin_dir "${cc_mqtt_main_dir}/build")
