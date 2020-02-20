@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -2197,7 +2197,7 @@ private:
         bool firstAttempt = (op->m_attempt == 0U);
         ++op->m_attempt;
 
-        if (firstAttempt) {
+        if (firstAttempt && (MqttsnQoS_AtLeastOnceDelivery <= op->m_qos)) {
             op->m_msgId = allocMsgId();
         }
 
@@ -2263,7 +2263,8 @@ private:
             return true;
         } while (false);
 
-        if (firstAttempt) {
+        op->m_msgId = 0U;
+        if (firstAttempt && (MqttsnQoS_AtLeastOnceDelivery <= op->m_qos)) {
             op->m_msgId = allocMsgId();
         }
 
