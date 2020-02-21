@@ -77,7 +77,7 @@ void PubSend::handle(RegackMsg_SN& msg)
     m_attempt = 0;
     m_registered = true;
     ++m_registerCount;
-    m_currMsgId = allocMsgId();
+    m_currMsgId = allocMsgId(); 
     doSend();
 }
 
@@ -248,7 +248,15 @@ void PubSend::doSend()
     msg.field_flags().field_qos().value() = translateQosForClient(m_currPub->m_qos);
     dupFlagsField.setBitValue(DupFlags::BitIdx_bit, dup);
     msg.field_topicId().value() = m_currTopicInfo.m_topicId;
-    msg.field_msgId().value() = m_currMsgId;
+
+    if (m_currPub->m_qos >= QoS_AtLeastOnceDelivery) {
+        if (m_currMsgId == 0U) {
+            m_currMsgId = allocMsgId();
+        }
+
+        msg.field_msgId().value() = m_currMsgId;
+    }
+
     auto& dataStorage = msg.field_data().value();
     using DataStorage = typename std::decay<decltype(dataStorage)>::type;
     msg.field_data().value() = DataStorage(&(*m_currPub->m_msg.begin()), m_currPub->m_msg.size());
