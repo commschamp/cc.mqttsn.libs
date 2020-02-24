@@ -9,6 +9,8 @@ option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
 # Extra variables
 # CC_MAIN_INSTALL_DIR - Path to external installation directory of comms_champion project
 # CC_MQTT311_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqtt311.generated project
+# CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
+# CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 
 if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
