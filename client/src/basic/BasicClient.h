@@ -83,7 +83,7 @@ struct RegInfoStorageType<TInfo, TOpts, false>
 
 template <typename TInfo, typename TOpts>
 using RegInfoStorageTypeT =
-    typename GwInfoStorageType<TInfo, TOpts, TOpts::HasRegisteredTopicsLimit>::Type;
+    typename RegInfoStorageType<TInfo, TOpts, TOpts::HasRegisteredTopicsLimit>::Type;
 
 //-----------------------------------------------------------
 

@@ -19,6 +19,11 @@ if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
     set (cc_mqtt_src_dir "${CC_MQTT_EXTERNAL_DIR}")
     set (cc_mqtt_bin_dir "${cc_mqtt_main_dir}/build")
     set (cc_mqtt_install_dir "${cc_mqtt_main_dir}/install")
+    set (cc_mqtt_update_disconnected)
+    if (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED)
+        set (cc_mqtt_update_disconnected "UPDATE_DISCONNECTED 1")
+    endif ()
+    
     
     ExternalProject_Add(
         "${CC_MQTT_EXTERNAL_TGT}"
@@ -33,7 +38,7 @@ if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
         BINARY_DIR "${cc_mqtt_bin_dir}"
-        UPDATE_DISCONNECTED 1
+        ${cc_mqtt_update_disconnected}
     )
     set (CC_MQTT_EXTERNAL_TGT_INCLUDE "${cc_mqtt_install_dir}/include") 
 else ()

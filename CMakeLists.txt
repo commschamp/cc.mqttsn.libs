@@ -5,6 +5,7 @@ option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 option (CC_MQTTSN_BUILD_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
 option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
+option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects update." OFF)
 
 # Extra variables
 # CC_MAIN_INSTALL_DIR - Path to external installation directory of comms_champion project
@@ -162,12 +163,16 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_tag "v2.3.2")
+    set (cc_tag "develop")
     set (cc_repo "https://github.com/arobenko/comms_champion.git")
     set (cc_main_dir "${CMAKE_CURRENT_BINARY_DIR}/comms_champion")
     set (cc_src_dir "${CC_EXTERNAL_DIR}")
     set (cc_bin_dir "${cc_main_dir}/build")
     set (cc_install_dir "${cc_main_dir}/install")
+    set (cc_update_disconnected)
+    if (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED)
+        set (cc_update_disconnected "UPDATE_DISCONNECTED 1")
+    endif ()
     
     find_package (Git REQUIRED)
     set (ext_targets_inc_file "${cc_src_dir}/cmake/CC_DefineExternalProjectTargets.cmake")
@@ -205,7 +210,7 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
             -DCC_COMMS_LIB_ONLY=ON
         BINARY_DIR "${cc_bin_dir}"
-        UPDATE_DISCONNECTED 1
+        ${cc_update_disconnected}
     )
     
     include (${ext_targets_inc_file})
