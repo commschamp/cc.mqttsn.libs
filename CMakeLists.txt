@@ -171,7 +171,7 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
     set (cc_install_dir "${cc_main_dir}/install")
     set (cc_update_disconnected)
     if (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED)
-        set (cc_update_disconnected "UPDATE_DISCONNECTED 1")
+        set (cc_update_disconnected UPDATE_DISCONNECTED 1)
     endif ()
     
     find_package (Git REQUIRED)

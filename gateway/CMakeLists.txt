@@ -21,7 +21,7 @@ if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
     set (cc_mqtt_install_dir "${cc_mqtt_main_dir}/install")
     set (cc_mqtt_update_disconnected)
     if (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED)
-        set (cc_mqtt_update_disconnected "UPDATE_DISCONNECTED 1")
+        set (cc_mqtt_update_disconnected UPDATE_DISCONNECTED 1)
     endif ()
     
     
