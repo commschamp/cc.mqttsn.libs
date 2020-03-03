@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -195,7 +195,7 @@ void Connect::handle(ConnackMsg& msg)
         return;
     }
 
-    processAck(msg.field_responseCode().value());
+    processAck(msg.field_returnCode().value());
 }
 
 void Connect::doNextStep()
@@ -211,7 +211,7 @@ void Connect::doNextStep()
     ++m_internalState.m_attempt;
 
     if (m_internalState.m_waitingForReconnect) {
-        processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::ServerUnavailable);
+        processAck(ConnackMsg::Field_returnCode::ValueType::ServerUnavailable);
         termRequest();
         return;
     }
@@ -224,7 +224,7 @@ void Connect::doNextStep()
         auto& st = state();
         do {
             if ((!st.m_clientId.empty()) && (st.m_clientId != m_clientId)) {
-                processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::IdentifierRejected);
+                processAck(ConnackMsg::Field_returnCode::ValueType::IdentifierRejected);
                 return;
             }
 
@@ -244,7 +244,7 @@ void Connect::doNextStep()
 
             if (st.m_pendingClientDisconnect) {
                 // Emulate successful connection, Disconnect will be sent from PubSend op
-                processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::Accepted);
+                processAck(ConnackMsg::Field_returnCode::ValueType::Accepted);
                 return;
             }
 
@@ -261,12 +261,12 @@ void Connect::doNextStep()
                 st.m_regMgr.clearRegistrations();
             }
 
-            processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::Accepted);
+            processAck(ConnackMsg::Field_returnCode::ValueType::Accepted);
             return;
         } while (false);
 
         if (!st.m_brokerConnected) {
-            processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal::ServerUnavailable);
+            processAck(ConnackMsg::Field_returnCode::ValueType::ServerUnavailable);
             return;
         }
 
@@ -309,30 +309,28 @@ void Connect::doNextStep()
 void Connect::forwardConnectionReq()
 {
     ConnectMsg msg;
-    typedef typename std::decay<decltype(msg.field_flags().field_flagsLow())>::type LowFlagsFieldType;
-    typedef typename std::decay<decltype(msg.field_flags().field_flagsHigh())>::type HighFlagsFieldType;
 
     msg.field_clientId().value() = m_clientId;
     msg.field_keepAlive().value() = m_keepAlive;
-    msg.field_flags().field_flagsLow().setBitValue(LowFlagsFieldType::BitIdx_cleanSession, m_clean);
+    msg.field_flags().field_low().setBitValue_cleanSession(m_clean);
 
     if (!m_will.m_topic.empty()) {
-        msg.field_flags().field_flagsLow().setBitValue(LowFlagsFieldType::BitIdx_willFlag, true);
+        msg.field_flags().field_low().setBitValue_willFlag(true);
         msg.field_willTopic().field().value() = m_will.m_topic;
         msg.field_willMessage().field().value() = m_will.m_msg;
         msg.field_flags().field_willQos().value() = translateQosForBroker(m_will.m_qos);
-        msg.field_flags().field_flagsHigh().setBitValue(HighFlagsFieldType::BitIdx_willRetain, m_will.m_retain);
+        msg.field_flags().field_high().setBitValue_willRetain(m_will.m_retain);
     }
 
     auto& username = m_authInfo.first;
     if (!username.empty()) {
         msg.field_userName().field().value() = username;
-        msg.field_flags().field_flagsHigh().setBitValue(HighFlagsFieldType::BitIdx_username, true);
+        msg.field_flags().field_high().setBitValue_userNameFlag(true);
 
         auto& password = m_authInfo.second;
         if (!password.empty()) {
             msg.field_password().field().value() = password;
-            msg.field_flags().field_flagsHigh().setBitValue(HighFlagsFieldType::BitIdx_password, true);
+            msg.field_flags().field_high().setBitValue_passwordFlag(true);
         }
     }
 
@@ -340,7 +338,7 @@ void Connect::forwardConnectionReq()
     sendToBroker(msg);
 }
 
-void Connect::processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal respCode)
+void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
 {
     static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
         /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
@@ -354,7 +352,7 @@ void Connect::processAck(mqtt::protocol::v311::field::ConnackResponseCodeVal res
     static const std::size_t RetCodeMapSize =
                         std::extent<decltype(RetCodeMap)>::value;
 
-    static_assert(RetCodeMapSize == (std::size_t)mqtt::protocol::v311::field::ConnackResponseCodeVal::NumOfValues,
+    static_assert(RetCodeMapSize == (std::size_t)ConnackMsg::Field_returnCode::ValueType::ValuesLimit,
         "Incorrect map");
 
     auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;

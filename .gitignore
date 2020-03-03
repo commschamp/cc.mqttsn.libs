@@ -1,4 +1,5 @@
 build*
+externals
 .project
 .cproject
 CMakeLists.txt.user*

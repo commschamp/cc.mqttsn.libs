@@ -1,7 +1,0 @@
-{
-    "name" : "MQTT-SN Client Filter",
-    "desc" : [
-        "MQTT-SN Client Filter."
-    ],
-    "type" : "filter"
-}

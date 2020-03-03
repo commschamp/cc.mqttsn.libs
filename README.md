@@ -33,8 +33,6 @@ how to do it.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
-[Dropbox](https://www.dropbox.com/s/gq1i3wixo08unf6/doc_mqttsn_client_v0.7.zip)
-or from 
 [release artefacts](https://github.com/arobenko/mqtt-sn/releases).
 
 # Client Applications
@@ -63,8 +61,6 @@ of the MQTT protocol to connect to and communicate with the broker.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from
-[Dropbox](https://www.dropbox.com/s/dv2i25zddn13vh0/doc_mqttsn_gateway_v0.7.zip)
-or from 
 [release artefacts](https://github.com/arobenko/mqtt-sn/releases).
 
 # Gateway Applications
@@ -76,23 +72,6 @@ UDP/IP as its datagram transport layer. The application also using
 [QT5](https://doc.qt.io/qt-5/) framework for its operation. It means that if
 proper QT5 libraries are not installed or can not be found, the gateway example
 application won't be compiled.
-
-# [CommsChampion](https://github.com/arobenko/comms_champion) Plugins
-This repository also implements and provides MQTT-SN **protocol** as well as **filter**
-plugins for  [CommsChampion Tools](https://github.com/arobenko/comms_champion#commschampion-tools)
-from [CommsChampion](https://github.com/arobenko/comms_champion) project.
-They can be used to observe and analyse traffic of MQTT-SN messages themselves
-or any custom protocol which uses MQTT-SN for its transport.
-
-# MQTT-SN Messages Definitions
-The MQTT-SN protocol messages are defined using 
-[COMMS library](https://github.com/arobenko/comms_champion#comms-library) from 
-[comms_champion](https://github.com/arobenko/comms_champion) project. They
-are "headers only" and provided during the installation process. The message
-classes and transport layer definition can be used in any other third party
-project, that tries to implement its own client/gateway functionality.
-At this moment the protocol definition classes are not documented yet, will be
-done in one of the future releases.
 
 # Spec Deviations
 There are a couple of deviations from official MQTT-SN 

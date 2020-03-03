@@ -24,15 +24,11 @@
 #include <algorithm>
 #include <random>
 
-#include "comms/CompileControl.h"
-
-CC_DISABLE_WARNINGS()
 #include <QtCore/QCoreApplication>
 #include <QtCore/QPluginLoader>
 #include <QtCore/QDir>
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QStringList>
-CC_ENABLE_WARNINGS()
 
 #include "Sub.h"
 

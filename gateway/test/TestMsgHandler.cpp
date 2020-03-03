@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -791,12 +791,12 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsgupd(const DataBuf& d
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(
-    mqtt::protocol::v311::field::ConnackResponseCodeVal rc,
+    ConnackResponseCodeVal rc,
     bool sessionPresent)
 {
     ConnackMsg msg;
     msg.field_flags().setBitValue(0, sessionPresent);
-    msg.field_responseCode().value() = rc;
+    msg.field_returnCode().value() = rc;
     return prepareInput(msg);
 }
 
@@ -819,24 +819,24 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
     const std::string& topic,
     const DataBuf& msgData,
     std::uint16_t packetId,
-    mqtt::protocol::common::field::QosVal qos,
+    mqtt311::field::QosVal qos,
     bool retain,
     bool duplicate)
 {
     PublishMsg msg;
-    auto& flags = msg.field_publishFlags();
+    auto& flags = msg.transportField_flags();
 
     msg.field_topic().value() = topic;
     msg.field_payload().value() = msgData;
     msg.field_packetId().field().value() = packetId;
     flags.field_qos().value() = qos;
-    flags.field_retain().setBitValue(0, retain);
-    flags.field_dup().setBitValue(0, duplicate);
+    flags.field_retain().setBitValue_bit(retain);
+    flags.field_dup().setBitValue_bit(duplicate);
 
     msg.doRefresh();
-    assert((qos == mqtt::protocol::common::field::QosVal::AtMostOnceDelivery) ||
+    assert((qos == mqtt311::field::QosVal::AtMostOnceDelivery) ||
            (msg.field_packetId().doesExist()));
-    assert((mqtt::protocol::common::field::QosVal::AtMostOnceDelivery < qos) ||
+    assert((mqtt311::field::QosVal::AtMostOnceDelivery < qos) ||
            (msg.field_packetId().isMissing()));
     return prepareInput(msg);
 }
@@ -871,16 +871,15 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPubcomp(std::uint16_t packe
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerSuback(
     std::uint16_t packetId,
-    mqtt::protocol::v311::field::SubackReturnCodeVal rc)
+    SubackReturnCodeVal rc)
 {
     SubackMsg msg;
 
     msg.field_packetId().value() = packetId;
-    typedef std::decay<decltype(msg.field_payload().value())>::type PayloadListType;
-    typedef PayloadListType::value_type RcElemType;
+    using RcElemType = SubackMsg::Field_list::ValueType::value_type;
     RcElemType rcElem;
     rcElem.value() = rc;
-    msg.field_payload().value().push_back(rcElem);
+    msg.field_list().value().push_back(rcElem);
     return prepareInput(msg);
 }
 

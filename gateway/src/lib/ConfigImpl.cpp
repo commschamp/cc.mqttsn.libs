@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -219,7 +219,7 @@ const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
 
     std::sort(
         topicsList.begin(), topicsList.end(),
-        [this](PredefinedTopicsList::const_reference elem1, PredefinedTopicsList::const_reference elem2) -> bool
+        [](PredefinedTopicsList::const_reference elem1, PredefinedTopicsList::const_reference elem2) -> bool
         {
             return elem1.clientId < elem2.clientId;
         });
@@ -282,7 +282,7 @@ const ConfigImpl::AuthInfosList& ConfigImpl::authInfos() const
 
     std::sort(
         authInfos.begin(), authInfos.end(),
-        [this](AuthInfosList::const_reference elem1, AuthInfosList::const_reference elem2) -> bool
+        [](AuthInfosList::const_reference elem1, AuthInfosList::const_reference elem2) -> bool
         {
             return elem1.clientId < elem2.clientId;
         });

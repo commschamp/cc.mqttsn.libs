@@ -14,9 +14,16 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if (CC_MQTTSN_CLIENT_DEFAULT_LIB)
+if ((CC_MQTTSN_CLIENT_DEFAULT_LIB) AND
+    ("${CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE}" STREQUAL ""))
     gen_lib_mqttsn_client("${DEFAULT_CLIENT_NAME}" "" "" TRUE "")
 endif ()    
+
+if (NOT "${CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE}" STREQUAL "")
+    set (CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES
+        ${CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE}
+        ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
+endif ()
 
 foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     if (NOT EXISTS "${f}")
@@ -26,7 +33,9 @@ foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     
     include (${f})  
     
-    if ("${MQTTSN_CUSTOM_CLIENT_NAME}" STREQUAL "")
+    if ("${f}" STREQUAL "${CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE}")
+        set (MQTTSN_CUSTOM_CLIENT_NAME "${DEFAULT_CLIENT_NAME}")
+    elseif ("${MQTTSN_CUSTOM_CLIENT_NAME}" STREQUAL "")
         message (WARNING "File ${f} does not specify client name!")
         continue ()
     endif ()

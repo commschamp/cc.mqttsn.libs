@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -16,6 +16,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Disconnect.h"
+
 #include <cassert>
 
 namespace mqttsn
@@ -55,8 +56,8 @@ void Disconnect::brokerConnectionUpdatedImpl()
 
 void Disconnect::handle(DisconnectMsg_SN& msg)
 {
-    if (!msg.field_duration().isMissing()) {
-        // Monotor disconnect with duration in Asleep op
+    if (msg.field_duration().doesExist()) {
+        // Monitor disconnect with duration in Asleep op
         return;
     }
 

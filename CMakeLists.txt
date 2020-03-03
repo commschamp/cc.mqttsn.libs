@@ -4,9 +4,14 @@ project ("mqttsn")
 option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 option (CC_MQTTSN_BUILD_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
-option (CC_MQTTSN_BUILD_PLUGINS "Build and install relevant plugins to CommsChampion suite" OFF)
-option (CC_MQTTSN_FULL_SOLUTION "Build and install full solution, including CommsChampion sources." OFF)
 option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
+option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects update." OFF)
+
+# Extra variables
+# CC_MAIN_INSTALL_DIR - Path to external installation directory of comms_champion project
+# CC_MQTT311_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqtt311.generated project
+# CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
+# CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 
 if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
@@ -15,6 +20,10 @@ endif()
 if (NOT CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 11)
 endif()
+
+set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
+set (PROTOCOL_INC_DIR "${PROJECT_SOURCE_DIR}/protocol/include")
+set (CXXTEST_EXTERNAL_DIR "${EXTERNALS_DIR}/cxxtest")
 
 while (TRUE)
     if (CC_MQTTSN_NO_UNIT_TESTS)
@@ -34,20 +43,26 @@ while (TRUE)
     endif ()
     
     set (cxx_tag "4.4")
-    set (cxxtest_stamp "${CMAKE_BINARY_DIR}/cxxtest.stamp")
-    if ((EXISTS ${cxxtest_stamp}) AND (EXISTS "${CMAKE_BINARY_DIR}/cxxtest"))
+    set (cxxtest_stamp "${EXTERNALS_DIR}/cxxtest.stamp")
+    if ((EXISTS ${cxxtest_stamp}) AND (EXISTS "${CXXTEST_EXTERNAL_DIR}"))
+        message (STATUS "Updating cxxtest")
         execute_process (
             COMMAND ${GIT_EXECUTABLE} checkout ${cxx_tag}
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/cxxtest
+            WORKING_DIRECTORY ${CXXTEST_EXTERNAL_DIR}
         )
     else ()
         execute_process (
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${CMAKE_BINARY_DIR}/cxxtest"
+            COMMAND ${CMAKE_COMMAND} -E remove_directory "${CXXTEST_EXTERNAL_DIR}"
+        )
+        
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}"
         )
 
+        message (STATUS "Cloning cxxtest")
         execute_process (
             COMMAND ${GIT_EXECUTABLE} clone -b ${cxx_tag} --depth 1 https://github.com/CxxTest/cxxtest.git
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            WORKING_DIRECTORY ${EXTERNALS_DIR}
             RESULT_VARIABLE git_result
         )
 
@@ -61,7 +76,7 @@ while (TRUE)
         )
     endif ()
 
-    set (CXXTEST_INCLUDE_DIR "${CMAKE_BINARY_DIR}/cxxtest")
+    set (CXXTEST_INCLUDE_DIR "${CXXTEST_EXTERNAL_DIR}")
     set (CXXTEST_PYTHON_TESTGEN_EXECUTABLE "${CXXTEST_INCLUDE_DIR}/bin/cxxtestgen")
     
     find_package (CxxTest)
@@ -116,10 +131,10 @@ elseif (MSVC)
     endif ()
 endif ()
 
-set (INSTALL_DIR ${CMAKE_BINARY_DIR}/install)
-if (NOT "${CC_MQTTSN_INSTALL_DIR}" STREQUAL "")
-    set (INSTALL_DIR "${CC_MQTTSN_INSTALL_DIR}")
-endif ()
+set (INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+#if (NOT "${CC_MQTTSN_INSTALL_DIR}" STREQUAL "")
+#    set (INSTALL_DIR "${CC_MQTTSN_INSTALL_DIR}")
+#endif ()
 
 include(GNUInstallDirs)
 set (INSTALL_NAME "CC_Mqttsn")
@@ -137,143 +152,81 @@ if (NOT "${CC_MQTTSN_QT_DIR}" STREQUAL "")
     list (APPEND CMAKE_PREFIX_PATH ${CC_MQTTSN_QT_DIR})
 endif ()
 
-set (CC_EXTERNAL FALSE)
+######################################################################
+
+set (CC_EXTERNAL_DIR "${EXTERNALS_DIR}/comms_champion")
 set (CC_EXTERNAL_TGT "comms_champion_external")
-set (CC_MQTT_EXTERNAL FALSE)
-set (CC_MQTT_EXTERNAL_TGT "mqtt_external")
-
-######################################################################
-
-macro (externals install_dir build_cc mqtt_headers)
-        include(ExternalProject)
+if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
+    execute_process (
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}")
         
-        set (cc_tag "v1.3")
-        set (cc_main_dir "${CMAKE_BINARY_DIR}/comms_champion")
-        set (cc_src_dir "${cc_main_dir}/src")
-        set (cc_bin_dir "${cc_main_dir}/build")
-        set (cc_mqtt_main_dir "${CMAKE_BINARY_DIR}/mqtt")
-        set (cc_mqtt_src_dir "${cc_mqtt_main_dir}/src")
-        set (cc_mqtt_bin_dir "${cc_mqtt_main_dir}/build")
         
-        if (NOT "${CC_MQTTSN_QT_DIR}" STREQUAL "")
-            set (cc_qt_dir_opt -DCC_QT_DIR=${CC_MQTTSN_QT_DIR})
-            set (cc_mqtt_qt_dir_opt "-DCC_QT_DIR=${CC_MQTTSN_QT_DIR}")
-        endif ()
-        
-        if (${build_cc})
-            set (CC_PLUGIN_LIBRARIES "comms_champion")
-            set (CC_COMMS_CHAMPION_FOUND TRUE)
-            set (CC_PLUGIN_LIBRARY_DIRS ${LIB_INSTALL_DIR})
-        else ()
-            set (ct_lib_only_opt -DCC_COMMS_LIB_ONLY=ON)
-        endif ()
+    include(ExternalProject)
     
-        ExternalProject_Add(
-            "${CC_EXTERNAL_TGT}"
-            PREFIX "${cc_bin_dir}"
-            STAMP_DIR "${cc_bin_dir}"    
-            GIT_REPOSITORY "https://github.com/arobenko/comms_champion.git"
-            GIT_TAG "${cc_tag}"
-            SOURCE_DIR "${cc_src_dir}"
-            CMAKE_ARGS 
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${install_dir} 
-                -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
-                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
-                ${cc_qt_dir_opt} ${ct_lib_only_opt}
-            BINARY_DIR "${cc_bin_dir}"
+    set (cc_tag "v2.3.3")
+    set (cc_repo "https://github.com/arobenko/comms_champion.git")
+    set (cc_main_dir "${CMAKE_CURRENT_BINARY_DIR}/comms_champion")
+    set (cc_src_dir "${CC_EXTERNAL_DIR}")
+    set (cc_bin_dir "${cc_main_dir}/build")
+    set (cc_install_dir "${cc_main_dir}/install")
+    set (cc_update_disconnected)
+    if (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED)
+        set (cc_update_disconnected UPDATE_DISCONNECTED 1)
+    endif ()
+    
+    find_package (Git REQUIRED)
+    set (ext_targets_inc_file "${cc_src_dir}/cmake/CC_DefineExternalProjectTargets.cmake")
+    if (NOT EXISTS "${ext_targets_inc_file}")
+        execute_process (
+            COMMAND ${CMAKE_COMMAND} -E remove_directory "${cc_src_dir}"
         )
-        set (CC_EXTERNAL TRUE)
-        set (CC_COMMS_FOUND TRUE)
-        
-        if (${mqtt_headers})
-            set (cc_mqtt_tag "v0.7.6")
-            ExternalProject_Add(
-                "${CC_MQTT_EXTERNAL_TGT}"
-                PREFIX "${cc_mqtt_bin_dir}"
-                STAMP_DIR "${cc_mqtt_bin_dir}"    
-                GIT_REPOSITORY "https://github.com/arobenko/mqtt.git"
-                GIT_TAG "${cc_mqtt_tag}"
-                SOURCE_DIR "${cc_mqtt_src_dir}"
-                CMAKE_ARGS 
-                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCC_MQTT_INSTALL_DIR=${install_dir} 
-                    -DCC_MQTT_LIB_ONLY=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
-                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
-                    ${cc_mqtt_qt_dir_opt}
-                BINARY_DIR "${cc_mqtt_bin_dir}"
-            )
-            set (CC_MQTT_EXTERNAL TRUE)
-            
-            add_dependencies(${CC_MQTT_EXTERNAL_TGT} ${CC_EXTERNAL_TGT})
-            set (CC_MQTT_FOUND TRUE)
-        endif()
-            
-        include_directories("${install_dir}/include")
-        link_directories("${install_dir}/lib")
-        
-endmacro()
+
+        execute_process (
+            COMMAND 
+                ${GIT_EXECUTABLE} clone -b ${cc_tag} --depth 1 ${cc_repo} ${cc_src_dir}
+            RESULT_VARIABLE git_result
+        )
+
+        if (NOT "${git_result}" STREQUAL "0")
+            message (FATAL_ERROR "git clone/checkout failed")
+        endif ()
+
+        if (NOT EXISTS "${ext_targets_inc_file}")
+             message (FATAL_ERROR "Incompatible version of ${cc_repo}, please use different tag.")
+        endif ()
+
+    endif ()
+    
+    ExternalProject_Add(
+        "${CC_EXTERNAL_TGT}"
+        PREFIX "${cc_bin_dir}"
+        STAMP_DIR "${cc_bin_dir}"    
+        GIT_REPOSITORY "${cc_repo}"
+        GIT_TAG "${cc_tag}"
+        SOURCE_DIR "${cc_src_dir}"
+        CMAKE_ARGS 
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_install_dir} 
+            -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+            -DCC_COMMS_LIB_ONLY=ON
+        BINARY_DIR "${cc_bin_dir}"
+        ${cc_update_disconnected}
+    )
+    
+    include (${ext_targets_inc_file})
+    cc_define_external_project_targets(${cc_install_dir} NO_COMMS_CHAMPION)
+else ()
+    list (APPEND CMAKE_PREFIX_PATH "${CC_MAIN_INSTALL_DIR}")
+    find_package(LibComms NO_MODULE)
+    if (NOT TARGET cc::comms)
+        message (FATAL_ERROR "Failed to find external COMMS library")
+    endif ()
+endif ()
 
 ######################################################################
 
+include_directories(protocol/include)
 
-while (TRUE)
-    if (CC_MQTTSN_FULL_SOLUTION)
-        externals(${INSTALL_DIR} TRUE TRUE) 
-        break()
-    endif ()
-    
-    list (APPEND CMAKE_PREFIX_PATH "${INSTALL_DIR}")
-
-    if (NOT "${CC_MAIN_INSTALL_DIR}" STREQUAL "")
-        list (APPEND CMAKE_PREFIX_PATH "${CC_MAIN_INSTALL_DIR}")
-    endif ()
-    
-    if (NOT "${CC_MQTT_INSTALL_DIR}" STREQUAL "")
-        list (APPEND CMAKE_PREFIX_PATH "${CC_MQTT_INSTALL_DIR}")
-    endif ()
-    
-    find_package(CommsChampion QUIET NO_MODULE)
-    
-    if (NOT CC_COMMS_FOUND)
-        set (externals_install "${CMAKE_BINARY_DIR}/ext_install")
-        set (build_cc FALSE)
-        if (CC_MQTTSN_BUILD_PLUGINS) 
-            set (build_cc TRUE)
-        endif ()
-        
-        set (mqtt_headers FALSE)
-        if (CC_MQTTSN_BUILD_GATEWAY)
-            set (mqtt_headers TRUE)
-        endif ()
-        
-        externals(${externals_install} ${build_cc} ${mqtt_headers})
-        break()
-    endif ()
-
-    find_package(CommsChampion NO_MODULE)
-    if (CC_COMMS_FOUND)
-        include_directories(${CC_INCLUDE_DIRS})
-    endif ()
-        
-    if (CC_COMMS_CHAMPION_FOUND)
-        link_directories(${CC_PLUGIN_LIBRARY_DIRS})
-        file (RELATIVE_PATH rel_plugin_install_path "${CC_ROOT_DIR}" "${CC_PLUGIN_DIR}")
-        set (PLUGIN_INSTALL_DIR "${INSTALL_DIR}/${rel_plugin_install_path}")
-    endif ()
-    
-    if (NOT CC_MQTTSN_BUILD_GATEWAY)
-        break()
-    endif()
-   
-    find_package(CC_Mqtt NO_MODULE)
-    
-    if (CC_MQTT_FOUND)
-        include_directories(${CC_MQTT_INCLUDE_DIRS})
-    endif ()
-    break()
-endwhile()
-
-add_subdirectory(protocol)
 add_subdirectory(client)
 add_subdirectory(gateway)
-add_subdirectory(cc_plugin)
 
