@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -79,10 +79,12 @@ private:
 
     typedef std::list<NoGwPubInfo> NoGwPubInfosList;
 
+    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+    using TopicIdTypeVal = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
     void sendPubackToClient(
         std::uint16_t topicId,
         std::uint16_t msgId,
-        mqttsn::protocol::field::ReturnCodeVal rc);
+        ReturnCodeVal rc);
 
 
     std::uint16_t m_lastPubTopicId = 0;

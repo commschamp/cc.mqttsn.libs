@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -42,6 +42,7 @@ protected:
     virtual void tickImpl() override;
 private:
     typedef RegMgr::TopicInfo TopicInfo;
+    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
 
     using Base::handle;
     virtual void handle(RegackMsg_SN& msg) override;

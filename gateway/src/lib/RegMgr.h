@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 #include <map>
 #include <tuple>
 
-#include "mqttsn/protocol/field.h"
+#include "mqttsn/field/FlagsCommon.h"
 
 namespace mqttsn
 {
@@ -36,7 +36,7 @@ class RegMgr
 {
 public:
 
-    using TopicIdType = mqttsn::protocol::field::TopicIdTypeVal;
+    using TopicIdType = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
     struct TopicInfo
     {
         std::uint16_t m_topicId = 0;

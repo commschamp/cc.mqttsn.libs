@@ -80,12 +80,12 @@ void WillUpdate::handle(DisconnectMsg_SN& msg)
 void WillUpdate::handle(WilltopicupdMsg_SN& msg)
 {
     if (state().m_connStatus != ConnectionStatus::Connected) {
-        sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+        sendTopicResp(ReturnCodeVal::NotSupported);
         return;
     }
 
     if (m_op == Op::MsgUpd) {
-        sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Congestion);
+        sendTopicResp(ReturnCodeVal::Congestion);
         sendToBroker(PingreqMsg());
         return;
     }
@@ -95,18 +95,15 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
         return;
     }
 
-    auto& midFlagsField = msg.field_flags().field().field_midFlags();
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-
-    auto qos = translateQos(msg.field_flags().field().field_qos().value());
-    bool retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
+    auto qos = translateQos(msg.field_flags().field_qos().value());
+    bool retain = msg.field_flags().field_mid().getBitValue_Retain();
 
     auto& st = state();
     auto& willTopic = msg.field_willTopic().value();
     if ((st.m_will.m_topic == willTopic) &&
         (st.m_will.m_qos == qos) &&
         (st.m_will.m_retain == retain)) {
-        sendTopicResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        sendTopicResp(ReturnCodeVal::Accepted);
         sendToBroker(PingreqMsg());
         return;
     }
@@ -121,12 +118,12 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
 void WillUpdate::handle(WillmsgupdMsg_SN& msg)
 {
     if (state().m_connStatus != ConnectionStatus::Connected) {
-        sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+        sendMsgResp(ReturnCodeVal::NotSupported);
         return;
     }
 
     if (m_op == Op::TopicUpd) {
-        sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Congestion);
+        sendMsgResp(ReturnCodeVal::Congestion);
         sendToBroker(PingreqMsg());
         return;
     }
@@ -138,10 +135,9 @@ void WillUpdate::handle(WillmsgupdMsg_SN& msg)
 
     auto& st = state();
     auto& willData = msg.field_willMsg().value();
-    using WillDataStorage = typename std::decay<decltype(willData)>::type;
-    WillDataStorage storedDataView(&(*st.m_will.m_msg.begin()), st.m_will.m_msg.size());
-    if (storedDataView == willData) {
-        sendMsgResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    if ((willData.size() == st.m_will.m_msg.size()) &&
+        (std::equal(willData.begin(), willData.end(), st.m_will.m_msg.begin()))) {
+        sendMsgResp(ReturnCodeVal::Accepted);
         sendToBroker(PingreqMsg());
         return;
     }
@@ -166,7 +162,7 @@ void WillUpdate::handle(ConnackMsg& msg)
     }
 
     state().m_will = m_will;
-    sendResp(mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    sendResp(ReturnCodeVal::Accepted);
     cancelOp();
 }
 
@@ -201,21 +197,21 @@ void WillUpdate::cancelOp()
     m_op = Op::None;
 }
 
-void WillUpdate::sendTopicResp(mqttsn::protocol::field::ReturnCodeVal rc)
+void WillUpdate::sendTopicResp(ReturnCodeVal rc)
 {
     WilltopicrespMsg_SN msg;
     msg.field_returnCode().value() = rc;
     sendToClient(msg);
 }
 
-void WillUpdate::sendMsgResp(mqttsn::protocol::field::ReturnCodeVal rc)
+void WillUpdate::sendMsgResp(ReturnCodeVal rc)
 {
     WillmsgrespMsg_SN msg;
     msg.field_returnCode().value() = rc;
     sendToClient(msg);
 }
 
-void WillUpdate::sendResp(mqttsn::protocol::field::ReturnCodeVal rc)
+void WillUpdate::sendResp(ReturnCodeVal rc)
 {
     assert(m_op != Op::None);
     if (m_op == Op::TopicUpd) {
@@ -264,7 +260,7 @@ void WillUpdate::sendConnectMsg()
 
 void WillUpdate::sendFailureAndTerm()
 {
-    sendResp(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+    sendResp(ReturnCodeVal::NotSupported);
     cancelOp();
     sendDisconnectToClient();
     termRequest();

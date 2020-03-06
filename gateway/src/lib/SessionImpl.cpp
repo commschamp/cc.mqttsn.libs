@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -235,9 +235,9 @@ void SessionImpl::handle(RegisterMsg_SN& msg)
         m_state.m_regMgr.mapTopicNoInfo(std::string(topicView.data(), topicView.size()));
 
     respMsgIdField.value() = msgIdField.value();
-    assert(respRetCodeField.value() == mqttsn::protocol::field::ReturnCodeVal_Accepted);
+    assert(respRetCodeField.value() == ReturnCodeVal::Accepted);
     if (respTopicIdField.value() == 0U) {
-        respRetCodeField.value() = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
+        respRetCodeField.value() = ReturnCodeVal::NotSupported;
     }
     sendToClient(respMsg);
 

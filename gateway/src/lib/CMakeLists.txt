@@ -33,12 +33,24 @@ function (lib_mqttsn_gateway)
         target_include_directories(${name} PRIVATE ${CC_MQTT_EXTERNAL_TGT_INCLUDE})
     endif ()
     
+    if (NOT "${CC_MQTTSN_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
+        target_include_directories(${name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
+    endif ()
+    
     if (TARGET ${CC_EXTERNAL_TGT})
         add_dependencies(${name} ${CC_EXTERNAL_TGT})
     endif ()
     
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
         add_dependencies(${name} ${CC_MQTT_EXTERNAL_TGT})
+    else ()
+        target_link_libraries(${name} PRIVATE cc::mqtt311)
+    endif ()
+    
+    if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
+        add_dependencies(${name} ${CC_MQTTSN_EXTERNAL_TGT})
+    else ()
+        target_link_libraries(${name} PRIVATE cc::mqttsn)
     endif ()
 
     install (
