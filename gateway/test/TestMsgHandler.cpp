@@ -538,29 +538,22 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientConnect(
     bool clean)
 {
     ConnectMsg_SN msg;
-    auto& midFlagsField = msg.field_flags().field_midFlags();
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-
     msg.field_clientId().value() = id;
     msg.field_duration().value() = keepAlive;
-    midFlagsField.setBitValue(MidFlags::BitIdx_will, hasWill);
-    midFlagsField.setBitValue(MidFlags::BitIdx_cleanSession, clean);
+    msg.field_flags().field_mid().setBitValue_Will(hasWill);
+    msg.field_flags().field_mid().setBitValue_CleanSession(clean);
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
     const std::string& topic,
-    mqttsn::protocol::field::QosType qos,
+    mqttsn::field::QosVal qos,
     bool retain)
 {
     WilltopicMsg_SN msg;
-    auto& midFlagsField = msg.field_flags().field().field_midFlags();
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-
-    msg.field_flags().field().field_qos().value() = qos;
-    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_flags().field_qos().value() = qos;
+    msg.field_flags().field_mid().setBitValue_Retain(retain);
     msg.field_willTopic().value() = topic;
-    msg.refresh();
     return prepareInput(msg);
 }
 
@@ -596,7 +589,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegister(
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegack(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::ReturnCodeVal rc)
+    mqttsn::field::ReturnCodeVal rc)
 {
     RegackMsg_SN msg;
     msg.field_topicId().value() = topicId;
@@ -609,33 +602,26 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPublish(
     const DataBuf& data,
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::TopicIdTypeVal topicIdType,
-    mqttsn::protocol::field::QosType qos,
+    TopicIdTypeVal topicIdType,
+    mqttsn::field::QosVal qos,
     bool retain,
     bool dup)
 {
     PublishMsg_SN msg;
-    auto& midFlagsField = msg.field_flags().field_midFlags();
-    auto& dupFlagsField = msg.field_flags().field_dupFlags();
-
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
-
-    msg.field_flags().field_topicId().value() = topicIdType;
-    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_flags().field_topicIdType().value() = topicIdType;
+    msg.field_flags().field_mid().setBitValue_Retain(retain);
     msg.field_flags().field_qos().value() = qos;
-    dupFlagsField.setBitValue(DupFlags::BitIdx_bit, dup);
+    msg.field_flags().field_high().setBitValue_Dup(dup);
     msg.field_topicId().value() = topicId;
     msg.field_msgId().value() = msgId;
     msg.field_data().value() = data;
-
     return prepareInput(msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::ReturnCodeVal rc)
+    mqttsn::field::ReturnCodeVal rc)
 {
     PubackMsg_SN msg;
     msg.field_topicId().value() = topicId;
@@ -681,17 +667,14 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingresp()
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::QosType qos)
+    mqttsn::field::QosVal qos)
 {
     SubscribeMsg_SN msg;
 
-    msg.field_flags().field_topicId().value() =
-        mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
-
+    msg.field_flags().field_topicIdType().value() = TopicIdTypeVal::PredefinedTopicId;
     msg.field_flags().field_qos().value() = qos;
     msg.field_msgId().value() = msgId;
     msg.field_topicId().field().value() = topicId;
-
     msg.doRefresh();
     assert(msg.field_topicId().doesExist());
     return prepareInput(msg);
@@ -700,23 +683,23 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     const std::string& topic,
     std::uint16_t msgId,
-    mqttsn::protocol::field::QosType qos)
+    mqttsn::field::QosVal qos)
 {
     SubscribeMsg_SN msg;
     msg.field_flags().field_qos().value() = qos;
 
     bool shortName = isShortTopicName(topic);
     if (shortName) {
-        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
+        msg.field_flags().field_topicIdType().value() = TopicIdTypeVal::ShortTopicName;
         msg.field_topicId().field().value() = shortTopicNameToId(topic);
     }
     else {
-        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+        msg.field_flags().field_topicIdType().value() = TopicIdTypeVal::Normal;
         msg.field_topicName().field().value() = topic;
     }
 
     msg.field_msgId().value() = msgId;
-    msg.refresh();
+    msg.doRefresh();
     assert(shortName || msg.field_topicName().doesExist());
     assert((!shortName) || msg.field_topicId().doesExist());
     assert(msg.field_topicName().doesExist() || msg.field_topicId().doesExist());
@@ -731,13 +714,10 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
 {
     UnsubscribeMsg_SN msg;
 
-    msg.field_flags().field_topicId().value() =
-        mqttsn::protocol::field::TopicIdTypeVal::PreDefined;
-
+    msg.field_flags().field_topicIdType().value() = TopicIdTypeVal::PredefinedTopicId;
     msg.field_msgId().value() = msgId;
     msg.field_topicId().field().value() = topicId;
-
-    msg.refresh();
+    msg.doRefresh();
     assert(msg.field_topicId().doesExist());
     return prepareInput(msg);
 }
@@ -749,16 +729,16 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
     UnsubscribeMsg_SN msg;
     bool shortName = isShortTopicName(topic);
     if (shortName) {
-        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::ShortName;
+        msg.field_flags().field_topicIdType().value() = TopicIdTypeVal::ShortTopicName;
         msg.field_topicId().field().value() = shortTopicNameToId(topic);
     }
     else {
-        msg.field_flags().field_topicId().value() = mqttsn::protocol::field::TopicIdTypeVal::Normal;
+        msg.field_flags().field_topicIdType().value() = TopicIdTypeVal::Normal;
         msg.field_topicName().field().value() = topic;
     }
 
     msg.field_msgId().value() = msgId;
-    msg.refresh();
+    msg.doRefresh();
     assert(shortName || msg.field_topicName().doesExist());
     assert((!shortName) || msg.field_topicId().doesExist());
     assert(msg.field_topicName().doesExist() || msg.field_topicId().doesExist());
@@ -768,18 +748,13 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(
     const std::string& topic,
-    mqttsn::protocol::field::QosType qos,
+    mqttsn::field::QosVal qos,
     bool retain)
 {
     WilltopicupdMsg_SN msg;
-    auto& midFlagsField = msg.field_flags().field().field_midFlags();
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-
-    msg.field_flags().field().field_qos().value() = qos;
-    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_flags().field_qos().value() = qos;
+    msg.field_flags().field_mid().setBitValue_Retain(retain);
     msg.field_willTopic().value() = topic;
-
-    msg.refresh();
     return prepareInput(msg);
 }
 
