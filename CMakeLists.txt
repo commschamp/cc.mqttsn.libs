@@ -252,7 +252,7 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         PREFIX "${cc_mqttsn_bin_dir}"
         STAMP_DIR "${cc_mqttsn_bin_dir}"    
         GIT_REPOSITORY "https://github.com/arobenko/cc.mqttsn.generated.git"
-        GIT_TAG "${cc_mqttsn_tag}"
+        GIT_TAG "${cc_mqttsn_generated_tag}"
         SOURCE_DIR "${cc_mqttsn_src_dir}"
         CMAKE_ARGS 
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqttsn_install_dir} 

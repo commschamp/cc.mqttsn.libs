@@ -21,6 +21,7 @@
 #include "mqttsn/Message.h"
 #include "mqttsn/frame/Frame.h"
 #include "mqttsn/input/ServerInputMessages.h"
+#include "mqttsn/options/ServerDefaultOptions.h"
 #include "mqtt311/Message.h"
 #include "mqtt311/frame/Frame.h"
 
@@ -55,7 +56,15 @@ using MqttMessage =
 //    protocol::option::UseOrigDataView
 //> GwOptions;
 
-using GwOptions = mqttsn::options::DefaultOptions;
+struct GwOptions : public mqttsn::options::ServerDefaultOptions
+{
+    using ClientId = comms::option::app::OrigDataView;
+    using Data = comms::option::app::OrigDataView;
+    using GwAdd = comms::option::app::OrigDataView;
+    using TopicName = comms::option::app::OrigDataView;
+    using WillMsg = comms::option::app::OrigDataView;
+    using WillTopic = comms::option::app::OrigDataView;
+};
 
 typedef mqttsn::message::Advertise<MqttsnMessage, GwOptions> AdvertiseMsg_SN;
 typedef mqttsn::message::Searchgw<MqttsnMessage, GwOptions> SearchgwMsg_SN;
