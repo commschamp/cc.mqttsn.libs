@@ -252,7 +252,12 @@ void PubSend::doSend()
         msg.field_msgId().value() = m_currMsgId;
     }
 
-    msg.field_data().value().assign(m_currPub->m_msg.begin(), m_currPub->m_msg.end());
+    if (!m_currPub->m_msg.empty()) {
+        auto& dataStorage = msg.field_data().value();
+        using DataStorageType = typename std::decay<decltype(dataStorage)>::type;
+        dataStorage = DataStorageType(&(*m_currPub->m_msg.begin()), m_currPub->m_msg.size());
+    }
+    //msg.field_data().value().assign(m_currPub->m_msg.begin(), m_currPub->m_msg.end());
     sendToClient(msg);
 
     if (m_currPub->m_qos == QoS_AtMostOnceDelivery) {

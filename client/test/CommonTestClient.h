@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 #include <cstdint>
 
 #include "mqttsn/client/common.h"
-#include "mqttsn/protocol/field.h"
+#include "mqttsn/field/QosCommon.h"
 #include "client.h"
 
 typedef decltype(&mqttsn_client_new) ClientNewFunc;
@@ -188,8 +188,8 @@ public:
 
     MqttsnErrorCode checkMessages();
 
-    static MqttsnQoS transformQos(mqttsn::protocol::field::QosType val);
-    static mqttsn::protocol::field::QosType transformQos(MqttsnQoS val);
+    static MqttsnQoS transformQos(mqttsn::field::QosVal val);
+    static mqttsn::field::QosVal transformQos(MqttsnQoS val);
 
 private:
     typedef std::vector<std::uint8_t> InputData;

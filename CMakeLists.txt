@@ -275,6 +275,6 @@ endif ()
 
 #include_directories(protocol/include)
 
-#add_subdirectory(client)
+add_subdirectory(client)
 add_subdirectory(gateway)
 

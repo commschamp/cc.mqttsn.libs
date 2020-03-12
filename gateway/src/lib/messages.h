@@ -56,14 +56,19 @@ using MqttMessage =
 //    protocol::option::UseOrigDataView
 //> GwOptions;
 
-struct GwOptions : public mqttsn::options::ServerDefaultOptions
+class GwOptions : public mqttsn::options::ServerDefaultOptions
 {
-    using ClientId = comms::option::app::OrigDataView;
-    using Data = comms::option::app::OrigDataView;
-    using GwAdd = comms::option::app::OrigDataView;
-    using TopicName = comms::option::app::OrigDataView;
-    using WillMsg = comms::option::app::OrigDataView;
-    using WillTopic = comms::option::app::OrigDataView;
+    using Base = mqttsn::options::ServerDefaultOptions;
+public:
+    struct field : public Base::field
+    {
+        using ClientId = comms::option::app::OrigDataView;
+        using Data = comms::option::app::OrigDataView;
+        using GwAdd = comms::option::app::OrigDataView;
+        using TopicName = comms::option::app::OrigDataView;
+        using WillMsg = comms::option::app::OrigDataView;
+        using WillTopic = comms::option::app::OrigDataView;
+    };
 };
 
 typedef mqttsn::message::Advertise<MqttsnMessage, GwOptions> AdvertiseMsg_SN;

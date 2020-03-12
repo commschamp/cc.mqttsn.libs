@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -350,7 +350,7 @@ DataProcessor::DataBuf DataProcessor::prepareAdvertiseMsg(std::uint8_t id, unsig
     return buf;
 }
 
-DataProcessor::DataBuf DataProcessor::prepareConnackMsg(mqttsn::protocol::field::ReturnCodeVal val)
+DataProcessor::DataBuf DataProcessor::prepareConnackMsg(mqttsn::field::ReturnCodeVal val)
 {
     ConnackMsg msg;
     msg.field_returnCode().value() = val;
@@ -384,7 +384,7 @@ DataProcessor::DataBuf DataProcessor::prepareRegisterMsg(
 DataProcessor::DataBuf DataProcessor::prepareRegackMsg(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::ReturnCodeVal retCode)
+    mqttsn::field::ReturnCodeVal retCode)
 {
     RegackMsg msg;
     msg.field_topicId().value() = topicId;
@@ -397,33 +397,26 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
     std::uint16_t topicId,
     std::uint16_t msgId,
     const std::vector<std::uint8_t>& data,
-    mqttsn::protocol::field::TopicIdTypeVal topicIdType,
-    mqttsn::protocol::field::QosType qos,
+    TopicIdTypeVal topicIdType,
+    mqttsn::field::QosVal qos,
     bool retain,
     bool duplicate)
 {
     PublishMsg msg;
-    auto& midFlagsField = msg.field_flags().field_midFlags();
-    auto& dupFlagsField = msg.field_flags().field_dupFlags();
-
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
-
-    msg.field_flags().field_topicId().value() = topicIdType;
-    midFlagsField.setBitValue(MidFlags::BitIdx_retain, retain);
+    msg.field_flags().field_topicIdType().value() = topicIdType;
+    msg.field_flags().field_mid().setBitValue_Retain(retain);
     msg.field_flags().field_qos().value() = qos;
-    dupFlagsField.setBitValue(DupFlags::BitIdx_bit, duplicate);
+    msg.field_flags().field_high().setBitValue_Dup(duplicate);
     msg.field_topicId().value() = topicId;
     msg.field_msgId().value() = msgId;
     msg.field_data().value().assign(data.begin(), data.end());
-
     return prepareInput(msg);
 }
 
 DataProcessor::DataBuf DataProcessor::preparePubackMsg(
     MqttsnTopicId topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::ReturnCodeVal retCode)
+    mqttsn::field::ReturnCodeVal retCode)
 {
     PubackMsg msg;
     msg.field_topicId().value() = topicId;
@@ -454,10 +447,10 @@ DataProcessor::DataBuf DataProcessor::preparePubcompMsg(std::uint16_t msgId)
 }
 
 DataProcessor::DataBuf DataProcessor::prepareSubackMsg(
-    mqttsn::protocol::field::QosType qos,
+    mqttsn::field::QosVal qos,
     MqttsnTopicId topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::ReturnCodeVal retCode)
+    mqttsn::field::ReturnCodeVal retCode)
 {
     SubackMsg msg;
     msg.field_flags().field_qos().value() = qos;
@@ -500,7 +493,7 @@ DataProcessor::DataBuf DataProcessor::prepareDisconnectMsg(std::uint16_t duratio
 }
 
 DataProcessor::DataBuf DataProcessor::prepareWilltopicrespMsg(
-    mqttsn::protocol::field::ReturnCodeVal retCode)
+    mqttsn::field::ReturnCodeVal retCode)
 {
     WilltopicrespMsg msg;
     msg.field_returnCode().value() = retCode;
@@ -508,7 +501,7 @@ DataProcessor::DataBuf DataProcessor::prepareWilltopicrespMsg(
 }
 
 DataProcessor::DataBuf DataProcessor::prepareWillmsgrespMsg(
-    mqttsn::protocol::field::ReturnCodeVal retCode)
+    mqttsn::field::ReturnCodeVal retCode)
 {
     WillmsgrespMsg msg;
     msg.field_returnCode().value() = retCode;

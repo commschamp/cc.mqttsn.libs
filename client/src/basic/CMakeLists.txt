@@ -16,7 +16,7 @@ include_directories(
 
 if ((CC_MQTTSN_CLIENT_DEFAULT_LIB) AND
     ("${CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE}" STREQUAL ""))
-    gen_lib_mqttsn_client("${DEFAULT_CLIENT_NAME}" "" "" TRUE "")
+    gen_lib_mqttsn_client("${DEFAULT_CLIENT_NAME}" "" TRUE "")
 endif ()    
 
 if (NOT "${CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE}" STREQUAL "")
@@ -40,30 +40,29 @@ foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
         continue ()
     endif ()
     
-    set (mqttsn_protocol_opts)
     set (mqttsn_library_opts)
     
     mqttsn_append_option (
-        mqttsn_protocol_opts 
-        "mqttsn::protocol::option::ClientIdStaticStorageSize"
+        mqttsn_library_opts 
+        "mqttsn::client::option::ClientIdStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
-        mqttsn_protocol_opts 
-        "mqttsn::protocol::option::GwAddStaticStorageSize"
+        mqttsn_library_opts 
+        "mqttsn::client::option::GwAddStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
-        mqttsn_protocol_opts 
-        "mqttsn::protocol::option::TopicNameStaticStorageSize"
+        mqttsn_library_opts 
+        "mqttsn::client::option::TopicNameStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
-        mqttsn_protocol_opts 
-        "mqttsn::protocol::option::MessageDataStaticStorageSize"
+        mqttsn_library_opts 
+        "mqttsn::client::option::MessageDataStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE}"
     )
     
@@ -91,7 +90,7 @@ foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     endif ()
     
     
-    gen_lib_mqttsn_client("${MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_protocol_opts}" "${mqttsn_library_opts}" TRUE "${extra_flags}")
+    gen_lib_mqttsn_client("${MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_library_opts}" TRUE "${extra_flags}")
     
     if (MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
         target_compile_definitions("cc_mqttsn_${MQTTSN_CUSTOM_CLIENT_NAME}_client" PRIVATE "-DNOSTDLIB")
