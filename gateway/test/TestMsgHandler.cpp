@@ -551,9 +551,10 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
     bool retain)
 {
     WilltopicMsg_SN msg;
-    msg.field_flags().field_qos().value() = qos;
-    msg.field_flags().field_mid().setBitValue_Retain(retain);
+    msg.field_flags().field().field_qos().value() = qos;
+    msg.field_flags().field().field_mid().setBitValue_Retain(retain);
     msg.field_willTopic().value() = topic;
+    msg.doRefresh();
     return prepareInput(msg);
 }
 
@@ -752,9 +753,10 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(
     bool retain)
 {
     WilltopicupdMsg_SN msg;
-    msg.field_flags().field_qos().value() = qos;
-    msg.field_flags().field_mid().setBitValue_Retain(retain);
+    msg.field_flags().field().field_qos().value() = qos;
+    msg.field_flags().field().field_mid().setBitValue_Retain(retain);
     msg.field_willTopic().value() = topic;
+    msg.doRefresh();
     return prepareInput(msg);
 }
 

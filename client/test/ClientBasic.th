@@ -690,12 +690,12 @@ private:
                 TS_TRACE("<-- WILLTOPIC");
                 TS_ASSERT_EQUALS(msg.field_willTopic().value(), topic);
                 if (!topic.empty()) {
-                    //TS_ASSERT(msg.field_flags().doesExist());
-                    TS_ASSERT_EQUALS(msg.field_flags().field_mid().getBitValue_Retain(), retain);
-                    TS_ASSERT_EQUALS(CommonTestClient::transformQos(msg.field_flags().field_qos().value()), qos);
+                    TS_ASSERT(msg.field_flags().doesExist());
+                    TS_ASSERT_EQUALS(msg.field_flags().field().field_mid().getBitValue_Retain(), retain);
+                    TS_ASSERT_EQUALS(CommonTestClient::transformQos(msg.field_flags().field().field_qos().value()), qos);
                 }
                 else {
-                    //TS_ASSERT(msg.field_flags().isMissing());
+                    TS_ASSERT(msg.field_flags().isMissing());
                 }
 
             });
@@ -1115,12 +1115,12 @@ private:
 
                 TS_ASSERT_EQUALS(msg.field_willTopic().value(), topic);
                 if (!topic.empty()) {
-                    TS_ASSERT_EQUALS(transformQos(msg.field_flags().field_qos().value()), qos);
-                    TS_ASSERT_EQUALS(msg.field_flags().field_mid().getBitValue_Retain(), retain);
-                    //TS_ASSERT(msg.field_flags().doesExist());
+                    TS_ASSERT_EQUALS(transformQos(msg.field_flags().field().field_qos().value()), qos);
+                    TS_ASSERT_EQUALS(msg.field_flags().field().field_mid().getBitValue_Retain(), retain);
+                    TS_ASSERT(msg.field_flags().doesExist());
                 }
                 else {
-                    //TS_ASSERT(msg.field_flags().isMissing());
+                    TS_ASSERT(msg.field_flags().isMissing());
                 }
             });
 

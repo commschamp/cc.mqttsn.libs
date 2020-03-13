@@ -95,8 +95,8 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
         return;
     }
 
-    auto qos = translateQos(msg.field_flags().field_qos().value());
-    bool retain = msg.field_flags().field_mid().getBitValue_Retain();
+    auto qos = translateQos(msg.field_flags().field().field_qos().value());
+    bool retain = msg.field_flags().field().field_mid().getBitValue_Retain();
 
     auto& st = state();
     auto& willTopic = msg.field_willTopic().value();

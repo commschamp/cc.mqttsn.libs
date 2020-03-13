@@ -2521,11 +2521,16 @@ private:
 
         ++op->m_attempt;
         WilltopicupdMsg msg;
-        if ((op->m_topic != nullptr) && (op->m_topic[0] != '\0')) {
-            msg.field_flags().field_qos().value() = details::translateQosValue(op->m_qos);
-            msg.field_flags().field_mid().setBitValue_Retain(op->m_retain);
+        bool topicEmpty = ((op->m_topic == nullptr) || (op->m_topic[0] == '\0'));
+        if (!topicEmpty) {
+            msg.field_flags().field().field_qos().value() = details::translateQosValue(op->m_qos);
+            msg.field_flags().field().field_mid().setBitValue_Retain(op->m_retain);
             msg.field_willTopic().value() = op->m_topic;
         }
+
+        msg.doRefresh();
+        COMMS_ASSERT(topicEmpty || msg.field_flags().doesExist());
+        COMMS_ASSERT((!topicEmpty) || msg.field_flags().isMissing());
 
         sendMessage(msg);
         return true;
@@ -2612,11 +2617,16 @@ private:
         bool retain)
     {
         WilltopicMsg msg;
-        if (topic != nullptr) {
-            msg.field_flags().field_mid().setBitValue_Retain(retain);
-            msg.field_flags().field_qos().value() = details::translateQosValue(qos);
+        bool topicEmpty = ((topic == nullptr) || (topic[0] == '\0'));
+        if (!topicEmpty) {
+            msg.field_flags().field().field_qos().value() = details::translateQosValue(qos);
+            msg.field_flags().field().field_mid().setBitValue_Retain(retain);
             msg.field_willTopic().value() = topic;
         }
+
+        msg.doRefresh();
+        COMMS_ASSERT(topicEmpty || msg.field_flags().doesExist());
+        COMMS_ASSERT((!topicEmpty) || msg.field_flags().isMissing());
         sendMessage(msg);
     }
 

@@ -121,12 +121,10 @@ void Connect::handle(WilltopicMsg_SN& msg)
     m_internalState.m_hasWillTopic = true;
     m_internalState.m_attempt = 0;
 
-    auto& midFlagsField = msg.field_flags().field_mid();
-
     auto& topicView = msg.field_willTopic().value();
     m_will.m_topic.assign(topicView.begin(), topicView.end());
-    m_will.m_qos = translateQos(msg.field_flags().field_qos().value());
-    m_will.m_retain = midFlagsField.getBitValue_Retain();
+    m_will.m_qos = translateQos(msg.field_flags().field().field_qos().value());
+    m_will.m_retain = msg.field_flags().field().field_mid().getBitValue_Retain();
 
     if (m_will.m_topic.empty()) {
         m_internalState.m_hasWillMsg = true;
