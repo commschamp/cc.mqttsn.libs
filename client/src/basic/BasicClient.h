@@ -1626,7 +1626,11 @@ public:
             return;
         }
 
-        auto* op = opPtr<SubscribeOpBase>();
+        // NOTE: Without "volatile" keyword below g++-9 in Release mode
+        // optimizes away assignments to some internal fields, like qos
+        // before call to finaliseSubscribeOp(), which results
+        // in incorrect values reported in the callback.
+        volatile auto* op = opPtr<SubscribeOpBase>();
 
         if (msg.field_msgId().value() != op->m_msgId) {
             return;
