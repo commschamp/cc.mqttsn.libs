@@ -235,7 +235,7 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_mqttsn_generated_tag "develop")
+    set (cc_mqttsn_generated_tag "v0.15.5")
     set (cc_mqttsn_main_dir "${CMAKE_CURRENT_BINARY_DIR}/cc.mqttsn.generated")
     set (cc_mqttsn_src_dir "${CC_MQTTSN_EXTERNAL_DIR}")
     set (cc_mqttsn_bin_dir "${cc_mqttsn_main_dir}/build")
