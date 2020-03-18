@@ -85,6 +85,14 @@ function (test_func test_suite_name)
         add_dependencies(${name} ${CC_MQTTSN_EXTERNAL_TGT})
     endif ()    
     
+    if (VALGRIND_EXECUTABLE)
+        add_test(NAME "${name}_valgrind"
+             COMMAND ${CMAKE_COMMAND} 
+                -DTEST_EXECUTABLE=$<TARGET_FILE:${name}>
+                -DVALGRIND_EXECUTABLE=${VALGRIND_EXECUTABLE}
+                -P ${PROJECT_SOURCE_DIR}/cmake/ScriptRunUnitTestWithValgrind.cmake) 
+    endif ()    
+    
 endfunction ()
 
 #################################################################

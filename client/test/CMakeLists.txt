@@ -47,6 +47,14 @@ function (test_func test_suite_name)
     CXXTEST_ADD_TEST (${name} ${runner} ${tests} ${extra_sources})
     target_link_libraries(${name} ${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
     
+    if (VALGRIND_EXECUTABLE)
+        add_test(NAME "${name}_valgrind"
+             COMMAND ${CMAKE_COMMAND} 
+                -DTEST_EXECUTABLE=$<TARGET_FILE:${name}>
+                -DVALGRIND_EXECUTABLE=${VALGRIND_EXECUTABLE}
+                -P ${PROJECT_SOURCE_DIR}/cmake/ScriptRunUnitTestWithValgrind.cmake) 
+    endif ()
+    
 endfunction ()
 
 #################################################################

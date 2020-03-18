@@ -5,6 +5,7 @@ option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 option (CC_MQTTSN_BUILD_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
 option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
+option (CC_MQTTSN_NO_VALGRIND "Disable valgrind in unittests." OFF)
 option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects update." OFF)
 
 # Extra variables
@@ -85,6 +86,13 @@ while (TRUE)
         break ()
     endif ()
     
+    if (NOT CC_MQTTSN_NO_VALGRIND)
+        if ("${CC_MQTTSN_VALGRAND_EXE_NAME}" STREQUAL "")
+            set (CC_MQTTSN_VALGRAND_EXE_NAME "valgrind")
+        endif ()
+        find_program(VALGRIND_EXECUTABLE NAMES "${CC_MQTTSN_VALGRAND_EXE_NAME}")
+    endif ()
+    
     enable_testing ()
     break()
 endwhile ()
@@ -132,9 +140,6 @@ elseif (MSVC)
 endif ()
 
 set (INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
-#if (NOT "${CC_MQTTSN_INSTALL_DIR}" STREQUAL "")
-#    set (INSTALL_DIR "${CC_MQTTSN_INSTALL_DIR}")
-#endif ()
 
 include(GNUInstallDirs)
 set (INSTALL_NAME "CC_Mqttsn")
@@ -272,8 +277,6 @@ else ()
 endif ()
 
 ######################################################################
-
-#include_directories(protocol/include)
 
 add_subdirectory(client)
 add_subdirectory(gateway)
