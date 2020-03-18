@@ -30,7 +30,7 @@ if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
         PREFIX "${cc_mqtt_bin_dir}"
         STAMP_DIR "${cc_mqtt_bin_dir}"    
         GIT_REPOSITORY "https://github.com/arobenko/cc.mqtt311.generated.git"
-        GIT_TAG "${cc_mqtt_tag}"
+        GIT_TAG "${cc_mqtt_generated_tag}"
         SOURCE_DIR "${cc_mqtt_src_dir}"
         CMAKE_ARGS 
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqtt_install_dir} 
@@ -53,7 +53,6 @@ endif ()
         
 include_directories(
     BEFORE
-    ${PROTOCOL_INC_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 

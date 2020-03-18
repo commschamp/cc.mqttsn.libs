@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -21,8 +21,8 @@
 #include <array>
 
 #include "mqttsn/gateway/Gateway.h"
-#include "mqttsn/protocol/Message.h"
-#include "mqttsn/protocol/Stack.h"
+#include "mqttsn/Message.h"
+#include "mqttsn/frame/Frame.h"
 
 namespace mqttsn
 {
@@ -33,17 +33,19 @@ namespace gateway
 class GatewayImpl
 {
 public:
-    typedef Gateway::NextTickProgramReqCb NextTickProgramReqCb;
-    typedef Gateway::SendDataReqCb SendDataReqCb;
+    using NextTickProgramReqCb = Gateway::NextTickProgramReqCb;
+    using SendDataReqCb = Gateway::SendDataReqCb;
 
-    typedef protocol::MessageT<
+    using Message =
+        mqttsn::Message<
         comms::option::IdInfoInterface,
-        comms::option::WriteIterator<std::uint8_t*>,
-        comms::option::LengthInfoInterface
-    > Message;
-    typedef protocol::message::Advertise<Message> AdvertiseMsg;
-    typedef std::tuple<AdvertiseMsg> AllMsgs;
-    typedef protocol::Stack<Message, AllMsgs> ProtStack;
+            comms::option::WriteIterator<std::uint8_t*>,
+            comms::option::LengthInfoInterface
+        >;
+
+    using AdvertiseMsg = mqttsn::message::Advertise<Message>;
+    using AllMsgs = std::tuple<AdvertiseMsg>;
+    using ProtStack = mqttsn::frame::Frame<Message, AllMsgs>;
 
     template <typename TFunc>
     void setNextTickProgramReqCb(TFunc&& func)

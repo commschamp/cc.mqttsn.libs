@@ -24,7 +24,7 @@
 #include <memory>
 #include <limits>
 
-#include "mqttsn/protocol/field.h"
+#include "mqttsn/field/QosCommon.h"
 #include "mqtt311/field/QosCommon.h"
 
 #include "RegMgr.h"
@@ -52,9 +52,9 @@ mqtt311::field::QosVal translateQosForBroker(QoS val)
 }
 
 inline
-mqttsn::protocol::field::QosType translateQosForClient(QoS val)
+mqttsn::field::QosVal translateQosForClient(QoS val)
 {
-    return static_cast<mqttsn::protocol::field::QosType>(val);
+    return static_cast<mqttsn::field::QosVal>(val);
 }
 
 inline
@@ -64,9 +64,9 @@ QoS translateQos(mqtt311::field::QosVal val)
 }
 
 inline
-QoS translateQos(mqttsn::protocol::field::QosType val)
+QoS translateQos(mqttsn::field::QosVal val)
 {
-    if (val == mqttsn::protocol::field::QosType::NoGwPublish) {
+    if (val == mqttsn::field::QosVal::NoGwPublish) {
         return QoS_AtMostOnceDelivery;
     }
 

@@ -17,7 +17,7 @@ set (MQTTSN_CLIENT_HEADER_TGT "client.h.tgt")
 
 ######################################################################
 
-function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
+function (gen_lib_mqttsn_client name client_opts inst extra_flags)
     if (NOT ${name} STREQUAL "")
         set (name "${name}_")
     endif ()
@@ -33,7 +33,6 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
             -DIN_FILE="${HEADER_TEMPL}"
             -DOUT_FILE="${header_output}"
             -DNAME="${name}"
-            -DPROT_OPTS="${prot_opts}"
             -DCLIENT_OPTS="${client_opts}"
             -P ${TEMPL_PROCESS_SCRIPT}
         DEPENDS ${HEADER_TEMPL} ${TEMPL_PROCESS_SCRIPT}
@@ -56,7 +55,6 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
             -DIN_FILE="${SRC_TEMPL}"
             -DOUT_FILE="${src_output}"
             -DNAME="${name}"
-            -DPROT_OPTS="${prot_opts}"
             -DCLIENT_OPTS="${client_opts}"
             -P ${TEMPL_PROCESS_SCRIPT}
         DEPENDS ${SRC_TEMPL} ${TEMPL_PROCESS_SCRIPT}
@@ -77,6 +75,7 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
     add_library (${lib_name} STATIC ${src_output})
     target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
     target_link_libraries(${lib_name} PRIVATE cc::comms)
+
     set_target_properties(
         ${lib_name} PROPERTIES 
         POSITION_INDEPENDENT_CODE TRUE
@@ -102,11 +101,23 @@ function (gen_lib_mqttsn_client name prot_opts client_opts inst extra_flags)
             COMPILE_FLAGS ${extra_flags}
         )
     endif ()
+
+    if (TARGET cc::mqttsn)
+        target_link_libraries(${lib_name} PRIVATE cc::mqttsn)
+    endif ()
+
+    if (NOT "${CC_MQTTSN_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
+        target_include_directories(${lib_name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
+    endif ()
     
     if (TARGET ${CC_EXTERNAL_TGT})
         add_dependencies(${lib_name} ${CC_EXTERNAL_TGT})
     endif ()
-    
+
+    if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
+        add_dependencies(${lib_name} ${CC_MQTTSN_EXTERNAL_TGT})
+    endif ()
+
     if (inst)
         install (
             FILES ${header_output}
@@ -124,7 +135,6 @@ endfunction()
 
 include_directories(
     BEFORE
-    ${CMAKE_SOURCE_DIR}/protocol/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 

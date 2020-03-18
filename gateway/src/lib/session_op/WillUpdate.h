@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -50,6 +50,8 @@ private:
         MsgUpd
     };
 
+    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+
     using Base::handle;
     virtual void handle(ConnectMsg_SN& msg) override;
     virtual void handle(DisconnectMsg_SN& msg) override;
@@ -60,9 +62,9 @@ private:
     void startOp(Op op);
     void doNextStage();
     void cancelOp();
-    void sendTopicResp(mqttsn::protocol::field::ReturnCodeVal rc);
-    void sendMsgResp(mqttsn::protocol::field::ReturnCodeVal rc);
-    void sendResp(mqttsn::protocol::field::ReturnCodeVal rc);
+    void sendTopicResp(ReturnCodeVal rc);
+    void sendMsgResp(ReturnCodeVal rc);
+    void sendResp(ReturnCodeVal rc);
     void sendConnectMsg();
     void sendFailureAndTerm();
 

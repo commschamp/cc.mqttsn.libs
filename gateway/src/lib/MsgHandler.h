@@ -19,7 +19,7 @@
 #pragma once
 
 #include "comms/comms.h"
-#include "mqttsn/protocol/AllMessages.h"
+#include "mqttsn/input/AllMessages.h"
 #include "mqtt311/input/AllMessages.h"
 #include "messages.h"
 

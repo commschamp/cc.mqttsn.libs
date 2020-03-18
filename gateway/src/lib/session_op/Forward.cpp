@@ -38,17 +38,11 @@ Forward::~Forward() = default;
 
 void Forward::handle(PublishMsg_SN& msg)
 {
-    auto& midFlagsField = msg.field_flags().field_midFlags();
-    auto& dupFlagsField = msg.field_flags().field_dupFlags();
-
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
-
     auto& st = state();
 
     do {
 
-        if ((msg.field_flags().field_qos().value() != mqttsn::protocol::field::QosType::NoGwPublish) ||
+        if ((msg.field_flags().field_qos().value() != mqttsn::field::QosVal::NoGwPublish) ||
             (st.m_connStatus == ConnectionStatus::Connected)) {
             break;
         }
@@ -69,7 +63,7 @@ void Forward::handle(PublishMsg_SN& msg)
         sendPubackToClient(
             msg.field_topicId().value(),
             msg.field_msgId().value(),
-            mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+            ReturnCodeVal::NotSupported);
         return;
     }
 
@@ -77,7 +71,7 @@ void Forward::handle(PublishMsg_SN& msg)
         sendPubackToClient(
             msg.field_topicId().value(),
             msg.field_msgId().value(),
-            mqttsn::protocol::field::ReturnCodeVal_Congestion);
+            ReturnCodeVal::Congestion);
         return;
     }
 
@@ -86,13 +80,13 @@ void Forward::handle(PublishMsg_SN& msg)
         sendPubackToClient(
             msg.field_topicId().value(),
             msg.field_msgId().value(),
-            mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+            ReturnCodeVal::InvalidTopicId);
         sendToBroker(PingreqMsg());
         return;
     }
 
-    bool retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
-    bool dup = dupFlagsField.getBitValue(DupFlags::BitIdx_bit);
+    bool retain = msg.field_flags().field_mid().getBitValue_Retain();
+    bool dup = msg.field_flags().field_high().getBitValue_Dup();
     m_lastPubTopicId = msg.field_topicId().value();
 
     PublishMsg fwdMsg;
@@ -136,7 +130,7 @@ void Forward::handle(PingrespMsg_SN& msg)
 void Forward::handle(SubscribeMsg_SN& msg)
 {
     auto sendSubackFunc =
-        [this, &msg](mqttsn::protocol::field::ReturnCodeVal rc)
+        [this, &msg](ReturnCodeVal rc)
         {
             SubackMsg_SN respMsg;
             respMsg.field_flags().field_qos().value() = msg.field_flags().field_qos().value();
@@ -147,7 +141,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
         };
 
     if (state().m_connStatus != ConnectionStatus::Connected) {
-        sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+        sendSubackFunc(ReturnCodeVal::NotSupported);
         return;
     }
 
@@ -157,12 +151,12 @@ void Forward::handle(SubscribeMsg_SN& msg)
     do {
         if (msg.field_topicName().doesExist()) {
             assert(msg.field_topicId().isMissing());
-            assert(msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::Normal);
+            assert(msg.field_flags().field_topicIdType().value() == TopicIdTypeVal::Normal);
             auto& topicStorage = msg.field_topicName().field().value();
             topic.assign(topicStorage.begin(), topicStorage.end());
 
             if (topic.empty()) {
-                sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+                sendSubackFunc(ReturnCodeVal::NotSupported);
                 sendToBroker(PingreqMsg());
                 return;
             }
@@ -182,7 +176,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
             break;
         }
 
-        if (msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::ShortName) {
+        if (msg.field_flags().field_topicIdType().value() == TopicIdTypeVal::ShortTopicName) {
             assert(msg.field_topicId().doesExist());
             auto firstChar = static_cast<char>((msg.field_topicId().field().value() >> 8) & 0xff);
             auto secondChar = static_cast<char>(msg.field_topicId().field().value() & 0xff);
@@ -192,8 +186,8 @@ void Forward::handle(SubscribeMsg_SN& msg)
             break;
         }
 
-        if (msg.field_flags().field_topicId().value() != mqttsn::protocol::field::TopicIdTypeVal::PreDefined) {
-            sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_NotSupported);
+        if (msg.field_flags().field_topicIdType().value() != TopicIdTypeVal::PredefinedTopicId) {
+            sendSubackFunc(ReturnCodeVal::NotSupported);
             sendToBroker(PingreqMsg());
             return;
         }
@@ -208,7 +202,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
             break;
         }
 
-        sendSubackFunc(mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId);
+        sendSubackFunc(ReturnCodeVal::InvalidTopicId);
         sendToBroker(PingreqMsg());
         return;
     } while (false);
@@ -258,7 +252,7 @@ void Forward::handle(UnsubscribeMsg_SN& msg)
         assert(msg.field_topicId().doesExist());
         assert(msg.field_topicName().isMissing());
 
-        if (msg.field_flags().field_topicId().value() == mqttsn::protocol::field::TopicIdTypeVal::ShortName) {
+        if (msg.field_flags().field_topicIdType().value() == TopicIdTypeVal::ShortTopicName) {
             assert(msg.field_topicId().doesExist());
             auto firstChar = static_cast<char>((msg.field_topicId().field().value() >> 8) & 0xff);
             auto secondChar = static_cast<char>(msg.field_topicId().field().value() & 0xff);
@@ -325,7 +319,7 @@ void Forward::handle(PubackMsg& msg)
     sendPubackToClient(
         m_lastPubTopicId,
         msg.field_packetId().value(),
-        mqttsn::protocol::field::ReturnCodeVal_Accepted);
+        ReturnCodeVal::Accepted);
 }
 
 void Forward::handle(PubrecMsg& msg)
@@ -387,8 +381,8 @@ void Forward::handle(SubackMsg& msg)
             return (elem.m_timestamp + state().m_retryPeriod) < state().m_timestamp;
         });
 
-    auto qos = mqttsn::protocol::field::QosType::AtMostOnceDelivery;
-    auto rc = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
+    auto qos = mqttsn::field::QosVal::AtMostOnceDelivery;
+    auto rc = ReturnCodeVal::NotSupported;
     do {
         auto& retCodesList = msg.field_list().value();
         if (retCodesList.empty()) {
@@ -404,7 +398,7 @@ void Forward::handle(SubackMsg& msg)
         auto adjustedRetCode = std::min(ackRetCode.value(), SubackRetCode::Qos2);
         auto reportedQos = static_cast<mqtt311::field::QosVal>(adjustedRetCode);
         qos = translateQosForClient(translateQos(reportedQos));
-        rc = mqttsn::protocol::field::ReturnCodeVal_Accepted;
+        rc = ReturnCodeVal::Accepted;
     } while (false);
 
     SubackMsg_SN respMsg;
@@ -425,7 +419,7 @@ void Forward::handle(UnsubackMsg& msg)
 void Forward::sendPubackToClient(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::protocol::field::ReturnCodeVal rc)
+    ReturnCodeVal rc)
 {
     PubackMsg_SN msg;
     msg.field_topicId().value() = topicId;

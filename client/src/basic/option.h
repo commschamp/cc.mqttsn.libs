@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -45,6 +45,30 @@ template <std::size_t TLimit>
 struct RegisteredTopicsLimit
 {
     static const std::size_t Value = TLimit;
+};
+
+template <std::size_t TSize>
+struct GwAddStaticStorageSize
+{
+    static const std::size_t Value = TSize;
+};
+
+template <std::size_t TSize>
+struct ClientIdStaticStorageSize
+{
+    static const std::size_t Value = TSize;
+};
+
+template <std::size_t TSize>
+struct TopicNameStaticStorageSize
+{
+    static const std::size_t Value = TSize;
+};
+
+template <std::size_t TSize>
+struct MessageDataStaticStorageSize
+{
+    static const std::size_t Value = TSize;
 };
 
 

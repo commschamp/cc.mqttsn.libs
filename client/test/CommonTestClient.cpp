@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -444,35 +444,35 @@ MqttsnErrorCode CommonTestClient::checkMessages()
         this);
 }
 
-MqttsnQoS CommonTestClient::transformQos(mqttsn::protocol::field::QosType val)
+MqttsnQoS CommonTestClient::transformQos(mqttsn::field::QosVal val)
 {
     static_assert(
-        (int)mqttsn::protocol::field::QosType::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
+        (int)mqttsn::field::QosVal::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        (int)mqttsn::protocol::field::QosType::AtLeastOnceDelivery == MqttsnQoS_AtLeastOnceDelivery,
+        (int)mqttsn::field::QosVal::AtLeastOnceDelivery == MqttsnQoS_AtLeastOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        (int)mqttsn::protocol::field::QosType::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
+        (int)mqttsn::field::QosVal::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
 
-    if (val == mqttsn::protocol::field::QosType::NoGwPublish) {
+    if (val == mqttsn::field::QosVal::NoGwPublish) {
         return MqttsnQoS_NoGwPublish;
     }
 
     return static_cast<MqttsnQoS>(val);
 }
 
-mqttsn::protocol::field::QosType CommonTestClient::transformQos(MqttsnQoS val)
+mqttsn::field::QosVal CommonTestClient::transformQos(MqttsnQoS val)
 {
 
     if (val == MqttsnQoS_NoGwPublish) {
-        return mqttsn::protocol::field::QosType::NoGwPublish;
+        return mqttsn::field::QosVal::NoGwPublish;
     }
 
-    return static_cast<mqttsn::protocol::field::QosType>(val);
+    return static_cast<mqttsn::field::QosVal>(val);
 }
 
 CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2017 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -68,7 +68,7 @@ void PubSend::handle(RegackMsg_SN& msg)
     }
 
     cancelTick();
-    if (msg.field_returnCode().value() != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+    if (msg.field_returnCode().value() != ReturnCodeVal::Accepted) {
         m_currPub.reset();
         checkSend();
         return;
@@ -83,7 +83,7 @@ void PubSend::handle(RegackMsg_SN& msg)
 
 void PubSend::handle(PubackMsg_SN& msg)
 {
-    if (msg.field_returnCode().value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+    if (msg.field_returnCode().value() == ReturnCodeVal::InvalidTopicId) {
         state().m_regMgr.discardRegistration(msg.field_topicId().value());
     }
 
@@ -93,13 +93,13 @@ void PubSend::handle(PubackMsg_SN& msg)
         return;
     }
 
-    if ((msg.field_returnCode().value() == mqttsn::protocol::field::ReturnCodeVal_Accepted) &&
+    if ((msg.field_returnCode().value() == ReturnCodeVal::Accepted) &&
         (m_currPub->m_qos == QoS_ExactlyOnceDelivery)) {
         return; // "PUBREC" is expected instead of "PUBACK"
     }
 
     cancelTick();
-    if (msg.field_returnCode().value() == mqttsn::protocol::field::ReturnCodeVal_InvalidTopicId) {
+    if (msg.field_returnCode().value() == ReturnCodeVal::InvalidTopicId) {
         sendCurrent();
         return;
     }
@@ -235,18 +235,13 @@ void PubSend::doSend()
     }
 
     PublishMsg_SN msg;
-    auto& midFlagsField = msg.field_flags().field_midFlags();
-    auto& dupFlagsField = msg.field_flags().field_dupFlags();
-
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-    typedef typename std::decay<decltype(dupFlagsField)>::type DupFlags;
 
     bool dup = m_currPub->m_dup || (1U < m_attempt);
 
-    msg.field_flags().field_topicId().value() = m_currTopicInfo.m_topicIdType;
-    midFlagsField.setBitValue(MidFlags::BitIdx_retain, m_currPub->m_retain);
+    msg.field_flags().field_topicIdType().value() = m_currTopicInfo.m_topicIdType;
+    msg.field_flags().field_mid().setBitValue_Retain(m_currPub->m_retain);
     msg.field_flags().field_qos().value() = translateQosForClient(m_currPub->m_qos);
-    dupFlagsField.setBitValue(DupFlags::BitIdx_bit, dup);
+    msg.field_flags().field_high().setBitValue_Dup(dup);
     msg.field_topicId().value() = m_currTopicInfo.m_topicId;
 
     if (m_currPub->m_qos >= QoS_AtLeastOnceDelivery) {
@@ -257,9 +252,12 @@ void PubSend::doSend()
         msg.field_msgId().value() = m_currMsgId;
     }
 
-    auto& dataStorage = msg.field_data().value();
-    using DataStorage = typename std::decay<decltype(dataStorage)>::type;
-    msg.field_data().value() = DataStorage(&(*m_currPub->m_msg.begin()), m_currPub->m_msg.size());
+    if (!m_currPub->m_msg.empty()) {
+        auto& dataStorage = msg.field_data().value();
+        using DataStorageType = typename std::decay<decltype(dataStorage)>::type;
+        dataStorage = DataStorageType(&(*m_currPub->m_msg.begin()), m_currPub->m_msg.size());
+    }
+    //msg.field_data().value().assign(m_currPub->m_msg.begin(), m_currPub->m_msg.end());
     sendToClient(msg);
 
     if (m_currPub->m_qos == QoS_AtMostOnceDelivery) {

@@ -19,8 +19,16 @@ function (lib_common_test_session)
         target_link_libraries(${COMMON_TEST_SESSION_LIB} PRIVATE cc::mqtt311)    
     endif ()
     
+    if (TARGET cc::mqttsn)
+        target_link_libraries(${COMMON_TEST_SESSION_LIB} PRIVATE cc::mqttsn)    
+    endif ()
+    
     if (NOT "${CC_MQTT_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
         target_include_directories(${COMMON_TEST_SESSION_LIB} PRIVATE ${CC_MQTT_EXTERNAL_TGT_INCLUDE})
+    endif ()
+    
+    if (NOT "${CC_MQTTSN_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
+        target_include_directories(${COMMON_TEST_SESSION_LIB} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
     endif ()
     
     if (TARGET ${CC_EXTERNAL_TGT})
@@ -29,6 +37,10 @@ function (lib_common_test_session)
     
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
         add_dependencies(${COMMON_TEST_SESSION_LIB} ${CC_MQTT_EXTERNAL_TGT})
+    endif ()
+
+    if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
+        add_dependencies(${COMMON_TEST_SESSION_LIB} ${CC_MQTTSN_EXTERNAL_TGT})
     endif ()
     
 endfunction ()
@@ -49,8 +61,16 @@ function (test_func test_suite_name)
         target_link_libraries(${name} PRIVATE cc::mqtt311)    
     endif ()
     
+    if (TARGET cc::mqttsn)
+        target_link_libraries(${name} PRIVATE cc::mqtts )    
+    endif ()
+    
     if (NOT "${CC_MQTT_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
         target_include_directories(${name} PRIVATE ${CC_MQTT_EXTERNAL_TGT_INCLUDE})
+    endif ()
+    
+    if (NOT "${CC_MQTTSN_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
+        target_include_directories(${name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
     endif ()
     
     if (TARGET ${CC_EXTERNAL_TGT})
@@ -60,6 +80,18 @@ function (test_func test_suite_name)
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
         add_dependencies(${name} ${CC_MQTT_EXTERNAL_TGT})
     endif ()
+    
+    if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
+        add_dependencies(${name} ${CC_MQTTSN_EXTERNAL_TGT})
+    endif ()    
+    
+    if (VALGRIND_EXECUTABLE)
+        add_test(NAME "${name}_valgrind"
+             COMMAND ${CMAKE_COMMAND} 
+                -DTEST_EXECUTABLE=$<TARGET_FILE:${name}>
+                -DVALGRIND_EXECUTABLE=${VALGRIND_EXECUTABLE}
+                -P ${PROJECT_SOURCE_DIR}/cmake/ScriptRunUnitTestWithValgrind.cmake) 
+    endif ()    
     
 endfunction ()
 
@@ -80,6 +112,13 @@ endfunction ()
 include_directories (
     "${CXXTEST_INCLUDE_DIR}"
 )
+
+if (CMAKE_COMPILER_IS_GNUCC)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-old-style-cast -Wno-shadow")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7.9")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
+    endif ()    
+endif ()
 
 lib_common_test_session()
 test_gateway()

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -71,14 +71,14 @@ bool RegMgr::regPredefined(const std::string& topic, std::uint16_t topicId)
         RegInfo info;
         info.m_topic = topic;
         info.m_topicId = topicId;
-        info.m_topicIdType = TopicIdType::PreDefined;
+        info.m_topicIdType = TopicIdType::PredefinedTopicId;
         m_regInfos.push_back(std::move(info));
         auto lastIter = m_regInfos.end();
         --lastIter;
         assert(lastIter != m_regInfos.end());
         assert(lastIter->m_topic == topic);
         assert(lastIter->m_topicId == topicId);
-        assert(lastIter->m_topicIdType == TopicIdType::PreDefined);
+        assert(lastIter->m_topicIdType == TopicIdType::PredefinedTopicId);
 
         m_regInfosMap.insert(std::make_pair(topic, lastIter));
         m_regInfosRevMap.insert(std::make_pair(topicId, lastIter));
@@ -94,7 +94,7 @@ bool RegMgr::regPredefined(const std::string& topic, std::uint16_t topicId)
         return false;
     }
 
-    infoIter->m_topicIdType = TopicIdType::PreDefined;
+    infoIter->m_topicIdType = TopicIdType::PredefinedTopicId;
     return true;
 }
 
@@ -119,7 +119,7 @@ RegMgr::TopicInfo RegMgr::mapTopic(const std::string& topic)
 
     if (isShortTopicName(topic)) {
         retInfo.m_topicId = shortTopicNameToId(topic);
-        retInfo.m_topicIdType = TopicIdType::ShortName;
+        retInfo.m_topicIdType = TopicIdType::ShortTopicName;
         retInfo.m_newInsersion = false;
         return retInfo;
     }
@@ -167,7 +167,7 @@ RegMgr::TopicInfo RegMgr::mapTopic(const std::string& topic)
                 [this](decltype(m_regInfosRevMap)::const_reference elem) -> bool
                 {
                     auto regInfoIter = elem.second;
-                    return (regInfoIter->m_topicIdType != TopicIdType::PreDefined) &&
+                    return (regInfoIter->m_topicIdType != TopicIdType::PredefinedTopicId) &&
                            (m_minTopicId <= regInfoIter->m_topicId) &&
                            (regInfoIter->m_topicId <= m_maxTopicId);
                 });
@@ -235,7 +235,7 @@ void RegMgr::clearRegistrations()
     m_regInfos.remove_if(
         [](RegInfosList::const_reference& elem) -> bool
         {
-            return elem.m_topicIdType != TopicIdType::PreDefined;
+            return elem.m_topicIdType != TopicIdType::PredefinedTopicId;
         });
 
     if (prevSize == m_regInfos.size()) {

@@ -5,11 +5,13 @@ option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 option (CC_MQTTSN_BUILD_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
 option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
+option (CC_MQTTSN_NO_VALGRIND "Disable valgrind in unittests." OFF)
 option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects update." OFF)
 
 # Extra variables
-# CC_MAIN_INSTALL_DIR - Path to external installation directory of comms_champion project
-# CC_MQTT311_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqtt311.generated project
+# CC_MAIN_INSTALL_DIR - Path to external installation directory of comms_champion project.
+# CC_MQTTSN_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqttsn.generated project.
+# CC_MQTT311_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqtt311.generated project.
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 
@@ -22,7 +24,6 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 
 set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
-set (PROTOCOL_INC_DIR "${PROJECT_SOURCE_DIR}/protocol/include")
 set (CXXTEST_EXTERNAL_DIR "${EXTERNALS_DIR}/cxxtest")
 
 while (TRUE)
@@ -85,6 +86,13 @@ while (TRUE)
         break ()
     endif ()
     
+    if (NOT CC_MQTTSN_NO_VALGRIND)
+        if ("${CC_MQTTSN_VALGRAND_EXE_NAME}" STREQUAL "")
+            set (CC_MQTTSN_VALGRAND_EXE_NAME "valgrind")
+        endif ()
+        find_program(VALGRIND_EXECUTABLE NAMES "${CC_MQTTSN_VALGRAND_EXE_NAME}")
+    endif ()
+    
     enable_testing ()
     break()
 endwhile ()
@@ -132,9 +140,6 @@ elseif (MSVC)
 endif ()
 
 set (INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
-#if (NOT "${CC_MQTTSN_INSTALL_DIR}" STREQUAL "")
-#    set (INSTALL_DIR "${CC_MQTTSN_INSTALL_DIR}")
-#endif ()
 
 include(GNUInstallDirs)
 set (INSTALL_NAME "CC_Mqttsn")
@@ -225,7 +230,53 @@ endif ()
 
 ######################################################################
 
-include_directories(protocol/include)
+set (CC_MQTTSN_EXTERNAL_DIR "${EXTERNALS_DIR}/cc.mqttsn.generated")
+set (CC_MQTTSN_EXTERNAL_TGT "mqttsn_external")
+set (CC_MQTTSN_EXTERNAL_TGT_INCLUDE)
+
+if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
+    execute_process (
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}")
+        
+    include(ExternalProject)
+    
+    set (cc_mqttsn_generated_tag "v0.15.5")
+    set (cc_mqttsn_main_dir "${CMAKE_CURRENT_BINARY_DIR}/cc.mqttsn.generated")
+    set (cc_mqttsn_src_dir "${CC_MQTTSN_EXTERNAL_DIR}")
+    set (cc_mqttsn_bin_dir "${cc_mqttsn_main_dir}/build")
+    set (cc_mqttsn_install_dir "${cc_mqttsn_main_dir}/install")
+    set (cc_mqttsn_update_disconnected)
+    
+    if (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED)
+        set (cc_mqttsn_update_disconnected UPDATE_DISCONNECTED 1)
+    endif ()
+    
+    
+    ExternalProject_Add(
+        "${CC_MQTTSN_EXTERNAL_TGT}"
+        PREFIX "${cc_mqttsn_bin_dir}"
+        STAMP_DIR "${cc_mqttsn_bin_dir}"    
+        GIT_REPOSITORY "https://github.com/arobenko/cc.mqttsn.generated.git"
+        GIT_TAG "${cc_mqttsn_generated_tag}"
+        SOURCE_DIR "${cc_mqttsn_src_dir}"
+        CMAKE_ARGS 
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqttsn_install_dir} 
+            -DOPT_NO_COMMS=ON -DOPT_BUILD_TEST=OFF -DOPT_BUILD_PLUGIN=OFF
+            -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+        BINARY_DIR "${cc_mqttsn_bin_dir}"
+        ${cc_mqttsn_update_disconnected}
+    )
+    set (CC_MQTTSN_EXTERNAL_TGT_INCLUDE "${cc_mqttsn_install_dir}/include") 
+else ()
+    list (APPEND CMAKE_PREFIX_PATH "${CC_MQTT311_GENERATED_INSTALL_DIR}")
+    find_package(mqtt311 NO_MODULE)
+    if (NOT TARGET cc::mqtt311)
+        message (FATAL_ERROR "Failed to find external mqtt311 library")
+    endif ()
+endif ()
+
+######################################################################
 
 add_subdirectory(client)
 add_subdirectory(gateway)

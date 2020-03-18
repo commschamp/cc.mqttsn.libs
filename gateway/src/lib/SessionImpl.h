@@ -1,5 +1,5 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
 
 // This file is free software: you can redistribute it and/or modify
@@ -169,6 +169,7 @@ public:
 
 private:
 
+    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
     typedef std::vector<SessionOpPtr> OpsList;
 
     using Base::handle;

@@ -71,6 +71,8 @@ private:
         bool m_pubOnlyClient = false;
     };
 
+    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+
     using Base::handle;
     virtual void handle(ConnectMsg_SN& msg) override;
     virtual void handle(WilltopicMsg_SN& msg) override;

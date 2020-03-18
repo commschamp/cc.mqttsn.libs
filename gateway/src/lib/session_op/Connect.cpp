@@ -56,8 +56,7 @@ void Connect::brokerConnectionUpdatedImpl()
 
 void Connect::handle(ConnectMsg_SN& msg)
 {
-    auto& midFlagsField = msg.field_flags().field_midFlags();
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
+    auto& midFlagsField = msg.field_flags().field_mid();
 
     auto& st = state();
     auto reqClientId = msg.field_clientId().value().substr();
@@ -83,10 +82,10 @@ void Connect::handle(ConnectMsg_SN& msg)
 
     m_clientId = std::move(reqClientId);
     m_keepAlive = msg.field_duration().value();
-    m_clean = midFlagsField.getBitValue(MidFlags::BitIdx_cleanSession);
+    m_clean = midFlagsField.getBitValue_CleanSession();
 
     do {
-        if (midFlagsField.getBitValue(MidFlags::BitIdx_will)) {
+        if (midFlagsField.getBitValue_Will()) {
             break;
         }
 
@@ -122,13 +121,10 @@ void Connect::handle(WilltopicMsg_SN& msg)
     m_internalState.m_hasWillTopic = true;
     m_internalState.m_attempt = 0;
 
-    auto& midFlagsField = msg.field_flags().field().field_midFlags();
-    typedef typename std::decay<decltype(midFlagsField)>::type MidFlags;
-
     auto& topicView = msg.field_willTopic().value();
     m_will.m_topic.assign(topicView.begin(), topicView.end());
     m_will.m_qos = translateQos(msg.field_flags().field().field_qos().value());
-    m_will.m_retain = midFlagsField.getBitValue(MidFlags::BitIdx_retain);
+    m_will.m_retain = msg.field_flags().field().field_mid().getBitValue_Retain();
 
     if (m_will.m_topic.empty()) {
         m_internalState.m_hasWillMsg = true;
@@ -166,7 +162,7 @@ void Connect::handle(PublishMsg_SN& msg)
         return;
     }
 
-    if (msg.field_flags().field_qos().value() != mqttsn::protocol::field::QosType::NoGwPublish) {
+    if (msg.field_flags().field_qos().value() != mqttsn::field::QosVal::NoGwPublish) {
         return;
     }
 
@@ -340,13 +336,13 @@ void Connect::forwardConnectionReq()
 
 void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
 {
-    static const mqttsn::protocol::field::ReturnCodeVal RetCodeMap[] = {
-        /* Accepted */ mqttsn::protocol::field::ReturnCodeVal_Accepted,
-        /* WrongProtocolVersion */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* IdentifierRejected */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* ServerUnavailable */ mqttsn::protocol::field::ReturnCodeVal_Congestion,
-        /* BadUsernameOrPassword */ mqttsn::protocol::field::ReturnCodeVal_NotSupported,
-        /* NotAuthorized */ mqttsn::protocol::field::ReturnCodeVal_NotSupported
+    static const ReturnCodeVal RetCodeMap[] = {
+        /* Accepted */ ReturnCodeVal::Accepted,
+        /* BadProtocolVersion */ ReturnCodeVal::NotSupported,
+        /* IdentifierRejected */ ReturnCodeVal::NotSupported,
+        /* ServerUnavailable */ ReturnCodeVal::Congestion,
+        /* BadAuth */ ReturnCodeVal::NotSupported,
+        /* NotAuthorized */ ReturnCodeVal::NotSupported
     };
 
     static const std::size_t RetCodeMapSize =
@@ -355,7 +351,7 @@ void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
     static_assert(RetCodeMapSize == (std::size_t)ConnackMsg::Field_returnCode::ValueType::ValuesLimit,
         "Incorrect map");
 
-    auto retCode = mqttsn::protocol::field::ReturnCodeVal_NotSupported;
+    auto retCode = ReturnCodeVal::NotSupported;
     if (static_cast<std::size_t>(respCode) < RetCodeMapSize) {
         retCode = RetCodeMap[static_cast<std::size_t>(respCode)];
     }
@@ -369,7 +365,7 @@ void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
         cancelTick();
     }
 
-    if (retCode != mqttsn::protocol::field::ReturnCodeVal_Accepted) {
+    if (retCode != ReturnCodeVal::Accepted) {
         clearConnectionInfo(true);
         clearInternalState();
         return;

@@ -16,26 +16,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "##NAME##client.h"
-#include "mqttsn/protocol/option.h"
-#include "mqttsn/protocol/ParsedOptions.h"
 #include "BasicClient.h"
 #include "ClientMgr.h"
 #include "option.h"
 #include "ParsedOptions.h"
-#include "InputMessages.h"
 
 namespace
 {
-
-typedef std::tuple<
-        ##PROT_OPTS##
-    > ProtocolOptions;
-
-typedef mqttsn::protocol::ParsedOptions<
-    ProtocolOptions, 
-    mqttsn::protocol::option::ClientOnlyVariant,
-    mqttsn::protocol::option::UseOrigDataView
-> ParsedProtocolOptions;
 
 typedef std::tuple<
     ##CLIENT_OPTS##
@@ -43,7 +30,7 @@ typedef std::tuple<
 
 typedef mqttsn::client::ParsedOptions<ClientOptions> ParsedClientOptions;
 
-typedef mqttsn::client::BasicClient<ParsedClientOptions, ParsedProtocolOptions> MqttsnClient;
+typedef mqttsn::client::BasicClient<ParsedClientOptions> MqttsnClient;
 typedef mqttsn::client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
 
 MqttsnClientMgr& getClientMgr()
