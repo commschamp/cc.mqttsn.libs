@@ -22,8 +22,12 @@
 #include "mqttsn/frame/Frame.h"
 #include "mqttsn/input/ServerInputMessages.h"
 #include "mqttsn/options/ServerDefaultOptions.h"
+#include "mqttsn/options/DataViewDefaultOptions.h"
 #include "mqtt311/Message.h"
 #include "mqtt311/frame/Frame.h"
+#include "mqtt311/input/ClientInputMessages.h"
+#include "mqtt311/options/ClientDefaultOptions.h"
+#include "mqtt311/options/DataViewDefaultOptions.h"
 
 namespace mqttsn
 {
@@ -51,75 +55,77 @@ using MqttMessage =
         comms::option::LengthInfoInterface
     >;
 
-//typedef protocol::ParsedOptions<
-//    protocol::option::GatewayOnlyVariant,
-//    protocol::option::UseOrigDataView
-//> GwOptions;
-
-class GwOptions : public mqttsn::options::ServerDefaultOptions
-{
-    using Base = mqttsn::options::ServerDefaultOptions;
-public:
-    struct field : public Base::field
-    {
-        using ClientId = comms::option::app::OrigDataView;
-        using Data = comms::option::app::OrigDataView;
-        using GwAdd = comms::option::app::OrigDataView;
-        using TopicName = comms::option::app::OrigDataView;
-        using WillMsg = comms::option::app::OrigDataView;
-        using WillTopic = comms::option::app::OrigDataView;
-    };
-};
-
-typedef mqttsn::message::Advertise<MqttsnMessage, GwOptions> AdvertiseMsg_SN;
-typedef mqttsn::message::Searchgw<MqttsnMessage, GwOptions> SearchgwMsg_SN;
-typedef mqttsn::message::Gwinfo<MqttsnMessage, GwOptions> GwinfoMsg_SN;
-typedef mqttsn::message::Connect<MqttsnMessage, GwOptions> ConnectMsg_SN;
-typedef mqttsn::message::Connack<MqttsnMessage, GwOptions> ConnackMsg_SN;
-typedef mqttsn::message::Willtopicreq<MqttsnMessage, GwOptions> WilltopicreqMsg_SN;
-typedef mqttsn::message::Willtopic<MqttsnMessage, GwOptions> WilltopicMsg_SN;
-typedef mqttsn::message::Willmsgreq<MqttsnMessage, GwOptions> WillmsgreqMsg_SN;
-typedef mqttsn::message::Willmsg<MqttsnMessage, GwOptions> WillmsgMsg_SN;
-typedef mqttsn::message::Register<MqttsnMessage, GwOptions> RegisterMsg_SN;
-typedef mqttsn::message::Regack<MqttsnMessage, GwOptions> RegackMsg_SN;
-typedef mqttsn::message::Publish<MqttsnMessage, GwOptions> PublishMsg_SN;
-typedef mqttsn::message::Puback<MqttsnMessage, GwOptions> PubackMsg_SN;
-typedef mqttsn::message::Pubrec<MqttsnMessage, GwOptions> PubrecMsg_SN;
-typedef mqttsn::message::Pubrel<MqttsnMessage, GwOptions> PubrelMsg_SN;
-typedef mqttsn::message::Pubcomp<MqttsnMessage, GwOptions> PubcompMsg_SN;
-typedef mqttsn::message::Subscribe<MqttsnMessage, GwOptions> SubscribeMsg_SN;
-typedef mqttsn::message::Suback<MqttsnMessage, GwOptions> SubackMsg_SN;
-typedef mqttsn::message::Unsubscribe<MqttsnMessage, GwOptions> UnsubscribeMsg_SN;
-typedef mqttsn::message::Unsuback<MqttsnMessage, GwOptions> UnsubackMsg_SN;
-typedef mqttsn::message::Pingreq<MqttsnMessage, GwOptions> PingreqMsg_SN;
-typedef mqttsn::message::Pingresp<MqttsnMessage, GwOptions> PingrespMsg_SN;
-typedef mqttsn::message::Disconnect<MqttsnMessage, GwOptions> DisconnectMsg_SN;
-typedef mqttsn::message::Willtopicupd<MqttsnMessage, GwOptions> WilltopicupdMsg_SN;
-typedef mqttsn::message::Willtopicresp<MqttsnMessage, GwOptions> WilltopicrespMsg_SN;
-typedef mqttsn::message::Willmsgupd<MqttsnMessage, GwOptions> WillmsgupdMsg_SN;
-typedef mqttsn::message::Willmsgresp<MqttsnMessage, GwOptions> WillmsgrespMsg_SN;
+using MqttsnGwOptions = 
+    mqttsn::options::DataViewDefaultOptionsT<
+        mqttsn::options::ServerDefaultOptions
+    >;
+    
+typedef mqttsn::message::Advertise<MqttsnMessage, MqttsnGwOptions> AdvertiseMsg_SN;
+typedef mqttsn::message::Searchgw<MqttsnMessage, MqttsnGwOptions> SearchgwMsg_SN;
+typedef mqttsn::message::Gwinfo<MqttsnMessage, MqttsnGwOptions> GwinfoMsg_SN;
+typedef mqttsn::message::Connect<MqttsnMessage, MqttsnGwOptions> ConnectMsg_SN;
+typedef mqttsn::message::Connack<MqttsnMessage, MqttsnGwOptions> ConnackMsg_SN;
+typedef mqttsn::message::Willtopicreq<MqttsnMessage, MqttsnGwOptions> WilltopicreqMsg_SN;
+typedef mqttsn::message::Willtopic<MqttsnMessage, MqttsnGwOptions> WilltopicMsg_SN;
+typedef mqttsn::message::Willmsgreq<MqttsnMessage, MqttsnGwOptions> WillmsgreqMsg_SN;
+typedef mqttsn::message::Willmsg<MqttsnMessage, MqttsnGwOptions> WillmsgMsg_SN;
+typedef mqttsn::message::Register<MqttsnMessage, MqttsnGwOptions> RegisterMsg_SN;
+typedef mqttsn::message::Regack<MqttsnMessage, MqttsnGwOptions> RegackMsg_SN;
+typedef mqttsn::message::Publish<MqttsnMessage, MqttsnGwOptions> PublishMsg_SN;
+typedef mqttsn::message::Puback<MqttsnMessage, MqttsnGwOptions> PubackMsg_SN;
+typedef mqttsn::message::Pubrec<MqttsnMessage, MqttsnGwOptions> PubrecMsg_SN;
+typedef mqttsn::message::Pubrel<MqttsnMessage, MqttsnGwOptions> PubrelMsg_SN;
+typedef mqttsn::message::Pubcomp<MqttsnMessage, MqttsnGwOptions> PubcompMsg_SN;
+typedef mqttsn::message::Subscribe<MqttsnMessage, MqttsnGwOptions> SubscribeMsg_SN;
+typedef mqttsn::message::Suback<MqttsnMessage, MqttsnGwOptions> SubackMsg_SN;
+typedef mqttsn::message::Unsubscribe<MqttsnMessage, MqttsnGwOptions> UnsubscribeMsg_SN;
+typedef mqttsn::message::Unsuback<MqttsnMessage, MqttsnGwOptions> UnsubackMsg_SN;
+typedef mqttsn::message::Pingreq<MqttsnMessage, MqttsnGwOptions> PingreqMsg_SN;
+typedef mqttsn::message::Pingresp<MqttsnMessage, MqttsnGwOptions> PingrespMsg_SN;
+typedef mqttsn::message::Disconnect<MqttsnMessage, MqttsnGwOptions> DisconnectMsg_SN;
+typedef mqttsn::message::Willtopicupd<MqttsnMessage, MqttsnGwOptions> WilltopicupdMsg_SN;
+typedef mqttsn::message::Willtopicresp<MqttsnMessage, MqttsnGwOptions> WilltopicrespMsg_SN;
+typedef mqttsn::message::Willmsgupd<MqttsnMessage, MqttsnGwOptions> WillmsgupdMsg_SN;
+typedef mqttsn::message::Willmsgresp<MqttsnMessage, MqttsnGwOptions> WillmsgrespMsg_SN;
 
 template <typename TMsgBase>
-using InputMqttsnMessages = mqttsn::input::ServerInputMessages<TMsgBase, GwOptions>;
+using InputMqttsnMessages = mqttsn::input::ServerInputMessages<TMsgBase, MqttsnGwOptions>;
 
 using MqttsnProtStack =
     mqttsn::frame::Frame<MqttsnMessage, InputMqttsnMessages<MqttsnMessage> >;
+    
+    
+//using Mqtt311GwOptions = mqtt311::options::ClientDefaultOptions;
 
-typedef mqtt311::message::Connect<MqttMessage> ConnectMsg;
-typedef mqtt311::message::Connack<MqttMessage> ConnackMsg;
-typedef mqtt311::message::Publish<MqttMessage> PublishMsg;
-typedef mqtt311::message::Puback<MqttMessage> PubackMsg;
-typedef mqtt311::message::Pubrec<MqttMessage> PubrecMsg;
-typedef mqtt311::message::Pubrel<MqttMessage> PubrelMsg;
-typedef mqtt311::message::Pubcomp<MqttMessage> PubcompMsg;
-typedef mqtt311::message::Subscribe<MqttMessage> SubscribeMsg;
-typedef mqtt311::message::Suback<MqttMessage> SubackMsg;
-typedef mqtt311::message::Unsubscribe<MqttMessage> UnsubscribeMsg;
-typedef mqtt311::message::Unsuback<MqttMessage> UnsubackMsg;
-typedef mqtt311::message::Pingreq<MqttMessage> PingreqMsg;
-typedef mqtt311::message::Pingresp<MqttMessage> PingrespMsg;
-typedef mqtt311::message::Disconnect<MqttMessage> DisconnectMsg;
-typedef mqtt311::frame::Frame<MqttMessage> MqttProtStack;
+// TODO: Currently gateway is implemented to receive PING and DISCONNECT from server,
+// According to protocol spec these are client only messages. Consider using ClientDefaultOptions in the future
+using Mqtt311GwOptions = mqtt311::options::DefaultOptions; 
+
+typedef mqtt311::message::Connect<MqttMessage, Mqtt311GwOptions> ConnectMsg;
+typedef mqtt311::message::Connack<MqttMessage, Mqtt311GwOptions> ConnackMsg;
+typedef mqtt311::message::Publish<MqttMessage, Mqtt311GwOptions> PublishMsg;
+typedef mqtt311::message::Puback<MqttMessage, Mqtt311GwOptions> PubackMsg;
+typedef mqtt311::message::Pubrec<MqttMessage, Mqtt311GwOptions> PubrecMsg;
+typedef mqtt311::message::Pubrel<MqttMessage, Mqtt311GwOptions> PubrelMsg;
+typedef mqtt311::message::Pubcomp<MqttMessage, Mqtt311GwOptions> PubcompMsg;
+typedef mqtt311::message::Subscribe<MqttMessage, Mqtt311GwOptions> SubscribeMsg;
+typedef mqtt311::message::Suback<MqttMessage, Mqtt311GwOptions> SubackMsg;
+typedef mqtt311::message::Unsubscribe<MqttMessage, Mqtt311GwOptions> UnsubscribeMsg;
+typedef mqtt311::message::Unsuback<MqttMessage, Mqtt311GwOptions> UnsubackMsg;
+typedef mqtt311::message::Pingreq<MqttMessage, Mqtt311GwOptions> PingreqMsg;
+typedef mqtt311::message::Pingresp<MqttMessage, Mqtt311GwOptions> PingrespMsg;
+typedef mqtt311::message::Disconnect<MqttMessage, Mqtt311GwOptions> DisconnectMsg;
+
+// template <typename TMsgBase>
+// using InputMqtt311Messages = mqtt311::input::ClientInputMessages<TMsgBase, Mqtt311GwOptions>;
+
+// TODO: Currently gateway is implemented to receive PING and DISCONNECT from server,
+// According to protocol spec these are client only messages. Consider using ClientInputMessages in the future
+template <typename TMsgBase>
+using InputMqtt311Messages = mqtt311::input::AllMessages<TMsgBase, Mqtt311GwOptions>;
+
+using MqttProtStack = 
+    mqtt311::frame::Frame<MqttMessage, InputMqtt311Messages<MqttMessage> > ;
 
 }  // namespace gateway
 

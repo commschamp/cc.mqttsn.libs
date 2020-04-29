@@ -168,7 +168,7 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_tag "v2.3.3")
+    set (cc_tag "v2.4")
     set (cc_repo "https://github.com/arobenko/comms_champion.git")
     set (cc_main_dir "${CMAKE_CURRENT_BINARY_DIR}/comms_champion")
     set (cc_src_dir "${CC_EXTERNAL_DIR}")
@@ -240,7 +240,7 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_mqttsn_generated_tag "v0.15.5")
+    set (cc_mqttsn_generated_tag "v0.16")
     set (cc_mqttsn_main_dir "${CMAKE_CURRENT_BINARY_DIR}/cc.mqttsn.generated")
     set (cc_mqttsn_src_dir "${CC_MQTTSN_EXTERNAL_DIR}")
     set (cc_mqttsn_bin_dir "${cc_mqttsn_main_dir}/build")
