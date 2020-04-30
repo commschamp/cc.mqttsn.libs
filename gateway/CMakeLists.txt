@@ -14,7 +14,7 @@ if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_mqtt_generated_tag "v0.16")
+    set (cc_mqtt_generated_tag "${CC_MQTT311_PROTOCOL_TAG}")
     set (cc_mqtt_main_dir "${CMAKE_CURRENT_BINARY_DIR}/cc.mqtt311.generated")
     set (cc_mqtt_src_dir "${CC_MQTT_EXTERNAL_DIR}")
     set (cc_mqtt_bin_dir "${cc_mqtt_main_dir}/build")
@@ -29,14 +29,15 @@ if ("${CC_MQTT311_GENERATED_INSTALL_DIR}" STREQUAL "")
         "${CC_MQTT_EXTERNAL_TGT}"
         PREFIX "${cc_mqtt_bin_dir}"
         STAMP_DIR "${cc_mqtt_bin_dir}"    
-        GIT_REPOSITORY "https://github.com/arobenko/cc.mqtt311.generated.git"
+        GIT_REPOSITORY "${CC_MQTT311_PROTOCOL_REPO}"
         GIT_TAG "${cc_mqtt_generated_tag}"
         SOURCE_DIR "${cc_mqtt_src_dir}"
         CMAKE_ARGS 
+            ${COMPILER_OPTIONS}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqtt_install_dir} 
             -DOPT_NO_COMMS=ON -DOPT_BUILD_TEST=OFF -DOPT_BUILD_PLUGIN=OFF
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+            ${CC_MQTT311_PROTOCOL_CMAKE_ARGS}
         BINARY_DIR "${cc_mqtt_bin_dir}"
         ${cc_mqtt_update_disconnected}
     )
