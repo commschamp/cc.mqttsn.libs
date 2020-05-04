@@ -303,10 +303,10 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         GIT_TAG "${cc_mqttsn_generated_tag}"
         SOURCE_DIR "${cc_mqttsn_src_dir}"
         CMAKE_ARGS 
+            ${COMPILER_OPTIONS}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqttsn_install_dir} 
             -DOPT_NO_COMMS=ON -DOPT_BUILD_TEST=OFF -DOPT_BUILD_PLUGIN=OFF
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
             ${CC_MQTTSN_PROTOCOL_CMAKE_ARGS}
         BINARY_DIR "${cc_mqttsn_bin_dir}"
         ${cc_mqttsn_update_disconnected}
