@@ -15,12 +15,54 @@ option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 
-if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
-    message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
-endif()
+# CC_COMMS_CHAMPION_REPO - Repository of comms_champion project. Defaults to https://github.com/arobenko/comms_champion.git
+# CC_COMMS_CHAMPION_TAG - Tag to use for external comms_champion project. Can be empty.
+# CC_COMMS_CHAMPION_CMAKE_ARGS - Extra CMake arguments  pass to external comms_champion project
 
+# CC_MQTTSN_PROTOCOL_REPO - Repository of cc.mqttsn.generated project. Defaults to https://github.com/arobenko/cc.mqttsn.generated.git
+# CC_MQTTSN_PROTOCOL_TAG - Tag to use for external cc.mqttsn.generated project. Can be empty.
+# CC_MQTTSN_PROTOCOL_CMAKE_ARGS - Extra CMake arguments  pass to external cc.mqttsn.generated project
+
+# CC_MQTT311_PROTOCOL_REPO - Repository of cc.mqtt311.generated project. Defaults to https://github.com/arobenko/cc.mqtt311.generated.git
+# CC_MQTT311_PROTOCOL_TAG - Tag to use for external cc.mqttsn.generated project. Can be empty.
+# CC_MQTT311_PROTOCOL_CMAKE_ARGS - Extra CMake arguments  pass to external cc.mqtt311.generated project
+
+
+# Updating default settings
 if (NOT CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 11)
+endif()
+
+if ("${CC_COMMS_CHAMPION_REPO}" STREQUAL "")
+    set (CC_COMMS_CHAMPION_REPO "https://github.com/arobenko/comms_champion.git")
+endif ()
+
+if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
+    set (CC_COMMS_CHAMPION_TAG "v2.4")
+endif ()
+
+if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
+    set (CC_MQTTSN_PROTOCOL_REPO "https://github.com/arobenko/cc.mqttsn.generated.git")
+endif ()
+
+if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
+    set (CC_MQTTSN_PROTOCOL_TAG "v0.16")
+endif ()
+
+if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
+    set (CC_MQTT311_PROTOCOL_REPO "https://github.com/arobenko/cc.mqtt311.generated.git")
+endif ()
+
+if ("${CC_MQTT311_PROTOCOL_TAG}" STREQUAL "")
+    set (CC_MQTT311_PROTOCOL_TAG "v0.16")
+endif ()
+
+##########################################################################
+
+set (COMPILER_OPTIONS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
+if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
+    message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
+    set (COMPILER_OPTIONS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
 endif()
 
 set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
@@ -168,8 +210,8 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_tag "v2.3.3")
-    set (cc_repo "https://github.com/arobenko/comms_champion.git")
+    set (cc_tag "${CC_COMMS_CHAMPION_TAG}")
+    set (cc_repo "${CC_COMMS_CHAMPION_REPO}")
     set (cc_main_dir "${CMAKE_CURRENT_BINARY_DIR}/comms_champion")
     set (cc_src_dir "${CC_EXTERNAL_DIR}")
     set (cc_bin_dir "${cc_main_dir}/build")
@@ -210,10 +252,11 @@ if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
         GIT_TAG "${cc_tag}"
         SOURCE_DIR "${cc_src_dir}"
         CMAKE_ARGS 
+            ${COMPILER_OPTIONS}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_install_dir} 
             -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
             -DCC_COMMS_LIB_ONLY=ON
+            ${CC_COMMS_CHAMPION_CMAKE_ARGS}
         BINARY_DIR "${cc_bin_dir}"
         ${cc_update_disconnected}
     )
@@ -240,7 +283,7 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         
     include(ExternalProject)
     
-    set (cc_mqttsn_generated_tag "v0.15.5")
+    set (cc_mqttsn_generated_tag "${CC_MQTTSN_PROTOCOL_TAG}")
     set (cc_mqttsn_main_dir "${CMAKE_CURRENT_BINARY_DIR}/cc.mqttsn.generated")
     set (cc_mqttsn_src_dir "${CC_MQTTSN_EXTERNAL_DIR}")
     set (cc_mqttsn_bin_dir "${cc_mqttsn_main_dir}/build")
@@ -256,14 +299,15 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         "${CC_MQTTSN_EXTERNAL_TGT}"
         PREFIX "${cc_mqttsn_bin_dir}"
         STAMP_DIR "${cc_mqttsn_bin_dir}"    
-        GIT_REPOSITORY "https://github.com/arobenko/cc.mqttsn.generated.git"
+        GIT_REPOSITORY "${CC_MQTTSN_PROTOCOL_REPO}"
         GIT_TAG "${cc_mqttsn_generated_tag}"
         SOURCE_DIR "${cc_mqttsn_src_dir}"
         CMAKE_ARGS 
+            ${COMPILER_OPTIONS}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqttsn_install_dir} 
             -DOPT_NO_COMMS=ON -DOPT_BUILD_TEST=OFF -DOPT_BUILD_PLUGIN=OFF
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
-            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} 
+            ${CC_MQTTSN_PROTOCOL_CMAKE_ARGS}
         BINARY_DIR "${cc_mqttsn_bin_dir}"
         ${cc_mqttsn_update_disconnected}
     )

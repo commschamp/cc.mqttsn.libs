@@ -19,8 +19,6 @@
 #pragma once
 
 #include "comms/comms.h"
-#include "mqttsn/input/AllMessages.h"
-#include "mqtt311/input/AllMessages.h"
 #include "messages.h"
 
 namespace mqttsn
@@ -38,7 +36,7 @@ using MqttsnMsgHandler = comms::GenericHandler<
 template<typename TMsgBase>
 using MqttMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqtt311::input::AllMessages<TMsgBase>
+    mqttsn::gateway::InputMqtt311Messages<TMsgBase>
 >;
 
 class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler<MqttMessage>
