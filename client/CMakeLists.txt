@@ -110,10 +110,6 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
         target_include_directories(${lib_name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
     endif ()
     
-    if (TARGET ${CC_EXTERNAL_TGT})
-        add_dependencies(${lib_name} ${CC_EXTERNAL_TGT})
-    endif ()
-
     if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
         add_dependencies(${lib_name} ${CC_MQTTSN_EXTERNAL_TGT})
     endif ()

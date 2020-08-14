@@ -1,8 +1,8 @@
 add_subdirectory (bare_metal_app)
 
-if (NOT CXXTEST_FOUND)
+if (NOT BUILD_TESTING)
     return ()
-endif ()
+endif ()  
 
 set (COMPONENT_NAME "cc.mqttsn.client")
 set (COMMON_TEST_CLIENT_LIB "CommonTestClient")
@@ -26,10 +26,6 @@ function (lib_common_test_client)
         target_include_directories(${COMMON_TEST_CLIENT_LIB} PUBLIC ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
     endif ()
     
-    if (TARGET ${CC_EXTERNAL_TGT})
-        add_dependencies(${COMMON_TEST_CLIENT_LIB} ${CC_EXTERNAL_TGT})
-    endif ()
-    
     if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
         add_dependencies(${COMMON_TEST_CLIENT_LIB} ${CC_MQTTSN_EXTERNAL_TGT})
     endif ()
@@ -42,19 +38,17 @@ function (test_func test_suite_name)
 
     set (name "${COMPONENT_NAME}.${test_suite_name}Test")
 
-    set (runner "${test_suite_name}TestRunner.cpp")
-    
-    CXXTEST_ADD_TEST (${name} ${runner} ${tests} ${extra_sources})
-    target_link_libraries(${name} ${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
-    
+    set (valgrand_args)
     if (VALGRIND_EXECUTABLE)
-        add_test(NAME "${name}_valgrind"
-             COMMAND ${CMAKE_COMMAND} 
-                -DTEST_EXECUTABLE=$<TARGET_FILE:${name}>
-                -DVALGRIND_EXECUTABLE=${VALGRIND_EXECUTABLE}
-                -P ${PROJECT_SOURCE_DIR}/cmake/ScriptRunUnitTestWithValgrind.cmake) 
-    endif ()
-    
+        set (valgrand_args VALGRIND_EXECUTABLE ${VALGRIND_EXECUTABLE})
+    endif ()     
+
+    cc_cxxtest_add_test(
+        NAME ${name}
+        SRC ${tests}
+        ${valgrand_args})      
+
+    target_link_libraries(${name} ${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
 endfunction ()
 
 #################################################################

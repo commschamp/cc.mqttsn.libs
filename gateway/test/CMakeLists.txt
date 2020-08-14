@@ -1,6 +1,6 @@
-if (NOT CXXTEST_FOUND)
+if (NOT BUILD_TESTING)
     return ()
-endif ()
+endif ()  
 
 set (COMPONENT_NAME "cc.mqttsn.gateway")
 set (COMMON_TEST_SESSION_LIB "CommonTestSession")
@@ -31,10 +31,6 @@ function (lib_common_test_session)
         target_include_directories(${COMMON_TEST_SESSION_LIB} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
     endif ()
     
-    if (TARGET ${CC_EXTERNAL_TGT})
-        add_dependencies(${COMMON_TEST_SESSION_LIB} ${CC_EXTERNAL_TGT})
-    endif ()
-    
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
         add_dependencies(${COMMON_TEST_SESSION_LIB} ${CC_MQTT_EXTERNAL_TGT})
     endif ()
@@ -52,10 +48,17 @@ function (test_func test_suite_name)
 
     set (name "${COMPONENT_NAME}.${test_suite_name}Test")
 
-    set (runner "${test_suite_name}TestRunner.cpp")
-    
-    CXXTEST_ADD_TEST (${name} ${runner} ${tests} ${extra_sources})
-    target_link_libraries(${name} ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME} cc::comms)
+    set (valgrand_args)
+    if (VALGRIND_EXECUTABLE)
+        set (valgrand_args VALGRIND_EXECUTABLE ${VALGRIND_EXECUTABLE})
+    endif ()     
+
+    cc_cxxtest_add_test(
+        NAME ${name}
+        SRC ${tests}
+        ${valgrand_args})    
+
+    target_link_libraries(${name} ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME})
     
     if (TARGET cc::mqtt311)
         target_link_libraries(${name} PRIVATE cc::mqtt311)    
@@ -73,24 +76,12 @@ function (test_func test_suite_name)
         target_include_directories(${name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
     endif ()
     
-    if (TARGET ${CC_EXTERNAL_TGT})
-        add_dependencies(${name} ${CC_EXTERNAL_TGT})
-    endif ()
-    
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
         add_dependencies(${name} ${CC_MQTT_EXTERNAL_TGT})
     endif ()
     
     if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
         add_dependencies(${name} ${CC_MQTTSN_EXTERNAL_TGT})
-    endif ()    
-    
-    if (VALGRIND_EXECUTABLE)
-        add_test(NAME "${name}_valgrind"
-             COMMAND ${CMAKE_COMMAND} 
-                -DTEST_EXECUTABLE=$<TARGET_FILE:${name}>
-                -DVALGRIND_EXECUTABLE=${VALGRIND_EXECUTABLE}
-                -P ${PROJECT_SOURCE_DIR}/cmake/ScriptRunUnitTestWithValgrind.cmake) 
     endif ()    
     
 endfunction ()
