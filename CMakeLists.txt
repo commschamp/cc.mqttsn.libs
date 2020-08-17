@@ -38,7 +38,7 @@ if ("${CC_COMMS_CHAMPION_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_TAG "v2.4")
+    set (CC_COMMS_CHAMPION_TAG "v3.0")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
@@ -46,7 +46,7 @@ if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTTSN_PROTOCOL_TAG "v0.16")
+    set (CC_MQTTSN_PROTOCOL_TAG "v0.18")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
@@ -54,7 +54,7 @@ if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTT311_PROTOCOL_TAG "v0.16")
+    set (CC_MQTT311_PROTOCOL_TAG "v0.18")
 endif ()
 
 ##########################################################################
@@ -68,6 +68,33 @@ endif()
 set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
 set (CXXTEST_EXTERNAL_DIR "${EXTERNALS_DIR}/cxxtest")
 
+if (NOT CC_MAIN_INSTALL_DIR)
+    execute_process (
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}"
+    )
+
+    set (cc_src_dir "${EXTERNALS_DIR}/comms_champion")
+    set (cc_bin_dir "${PROJECT_BINARY_DIR}/comms_champion")
+    set (CC_MAIN_INSTALL_DIR "${cc_bin_dir}/install")
+        
+    include (${PROJECT_SOURCE_DIR}/cmake/CC_Prefetch.cmake)
+    cc_prefetch(SRC_DIR ${cc_src_dir} TAG ${CC_COMMS_CHAMPION_TAG})
+    
+    include (${cc_src_dir}/cmake/CC_External.cmake)
+    cc_build_during_config(
+        SRC_DIR ${cc_src_dir}
+        BUILD_DIR ${cc_bin_dir}
+        TAG ${COMMS_TAG}
+        CMAKE_ARGS
+            -DCC_COMMS_LIB_ONLY=ON -DCC_NO_UNIT_TESTS=ON
+            -DCMAKE_INSTALL_PREFIX=${CC_MAIN_INSTALL_DIR}        
+    )
+
+endif ()
+
+list (APPEND CMAKE_PREFIX_PATH "${CC_MAIN_INSTALL_DIR}")
+find_package(LibComms NO_MODULE)
+
 while (TRUE)
     if (CC_MQTTSN_NO_UNIT_TESTS)
         message (STATUS "Unittests are disabled")
@@ -78,64 +105,14 @@ while (TRUE)
         message (STATUS "Not building unittests when cross-compiling")
         break()
     endif ()
-    
-    find_package (Git)
-    if (NOT GIT_FOUND)
-        message (WARNING "Git is required to check out cxxtest")
-        break()
-    endif ()
-    
-    set (cxx_tag "4.4")
-    set (cxxtest_stamp "${EXTERNALS_DIR}/cxxtest.stamp")
-    if ((EXISTS ${cxxtest_stamp}) AND (EXISTS "${CXXTEST_EXTERNAL_DIR}"))
-        message (STATUS "Updating cxxtest")
-        execute_process (
-            COMMAND ${GIT_EXECUTABLE} checkout ${cxx_tag}
-            WORKING_DIRECTORY ${CXXTEST_EXTERNAL_DIR}
-        )
-    else ()
-        execute_process (
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${CXXTEST_EXTERNAL_DIR}"
-        )
-        
-        execute_process (
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}"
-        )
 
-        message (STATUS "Cloning cxxtest")
-        execute_process (
-            COMMAND ${GIT_EXECUTABLE} clone -b ${cxx_tag} --depth 1 https://github.com/CxxTest/cxxtest.git
-            WORKING_DIRECTORY ${EXTERNALS_DIR}
-            RESULT_VARIABLE git_result
-        )
+    include (${CC_MAIN_INSTALL_DIR}/lib/LibComms/cmake/CC_CxxtestFuncs.cmake)
+    cc_get_cxxtest(INSTALL_PREFIX ${EXTERNALS_DIR})
 
-        if (NOT "${git_result}" STREQUAL "0")
-            message (WARNING "git clone/checkout failed")
-            break()
-        endif ()
-
-        execute_process (
-            COMMAND ${CMAKE_COMMAND} -E touch "${cxxtest_stamp}"
-        )
-    endif ()
-
-    set (CXXTEST_INCLUDE_DIR "${CXXTEST_EXTERNAL_DIR}")
-    set (CXXTEST_PYTHON_TESTGEN_EXECUTABLE "${CXXTEST_INCLUDE_DIR}/bin/cxxtestgen")
-    
-    find_package (CxxTest)
-    if (NOT CXXTEST_FOUND)
-        message (WARNING "Wrong cxxtest paths, must be fixed")
-        break ()
-    endif ()
-    
     if (NOT CC_MQTTSN_NO_VALGRIND)
-        if ("${CC_MQTTSN_VALGRAND_EXE_NAME}" STREQUAL "")
-            set (CC_MQTTSN_VALGRAND_EXE_NAME "valgrind")
-        endif ()
-        find_program(VALGRIND_EXECUTABLE NAMES "${CC_MQTTSN_VALGRAND_EXE_NAME}")
-    endif ()
+        find_program(VALGRIND_EXECUTABLE NAMES "valgrind")
+    endif ()    
     
-    enable_testing ()
     break()
 endwhile ()
 
@@ -191,84 +168,12 @@ set (ETC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_SYSCONFDIR})
 set (INC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 set (CONFIG_INSTALL_DIR ${INSTALL_DIR}/config)
 set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/CommsChampion/plugin)
-set (DOC_INSTALL_DIR ${INSTALL_DIR}/doc)
+set (DOC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/doc)
 
 set (DEFAULT_CLIENT_LIB_TGT "cc_mqttsn_client")
 
 if (NOT "${CC_MQTTSN_QT_DIR}" STREQUAL "")
     list (APPEND CMAKE_PREFIX_PATH ${CC_MQTTSN_QT_DIR})
-endif ()
-
-######################################################################
-
-set (CC_EXTERNAL_DIR "${EXTERNALS_DIR}/comms_champion")
-set (CC_EXTERNAL_TGT "comms_champion_external")
-if ("${CC_MAIN_INSTALL_DIR}" STREQUAL "")
-    execute_process (
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}")
-        
-        
-    include(ExternalProject)
-    
-    set (cc_tag "${CC_COMMS_CHAMPION_TAG}")
-    set (cc_repo "${CC_COMMS_CHAMPION_REPO}")
-    set (cc_main_dir "${CMAKE_CURRENT_BINARY_DIR}/comms_champion")
-    set (cc_src_dir "${CC_EXTERNAL_DIR}")
-    set (cc_bin_dir "${cc_main_dir}/build")
-    set (cc_install_dir "${cc_main_dir}/install")
-    set (cc_update_disconnected)
-    if (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED)
-        set (cc_update_disconnected UPDATE_DISCONNECTED 1)
-    endif ()
-    
-    find_package (Git REQUIRED)
-    set (ext_targets_inc_file "${cc_src_dir}/cmake/CC_DefineExternalProjectTargets.cmake")
-    if (NOT EXISTS "${ext_targets_inc_file}")
-        execute_process (
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${cc_src_dir}"
-        )
-
-        execute_process (
-            COMMAND 
-                ${GIT_EXECUTABLE} clone -b ${cc_tag} --depth 1 ${cc_repo} ${cc_src_dir}
-            RESULT_VARIABLE git_result
-        )
-
-        if (NOT "${git_result}" STREQUAL "0")
-            message (FATAL_ERROR "git clone/checkout failed")
-        endif ()
-
-        if (NOT EXISTS "${ext_targets_inc_file}")
-             message (FATAL_ERROR "Incompatible version of ${cc_repo}, please use different tag.")
-        endif ()
-
-    endif ()
-    
-    ExternalProject_Add(
-        "${CC_EXTERNAL_TGT}"
-        PREFIX "${cc_bin_dir}"
-        STAMP_DIR "${cc_bin_dir}"    
-        GIT_REPOSITORY "${cc_repo}"
-        GIT_TAG "${cc_tag}"
-        SOURCE_DIR "${cc_src_dir}"
-        CMAKE_ARGS 
-            ${COMPILER_OPTIONS}
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_install_dir} 
-            -DCC_NO_UNIT_TESTS=ON -DCC_NO_WARN_AS_ERR=ON -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
-            -DCC_COMMS_LIB_ONLY=ON
-            ${CC_COMMS_CHAMPION_CMAKE_ARGS}
-        BINARY_DIR "${cc_bin_dir}"
-        ${cc_update_disconnected}
-    )
-    
-    include (${ext_targets_inc_file})
-    cc_define_external_project_targets(${cc_install_dir} NO_COMMS_CHAMPION)
-else ()
-    list (APPEND CMAKE_PREFIX_PATH "${CC_MAIN_INSTALL_DIR}")
-    find_package(LibComms NO_MODULE)
-    if (NOT TARGET cc::comms)
-        message (FATAL_ERROR "Failed to find external COMMS library")
-    endif ()
 endif ()
 
 ######################################################################

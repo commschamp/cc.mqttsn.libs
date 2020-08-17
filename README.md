@@ -28,7 +28,7 @@ the library's implementation uses C++ STL data types, such as
 [std::vector](http://en.cppreference.com/w/cpp/container/vector). However,
 it is possible to compile the library not to use any dynamic memory allocation,
 and make it suitable for bare-metal environment without any heap. Please
-refer to [custom_client_build.md](custom_client_build.md) for instructions on
+refer to [doc/custom_client_build.md](doc/custom_client_build.md) for instructions on
 how to do it. 
 
 The doxygen generated documentation of the library with its full tutorial can
@@ -86,18 +86,9 @@ like the protocol specifies.
 
 All other behaviour is implemented as specified.
 
-# Licence 
-This work provided under the classic **GPLv3** / **Commercial** dual licensing scheme
-in the same way as [CommsChampion](https://github.com/arobenko/comms_champion) project
-(see [LICENSE.md](https://github.com/arobenko/comms_champion/blob/master/LICENSE.md) for details). The
-source code is available for anyone to use as long as the derivative work
-remains open source with compatible licence. **Download** it, **try** it! If it works
-as expected and commercial closed source licence is required for the final
-product, please send me an e-mail (see [Contact Information](#contact-information) below).
-
 # How to Build
 Detailed instructions on how to build and install all the components can be
-found in [BUILD.md](BUILD.md) file.
+found in [doc/BUILD.md](doc/BUILD.md) file.
 
 # Branching Model
 This repository will follow the 

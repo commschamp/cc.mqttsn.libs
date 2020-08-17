@@ -1,19 +1,9 @@
 //
-// Copyright 2016 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
 //
-
-// This file is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /// @file
 /// @brief Common definition for MQTT-SN clients.
@@ -42,6 +32,24 @@ extern "C" {
 #endif // #ifdef WIN32
 
 #endif // #ifdef __cplusplus
+
+/// @brief Major verion of the library
+#define MQTTSN_CLIENT_MAJOR_VERSION 0U
+
+/// @brief Minor verion of the library
+#define MQTTSN_CLIENT_MINOR_VERSION 12U
+
+/// @brief Patch level of the library
+#define MQTTSN_CLIENT_PATCH_VERSION 0U
+
+/// @brief Macro to create numeric version as single unsigned number
+#define MQTTSN_CLIENT_MAKE_VERSION(major_, minor_, patch_) \
+    ((static_cast<unsigned>(major_) << 24) | \
+     (static_cast<unsigned>(minor_) << 8) | \
+     (static_cast<unsigned>(patch_)))
+
+/// @brief Version of the library as single numeric value
+#define MQTTSN_CLIENT_VERSION MQTTSN_CLIENT_MAKE_VERSION(MQTTSN_CLIENT_MAJOR_VERSION, MQTTSN_CLIENT_MINOR_VERSION, MQTTSN_CLIENT_PATCH_VERSION)
 
 /// @brief Quality of Service
 typedef enum

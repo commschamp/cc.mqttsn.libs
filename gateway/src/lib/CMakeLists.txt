@@ -42,10 +42,6 @@ function (lib_mqttsn_gateway)
         target_include_directories(${name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
     endif ()
     
-    if (TARGET ${CC_EXTERNAL_TGT})
-        add_dependencies(${name} ${CC_EXTERNAL_TGT})
-    endif ()
-    
     if (TARGET ${CC_MQTT_EXTERNAL_TGT})
         add_dependencies(${name} ${CC_MQTT_EXTERNAL_TGT})
     endif ()
