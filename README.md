@@ -86,15 +86,6 @@ like the protocol specifies.
 
 All other behaviour is implemented as specified.
 
-# Licence 
-This work provided under the classic **GPLv3** / **Commercial** dual licensing scheme
-in the same way as [CommsChampion](https://github.com/arobenko/comms_champion) project
-(see [LICENSE.md](https://github.com/arobenko/comms_champion/blob/master/LICENSE.md) for details). The
-source code is available for anyone to use as long as the derivative work
-remains open source with compatible licence. **Download** it, **try** it! If it works
-as expected and commercial closed source licence is required for the final
-product, please send me an e-mail (see [Contact Information](#contact-information) below).
-
 # How to Build
 Detailed instructions on how to build and install all the components can be
 found in [doc/BUILD.md](doc/BUILD.md) file.
