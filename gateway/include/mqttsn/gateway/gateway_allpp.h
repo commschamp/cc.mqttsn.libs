@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "versionpp.h"
 #include "Config.h"
 #include "Gateway.h"
 #include "Session.h"

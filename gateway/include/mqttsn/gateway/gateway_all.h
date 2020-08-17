@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "version.h"
+
 #ifdef __cplusplus
 extern "C" {
 #else
