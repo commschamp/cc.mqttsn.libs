@@ -14,6 +14,7 @@ option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects
 # CC_MQTT311_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqtt311.generated project.
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
+# CC_MQTTSN_QT_DIR - Path to external Qt5 installation directory
 
 # CC_COMMS_CHAMPION_REPO - Repository of comms_champion project. Defaults to https://github.com/commschamp/comms_champion.git
 # CC_COMMS_CHAMPION_TAG - Tag to use for external comms_champion project. Can be empty.

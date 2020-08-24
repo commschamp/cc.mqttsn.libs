@@ -1,6 +1,7 @@
 image:
     - Visual Studio 2015
     - Visual Studio 2017
+    - Visual Studio 2019
 
 init:
     - git config --global core.autocrlf input
@@ -22,9 +23,19 @@ configuration:
 environment:
     matrix:
         - CPP_STD: 11
-          QT_VER: 5.6.3
         - CPP_STD: 14
-          QT_VER: 5.6.3
+        - CPP_STD: 17
+        - CPP_STD: 20
+
+matrix:
+    fast_finish: false
+    exclude:
+        - image: Visual Studio 2015
+          CPP_STD: 17 
+        - image: Visual Studio 2015
+          CPP_STD: 20    
+        - image: Visual Studio 2017
+          CPP_STD: 20         
 
 install:
     - call script\appveyor_install.bat
@@ -33,7 +44,7 @@ install:
 build_script:
     - mkdir build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
     - cd build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
-    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCC_MQTTSN_QT_DIR=%QTDIR% -DCMAKE_INSTALL_PREFIX=install
+    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCC_MQTTSN_QT_DIR=%QTDIR% -DCMAKE_INSTALL_PREFIX=install -DCMAKE_CXX_STANDARD=%CPP_STD%
     - nmake install
 
 test_script:
