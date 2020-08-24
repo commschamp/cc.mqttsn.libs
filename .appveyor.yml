@@ -9,9 +9,6 @@ init:
 clone_folder: c:\projects\cc_mqttsn
 shallow_clone: true             
 
-matrix:
-    fast_finish: false
-
 platform:
     - x64
     - x86
