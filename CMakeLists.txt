@@ -15,15 +15,15 @@ option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 
-# CC_COMMS_CHAMPION_REPO - Repository of comms_champion project. Defaults to https://github.com/arobenko/comms_champion.git
+# CC_COMMS_CHAMPION_REPO - Repository of comms_champion project. Defaults to https://github.com/commschamp/comms_champion.git
 # CC_COMMS_CHAMPION_TAG - Tag to use for external comms_champion project. Can be empty.
 # CC_COMMS_CHAMPION_CMAKE_ARGS - Extra CMake arguments  pass to external comms_champion project
 
-# CC_MQTTSN_PROTOCOL_REPO - Repository of cc.mqttsn.generated project. Defaults to https://github.com/arobenko/cc.mqttsn.generated.git
+# CC_MQTTSN_PROTOCOL_REPO - Repository of cc.mqttsn.generated project. Defaults to https://github.com/commschamp/cc.mqttsn.generated.git
 # CC_MQTTSN_PROTOCOL_TAG - Tag to use for external cc.mqttsn.generated project. Can be empty.
 # CC_MQTTSN_PROTOCOL_CMAKE_ARGS - Extra CMake arguments  pass to external cc.mqttsn.generated project
 
-# CC_MQTT311_PROTOCOL_REPO - Repository of cc.mqtt311.generated project. Defaults to https://github.com/arobenko/cc.mqtt311.generated.git
+# CC_MQTT311_PROTOCOL_REPO - Repository of cc.mqtt311.generated project. Defaults to https://github.com/commschamp/cc.mqtt311.generated.git
 # CC_MQTT311_PROTOCOL_TAG - Tag to use for external cc.mqttsn.generated project. Can be empty.
 # CC_MQTT311_PROTOCOL_CMAKE_ARGS - Extra CMake arguments  pass to external cc.mqtt311.generated project
 
@@ -34,7 +34,7 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 
 if ("${CC_COMMS_CHAMPION_REPO}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_REPO "https://github.com/arobenko/comms_champion.git")
+    set (CC_COMMS_CHAMPION_REPO "https://github.com/commschamp/comms_champion.git")
 endif ()
 
 if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
@@ -42,7 +42,7 @@ if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
-    set (CC_MQTTSN_PROTOCOL_REPO "https://github.com/arobenko/cc.mqttsn.generated.git")
+    set (CC_MQTTSN_PROTOCOL_REPO "https://github.com/commschamp/cc.mqttsn.generated.git")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
@@ -50,7 +50,7 @@ if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
-    set (CC_MQTT311_PROTOCOL_REPO "https://github.com/arobenko/cc.mqtt311.generated.git")
+    set (CC_MQTT311_PROTOCOL_REPO "https://github.com/commschamp/cc.mqtt311.generated.git")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_TAG}" STREQUAL "")

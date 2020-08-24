@@ -5,8 +5,8 @@ generate required build files native to the platform.
 
 ## Dependencies
 The messages of MQTT-SN protocol are defined using 
-[COMMS library](https://github.com/arobenko/comms_champion#comms-library) from 
-[comms_champion](https://github.com/arobenko/comms_champion) project. The MQTT
+[COMMS library](https://github.com/commschamp/comms_champion#comms-library) from 
+[comms_champion](https://github.com/commschamp/comms_champion) project. The MQTT
 messages, that the **gateway** library uses, are defined in 
 [mqtt](https://github.com/arobenko/mqtt) project. Both of them are external
 projects. It is possible to compile and install them separately and provide
@@ -15,7 +15,7 @@ proper paths using **CC_MAIN_INSTALL_DIR** and **CC_MQTT_INSTALL_DIR** options
 out and compiled as part of the build process. However, the result of such 
 compilation won't be installed together with the artefacts of this project. To
 install the produced artefacts of 
-[comms_champion](https://github.com/arobenko/comms_champion) and 
+[comms_champion](https://github.com/commschamp/comms_champion) and 
 [mqtt](https://github.com/arobenko/mqtt) projects use 
 **CC_MQTTSN_FULL_SOLUTION** option (also described below).
 
@@ -51,7 +51,7 @@ may be a need to escape the semicolon character with backslash (**\**).
 library and available gateway applications. Default value is **ON**.
 
 - **CC_MQTTSN_BUILD_PLUGINS**=ON/OFF - Enable/Disable build of plugins for
-[CommsChampion Tools](https://github.com/arobenko/comms_champion#commschampion-tools).
+[CommsChampion Tools](https://github.com/commschamp/comms_champion#commschampion-tools).
 The plugins are needed to view and monitor traffic of MQTT-SN messages or 
 custom messages that use MQTT-SN for transport. Default value is **OFF**.
 
@@ -60,7 +60,7 @@ not provided defaults to **install** subdirectory of the directory used for
 build.
 
 - **CC_MAIN_INSTALL_DIR**=dir - Specify installation path of the 
-[comms_champion](https://github.com/arobenko/comms_champion) project build. 
+[comms_champion](https://github.com/commschamp/comms_champion) project build. 
 If its produced artefacts can be found inside path specified by
 **CC_MQTTSN_INSTALL_DIR**, then usage of this variables is unnecessary.
 
@@ -70,7 +70,7 @@ uses definition of the MQTT messages from this project. If its produced artefact
 **CC_MQTTSN_INSTALL_DIR**, then usage of this variables is unnecessary.
 
 - **CC_MQTTSN_FULL_SOLUTION**=ON/OFF - Enable/Disable build of 
-[comms_champion](https://github.com/arobenko/comms_champion) and
+[comms_champion](https://github.com/commschamp/comms_champion) and
 [mqtt](https://github.com/arobenko/mqtt) projects and install the produced
 artefacts into the installation directory specified by **CC_MQTTSN_INSTALL_DIR**
 variable.
@@ -130,7 +130,7 @@ $> cmake -DCMAKE_BUILD_TYPE=Release CC_MQTTSN_CLIENT_DEFAULT_LIB=OFF ..
 
 ### Build Everything
 While having external builds of 
-[comms_champion](https://github.com/arobenko/comms_champion) and
+[comms_champion](https://github.com/commschamp/comms_champion) and
 [mqtt](https://github.com/arobenko/mqtt)
 ```
 $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
@@ -140,7 +140,7 @@ $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
 
 ### Build Everything and Install into CommsChampion Installation Path
 Build and install everything into the same installation directory as
-both [comms_champion](https://github.com/arobenko/comms_champion) and
+both [comms_champion](https://github.com/commschamp/comms_champion) and
 [mqtt](https://github.com/arobenko/mqtt)
 ```
 $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
@@ -148,7 +148,7 @@ $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
 ```
 
 ### Full Solution
-Build and install full solution, i.e. [comms_champion](https://github.com/arobenko/comms_champion),
+Build and install full solution, i.e. [comms_champion](https://github.com/commschamp/comms_champion),
 [mqtt](https://github.com/arobenko/mqtt), and this project.
 ```
 $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \

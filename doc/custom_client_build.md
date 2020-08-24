@@ -15,9 +15,9 @@ hold strings and
 [std::vector](http://en.cppreference.com/w/cpp/container/vector) type to hold
 various lists, because there is no known and predefined limit on string length
 and/or number of elements in the list. However if such limit is specified, the
-library will use [StaticString](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticString.h)
-and [StaticVector](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h)
-from [COMMS library](https://github.com/arobenko/comms_champion#comms-library)
+library will use [StaticString](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticString.h)
+and [StaticVector](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h)
+from [COMMS library](https://github.com/commschamp/comms_champion#comms-library)
 instead. These classes don't use exceptions and/or dynamic memory allocation
 and can be suitable for bare-metal systems.
 
@@ -39,7 +39,7 @@ The MQTT-SN needs to store the client ID string. By default it is stored using
 [std::string](http://en.cppreference.com/w/cpp/string/basic_string) type. The
 **MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE** variable can be used to set
 the limit to the client ID string known at compile time, as the result the
-[StaticString](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticString.h)
+[StaticString](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticString.h)
 type will be used instead.
 ```
 # Allow up to 20 characters in client ID string
@@ -54,7 +54,7 @@ maximum length of the address information. As the result it uses
 store such information. If the limit of the address's length is known at compile
 time, use **MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE** variable to
 specify the limit. It will cause 
-[StaticVector](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h)
+[StaticVector](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h)
 to be used instead.
 ```
 # The address of GW can be stored within 4 bytes (IP4 for example)
@@ -66,7 +66,7 @@ Similar to the client id, the maximum length of the topic string is not known, a
 [std::string](http://en.cppreference.com/w/cpp/string/basic_string) type is
 used as the result. Use **MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE**
 option to limit the maximum length and force usage of 
-[StaticString](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticString.h)
+[StaticString](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticString.h)
 instead.
 ```
 # The topics contain no more than 64 characters
@@ -80,7 +80,7 @@ being published. If there is no known limit for the length of such data, the
 used. However, if there is a limit known at compile time, the 
 **MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE** can be used to specify the
 limit and force usage of 
-[StaticVector](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h) 
+[StaticVector](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h) 
 type instead.
 ```
 # The message data is no more than 128 bytes long
@@ -106,7 +106,7 @@ the number of possible gateways is not known such information is stored using
 [std::vector](http://en.cppreference.com/w/cpp/container/vector) type. However,
 if there is a known limit on number of the available gateways on the nenwork,
 the client library may be compiled to use 
-[StaticVector](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h) 
+[StaticVector](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h) 
 instead. Use **MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT** variable for this purpose.
 ```
 # The library doesn't need to support more than 1 gateway
@@ -123,7 +123,7 @@ registered. As the result the library uses
 the required information. However, if there is predefined limit for number of topics
 the client object must be able to keep inside, the **MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT**
 variable can be used to force usage of
-[StaticVector](https://github.com/arobenko/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h) 
+[StaticVector](https://github.com/commschamp/comms_champion/blob/master/src/lib/comms/include/comms/util/StaticVector.h) 
 type instead.
 ```
 # No need to support registration of more than 32 topic strings
