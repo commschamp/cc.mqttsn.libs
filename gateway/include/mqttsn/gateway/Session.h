@@ -14,6 +14,8 @@
 #include <functional>
 #include <cstdint>
 #include <vector>
+#include <string>
+#include <utility>
 
 namespace mqttsn
 {
