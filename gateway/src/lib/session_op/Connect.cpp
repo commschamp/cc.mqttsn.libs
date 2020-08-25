@@ -49,7 +49,7 @@ void Connect::handle(ConnectMsg_SN& msg)
     auto& midFlagsField = msg.field_flags().field_mid();
 
     auto& st = state();
-    auto reqClientId = msg.field_clientId().value().substr();
+    auto reqClientId = msg.field_clientId().value();
     if (reqClientId.empty()) {
         reqClientId = st.m_defaultClientId;
     }
