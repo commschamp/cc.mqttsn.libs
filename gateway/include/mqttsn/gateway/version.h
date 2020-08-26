@@ -14,7 +14,7 @@
 #define MQTTSN_GW_MAJOR_VERSION 0U
 
 /// @brief Minor verion of the library
-#define MQTTSN_GW_MINOR_VERSION 12U
+#define MQTTSN_GW_MINOR_VERSION 13U
 
 /// @brief Patch level of the library
 #define MQTTSN_GW_PATCH_VERSION 0U

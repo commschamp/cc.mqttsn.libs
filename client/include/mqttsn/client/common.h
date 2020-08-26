@@ -37,7 +37,7 @@ extern "C" {
 #define MQTTSN_CLIENT_MAJOR_VERSION 0U
 
 /// @brief Minor verion of the library
-#define MQTTSN_CLIENT_MINOR_VERSION 12U
+#define MQTTSN_CLIENT_MINOR_VERSION 13U
 
 /// @brief Patch level of the library
 #define MQTTSN_CLIENT_PATCH_VERSION 0U

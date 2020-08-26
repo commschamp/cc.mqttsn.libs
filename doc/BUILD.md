@@ -1,87 +1,25 @@
 # How to Build
 
 This project uses [CMake](https://cmake.org) cross-platform build system to
-generate required build files native to the platform.
+generate required build files native to the platform. Please refer to the 
+main [CMakeLists.txt](../CMakeLists.txt) file for the info on available options and 
+other variables.
 
-## Dependencies
-The messages of MQTT-SN protocol are defined using 
-[COMMS library](https://github.com/arobenko/comms_champion#comms-library) from 
-[comms_champion](https://github.com/arobenko/comms_champion) project. The MQTT
-messages, that the **gateway** library uses, are defined in 
-[mqtt](https://github.com/arobenko/mqtt) project. Both of them are external
-projects. It is possible to compile and install them separately and provide
-proper paths using **CC_MAIN_INSTALL_DIR** and **CC_MQTT_INSTALL_DIR** options
-(see description below). If not provided, their latest releases will be checked 
-out and compiled as part of the build process. However, the result of such 
-compilation won't be installed together with the artefacts of this project. To
-install the produced artefacts of 
-[comms_champion](https://github.com/arobenko/comms_champion) and 
-[mqtt](https://github.com/arobenko/mqtt) projects use 
-**CC_MQTTSN_FULL_SOLUTION** option (also described below).
+## External Dependencies
+The provided libraries depend on several external projects:
+- [cc.mqttsn.generated](https://github.com/commschamp/cc.mqttsn.generated) -
+  provides definition of the MQTT-SN protocol.
+- [cc.mqtt311.generated](https://github.com/commschamp/cc.mqtt311.generated) - 
+  provides definition of the MQTT v3.1.1 protocol.
+- [comms_champion](https://github.com/commschamp/comms_champion) - 
+  provides [COMMS library](https://github.com/commschamp/comms_champion#comms-library)
+  which is used to define the protocols.
 
-## Available CMake Options
+In case these external dependencies are also built externally paths to them
+can be provided using **CC_MQTTSN_GENERATED_INSTALL_DIR**, **CC_MQTT311_GENERATED_INSTALL_DIR**,
+and **CC_MAIN_INSTALL_DIR** respectively. If these paths are not provided, the
+build process will check out and build the necessary dependencies.
 
-In addition to built-in options/variables of CMake, such as **CMAKE_BUILD_TYPE** or
-**CMAKE_TOOLCHAIN_FILE**, the following ones can be used:
-
-- **CC_MQTTSN_NO_WARN_AS_ERR**=ON/OFF - By default, all warnings are treated as
-errors. Enable this option in case the compiler generates warning and fails the
-compilation. Please open the issue when such scenario occurs. Default value is 
-**OFF**.
-
-- **CC_MQTTSN_CLIENT_DEFAULT_LIB**=ON/OFF - Enable/Disable build of MQTT-SN
-client library with **default** build options as well as available "publish" /
-"subscribe" client applications. By default, the MQTT-SN client library
-uses types like [std::string](http://en.cppreference.com/w/cpp/string/basic_string)
-and [std::vector](http://en.cppreference.com/w/cpp/container/vector), which
-may be problematic for bare-metal applications. It is 
-possible to compile other variants of the client library (see 
-**CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES** option described below). 
-Default value is **ON**.
-
-- **CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES**=list - Provide list of CMake configuration 
-files containing settings for various custom builds of the client library. See
-[custom_client_build.md](custom_client_build.md) for details. **NOTE**, that
-*list* value is a list of relative or absolute file paths, 
-and the elements of the list in CMake are
-semicolon (**;**) separated. However, depending on the shell environment there 
-may be a need to escape the semicolon character with backslash (**\**).
-
-- **CC_MQTTSN_BUILD_GATEWAY**=ON/OFF - Enable/Disable build of MQTT-SN gateway
-library and available gateway applications. Default value is **ON**.
-
-- **CC_MQTTSN_BUILD_PLUGINS**=ON/OFF - Enable/Disable build of plugins for
-[CommsChampion Tools](https://github.com/arobenko/comms_champion#commschampion-tools).
-The plugins are needed to view and monitor traffic of MQTT-SN messages or 
-custom messages that use MQTT-SN for transport. Default value is **OFF**.
-
-- **CC_MQTTSN_INSTALL_DIR**=dir - Provide custom installation directory. If
-not provided defaults to **install** subdirectory of the directory used for
-build.
-
-- **CC_MAIN_INSTALL_DIR**=dir - Specify installation path of the 
-[comms_champion](https://github.com/arobenko/comms_champion) project build. 
-If its produced artefacts can be found inside path specified by
-**CC_MQTTSN_INSTALL_DIR**, then usage of this variables is unnecessary.
-
-- **CC_MQTT_INSTALL_DIR**=dir - Specify installation path of the 
-[mqtt](https://github.com/arobenko/mqtt) project build. The gateway library
-uses definition of the MQTT messages from this project. If its produced artefacts can be found inside path specified by
-**CC_MQTTSN_INSTALL_DIR**, then usage of this variables is unnecessary.
-
-- **CC_MQTTSN_FULL_SOLUTION**=ON/OFF - Enable/Disable build of 
-[comms_champion](https://github.com/arobenko/comms_champion) and
-[mqtt](https://github.com/arobenko/mqtt) projects and install the produced
-artefacts into the installation directory specified by **CC_MQTTSN_INSTALL_DIR**
-variable.
-
-- **CC_MQTTSN_QT_DIR**=dir - Directory of QT5 installation. Can be used to 
-provide path to QT5 libraries if differs from system default installation path. If not
-provided and QT5 cannot be found on the system, the applications that use QT5 
-framework won't be built.
-
-- **CC_MQTTSN_NO_UNIT_TESTS**=ON/OFF - Exclude build of unit tests. Default value is 
-**OFF**, i.e. the unit tests get built.
 
 ## Choosing C++ Standard
 
@@ -128,37 +66,5 @@ $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
 $> cmake -DCMAKE_BUILD_TYPE=Release CC_MQTTSN_CLIENT_DEFAULT_LIB=OFF ..
 ```
 
-### Build Everything
-While having external builds of 
-[comms_champion](https://github.com/arobenko/comms_champion) and
-[mqtt](https://github.com/arobenko/mqtt)
-```
-$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
-    -DCC_MAIN_INSTALL_DIR=/path/to/comms_champion/install \
-    -DCC_MQTT_INSTALL_DIR=/path/to/mqtt/install ..
-```
-
-### Build Everything and Install into CommsChampion Installation Path
-Build and install everything into the same installation directory as
-both [comms_champion](https://github.com/arobenko/comms_champion) and
-[mqtt](https://github.com/arobenko/mqtt)
-```
-$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
-    -DCC_MQTTSN_INSTALL_DIR=/path/to/comms_champion/install  ..
-```
-
-### Full Solution
-Build and install full solution, i.e. [comms_champion](https://github.com/arobenko/comms_champion),
-[mqtt](https://github.com/arobenko/mqtt), and this project.
-```
-$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
-    -DCC_MQTTSN_FULL_SOLUTION=ON  ..
-```
-
-### Full Solution with Clang Compiler
-```
-$> CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_BUILD_PLUGINS=ON \
-    -DCC_MQTTSN_FULL_SOLUTION=ON -DCMAKE_CXX_STANDARD=14 ..
-```
 
 

@@ -797,7 +797,7 @@ public:
         else {
             sendPublish(
                 topicId,
-                allocMsgId(),
+                0,
                 msg,
                 msgLen,
                 TopicIdTypeVal::PredefinedTopicId,

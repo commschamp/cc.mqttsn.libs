@@ -14,16 +14,17 @@ option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects
 # CC_MQTT311_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqtt311.generated project.
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
+# CC_MQTTSN_QT_DIR - Path to external Qt5 installation directory
 
-# CC_COMMS_CHAMPION_REPO - Repository of comms_champion project. Defaults to https://github.com/arobenko/comms_champion.git
+# CC_COMMS_CHAMPION_REPO - Repository of comms_champion project. Defaults to https://github.com/commschamp/comms_champion.git
 # CC_COMMS_CHAMPION_TAG - Tag to use for external comms_champion project. Can be empty.
 # CC_COMMS_CHAMPION_CMAKE_ARGS - Extra CMake arguments  pass to external comms_champion project
 
-# CC_MQTTSN_PROTOCOL_REPO - Repository of cc.mqttsn.generated project. Defaults to https://github.com/arobenko/cc.mqttsn.generated.git
+# CC_MQTTSN_PROTOCOL_REPO - Repository of cc.mqttsn.generated project. Defaults to https://github.com/commschamp/cc.mqttsn.generated.git
 # CC_MQTTSN_PROTOCOL_TAG - Tag to use for external cc.mqttsn.generated project. Can be empty.
 # CC_MQTTSN_PROTOCOL_CMAKE_ARGS - Extra CMake arguments  pass to external cc.mqttsn.generated project
 
-# CC_MQTT311_PROTOCOL_REPO - Repository of cc.mqtt311.generated project. Defaults to https://github.com/arobenko/cc.mqtt311.generated.git
+# CC_MQTT311_PROTOCOL_REPO - Repository of cc.mqtt311.generated project. Defaults to https://github.com/commschamp/cc.mqtt311.generated.git
 # CC_MQTT311_PROTOCOL_TAG - Tag to use for external cc.mqttsn.generated project. Can be empty.
 # CC_MQTT311_PROTOCOL_CMAKE_ARGS - Extra CMake arguments  pass to external cc.mqtt311.generated project
 
@@ -34,35 +35,33 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 
 if ("${CC_COMMS_CHAMPION_REPO}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_REPO "https://github.com/arobenko/comms_champion.git")
+    set (CC_COMMS_CHAMPION_REPO "https://github.com/commschamp/comms_champion.git")
 endif ()
 
 if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_TAG "v3.0")
+    set (CC_COMMS_CHAMPION_TAG "v3.0.1")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
-    set (CC_MQTTSN_PROTOCOL_REPO "https://github.com/arobenko/cc.mqttsn.generated.git")
+    set (CC_MQTTSN_PROTOCOL_REPO "https://github.com/commschamp/cc.mqttsn.generated.git")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTTSN_PROTOCOL_TAG "v0.18")
+    set (CC_MQTTSN_PROTOCOL_TAG "v0.18.1")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
-    set (CC_MQTT311_PROTOCOL_REPO "https://github.com/arobenko/cc.mqtt311.generated.git")
+    set (CC_MQTT311_PROTOCOL_REPO "https://github.com/commschamp/cc.mqtt311.generated.git")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTT311_PROTOCOL_TAG "v0.18")
+    set (CC_MQTT311_PROTOCOL_TAG "v0.18.1")
 endif ()
 
 ##########################################################################
 
-set (COMPILER_OPTIONS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER})
 if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
-    set (COMPILER_OPTIONS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
 endif()
 
 set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
@@ -208,7 +207,8 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         GIT_TAG "${cc_mqttsn_generated_tag}"
         SOURCE_DIR "${cc_mqttsn_src_dir}"
         CMAKE_ARGS 
-            ${COMPILER_OPTIONS}
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DCMAKE_GENERATOR=${CMAKE_GENERATOR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqttsn_install_dir} 
             -DOPT_NO_COMMS=ON -DOPT_BUILD_TEST=OFF -DOPT_BUILD_PLUGIN=OFF
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 

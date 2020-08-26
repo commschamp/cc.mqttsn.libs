@@ -12,6 +12,7 @@
 #include <functional>
 #include <vector>
 #include <cstdint>
+#include <string>
 
 #include "mqttsn/client/common.h"
 #include "mqttsn/field/QosCommon.h"
