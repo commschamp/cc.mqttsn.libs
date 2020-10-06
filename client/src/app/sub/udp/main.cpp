@@ -246,7 +246,7 @@ unsigned short getLocalPort(const QCommandLineParser& parser, const QString& gwA
             break;
         }
 
-        port = portTmp;
+        port = static_cast<decltype(port)>(portTmp);
     } while (false);
     return port;
 }
@@ -266,7 +266,7 @@ unsigned short getKeepAlive(const QCommandLineParser& parser)
             break;
         }
 
-        keepAlive = keepAliveTmp;
+        keepAlive = static_cast<decltype(keepAlive)>(keepAliveTmp);
     } while (false);
     return keepAlive;
 }

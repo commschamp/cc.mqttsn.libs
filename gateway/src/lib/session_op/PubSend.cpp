@@ -67,7 +67,7 @@ void PubSend::handle(RegackMsg_SN& msg)
     m_attempt = 0;
     m_registered = true;
     ++m_registerCount;
-    m_currMsgId = allocMsgId(); 
+    m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId()); 
     doSend();
 }
 
@@ -182,7 +182,7 @@ void PubSend::sendCurrent()
 
     m_currTopicInfo = state().m_regMgr.mapTopic(m_currPub->m_topic);
     assert(0 < m_currTopicInfo.m_topicId);
-    m_currMsgId = allocMsgId();
+    m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId());
     m_registered = false;
     m_acked = false;
 
@@ -212,7 +212,7 @@ void PubSend::doSend()
         }
 
         RegisterMsg_SN msg;
-        m_currMsgId = allocMsgId();
+        m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId());
         msg.field_topicId().value() = m_currTopicInfo.m_topicId;
         msg.field_msgId().value() = m_currMsgId;
 
@@ -236,7 +236,7 @@ void PubSend::doSend()
 
     if (m_currPub->m_qos >= QoS_AtLeastOnceDelivery) {
         if (m_currMsgId == 0U) {
-            m_currMsgId = allocMsgId();
+            m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId());
         }
 
         msg.field_msgId().value() = m_currMsgId;

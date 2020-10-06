@@ -338,7 +338,7 @@ void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
     static const std::size_t RetCodeMapSize =
                         std::extent<decltype(RetCodeMap)>::value;
 
-    static_assert(RetCodeMapSize == (std::size_t)ConnackMsg::Field_returnCode::ValueType::ValuesLimit,
+    static_assert(RetCodeMapSize == static_cast<std::size_t>(ConnackMsg::Field_returnCode::ValueType::ValuesLimit),
         "Incorrect map");
 
     auto retCode = ReturnCodeVal::NotSupported;

@@ -137,7 +137,7 @@ RegMgr::TopicInfo RegMgr::mapTopic(const std::string& topic)
 
         std::uint16_t prevTopicId = 0;
         for (auto it = m_regInfosRevMap.begin(); it != m_regInfosRevMap.end(); ++it) {
-            auto expId = prevTopicId + 1;
+            auto expId = static_cast<std::uint16_t>(prevTopicId + 1);
             if ((it->first != expId) &&
                 (m_minTopicId <= expId) &&
                 (expId <= m_maxTopicId)) {

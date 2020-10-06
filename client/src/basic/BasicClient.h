@@ -142,15 +142,15 @@ using ClientIdStorageOptT =
 mqttsn::field::QosVal translateQosValue(MqttsnQoS val)
 {
     static_assert(
-        (int)mqttsn::field::QosVal::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
+        static_cast<int>(mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        (int)mqttsn::field::QosVal::AtLeastOnceDelivery == MqttsnQoS_AtLeastOnceDelivery,
+        static_cast<int>(mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        (int)mqttsn::field::QosVal::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
+        static_cast<int>(mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
 
     if (val == MqttsnQoS_NoGwPublish) {
@@ -1388,7 +1388,7 @@ public:
                 }
 
                 msgInfo.msg = &(*msg.field_data().value().begin());
-                msgInfo.msgLen = msg.field_data().value().size();
+                msgInfo.msgLen = static_cast<decltype(msgInfo.msgLen)>(msg.field_data().value().size());
                 msgInfo.qos = details::translateQosValue(msg.field_flags().field_qos().value());
                 msgInfo.retain = msg.field_flags().field_mid().getBitValue_Retain();
 
@@ -1582,7 +1582,7 @@ public:
             }
 
             msgInfo.msg = &(*m_lastInMsg.m_msgData.begin());
-            msgInfo.msgLen = m_lastInMsg.m_msgData.size();
+            msgInfo.msgLen = static_cast<decltype(msgInfo.msgLen)>(m_lastInMsg.m_msgData.size());
             msgInfo.qos = MqttsnQoS_ExactlyOnceDelivery;
             msgInfo.retain = m_lastInMsg.m_retain;
 
@@ -1783,19 +1783,21 @@ public:
 
 private:
 
-    typedef typename comms::util::AlignedUnion<
-        ConnectOp,
-        DisconnectOp,
-        PublishIdOp,
-        PublishOp,
-        SubscribeIdOp,
-        SubscribeOp,
-        UnsubscribeIdOp,
-        UnsubscribeOp,
-        WillTopicUpdateOp,
-        WillMsgUpdateOp,
-        SleepOp,
-        CheckMessagesOp
+    typedef typename comms::util::TupleAsAlignedUnion<
+        std::tuple<
+            ConnectOp,
+            DisconnectOp,
+            PublishIdOp,
+            PublishOp,
+            SubscribeIdOp,
+            SubscribeOp,
+            UnsubscribeIdOp,
+            UnsubscribeOp,
+            WillTopicUpdateOp,
+            WillMsgUpdateOp,
+            SleepOp,
+            CheckMessagesOp
+        >
     >::Type OpStorageType;
 
     using InputMessages = mqttsn::input::ClientInputMessages<Message, ProtOpts>;
@@ -1964,7 +1966,9 @@ private:
         COMMS_ASSERT(iter != m_gwInfos.end());
         auto finalTimestamp = iter->m_timestamp + iter->m_duration;
         if (finalTimestamp < m_timestamp) {
-            COMMS_ASSERT(!"Gateways are not cleaned up properly");
+            constexpr bool Gateways_are_not_cleaned_up_properly = false;
+            static_cast<void>(Gateways_are_not_cleaned_up_properly);
+            COMMS_ASSERT(Gateways_are_not_cleaned_up_properly);
             return 0U;
         }
 
@@ -2213,7 +2217,9 @@ private:
     void sendMessage(const Message& msg, bool broadcast = false)
     {
         if (m_sendOutputDataFn == nullptr) {
-            COMMS_ASSERT(!"Unexpected send");
+            constexpr bool Unexpected_send = false;
+            static_cast<void>(Unexpected_send);
+            COMMS_ASSERT(Unexpected_send);
             return;
         }
 
@@ -2227,7 +2233,7 @@ private:
             return;
         }
 
-        auto writtenBytes = static_cast<std::size_t>(
+        auto writtenBytes = static_cast<unsigned>(
             std::distance(comms::writeIteratorFor<Message>(&m_writeBuf[0]), writeIter));
 
         m_lastSentMsgTimestamp = m_timestamp;
@@ -2836,7 +2842,7 @@ private:
 
         static const std::size_t MapSize = std::extent<decltype(Map)>::value;
 
-        static_assert(MapSize == (unsigned)ReturnCodeVal::ValuesLimit,
+        static_assert(MapSize == static_cast<unsigned>(ReturnCodeVal::ValuesLimit),
             "Map is incorrect");
 
         MqttsnAsyncOpStatus status = MqttsnAsyncOpStatus_NotSupported;

@@ -42,7 +42,9 @@ void AsleepMonitor::handle(DisconnectMsg_SN& msg)
     }
 
     if (state().m_connStatus != ConnectionStatus::Asleep) {
-        assert(!"Something is not right");
+        constexpr bool Should_not_happen = false;
+        static_cast<void>(Should_not_happen);
+        assert(Should_not_happen);
         return;
     }
 

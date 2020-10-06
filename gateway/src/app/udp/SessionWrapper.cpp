@@ -149,7 +149,7 @@ void SessionWrapper::readFromBrokerSocket()
 
 //    std::cout << "(BROKER) --> " << std::hex;
 //    for (auto byte : data) {
-//        std::cout << std::setw(2) << std::setfill('0') << (unsigned)byte << ' ';
+//        std::cout << std::setw(2) << std::setfill('0') << static_cast<unsigned>(byte) << ' ';
 //    }
 //    std::cout << std::dec << std::endl;
 

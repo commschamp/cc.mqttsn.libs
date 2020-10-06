@@ -152,7 +152,9 @@ void Mgr::readClientData()
                 auto key = QString("%1:%2").arg(s.getClientAddr()).arg(s.getClientPort());
                 auto it = m_sessions.find(key);
                 if (it == m_sessions.end()) {
-                    assert(!"The session wasn't found");
+                    constexpr bool Session_not_found = false;
+                    static_cast<void>(Session_not_found);
+                    assert(Session_not_found);
                     return;
                 }
 
@@ -164,7 +166,9 @@ void Mgr::readClientData()
         auto sessionPtr = session.release();
 
         if (!sessionPtr->start()) {
-            assert(!"Unexpected error");
+            constexpr bool Should_not_happen = false;
+            static_cast<void>(Should_not_happen);
+            assert(Should_not_happen);
             continue;
         }
 
