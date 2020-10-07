@@ -317,7 +317,7 @@ SessionWrapper::AuthInfo SessionWrapper::getAuthInfoFor(const std::string& clien
         if ((BackSlashStr.size() <= remSize) &&
             (std::equal(BackSlashStr.begin(), BackSlashStr.end(), remStr))) {
             data.push_back(static_cast<std::uint8_t>('\\'));
-            pos += BackSlashStr.size();
+            pos = static_cast<decltype(pos)>(pos + BackSlashStr.size());
             continue;
         }
 
@@ -331,7 +331,7 @@ SessionWrapper::AuthInfo SessionWrapper::getAuthInfoFor(const std::string& clien
                 std::string numStr(numStrBegin, numStrEnd);
                 auto byte = static_cast<std::uint8_t>(std::stoul(numStr));
                 data.push_back(byte);
-                pos += HexNumSize;
+                pos = static_cast<decltype(pos)>(pos + HexNumSize);
                 continue;
             }
             catch (...) {

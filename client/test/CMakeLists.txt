@@ -50,7 +50,7 @@ function (test_func test_suite_name)
 
     target_link_libraries(${name} ${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
     target_compile_options(${name} PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:-Wno-old-style-cast -Wno-ignored-qualifiers>
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-old-style-cast -Wno-ignored-qualifiers -Wno-conversion>
         $<$<CXX_COMPILER_ID:Clang>:-Wno-old-style-cast -Wno-ignored-qualifiers>
     )  
 endfunction ()
