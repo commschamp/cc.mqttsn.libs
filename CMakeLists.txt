@@ -40,7 +40,7 @@ if ("${CC_COMMS_CHAMPION_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_TAG "v3.1")
+    set (CC_COMMS_CHAMPION_TAG "v3.1.1")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
