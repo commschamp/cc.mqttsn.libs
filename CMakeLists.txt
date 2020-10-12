@@ -109,6 +109,10 @@ if (EXISTS ${cc_compile_file})
     cc_compile(${warn_as_err_opt} ${ccache_opt})
 endif ()
 
+if (MSVC)
+    add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+endif ()
+
 while (TRUE)
     if (CC_MQTTSN_NO_UNIT_TESTS)
         message (STATUS "Unittests are disabled")
