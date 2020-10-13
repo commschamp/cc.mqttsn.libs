@@ -246,7 +246,7 @@ unsigned short getLocalPort(const QCommandLineParser& parser, const QString& gwA
             break;
         }
 
-        port = portTmp;
+        port = static_cast<decltype(port)>(portTmp);
     } while (false);
     return port;
 }
@@ -266,14 +266,14 @@ unsigned short getKeepAlive(const QCommandLineParser& parser)
             break;
         }
 
-        keepAlive = keepAliveTmp;
+        keepAlive = static_cast<decltype(keepAlive)>(keepAliveTmp);
     } while (false);
     return keepAlive;
 }
 
 std::uint16_t getTopicId(const QCommandLineParser& parser)
 {
-    auto topicId = 0;
+    std::uint16_t topicId = 0;
     do {
         auto topicIdStr = parser.value(TopicIdOpt);
         if (topicIdStr.isEmpty()) {
@@ -286,7 +286,7 @@ std::uint16_t getTopicId(const QCommandLineParser& parser)
             break;
         }
 
-        topicId = topicIdTmp;
+        topicId = static_cast<decltype(topicId)>(topicIdTmp);
     } while (false);
     return topicId;
 }

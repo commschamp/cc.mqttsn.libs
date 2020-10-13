@@ -336,7 +336,7 @@ void mqttsn_gw_session_set_pub_only_keep_alive(
         return;
     }
 
-    reinterpret_cast<Session*>(session.obj)->setPubOnlyKeepAlive(value);
+    reinterpret_cast<Session*>(session.obj)->setPubOnlyKeepAlive(static_cast<std::uint16_t>(value));
 }
 
 bool mqttsn_gw_session_start(MqttsnSessionHandle session)

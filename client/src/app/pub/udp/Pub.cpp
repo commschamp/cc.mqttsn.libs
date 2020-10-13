@@ -126,7 +126,7 @@ void Pub::readFromSocket()
             std::cout << std::dec << std::endl;
         }
 
-        mqttsn_client_process_data(m_client.get(), &data[0], data.size());
+        mqttsn_client_process_data(m_client.get(), &data[0], static_cast<unsigned>(data.size()));
     }
 }
 
@@ -279,7 +279,7 @@ void Pub::doPublish()
                 m_client.get(),
                 m_topic.c_str(),
                 m_msg.empty() ? nullptr : &m_msg[0],
-                m_msg.size(),
+                static_cast<unsigned>(m_msg.size()),
                 m_qos,
                 m_retain,
                 &Pub::publishCompleteCb,
@@ -297,7 +297,7 @@ void Pub::doPublish()
                 m_client.get(),
                 m_topicId,
                 m_msg.empty() ? nullptr : &m_msg[0],
-                m_msg.size(),
+                static_cast<unsigned>(m_msg.size()),
                 m_qos,
                 m_retain,
                 &Pub::publishCompleteCb,

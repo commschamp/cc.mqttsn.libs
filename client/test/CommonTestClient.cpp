@@ -211,7 +211,7 @@ void CommonTestClient::inputData(const std::uint8_t* buf, std::size_t bufLen)
     m_inData.insert(m_inData.end(), buf, buf + bufLen);
     assert(m_libFuncs.m_processDataFunc != nullptr);
     assert(!m_inData.empty());
-    unsigned count = (m_libFuncs.m_processDataFunc)(m_client, &m_inData[0], m_inData.size());
+    unsigned count = (m_libFuncs.m_processDataFunc)(m_client, &m_inData[0], static_cast<unsigned>(m_inData.size()));
     if (m_inData.size() < count) {
         std::cout << "Processed " << count << " bytes, while having only " << m_inData.size() << std::endl;
     }
@@ -295,7 +295,7 @@ MqttsnErrorCode CommonTestClient::publishId(
         m_client,
         topicId,
         msg,
-        msgLen,
+        static_cast<unsigned>(msgLen),
         qos,
         retain,
         &CommonTestClient::publishCompleteCallback,
@@ -314,7 +314,7 @@ MqttsnErrorCode CommonTestClient::publish(
         m_client,
         topic.c_str(),
         msg,
-        msgLen,
+        static_cast<unsigned>(msgLen),
         qos,
         retain,
         &CommonTestClient::publishCompleteCallback,
@@ -401,7 +401,7 @@ MqttsnErrorCode CommonTestClient::willMsgUpdate(
     return (m_libFuncs.m_willMsgUpdateFunc)(
         m_client,
         msg,
-        msgLen,
+        static_cast<unsigned>(msgLen),
         &CommonTestClient::willMsgUpdateCompleteCallback,
         this);
 }
@@ -437,15 +437,15 @@ MqttsnErrorCode CommonTestClient::checkMessages()
 MqttsnQoS CommonTestClient::transformQos(mqttsn::field::QosVal val)
 {
     static_assert(
-        (int)mqttsn::field::QosVal::AtMostOnceDelivery == MqttsnQoS_AtMostOnceDelivery,
+        static_cast<int>(mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        (int)mqttsn::field::QosVal::AtLeastOnceDelivery == MqttsnQoS_AtLeastOnceDelivery,
+        static_cast<int>(mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        (int)mqttsn::field::QosVal::ExactlyOnceDelivery == MqttsnQoS_ExactlyOnceDelivery,
+        static_cast<int>(mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
 
     if (val == mqttsn::field::QosVal::NoGwPublish) {
@@ -500,7 +500,9 @@ unsigned CommonTestClient::cancelNextTick()
         return tmp();
     }
 
-    assert(!"Should not happen");
+    constexpr bool Should_not_happen = false;
+    static_cast<void>(Should_not_happen);
+    assert(Should_not_happen);
     return 0;
 }
 

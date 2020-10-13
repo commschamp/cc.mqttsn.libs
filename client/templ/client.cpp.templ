@@ -114,7 +114,7 @@ unsigned mqttsn_##NAME##client_process_data(
     unsigned len)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client);
-    return clientObj->processData(from, len);
+    return static_cast<unsigned>(clientObj->processData(from, len));
 }
 
 void mqttsn_##NAME##client_tick(void* client)

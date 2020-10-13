@@ -101,7 +101,9 @@ private:
             [&state]() -> unsigned
             {
                 if (state.m_elapsed.empty()) {
-                    assert(!"Elapsed timeout is not specified");
+                    constexpr bool Elapsed_time_not_specified = false;
+                    static_cast<void>(Elapsed_time_not_specified);
+                    assert(Elapsed_time_not_specified);
                     return 0U;
                 }
 

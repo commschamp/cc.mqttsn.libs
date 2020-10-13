@@ -530,7 +530,7 @@ private:
                 auto willInfo = MqttsnWillInfo();
                 willInfo.topic = WillTopic.c_str();
                 willInfo.msg = &WillData[0];
-                willInfo.msgLen = WillData.size();
+                willInfo.msgLen = static_cast<decltype(willInfo.msgLen)>(WillData.size());
                 willInfo.qos = WillQos;
                 willInfo.retain = WillRetain;
                 return willInfo;
@@ -1531,7 +1531,7 @@ void ClientBasic::test4()
     auto willInfo = MqttsnWillInfo();
     willInfo.topic = WillTopic.c_str();
     willInfo.msg = &WillData[0];
-    willInfo.msgLen = WillData.size();
+    willInfo.msgLen = static_cast<decltype(willInfo.msgLen)>(WillData.size());
     willInfo.qos = WillQos;
     willInfo.retain = WillRetain;
 
@@ -3630,7 +3630,7 @@ void ClientBasic::test40()
     auto info = MqttsnWillInfo();
     info.topic = WillTopic.c_str();
     info.msg = &WillData[0];
-    info.msgLen = WillData.size();
+    info.msgLen = static_cast<decltype(info.msgLen)>(WillData.size());
     info.qos = Qos;
     info.retain = Retain;
 
@@ -3791,8 +3791,9 @@ void ClientBasic::test44()
     TS_ASSERT_EQUALS(result, MqttsnErrorCode_Busy);
     verifyNoOtherEvent(state);
 
-    static const MqttsnTopicId TopicId =
-        (((MqttsnTopicId)Topic[0] << 8U) | (std::uint8_t)Topic[1]);
+    static const auto TopicId =
+        static_cast<MqttsnTopicId>(
+            (static_cast<MqttsnTopicId>(Topic[0]) << 8U) | static_cast<std::uint8_t>(Topic[1]));
     clearState(state);
     state.m_nextElapsedTicks = 1000;
     auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::field::ReturnCodeVal::Congestion);

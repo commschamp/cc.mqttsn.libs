@@ -283,8 +283,10 @@ void DataProcessor::handle(WillmsgupdMsg& msg)
 
 void DataProcessor::handle(TestMessage& msg)
 {
-    std::cout << "ERROR: unhandled message of type: " << (unsigned)msg.getId() << std::endl;
-    assert(!"Provide handling function");
+    std::cout << "ERROR: unhandled message of type: " << static_cast<unsigned>(msg.getId()) << std::endl;
+    constexpr bool Handling_function_not_provided = false;
+    static_cast<void>(Handling_function_not_provided);
+    assert(Handling_function_not_provided);
 }
 
 void DataProcessor::checkWrittenMsg(const std::uint8_t* buf, std::size_t len)

@@ -59,6 +59,11 @@ function (test_func test_suite_name)
         ${valgrand_args})    
 
     target_link_libraries(${name} ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME})
+
+    target_compile_options(${name} PRIVATE
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-old-style-cast -Wno-ignored-qualifiers -Wno-conversion>
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-old-style-cast -Wno-ignored-qualifiers>
+    )      
     
     if (TARGET cc::mqtt311)
         target_link_libraries(${name} PRIVATE cc::mqtt311)    
@@ -103,13 +108,6 @@ endfunction ()
 include_directories (
     "${CXXTEST_INCLUDE_DIR}"
 )
-
-if (CMAKE_COMPILER_IS_GNUCC)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-old-style-cast -Wno-shadow")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7.9")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-qualifiers")
-    endif ()    
-endif ()
 
 lib_common_test_session()
 test_gateway()

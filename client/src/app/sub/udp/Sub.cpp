@@ -114,7 +114,7 @@ void Sub::readFromSocket()
 //        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));
 //        std::cout << std::dec << std::endl;
 
-        mqttsn_client_process_data(m_client.get(), &data[0], data.size());
+        mqttsn_client_process_data(m_client.get(), &data[0], static_cast<unsigned>(data.size()));
     }
 }
 

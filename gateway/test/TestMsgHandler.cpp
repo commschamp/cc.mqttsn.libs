@@ -45,13 +45,13 @@ void TestMsgHandler::processOutputInternal(TStack& stack, const DataBuf& data)
     auto es = stack.read(msg, iter, data.size());
     static_cast<void>(es);
     if (es != comms::ErrorStatus::Success) {
-        std::cout << "es=" << (unsigned)es << ": Output buffer: " << std::hex;
+        std::cout << "es=" << static_cast<unsigned>(es) << ": Output buffer: " << std::hex;
         std::copy(data.begin(), data.end(), std::ostream_iterator<unsigned>(std::cout, " "));
         std::cout << std::dec << std::endl;
     }
     assert(es == comms::ErrorStatus::Success);
     assert(msg);
-    assert((unsigned)std::distance(comms::readIteratorFor<MsgType>(&data[0]), iter) == data.size());
+    assert(static_cast<unsigned>(std::distance(comms::readIteratorFor<MsgType>(&data[0]), iter)) == data.size());
     msg->dispatch(*this);
 }
 
@@ -69,7 +69,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TStack& stack, cons
     auto es = stack.write(msg, iter, buf.size());
     static_cast<void>(es);
     assert(es == comms::ErrorStatus::Success);
-    assert(buf.size() == (unsigned)(std::distance(comms::writeIteratorFor<MsgType>(&buf[0]), iter)));
+    assert(buf.size() == static_cast<unsigned>(std::distance(comms::writeIteratorFor<MsgType>(&buf[0]), iter)));
     return buf;
 }
 
@@ -418,8 +418,10 @@ void TestMsgHandler::handle(WillmsgrespMsg_SN& msg)
 
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
 {
-    std::cout << "Unhandled message sent to client: " << (unsigned)msg.getId() << std::endl;
-    assert(!"Unhandled message");
+    std::cout << "Unhandled message sent to client: " << static_cast<unsigned>(msg.getId()) << std::endl;
+    constexpr bool Unhandled_message = false;
+    static_cast<void>(Unhandled_message);
+    assert(Unhandled_message);
 }
 
 void TestMsgHandler::handle(ConnectMsg& msg)
@@ -490,8 +492,10 @@ void TestMsgHandler::handle(UnsubscribeMsg& msg)
 
 void TestMsgHandler::handle(TestMqttMessage& msg)
 {
-    std::cout << "Unhandled message sent to broker: " << (unsigned)msg.getId() << std::endl;
-    assert(!"Unhandled message");
+    std::cout << "Unhandled message sent to broker: " << static_cast<unsigned>(msg.getId()) << std::endl;
+    constexpr bool Unhandled_message = false;
+    static_cast<void>(Unhandled_message);
+    assert(Unhandled_message);
 }
 
 void TestMsgHandler::processDataForClient(const DataBuf& data)
