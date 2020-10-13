@@ -40,7 +40,7 @@ extern "C" {
 #define MQTTSN_CLIENT_MINOR_VERSION 13U
 
 /// @brief Patch level of the library
-#define MQTTSN_CLIENT_PATCH_VERSION 1U
+#define MQTTSN_CLIENT_PATCH_VERSION 2U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define MQTTSN_CLIENT_MAKE_VERSION(major_, minor_, patch_) \
