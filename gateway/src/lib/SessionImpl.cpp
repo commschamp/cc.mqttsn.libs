@@ -261,7 +261,7 @@ void SessionImpl::startOp(SessionOp& op)
     op.setSendToClientCb(std::bind(&SessionImpl::sendToClient, this, std::placeholders::_1));
     op.setSendToBrokerCb(std::bind(&SessionImpl::sendToBroker, this, std::placeholders::_1));
     op.setSessionTermReqCb(
-        [this]()
+        [this]() noexcept
         {
             if ((!m_termReqCb) || (m_state.m_terminating)) {
                 return;
