@@ -334,13 +334,13 @@ private:
 
         if (state != nullptr) {
             ptr->setProgramNextTickCallback(
-                [state](unsigned duration)
+                [state](unsigned duration) noexcept
                 {
                     state->m_nextRequestedTicks = duration;
                 });
 
             ptr->setCancelNextTickCallback(
-                [state]() -> unsigned
+                [state]() noexcept -> unsigned
                 {
                     return state->m_nextElapsedTicks;
                 });

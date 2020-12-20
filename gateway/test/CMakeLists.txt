@@ -58,7 +58,7 @@ function (test_func test_suite_name)
         SRC ${tests}
         ${valgrand_args})    
 
-    target_link_libraries(${name} ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME})
+    target_link_libraries(${name} PRIVATE ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME})
 
     target_compile_options(${name} PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wno-old-style-cast -Wno-ignored-qualifiers -Wno-conversion>

@@ -80,9 +80,9 @@ void mqttsn_gw_set_advertise_broadcast_req_cb(
     }
 
     reinterpret_cast<Gateway*>(gw.obj)->setSendDataReqCb(
-        [cb, data](const unsigned char* buf, unsigned bufLen)
+        [cb, data](const unsigned char* buf, std::size_t bufLen)
         {
-            cb(data, buf, bufLen);
+            cb(data, buf, static_cast<unsigned>(bufLen));
         });
 }
 

@@ -1321,8 +1321,7 @@ public:
 
         if (op->m_willInfo.msg != nullptr) {
             auto& dataStorage = outMsg.field_willMsg().value();
-            using DataStorage = typename std::decay<decltype(dataStorage)>::type;
-            dataStorage = DataStorage(op->m_willInfo.msg, op->m_willInfo.msgLen);
+            comms::util::assign(dataStorage, op->m_willInfo.msg, op->m_willInfo.msg + op->m_willInfo.msgLen);
         }
 
         op->m_willMsgSent = true;
@@ -2550,8 +2549,7 @@ private:
         auto* msgBodyBeg = op->m_msg;
         if (msgBodyBeg != nullptr) {
             auto& dataStorage = msg.field_willMsg().value();
-            using DataStorage = typename std::decay<decltype(dataStorage)>::type;
-            dataStorage = DataStorage(msgBodyBeg, op->m_msgLen);
+            comms::util::assign(dataStorage, msgBodyBeg, msgBodyBeg + op->m_msgLen);
         }
         sendMessage(msg);
         return true;
@@ -2656,9 +2654,7 @@ private:
         pubMsg.field_msgId().value() = msgId;
 
         auto& dataStorage = pubMsg.field_data().value();
-        using DataStorage = typename std::decay<decltype(dataStorage)>::type;
-        dataStorage = DataStorage(msg, msgLen);
-
+        comms::util::assign(dataStorage, msg, msg + msgLen);
         sendMessage(pubMsg);
     }
 
