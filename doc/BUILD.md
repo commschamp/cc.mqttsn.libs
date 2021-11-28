@@ -63,7 +63,7 @@ $> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
 
 ### Build Gateway Library and Application(s)
 ```
-$> cmake -DCMAKE_BUILD_TYPE=Release CC_MQTTSN_CLIENT_DEFAULT_LIB=OFF ..
+$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF ..
 ```
 
 
