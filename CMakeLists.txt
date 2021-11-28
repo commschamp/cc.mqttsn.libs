@@ -40,7 +40,7 @@ if ("${CC_COMMS_CHAMPION_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_TAG "v3.1.3")
+    set (CC_COMMS_CHAMPION_TAG "v3.4.1")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
@@ -48,7 +48,7 @@ if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTTSN_PROTOCOL_TAG "v0.20")
+    set (CC_MQTTSN_PROTOCOL_TAG "v0.21")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
@@ -56,7 +56,7 @@ if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTT311_PROTOCOL_TAG "v0.20")
+    set (CC_MQTT311_PROTOCOL_TAG "v0.21")
 endif ()
 
 ##########################################################################
