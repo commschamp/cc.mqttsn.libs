@@ -96,7 +96,8 @@ jobs:
       fail-fast: false
       matrix:
         type: [Debug, Release, MinSizeRel]
-        cc_ver: ["4.0", "5.0", "6.0", 7, 8, 9]
+#        cc_ver: ["4.0", "5.0", "6.0", 7, 8, 9] - clang crashes up to version 9
+        cc_ver: [9]
         cpp: [11, 14, 17, 20]
         exclude:
           - cc_ver: "4.0"
