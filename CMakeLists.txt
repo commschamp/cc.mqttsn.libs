@@ -10,16 +10,16 @@ option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects
 option (CC_MQTTSN_USE_CCACHE "Use ccache on unix system" ON)
 
 # Extra variables
-# CC_MAIN_INSTALL_DIR - Path to external installation directory of comms_champion project.
+# CC_MAIN_INSTALL_DIR - Path to external installation directory of COMMS library.
 # CC_MQTTSN_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqttsn.generated project.
 # CC_MQTT311_GENERATED_INSTALL_DIR - Path to external installation directory of cc.mqtt311.generated project.
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 # CC_MQTTSN_QT_DIR - Path to external Qt5 installation directory
 
-# CC_COMMS_CHAMPION_REPO - Repository of comms_champion project. Defaults to https://github.com/commschamp/comms_champion.git
-# CC_COMMS_CHAMPION_TAG - Tag to use for external comms_champion project. Can be empty.
-# CC_COMMS_CHAMPION_CMAKE_ARGS - Extra CMake arguments  pass to external comms_champion project
+# CC_COMMS_REPO - Repository of COMMS library project. Defaults to https://github.com/commschamp/comms.git
+# CC_COMMS_TAG - Tag to use for external COMMS library project. Can be empty.
+# CC_COMMS_CMAKE_ARGS - Extra CMake arguments  pass to external COMMS library project
 
 # CC_MQTTSN_PROTOCOL_REPO - Repository of cc.mqttsn.generated project. Defaults to https://github.com/commschamp/cc.mqttsn.generated.git
 # CC_MQTTSN_PROTOCOL_TAG - Tag to use for external cc.mqttsn.generated project. Can be empty.
@@ -35,12 +35,12 @@ if (NOT CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 11)
 endif()
 
-if ("${CC_COMMS_CHAMPION_REPO}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_REPO "https://github.com/commschamp/comms_champion.git")
+if ("${CC_COMMS_REPO}" STREQUAL "")
+    set (CC_COMMS_REPO "https://github.com/commschamp/comms.git")
 endif ()
 
-if ("${CC_COMMS_CHAMPION_TAG}" STREQUAL "")
-    set (CC_COMMS_CHAMPION_TAG "v3.4.1")
+if ("${CC_COMMS_TAG}" STREQUAL "")
+    set (CC_COMMS_TAG "v4.0")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
@@ -48,7 +48,7 @@ if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTTSN_PROTOCOL_TAG "v0.21")
+    set (CC_MQTTSN_PROTOCOL_TAG "v1.0")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
@@ -56,7 +56,7 @@ if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTT311_PROTOCOL_TAG "v0.21")
+    set (CC_MQTT311_PROTOCOL_TAG "v1.0")
 endif ()
 
 ##########################################################################
@@ -73,20 +73,19 @@ if (NOT CC_MAIN_INSTALL_DIR)
         COMMAND ${CMAKE_COMMAND} -E make_directory "${EXTERNALS_DIR}"
     )
 
-    set (cc_src_dir "${EXTERNALS_DIR}/comms_champion")
-    set (cc_bin_dir "${PROJECT_BINARY_DIR}/comms_champion")
+    set (cc_src_dir "${EXTERNALS_DIR}/comms")
+    set (cc_bin_dir "${PROJECT_BINARY_DIR}/comms")
     set (CC_MAIN_INSTALL_DIR "${cc_bin_dir}/install")
         
     include (${PROJECT_SOURCE_DIR}/cmake/CC_Prefetch.cmake)
-    cc_prefetch(SRC_DIR ${cc_src_dir} TAG ${CC_COMMS_CHAMPION_TAG})
+    cc_prefetch(SRC_DIR ${cc_src_dir} TAG ${CC_COMMS_TAG})
     
-    include (${cc_src_dir}/cmake/CC_External.cmake)
-    cc_build_during_config(
+    include (${cc_src_dir}/cmake/CC_CommsExternal.cmake)
+    cc_comms_build_during_config(
         SRC_DIR ${cc_src_dir}
         BUILD_DIR ${cc_bin_dir}
-        TAG ${CC_COMMS_CHAMPION_TAG}
+        TAG ${CC_COMMS_TAG}
         CMAKE_ARGS
-            -DCC_COMMS_LIB_ONLY=ON -DCC_NO_UNIT_TESTS=ON
             -DCMAKE_INSTALL_PREFIX=${CC_MAIN_INSTALL_DIR}        
     )
 
@@ -175,7 +174,6 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
         set (cc_mqttsn_update_disconnected UPDATE_DISCONNECTED 1)
     endif ()
     
-    
     ExternalProject_Add(
         "${CC_MQTTSN_EXTERNAL_TGT}"
         PREFIX "${cc_mqttsn_bin_dir}"
@@ -187,7 +185,7 @@ if ("${CC_MQTTSN_GENERATED_INSTALL_DIR}" STREQUAL "")
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
             -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DCMAKE_GENERATOR=${CMAKE_GENERATOR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${cc_mqttsn_install_dir} 
-            -DOPT_NO_COMMS=ON -DOPT_BUILD_TEST=OFF -DOPT_BUILD_PLUGIN=OFF
+            -DOPT_REQUIRE_COMMS_LIB=OFF
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} 
             ${CC_MQTTSN_PROTOCOL_CMAKE_ARGS}
         BINARY_DIR "${cc_mqttsn_bin_dir}"
