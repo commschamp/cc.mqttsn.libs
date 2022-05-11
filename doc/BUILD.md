@@ -11,8 +11,8 @@ The provided libraries depend on several external projects:
   provides definition of the MQTT-SN protocol.
 - [cc.mqtt311.generated](https://github.com/commschamp/cc.mqtt311.generated) - 
   provides definition of the MQTT v3.1.1 protocol.
-- [comms_champion](https://github.com/commschamp/comms_champion) - 
-  provides [COMMS library](https://github.com/commschamp/comms_champion#comms-library)
+- [comms](https://github.com/commschamp/comms) - 
+  provides [COMMS library](https://github.com/commschamp/comms)
   which is used to define the protocols.
 
 In case these external dependencies are also built externally paths to them
