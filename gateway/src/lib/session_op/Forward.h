@@ -14,7 +14,7 @@
 #include "SessionOp.h"
 #include "common.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -86,6 +86,6 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

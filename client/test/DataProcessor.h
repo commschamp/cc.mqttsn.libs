@@ -15,7 +15,7 @@
 #include "comms/comms.h"
 #include "cc_mqttsn/frame/Frame.h"
 #include "cc_mqttsn/Message.h"
-#include "mqttsn/client/common.h"
+#include "cc_mqttsn/client/common.h"
 
 class DataProcessor;
 

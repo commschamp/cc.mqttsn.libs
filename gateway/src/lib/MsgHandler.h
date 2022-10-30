@@ -10,7 +10,7 @@
 #include "comms/comms.h"
 #include "messages.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -19,13 +19,13 @@ namespace gateway
 template<typename TMsgBase>
 using MqttsnMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqttsn::gateway::InputMqttsnMessages<TMsgBase>
+    cc_mqttsn::gateway::InputMqttsnMessages<TMsgBase>
 >;
 
 template<typename TMsgBase>
 using MqttMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqttsn::gateway::InputMqtt311Messages<TMsgBase>
+    cc_mqttsn::gateway::InputMqtt311Messages<TMsgBase>
 >;
 
 class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler<MqttMessage>
@@ -43,6 +43,6 @@ public:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

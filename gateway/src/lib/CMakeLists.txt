@@ -28,8 +28,8 @@ function (lib_mqttsn_gateway)
         target_link_libraries(${name} PRIVATE cc::mqtt311)    
     endif ()
     
-    if (TARGET cc::mqttsn)
-        target_link_libraries(${name} PRIVATE cc::mqttsn)    
+    if (TARGET cc::cc_mqttsn)
+        target_link_libraries(${name} PRIVATE cc::cc_mqttsn)    
     endif ()    
     
     target_link_libraries(${name} PRIVATE cc::comms)

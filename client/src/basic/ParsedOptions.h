@@ -9,7 +9,7 @@
 
 #pragma once
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace client
@@ -20,6 +20,6 @@ using ParsedOptions = details::OptionsParser<TOptions...>;
 
 }  // namespace client
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

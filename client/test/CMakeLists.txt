@@ -18,8 +18,8 @@ function (lib_common_test_client)
     add_dependencies(${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
     target_link_libraries(${COMMON_TEST_CLIENT_LIB} PUBLIC cc::comms)
     
-    if (TARGET cc::mqttsn)
-        target_link_libraries(${COMMON_TEST_CLIENT_LIB} PUBLIC cc::mqttsn)    
+    if (TARGET cc::cc_mqttsn)
+        target_link_libraries(${COMMON_TEST_CLIENT_LIB} PUBLIC cc::cc_mqttsn)    
     endif ()
     
     if (NOT "${CC_MQTTSN_EXTERNAL_TGT_INCLUDE}" STREQUAL "")

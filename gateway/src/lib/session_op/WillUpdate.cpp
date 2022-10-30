@@ -10,7 +10,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -260,7 +260,7 @@ void WillUpdate::sendFailureAndTerm()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 
 

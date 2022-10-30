@@ -10,11 +10,11 @@
 #include <array>
 #include <algorithm>
 
-#include "mqttsn/gateway/Gateway.h"
+#include "cc_mqttsn/gateway/Gateway.h"
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn/frame/Frame.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -86,4 +86,4 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn

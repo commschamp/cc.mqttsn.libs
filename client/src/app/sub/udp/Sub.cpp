@@ -17,7 +17,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTimer>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace client
@@ -482,6 +482,6 @@ void Sub::sendDataConnected(const unsigned char* buf, unsigned bufLen)
 
 }  // namespace client
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

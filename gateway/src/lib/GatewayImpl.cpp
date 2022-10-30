@@ -10,7 +10,7 @@
 #include <cassert>
 #include <iterator>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -78,6 +78,6 @@ void GatewayImpl::sendAndReprogram()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

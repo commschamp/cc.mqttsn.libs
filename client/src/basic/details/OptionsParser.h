@@ -9,7 +9,7 @@
 
 #include "option.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace client
@@ -36,10 +36,10 @@ public:
 
 template <std::size_t TLimit, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::ClientsAllocLimit<TLimit>,
+    cc_mqttsn::client::option::ClientsAllocLimit<TLimit>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::ClientsAllocLimit<TLimit> Option;
+    typedef cc_mqttsn::client::option::ClientsAllocLimit<TLimit> Option;
 public:
     static const bool HasClientsAllocLimit = true;
     static const std::size_t ClientsAllocLimit = Option::Value;
@@ -47,10 +47,10 @@ public:
 
 template <std::size_t TLimit, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::TrackedGatewaysLimit<TLimit>,
+    cc_mqttsn::client::option::TrackedGatewaysLimit<TLimit>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::TrackedGatewaysLimit<TLimit> Option;
+    typedef cc_mqttsn::client::option::TrackedGatewaysLimit<TLimit> Option;
 public:
     static const bool HasTrackedGatewaysLimit = true;
     static const std::size_t TrackedGatewaysLimit = Option::Value;
@@ -58,10 +58,10 @@ public:
 
 template <std::size_t TLimit, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::RegisteredTopicsLimit<TLimit>,
+    cc_mqttsn::client::option::RegisteredTopicsLimit<TLimit>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::RegisteredTopicsLimit<TLimit> Option;
+    typedef cc_mqttsn::client::option::RegisteredTopicsLimit<TLimit> Option;
 public:
     static const bool HasRegisteredTopicsLimit = true;
     static const std::size_t RegisteredTopicsLimit = Option::Value;
@@ -69,10 +69,10 @@ public:
 
 template <std::size_t TSize, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::GwAddStaticStorageSize<TSize>,
+    cc_mqttsn::client::option::GwAddStaticStorageSize<TSize>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::GwAddStaticStorageSize<TSize> Option;
+    typedef cc_mqttsn::client::option::GwAddStaticStorageSize<TSize> Option;
 public:
     static const bool HasGwAddStaticStorageSize = true;
     static const std::size_t GwAddStaticStorageSize = Option::Value;
@@ -80,10 +80,10 @@ public:
 
 template <std::size_t TSize, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::ClientIdStaticStorageSize<TSize>,
+    cc_mqttsn::client::option::ClientIdStaticStorageSize<TSize>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::ClientIdStaticStorageSize<TSize> Option;
+    typedef cc_mqttsn::client::option::ClientIdStaticStorageSize<TSize> Option;
 public:
     static const bool HasClientIdStaticStorageSize = true;
     static const std::size_t ClientIdStaticStorageSize = Option::Value;
@@ -91,10 +91,10 @@ public:
 
 template <std::size_t TSize, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::TopicNameStaticStorageSize<TSize>,
+    cc_mqttsn::client::option::TopicNameStaticStorageSize<TSize>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::TopicNameStaticStorageSize<TSize> Option;
+    typedef cc_mqttsn::client::option::TopicNameStaticStorageSize<TSize> Option;
 public:
     static const bool HasTopicNameStaticStorageSize = true;
     static const std::size_t TopicNameStaticStorageSize = Option::Value;
@@ -102,10 +102,10 @@ public:
 
 template <std::size_t TSize, typename... TOptions>
 class OptionsParser<
-    mqttsn::client::option::MessageDataStaticStorageSize<TSize>,
+    cc_mqttsn::client::option::MessageDataStaticStorageSize<TSize>,
     TOptions...> : public OptionsParser<TOptions...>
 {
-    typedef mqttsn::client::option::MessageDataStaticStorageSize<TSize> Option;
+    typedef cc_mqttsn::client::option::MessageDataStaticStorageSize<TSize> Option;
 public:
     static const bool HasMessageDataStaticStorageSize = true;
     static const std::size_t MessageDataStaticStorageSize = Option::Value;
@@ -124,5 +124,5 @@ class OptionsParser<
 
 }  // namespace client
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 

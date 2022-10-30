@@ -9,7 +9,7 @@
 
 #include "comms/comms.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace client
@@ -65,6 +65,6 @@ private:
 
 }  // namespace client
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

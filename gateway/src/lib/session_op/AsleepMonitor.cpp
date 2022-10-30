@@ -10,7 +10,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -100,7 +100,7 @@ void AsleepMonitor::reqNextTick()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 
 

@@ -11,7 +11,7 @@
 #include <iostream>
 #include <algorithm>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -253,4 +253,4 @@ void Mgr::broadcastAdvertise(const std::uint8_t* buf, std::size_t bufSize)
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn

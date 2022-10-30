@@ -8,7 +8,7 @@
 #include "Connect.h"
 #include <cassert>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -407,7 +407,7 @@ void Connect::clearInternalState()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 
 

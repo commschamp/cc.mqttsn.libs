@@ -6,7 +6,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /// @file
-/// @brief Contains interface of mqttsn::gateway::Session class.
+/// @brief Contains interface of cc_mqttsn::gateway::Session class.
 
 #pragma once
 
@@ -17,7 +17,7 @@
 #include <string>
 #include <utility>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -264,5 +264,5 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 

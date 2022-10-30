@@ -6,7 +6,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /// @file
-/// @brief Contains interface of mqttsn::gateway::Gateway class.
+/// @brief Contains interface of cc_mqttsn::gateway::Gateway class.
 
 #pragma once
 
@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <functional>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -106,6 +106,6 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

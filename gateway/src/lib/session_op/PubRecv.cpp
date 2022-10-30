@@ -10,7 +10,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -165,7 +165,7 @@ void PubRecv::addPubInfo(PubInfoPtr info)
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 
 

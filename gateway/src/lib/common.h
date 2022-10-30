@@ -18,7 +18,7 @@
 
 #include "RegMgr.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -143,5 +143,5 @@ struct SessionState
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 

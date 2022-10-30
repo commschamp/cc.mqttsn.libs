@@ -12,7 +12,7 @@
 
 #include "version.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -55,4 +55,4 @@ constexpr unsigned version()
 
 } // namespace gateway
 
-} // namespace mqttsn
+} // namespace cc_mqttsn

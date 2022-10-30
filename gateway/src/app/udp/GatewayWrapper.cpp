@@ -10,7 +10,7 @@
 #include <iostream>
 #include <algorithm>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -56,6 +56,6 @@ void GatewayWrapper::tickTimeout()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

@@ -14,7 +14,7 @@
 #include <limits>
 #include <cctype>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -427,6 +427,6 @@ void ConfigImpl::readBrokerAddrInfo() const
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

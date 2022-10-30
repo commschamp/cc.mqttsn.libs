@@ -15,7 +15,7 @@
 
 #include "cc_mqttsn/field/FlagsCommon.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -66,6 +66,6 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

@@ -271,7 +271,7 @@ unsigned short getKeepAlive(const QCommandLineParser& parser)
     return keepAlive;
 }
 
-mqttsn::client::app::sub::udp::Sub::TopicsList getTopics(const QCommandLineParser& parser)
+cc_mqttsn::client::app::sub::udp::Sub::TopicsList getTopics(const QCommandLineParser& parser)
 {
     auto topicStrings = parser.values(TopicOpt);
     std::vector<std::string> topics;
@@ -287,10 +287,10 @@ mqttsn::client::app::sub::udp::Sub::TopicsList getTopics(const QCommandLineParse
     topics.erase(
         std::unique(topics.begin(), topics.end()),
         topics.end());
-    return mqttsn::client::app::sub::udp::Sub::TopicsList(topics.begin(), topics.end());
+    return cc_mqttsn::client::app::sub::udp::Sub::TopicsList(topics.begin(), topics.end());
 }
 
-mqttsn::client::app::sub::udp::Sub::TopicIdsList getTopicIds(const QCommandLineParser& parser)
+cc_mqttsn::client::app::sub::udp::Sub::TopicIdsList getTopicIds(const QCommandLineParser& parser)
 {
     auto topicStrings = parser.values(TopicIdOpt);
     std::vector<std::uint16_t> topics;
@@ -316,7 +316,7 @@ mqttsn::client::app::sub::udp::Sub::TopicIdsList getTopicIds(const QCommandLineP
         std::unique(topics.begin(), topics.end()),
         topics.end());
 
-    return mqttsn::client::app::sub::udp::Sub::TopicIdsList(topics.begin(), topics.end());
+    return cc_mqttsn::client::app::sub::udp::Sub::TopicIdsList(topics.begin(), topics.end());
 }
 
 MqttsnQoS getQos(const QCommandLineParser& parser)
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
     unsigned short port = getLocalPort(parser, gwAddr);
     auto keepAlive = getKeepAlive(parser);
 
-    mqttsn::client::app::sub::udp::Sub sub;
+    cc_mqttsn::client::app::sub::udp::Sub sub;
 
     sub.setGwAddr(gwAddr);
     sub.setGwPort(gwPort);

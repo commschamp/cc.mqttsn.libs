@@ -9,7 +9,7 @@
 
 #include <cassert>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -81,7 +81,7 @@ void Disconnect::sendDisconnectSn()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 
 

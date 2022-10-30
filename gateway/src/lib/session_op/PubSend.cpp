@@ -10,7 +10,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -303,7 +303,7 @@ void PubSend::checkSend()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 
 

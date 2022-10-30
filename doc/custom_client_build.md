@@ -190,7 +190,7 @@ set(MQTTSN_CUSTOM_CLIENT_NO_STDLIB TRUE)
 ```
 As the result of such configuration, the static library `cc_mqttsn_bare_metal_client`
 will be generated, which will contain functions defined in 
-`include/mqttsn/client/bare_metal_client.h" header file:
+`include/cc_mqttsn/client/bare_metal_client.h" header file:
 ```c
 MqttsnClientHandle mqttsn_bare_metal_client_new();
 

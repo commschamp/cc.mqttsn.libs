@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <string>
 
-#include "mqttsn/client/common.h"
+#include "cc_mqttsn/client/common.h"
 #include "cc_mqttsn/field/QosCommon.h"
 #include "client.h"
 

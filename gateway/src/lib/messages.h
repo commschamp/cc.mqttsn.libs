@@ -18,7 +18,7 @@
 #include "cc_mqtt311/options/ClientDefaultOptions.h"
 #include "cc_mqtt311/options/DataViewDefaultOptions.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -118,6 +118,6 @@ using MqttProtStack =
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

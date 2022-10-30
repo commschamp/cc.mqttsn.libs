@@ -16,7 +16,7 @@
 
 #include "comms/comms.h"
 #include "comms/util/ScopeGuard.h"
-#include "mqttsn/client/common.h"
+#include "cc_mqttsn/client/common.h"
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn/frame/Frame.h"
 #include "cc_mqttsn/input/ClientInputMessages.h"
@@ -25,7 +25,7 @@
 
 //#include <iostream>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace client
@@ -2981,6 +2981,6 @@ private:
 
 }  // namespace client
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

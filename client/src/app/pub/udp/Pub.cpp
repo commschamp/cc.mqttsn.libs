@@ -16,7 +16,7 @@
 
 #include <QtCore/QCoreApplication>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace client
@@ -496,6 +496,6 @@ void Pub::quitApp()
 
 }  // namespace client
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

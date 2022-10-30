@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <iomanip>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -352,6 +352,6 @@ SessionWrapper::AuthInfo SessionWrapper::getAuthInfoFor(const std::string& clien
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

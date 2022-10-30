@@ -7,7 +7,7 @@
 
 #include "SessionOp.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -25,6 +25,6 @@ void SessionOp::sendDisconnectToClient()
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

@@ -5,11 +5,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "mqttsn/gateway/Config.h"
+#include "cc_mqttsn/gateway/Config.h"
 
 #include "ConfigImpl.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -95,6 +95,6 @@ std::uint16_t Config::brokerTcpHostPort() const
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

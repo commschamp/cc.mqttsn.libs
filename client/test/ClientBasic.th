@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "comms/comms.h"
-#include "mqttsn/client/common.h"
+#include "cc_mqttsn/client/common.h"
 #include "client.h"
 
 CC_DISABLE_WARNINGS()

@@ -16,10 +16,10 @@
 #include <QtNetwork/QTcpSocket>
 #include <QtNetwork/QHostAddress>
 
-#include "mqttsn/gateway/Config.h"
-#include "mqttsn/gateway/Session.h"
+#include "cc_mqttsn/gateway/Config.h"
+#include "cc_mqttsn/gateway/Session.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -37,7 +37,7 @@ class SessionWrapper : public QObject
     typedef QObject Base;
 public:
     typedef unsigned short PortType;
-    typedef mqttsn::gateway::Session::AuthInfo AuthInfo;
+    typedef cc_mqttsn::gateway::Session::AuthInfo AuthInfo;
 
     SessionWrapper(const Config& config, QObject* parent);
     ~SessionWrapper();
@@ -104,7 +104,7 @@ private:
 
     const Config& m_config;
     QTcpSocket m_brokerSocket;
-    mqttsn::gateway::Session m_session;
+    cc_mqttsn::gateway::Session m_session;
     QTimer m_timer;
     unsigned m_reqTicks = 0;
     bool m_reconnectRequested = false;
@@ -121,4 +121,4 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn

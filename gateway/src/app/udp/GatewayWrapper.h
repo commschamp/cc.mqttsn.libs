@@ -10,10 +10,10 @@
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 
-#include "mqttsn/gateway/Config.h"
-#include "mqttsn/gateway/Gateway.h"
+#include "cc_mqttsn/gateway/Config.h"
+#include "cc_mqttsn/gateway/Gateway.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -33,7 +33,7 @@ public:
 
     explicit GatewayWrapper(const Config& config);
 
-    typedef mqttsn::gateway::Gateway::SendDataReqCb SendDataReqCb;
+    typedef cc_mqttsn::gateway::Gateway::SendDataReqCb SendDataReqCb;
     bool start(SendDataReqCb&& sendCb);
 
 private slots:
@@ -41,7 +41,7 @@ private slots:
 
 private:
     const Config& m_config;
-    mqttsn::gateway::Gateway m_gw;
+    cc_mqttsn::gateway::Gateway m_gw;
     QTimer m_timer;
 };
 
@@ -51,4 +51,4 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn

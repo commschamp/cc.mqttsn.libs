@@ -13,13 +13,13 @@
 #include <algorithm>
 #include <limits>
 
-#include "mqttsn/gateway/Session.h"
+#include "cc_mqttsn/gateway/Session.h"
 #include "MsgHandler.h"
 #include "SessionOp.h"
 #include "common.h"
 #include "comms/util/ScopeGuard.h"
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -216,6 +216,6 @@ private:
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

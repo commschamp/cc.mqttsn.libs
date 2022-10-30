@@ -11,7 +11,7 @@
 #include <limits>
 #include <algorithm>
 
-namespace mqttsn
+namespace cc_mqttsn
 {
 
 namespace gateway
@@ -254,6 +254,6 @@ void RegMgr::removeFromTopicMap(const std::string& topic, RegInfosList::iterator
 
 }  // namespace gateway
 
-}  // namespace mqttsn
+}  // namespace cc_mqttsn
 
 

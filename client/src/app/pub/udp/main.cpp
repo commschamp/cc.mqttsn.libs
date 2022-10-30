@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
     unsigned short port = getLocalPort(parser, gwAddr);
     auto keepAlive = getKeepAlive(parser);
 
-    mqttsn::client::app::sub::udp::Pub pub;
+    cc_mqttsn::client::app::sub::udp::Pub pub;
 
     pub.setGwAddr(gwAddr);
     pub.setGwPort(gwPort);

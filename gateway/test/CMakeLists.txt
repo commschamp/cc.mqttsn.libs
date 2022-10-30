@@ -19,8 +19,8 @@ function (lib_common_test_session)
         target_link_libraries(${COMMON_TEST_SESSION_LIB} PRIVATE cc::mqtt311)    
     endif ()
     
-    if (TARGET cc::mqttsn)
-        target_link_libraries(${COMMON_TEST_SESSION_LIB} PRIVATE cc::mqttsn)    
+    if (TARGET cc::cc_mqttsn)
+        target_link_libraries(${COMMON_TEST_SESSION_LIB} PRIVATE cc::cc_mqttsn)    
     endif ()
     
     if (NOT "${CC_MQTT_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
@@ -69,7 +69,7 @@ function (test_func test_suite_name)
         target_link_libraries(${name} PRIVATE cc::mqtt311)    
     endif ()
     
-    if (TARGET cc::mqttsn)
+    if (TARGET cc::cc_mqttsn)
         target_link_libraries(${name} PRIVATE cc::mqtts )    
     endif ()
     

@@ -10,7 +10,7 @@
 #include <memory>
 
 #include "comms/comms.h"
-#include "mqttsn/gateway/Session.h"
+#include "cc_mqttsn/gateway/Session.h"
 
 CC_DISABLE_WARNINGS()
 #include "cxxtest/TestSuite.h"
@@ -51,7 +51,7 @@ public:
     void test28();
 
 private:
-    typedef std::unique_ptr<mqttsn::gateway::Session> SessionPtr;
+    typedef std::unique_ptr<cc_mqttsn::gateway::Session> SessionPtr;
     typedef std::vector<std::uint8_t> DataBuf;
     using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
 
@@ -90,7 +90,7 @@ private:
         const DataBuf* password = nullptr,
         bool connectToBroker = true)
     {
-        SessionPtr session(new mqttsn::gateway::Session);
+        SessionPtr session(new cc_mqttsn::gateway::Session);
 
         session->setNextTickProgramReqCb(
             [&state](unsigned val) {
@@ -143,9 +143,9 @@ private:
             });
 
         session->setAuthInfoReqCb(
-            [username, password](const std::string&) -> mqttsn::gateway::Session::AuthInfo
+            [username, password](const std::string&) -> cc_mqttsn::gateway::Session::AuthInfo
             {
-                mqttsn::gateway::Session::AuthInfo info;
+                cc_mqttsn::gateway::Session::AuthInfo info;
                 if (username == nullptr) {
                     return info;
                 }
@@ -350,7 +350,7 @@ private:
     }
 
     static void dataFromClient(
-        mqttsn::gateway::Session& session,
+        cc_mqttsn::gateway::Session& session,
         const DataBuf& buf,
         const std::string& msgStr)
     {
@@ -360,7 +360,7 @@ private:
     }
 
     static void dataFromBroker(
-        mqttsn::gateway::Session& session,
+        cc_mqttsn::gateway::Session& session,
         const DataBuf& buf,
         const std::string& msgStr)
     {
@@ -1378,7 +1378,7 @@ private:
         return static_cast<cc_mqtt311::field::QosVal>(val);
     }
 
-    static void doTick(State& state, mqttsn::gateway::Session& session, unsigned ms = 0)
+    static void doTick(State& state, cc_mqttsn::gateway::Session& session, unsigned ms = 0)
     {
         if (ms != 0) {
             TS_TRACE("[TICK]: " + std::to_string(ms));
@@ -1400,7 +1400,7 @@ private:
     }
 
     static void doConnect(
-        mqttsn::gateway::Session& session,
+        cc_mqttsn::gateway::Session& session,
         State& state,
         TestMsgHandler& handler,
         WillInfo* willInfo = nullptr,
@@ -1462,13 +1462,13 @@ private:
         verifyNoOtherEvent(state, handler);
     }
 
-    static void doBrokerConnect(mqttsn::gateway::Session& session)
+    static void doBrokerConnect(cc_mqttsn::gateway::Session& session)
     {
         session.setBrokerConnected(true);
         TS_TRACE("[BROKER connected]");
     }
 
-    static void doBrokerDisconnect(mqttsn::gateway::Session& session)
+    static void doBrokerDisconnect(cc_mqttsn::gateway::Session& session)
     {
         session.setBrokerConnected(false);
         TS_TRACE("[BROKER disconnected]");
