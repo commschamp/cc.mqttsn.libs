@@ -39,7 +39,7 @@ private:
         MsgUpd
     };
 
-    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+    using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
 
     using Base::handle;
     virtual void handle(ConnectMsg_SN& msg) override;

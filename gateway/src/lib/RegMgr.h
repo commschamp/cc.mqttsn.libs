@@ -13,7 +13,7 @@
 #include <map>
 #include <tuple>
 
-#include "mqttsn/field/FlagsCommon.h"
+#include "cc_mqttsn/field/FlagsCommon.h"
 
 namespace mqttsn
 {
@@ -25,7 +25,7 @@ class RegMgr
 {
 public:
 
-    using TopicIdType = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
+    using TopicIdType = cc_mqttsn::field::TopicIdTypeVal;
     struct TopicInfo
     {
         std::uint16_t m_topicId = 0;

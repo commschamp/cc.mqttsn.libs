@@ -31,7 +31,7 @@ protected:
     virtual void tickImpl() override;
 private:
     typedef RegMgr::TopicInfo TopicInfo;
-    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+    using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
 
     using Base::handle;
     virtual void handle(RegackMsg_SN& msg) override;

@@ -17,10 +17,10 @@
 #include "comms/comms.h"
 #include "comms/util/ScopeGuard.h"
 #include "mqttsn/client/common.h"
-#include "mqttsn/Message.h"
-#include "mqttsn/frame/Frame.h"
-#include "mqttsn/input/ClientInputMessages.h"
-#include "mqttsn/options/ClientDefaultOptions.h"
+#include "cc_mqttsn/Message.h"
+#include "cc_mqttsn/frame/Frame.h"
+#include "cc_mqttsn/input/ClientInputMessages.h"
+#include "cc_mqttsn/options/ClientDefaultOptions.h"
 #include "details/WriteBufStorageType.h"
 
 //#include <iostream>
@@ -139,31 +139,31 @@ using ClientIdStorageOptT =
 
 //-----------------------------------------------------------
 
-mqttsn::field::QosVal translateQosValue(MqttsnQoS val)
+cc_mqttsn::field::QosVal translateQosValue(MqttsnQoS val)
 {
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
 
     if (val == MqttsnQoS_NoGwPublish) {
-        return mqttsn::field::QosVal::NoGwPublish;
+        return cc_mqttsn::field::QosVal::NoGwPublish;
     }
 
-    return static_cast<mqttsn::field::QosVal>(val);
+    return static_cast<cc_mqttsn::field::QosVal>(val);
 }
 
-MqttsnQoS translateQosValue(mqttsn::field::QosVal val)
+MqttsnQoS translateQosValue(cc_mqttsn::field::QosVal val)
 {
 
-    if (val == mqttsn::field::QosVal::NoGwPublish) {
+    if (val == cc_mqttsn::field::QosVal::NoGwPublish) {
         return MqttsnQoS_NoGwPublish;
     }
 
@@ -177,7 +177,7 @@ class BasicClient
 {
     typedef details::WriteBufStorageTypeT<TClientOpts> WriteBufStorage;
 
-    typedef mqttsn::Message<
+    typedef cc_mqttsn::Message<
         comms::option::IdInfoInterface,
         comms::option::ReadIterator<const std::uint8_t*>,
         comms::option::WriteIterator<std::uint8_t*>,
@@ -318,17 +318,17 @@ class BasicClient
 
     typedef void (BasicClient<TClientOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
 
-    using TopicIdTypeVal = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
-    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+    using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
+    using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
 
 //    struct NoOrigDataViewProtOpts : TProtOpts
 //    {
 //        static const bool HasOrigDataView = false;
 //    };
 
-    class ProtOpts : public mqttsn::options::ClientDefaultOptions
+    class ProtOpts : public cc_mqttsn::options::ClientDefaultOptions
     {
-        using Base = mqttsn::options::ClientDefaultOptions;
+        using Base = cc_mqttsn::options::ClientDefaultOptions;
 
     public:
 
@@ -352,9 +352,9 @@ class BasicClient
         }; // struct frame
     };
 
-    class StorageOptions : public mqttsn::options::ClientDefaultOptions
+    class StorageOptions : public cc_mqttsn::options::ClientDefaultOptions
     {
-        using Base = mqttsn::options::ClientDefaultOptions;
+        using Base = cc_mqttsn::options::ClientDefaultOptions;
     public:
         struct field : public Base::field
         {
@@ -368,11 +368,11 @@ class BasicClient
 
 public:
     typedef typename Message::Field FieldBase;
-    typedef typename mqttsn::field::GwId<ProtOpts>::ValueType GwIdValueType;
-    typedef typename mqttsn::field::TopicName<StorageOptions>::ValueType TopicNameType;
-    typedef typename mqttsn::field::Data<StorageOptions>::ValueType DataType;
-    typedef typename mqttsn::field::TopicId<StorageOptions>::ValueType TopicIdType;
-    typedef typename mqttsn::field::ClientId<StorageOptions>::ValueType ClientIdType;
+    typedef typename cc_mqttsn::field::GwId<ProtOpts>::ValueType GwIdValueType;
+    typedef typename cc_mqttsn::field::TopicName<StorageOptions>::ValueType TopicNameType;
+    typedef typename cc_mqttsn::field::Data<StorageOptions>::ValueType DataType;
+    typedef typename cc_mqttsn::field::TopicId<StorageOptions>::ValueType TopicIdType;
+    typedef typename cc_mqttsn::field::ClientId<StorageOptions>::ValueType ClientIdType;
 
     struct GwInfo
     {
@@ -386,33 +386,33 @@ public:
 
     typedef details::GwInfoStorageTypeT<GwInfo, TClientOpts> GwInfoStorage;
 
-    typedef mqttsn::message::Advertise<Message, ProtOpts> AdvertiseMsg;
-    typedef mqttsn::message::Searchgw<Message, ProtOpts> SearchgwMsg;
-    typedef mqttsn::message::Gwinfo<Message, ProtOpts> GwinfoMsg;
-    typedef mqttsn::message::Connect<Message, ProtOpts> ConnectMsg;
-    typedef mqttsn::message::Connack<Message, ProtOpts> ConnackMsg;
-    typedef mqttsn::message::Willtopicreq<Message, ProtOpts> WilltopicreqMsg;
-    typedef mqttsn::message::Willtopic<Message, ProtOpts> WilltopicMsg;
-    typedef mqttsn::message::Willmsgreq<Message, ProtOpts> WillmsgreqMsg;
-    typedef mqttsn::message::Willmsg<Message, ProtOpts> WillmsgMsg;
-    typedef mqttsn::message::Register<Message, ProtOpts> RegisterMsg;
-    typedef mqttsn::message::Regack<Message, ProtOpts> RegackMsg;
-    typedef mqttsn::message::Publish<Message, ProtOpts> PublishMsg;
-    typedef mqttsn::message::Puback<Message, ProtOpts> PubackMsg;
-    typedef mqttsn::message::Pubrec<Message, ProtOpts> PubrecMsg;
-    typedef mqttsn::message::Pubrel<Message, ProtOpts> PubrelMsg;
-    typedef mqttsn::message::Pubcomp<Message, ProtOpts> PubcompMsg;
-    typedef mqttsn::message::Subscribe<Message, ProtOpts> SubscribeMsg;
-    typedef mqttsn::message::Suback<Message, ProtOpts> SubackMsg;
-    typedef mqttsn::message::Unsubscribe<Message, ProtOpts> UnsubscribeMsg;
-    typedef mqttsn::message::Unsuback<Message, ProtOpts> UnsubackMsg;
-    typedef mqttsn::message::Pingreq<Message, ProtOpts> PingreqMsg;
-    typedef mqttsn::message::Pingresp<Message, ProtOpts> PingrespMsg;
-    typedef mqttsn::message::Disconnect<Message, ProtOpts> DisconnectMsg;
-    typedef mqttsn::message::Willtopicupd<Message, ProtOpts> WilltopicupdMsg;
-    typedef mqttsn::message::Willtopicresp<Message, ProtOpts> WilltopicrespMsg;
-    typedef mqttsn::message::Willmsgupd<Message, ProtOpts> WillmsgupdMsg;
-    typedef mqttsn::message::Willmsgresp<Message, ProtOpts> WillmsgrespMsg;
+    typedef cc_mqttsn::message::Advertise<Message, ProtOpts> AdvertiseMsg;
+    typedef cc_mqttsn::message::Searchgw<Message, ProtOpts> SearchgwMsg;
+    typedef cc_mqttsn::message::Gwinfo<Message, ProtOpts> GwinfoMsg;
+    typedef cc_mqttsn::message::Connect<Message, ProtOpts> ConnectMsg;
+    typedef cc_mqttsn::message::Connack<Message, ProtOpts> ConnackMsg;
+    typedef cc_mqttsn::message::Willtopicreq<Message, ProtOpts> WilltopicreqMsg;
+    typedef cc_mqttsn::message::Willtopic<Message, ProtOpts> WilltopicMsg;
+    typedef cc_mqttsn::message::Willmsgreq<Message, ProtOpts> WillmsgreqMsg;
+    typedef cc_mqttsn::message::Willmsg<Message, ProtOpts> WillmsgMsg;
+    typedef cc_mqttsn::message::Register<Message, ProtOpts> RegisterMsg;
+    typedef cc_mqttsn::message::Regack<Message, ProtOpts> RegackMsg;
+    typedef cc_mqttsn::message::Publish<Message, ProtOpts> PublishMsg;
+    typedef cc_mqttsn::message::Puback<Message, ProtOpts> PubackMsg;
+    typedef cc_mqttsn::message::Pubrec<Message, ProtOpts> PubrecMsg;
+    typedef cc_mqttsn::message::Pubrel<Message, ProtOpts> PubrelMsg;
+    typedef cc_mqttsn::message::Pubcomp<Message, ProtOpts> PubcompMsg;
+    typedef cc_mqttsn::message::Subscribe<Message, ProtOpts> SubscribeMsg;
+    typedef cc_mqttsn::message::Suback<Message, ProtOpts> SubackMsg;
+    typedef cc_mqttsn::message::Unsubscribe<Message, ProtOpts> UnsubscribeMsg;
+    typedef cc_mqttsn::message::Unsuback<Message, ProtOpts> UnsubackMsg;
+    typedef cc_mqttsn::message::Pingreq<Message, ProtOpts> PingreqMsg;
+    typedef cc_mqttsn::message::Pingresp<Message, ProtOpts> PingrespMsg;
+    typedef cc_mqttsn::message::Disconnect<Message, ProtOpts> DisconnectMsg;
+    typedef cc_mqttsn::message::Willtopicupd<Message, ProtOpts> WilltopicupdMsg;
+    typedef cc_mqttsn::message::Willtopicresp<Message, ProtOpts> WilltopicrespMsg;
+    typedef cc_mqttsn::message::Willmsgupd<Message, ProtOpts> WillmsgupdMsg;
+    typedef cc_mqttsn::message::Willmsgresp<Message, ProtOpts> WillmsgrespMsg;
 
     BasicClient() = default;
     ~BasicClient() noexcept = default;
@@ -1423,8 +1423,8 @@ public:
             topicName = &shortTopicName[0];
         }
 
-        if ((msg.field_flags().field_qos().value() < mqttsn::field::QosVal::AtLeastOnceDelivery) ||
-            (mqttsn::field::QosVal::ExactlyOnceDelivery < msg.field_flags().field_qos().value())) {
+        if ((msg.field_flags().field_qos().value() < cc_mqttsn::field::QosVal::AtLeastOnceDelivery) ||
+            (cc_mqttsn::field::QosVal::ExactlyOnceDelivery < msg.field_flags().field_qos().value())) {
 
             if ((topicName == nullptr) &&
                 (msg.field_flags().field_topicIdType().value() != TopicIdTypeVal::PredefinedTopicId)) {
@@ -1441,13 +1441,13 @@ public:
             return;
         }
 
-        if (msg.field_flags().field_qos().value() == mqttsn::field::QosVal::AtLeastOnceDelivery) {
+        if (msg.field_flags().field_qos().value() == cc_mqttsn::field::QosVal::AtLeastOnceDelivery) {
             sendPuback(msg.field_topicId().value(), msg.field_msgId().value(), ReturnCodeVal::Accepted);
             reportMsgFunc(topicName);
             return;
         }
 
-        COMMS_ASSERT(msg.field_flags().field_qos().value() == mqttsn::field::QosVal::ExactlyOnceDelivery);
+        COMMS_ASSERT(msg.field_flags().field_qos().value() == cc_mqttsn::field::QosVal::ExactlyOnceDelivery);
 
         bool newMessage =
             ((!msg.field_flags().field_high().getBitValue_Dup()) ||
@@ -1799,8 +1799,8 @@ private:
         >
     >::Type OpStorageType;
 
-    using InputMessages = mqttsn::input::ClientInputMessages<Message, ProtOpts>;
-    typedef mqttsn::frame::Frame<Message, InputMessages, ProtOpts> ProtStack;
+    using InputMessages = cc_mqttsn::input::ClientInputMessages<Message, ProtOpts>;
+    typedef cc_mqttsn::frame::Frame<Message, InputMessages, ProtOpts> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
 
     struct RegInfo
@@ -2641,7 +2641,7 @@ private:
         const std::uint8_t* msg,
         std::size_t msgLen,
         TopicIdTypeVal topicIdType,
-        mqttsn::field::QosVal qos,
+        cc_mqttsn::field::QosVal qos,
         bool retain,
         bool duplicate)
     {

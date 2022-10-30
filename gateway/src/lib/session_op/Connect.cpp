@@ -152,7 +152,7 @@ void Connect::handle(PublishMsg_SN& msg)
         return;
     }
 
-    if (msg.field_flags().field_qos().value() != mqttsn::field::QosVal::NoGwPublish) {
+    if (msg.field_flags().field_qos().value() != cc_mqttsn::field::QosVal::NoGwPublish) {
         return;
     }
 

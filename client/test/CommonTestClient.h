@@ -15,7 +15,7 @@
 #include <string>
 
 #include "mqttsn/client/common.h"
-#include "mqttsn/field/QosCommon.h"
+#include "cc_mqttsn/field/QosCommon.h"
 #include "client.h"
 
 typedef decltype(&mqttsn_client_new) ClientNewFunc;
@@ -179,8 +179,8 @@ public:
 
     MqttsnErrorCode checkMessages();
 
-    static MqttsnQoS transformQos(mqttsn::field::QosVal val);
-    static mqttsn::field::QosVal transformQos(MqttsnQoS val);
+    static MqttsnQoS transformQos(cc_mqttsn::field::QosVal val);
+    static cc_mqttsn::field::QosVal transformQos(MqttsnQoS val);
 
 private:
     typedef std::vector<std::uint8_t> InputData;

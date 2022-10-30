@@ -158,7 +158,7 @@ public:
 
 private:
 
-    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+    using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
     typedef std::vector<SessionOpPtr> OpsList;
 
     using Base::handle;

@@ -434,35 +434,35 @@ MqttsnErrorCode CommonTestClient::checkMessages()
         this);
 }
 
-MqttsnQoS CommonTestClient::transformQos(mqttsn::field::QosVal val)
+MqttsnQoS CommonTestClient::transformQos(cc_mqttsn::field::QosVal val)
 {
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
 
-    if (val == mqttsn::field::QosVal::NoGwPublish) {
+    if (val == cc_mqttsn::field::QosVal::NoGwPublish) {
         return MqttsnQoS_NoGwPublish;
     }
 
     return static_cast<MqttsnQoS>(val);
 }
 
-mqttsn::field::QosVal CommonTestClient::transformQos(MqttsnQoS val)
+cc_mqttsn::field::QosVal CommonTestClient::transformQos(MqttsnQoS val)
 {
 
     if (val == MqttsnQoS_NoGwPublish) {
-        return mqttsn::field::QosVal::NoGwPublish;
+        return cc_mqttsn::field::QosVal::NoGwPublish;
     }
 
-    return static_cast<mqttsn::field::QosVal>(val);
+    return static_cast<cc_mqttsn::field::QosVal>(val);
 }
 
 CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)

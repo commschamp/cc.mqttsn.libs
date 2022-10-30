@@ -29,8 +29,7 @@ function (bin_gateway_udp)
     #qt5_add_resources(resources ${CMAKE_CURRENT_SOURCE_DIR}/ui.qrc)
 
     add_executable(${name} ${src} ${moc})
-    target_link_libraries(${name} ${MQTTSN_GATEWAY_LIB_NAME})
-    qt5_use_modules(${name} Network Core)
+    target_link_libraries(${name} ${MQTTSN_GATEWAY_LIB_NAME} Qt5::Network Qt5::Core)
     
     install (
         TARGETS ${name}

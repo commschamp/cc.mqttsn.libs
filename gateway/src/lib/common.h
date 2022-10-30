@@ -13,8 +13,8 @@
 #include <memory>
 #include <limits>
 
-#include "mqttsn/field/QosCommon.h"
-#include "mqtt311/field/QosCommon.h"
+#include "cc_mqttsn/field/QosCommon.h"
+#include "cc_mqtt311/field/QosCommon.h"
 
 #include "RegMgr.h"
 
@@ -35,27 +35,27 @@ enum QoS
 };
 
 inline
-mqtt311::field::QosVal translateQosForBroker(QoS val)
+cc_mqtt311::field::QosVal translateQosForBroker(QoS val)
 {
-    return static_cast<mqtt311::field::QosVal>(val);
+    return static_cast<cc_mqtt311::field::QosVal>(val);
 }
 
 inline
-mqttsn::field::QosVal translateQosForClient(QoS val)
+cc_mqttsn::field::QosVal translateQosForClient(QoS val)
 {
-    return static_cast<mqttsn::field::QosVal>(val);
+    return static_cast<cc_mqttsn::field::QosVal>(val);
 }
 
 inline
-QoS translateQos(mqtt311::field::QosVal val)
+QoS translateQos(cc_mqtt311::field::QosVal val)
 {
     return static_cast<QoS>(val);
 }
 
 inline
-QoS translateQos(mqttsn::field::QosVal val)
+QoS translateQos(cc_mqttsn::field::QosVal val)
 {
-    if (val == mqttsn::field::QosVal::NoGwPublish) {
+    if (val == cc_mqttsn::field::QosVal::NoGwPublish) {
         return QoS_AtMostOnceDelivery;
     }
 

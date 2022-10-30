@@ -8,10 +8,11 @@
 #pragma once
 
 #include <array>
+#include <algorithm>
 
 #include "mqttsn/gateway/Gateway.h"
-#include "mqttsn/Message.h"
-#include "mqttsn/frame/Frame.h"
+#include "cc_mqttsn/Message.h"
+#include "cc_mqttsn/frame/Frame.h"
 
 namespace mqttsn
 {
@@ -26,15 +27,15 @@ public:
     using SendDataReqCb = Gateway::SendDataReqCb;
 
     using Message =
-        mqttsn::Message<
+        cc_mqttsn::Message<
         comms::option::IdInfoInterface,
             comms::option::WriteIterator<std::uint8_t*>,
             comms::option::LengthInfoInterface
         >;
 
-    using AdvertiseMsg = mqttsn::message::Advertise<Message>;
+    using AdvertiseMsg = cc_mqttsn::message::Advertise<Message>;
     using AllMsgs = std::tuple<AdvertiseMsg>;
-    using ProtStack = mqttsn::frame::Frame<Message, AllMsgs>;
+    using ProtStack = cc_mqttsn::frame::Frame<Message, AllMsgs>;
 
     template <typename TFunc>
     void setNextTickProgramReqCb(TFunc&& func)

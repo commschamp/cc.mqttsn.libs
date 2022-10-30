@@ -68,8 +68,8 @@ private:
 
     typedef std::list<NoGwPubInfo> NoGwPubInfosList;
 
-    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
-    using TopicIdTypeVal = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
+    using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
+    using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
     void sendPubackToClient(
         std::uint16_t topicId,
         std::uint16_t msgId,

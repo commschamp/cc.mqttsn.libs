@@ -96,7 +96,7 @@ private:
     typedef DataProcessor::WilltopicupdMsg WilltopicupdMsg;
     typedef DataProcessor::WillmsgupdMsg WillmsgupdMsg;
 
-    using TopicIdTypeVal = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
+    using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
 
     static const std::string DefaultClientId;
     static const unsigned DefaultAdvertisePeriod = 5 * 60 * 1000;
@@ -570,7 +570,7 @@ private:
             clearState(state);
         }
 
-        auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+        auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
         dataFromGw(client, connackMsg, "CONNACK");
         verifyCb_ReportedConnect(state, MqttsnAsyncOpStatus_Successful);
         TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
@@ -743,7 +743,7 @@ private:
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
         std::uint16_t msgId,
-        mqttsn::field::ReturnCodeVal retCode = mqttsn::field::ReturnCodeVal::Accepted)
+        cc_mqttsn::field::ReturnCodeVal retCode = cc_mqttsn::field::ReturnCodeVal::Accepted)
     {
         bool sent = false;
         auto oldCb = dataProc.setRegackMsgReportCallback(
@@ -802,7 +802,7 @@ private:
         DataProcessor& dataProc,
         MqttsnTopicId topicId,
         std::uint16_t msgId,
-        mqttsn::field::ReturnCodeVal retCode = mqttsn::field::ReturnCodeVal::Accepted)
+        cc_mqttsn::field::ReturnCodeVal retCode = cc_mqttsn::field::ReturnCodeVal::Accepted)
     {
         bool sent = false;
         auto oldCb = dataProc.setPubackMsgReportCallback(
@@ -1350,12 +1350,12 @@ private:
         state.m_reportedMessageChecks.pop_front();
     }
 
-    static MqttsnQoS transformQos(mqttsn::field::QosVal val)
+    static MqttsnQoS transformQos(cc_mqttsn::field::QosVal val)
     {
         return CommonTestClient::transformQos(val);
     }
 
-    static mqttsn::field::QosVal transformQos(MqttsnQoS val)
+    static cc_mqttsn::field::QosVal transformQos(MqttsnQoS val)
     {
         return CommonTestClient::transformQos(val);
     }
@@ -1498,7 +1498,7 @@ void ClientBasic::test3()
     verifySent_ConnectMsg(state, dataProc, ClientId, KeepAlive, true, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     clearState(state);
-    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
 
     TS_ASSERT_EQUALS(state.m_connectionStatus, MqttsnAsyncOpStatus_Successful);
@@ -1548,7 +1548,7 @@ void ClientBasic::test4()
 
     // Send ack message, check ignored
     state.m_nextElapsedTicks = 1000;
-    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
     // Ack must be ignored
     TS_ASSERT(state.m_nextOutput.empty())
@@ -1920,14 +1920,14 @@ void ClientBasic::test13()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId + 1, mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     TS_ASSERT(state.m_nextOutput.empty()); // must be ignored
     verifyNoOtherEvent(state);
 
     clearState(state);
-    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -1968,7 +1968,7 @@ void ClientBasic::test14()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_InvalidId);
     verifyNoOtherEvent(state);
@@ -2068,13 +2068,13 @@ void ClientBasic::test16()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId + 1, mqttsn::field::ReturnCodeVal::Accepted);
+    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     TS_ASSERT(state.m_nextOutput.empty());
     verifyNoOtherEvent(state);
 
-    regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultKeepAlive * 1000);
@@ -2148,7 +2148,7 @@ void ClientBasic::test17()
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
     verifyNoOtherEvent(state);
 
-    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
     verifyCb_ReportedReconnect(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -2203,7 +2203,7 @@ void ClientBasic::test18()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
@@ -2221,7 +2221,7 @@ void ClientBasic::test18()
     clearState(state);
     static const unsigned NextTicks = 1000;
     state.m_nextElapsedTicks = NextTicks;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, (DefaultKeepAlive * 1000) - NextTicks);
@@ -2264,7 +2264,7 @@ void ClientBasic::test19()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
@@ -2273,7 +2273,7 @@ void ClientBasic::test19()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, (DefaultKeepAlive * 1000) - NextTicks);
@@ -2289,7 +2289,7 @@ void ClientBasic::test19()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromGw(*client, pubackMsg, "PUBACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     msgId = verifySent_RegisterMsg(state, dataProc, Topic);
@@ -2298,7 +2298,7 @@ void ClientBasic::test19()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
@@ -2307,7 +2307,7 @@ void ClientBasic::test19()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, (DefaultKeepAlive * 1000) - NextTicks);
@@ -2350,7 +2350,7 @@ void ClientBasic::test20()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
@@ -2359,7 +2359,7 @@ void ClientBasic::test20()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_InvalidId);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, (DefaultKeepAlive * 1000) - NextTicks);
@@ -2413,7 +2413,7 @@ void ClientBasic::test21()
 
     clearState(state);
     state.m_nextElapsedTicks = NextTicks;
-    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdType, Qos, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -2533,7 +2533,7 @@ void ClientBasic::test23()
     clearState(state);
     static const unsigned NextTicks = 1000;
     state.m_nextElapsedTicks = NextTicks;
-    auto regackMsg = dataProc.prepareRegackMsg(Topic1Id, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto regackMsg = dataProc.prepareRegackMsg(Topic1Id, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     msgId = verifySent_PublishMsg(state, dataProc, Topic1Id, Data, TopicIdTypeVal::Normal, Qos1, Retain, false);
     TS_ASSERT_EQUALS(state.m_nextRequestedTicks, DefaultRetryTimeout);
@@ -2569,7 +2569,7 @@ void ClientBasic::test23()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pubackMsg = dataProc.preparePubackMsg(Topic2Id, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(Topic2Id, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -2593,7 +2593,7 @@ void ClientBasic::test24()
     static const MqttsnTopicId TopicId = 0x1234;
     static const std::uint16_t MsgId = 0x5555;
     static const auto TopicIdType = TopicIdTypeVal::PredefinedTopicId;
-    static const auto Qos = mqttsn::field::QosVal::AtMostOnceDelivery;
+    static const auto Qos = cc_mqttsn::field::QosVal::AtMostOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
         0x01, 0x02, 0x03, 0x04, 0xab, 0xcd, 0xef
@@ -2624,7 +2624,7 @@ void ClientBasic::test24()
     state.m_nextElapsedTicks = 1000;
     publishMsg = dataProc.preparePublishMsg(TopicId + 1, MsgId + 2, Data, TopicIdTypeVal::Normal, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
-    verifySent_PubackMsg(state, dataProc, TopicId + 1, MsgId + 2, mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    verifySent_PubackMsg(state, dataProc, TopicId + 1, MsgId + 2, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     TS_ASSERT(state.m_reportedMsgs.empty());
     verifyNoOtherEvent(state);
 }
@@ -2654,7 +2654,7 @@ void ClientBasic::test25()
 
     static const std::uint16_t MsgId = 0x5555;
     static const auto TopicIdType = TopicIdTypeVal::Normal;
-    static const auto Qos = mqttsn::field::QosVal::AtLeastOnceDelivery;
+    static const auto Qos = cc_mqttsn::field::QosVal::AtLeastOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
         0x01, 0x02, 0x03, 0x04, 0xab, 0xcd, 0xef
@@ -2712,7 +2712,7 @@ void ClientBasic::test26()
 
     static const std::uint16_t MsgId = 0x5555;
     static const auto TopicIdType = TopicIdTypeVal::PredefinedTopicId;
-    static const auto Qos = mqttsn::field::QosVal::ExactlyOnceDelivery;
+    static const auto Qos = cc_mqttsn::field::QosVal::ExactlyOnceDelivery;
     static const bool Retain = false;
     static const std::vector<std::uint8_t> Data = {
         0x01, 0x02, 0x03, 0x04, 0xab, 0xcd, 0xef
@@ -2797,7 +2797,7 @@ void ClientBasic::test27()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId + 1, mqttsn::field::ReturnCodeVal::Accepted);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     TS_ASSERT(state.m_reportedSubscribes.empty());
     verifyNoOtherEvent(state);
@@ -2810,7 +2810,7 @@ void ClientBasic::test27()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos);
     verifyNoOtherEvent(state);
@@ -2856,7 +2856,7 @@ void ClientBasic::test28()
     static const MqttsnTopicId TopicId = 0x1111;
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::field::ReturnCodeVal::Congestion);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Congestion);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Congestion, Qos2);
     verifyNoOtherEvent(state);
@@ -2870,7 +2870,7 @@ void ClientBasic::test28()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos2);
     verifyNoOtherEvent(state);
@@ -2889,7 +2889,7 @@ void ClientBasic::test28()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -2963,7 +2963,7 @@ void ClientBasic::test29()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), 0, msgId, mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), 0, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_InvalidId, Qos);
     verifyNoOtherEvent(state);
@@ -3006,7 +3006,7 @@ void ClientBasic::test30()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos);
     verifyNoOtherEvent(state);
@@ -3021,7 +3021,7 @@ void ClientBasic::test30()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromGw(*client, pubackMsg, "PUBACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     verifySent_RegisterMsg(state, dataProc, Topic);
@@ -3042,7 +3042,7 @@ void ClientBasic::test30()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos);
     verifyNoOtherEvent(state);
@@ -3051,7 +3051,7 @@ void ClientBasic::test30()
     state.m_nextElapsedTicks = 1000;
     client->publish(Topic, &Data[0], Data.size(), Qos, Retain);
     msgId = verifySent_PublishMsg(state, dataProc, TopicId, Data, TopicIdTypeVal::Normal, Qos, Retain, false);
-    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -3238,14 +3238,14 @@ void ClientBasic::test34()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto msgRespMsg = dataProc.prepareWillmsgrespMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto msgRespMsg = dataProc.prepareWillmsgrespMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, msgRespMsg, "WILLMSGRESP");
     TS_ASSERT(state.m_nextOutput.empty());
     verifyNoOtherEvent(state);
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto topicRespMsg = dataProc.prepareWilltopicrespMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto topicRespMsg = dataProc.prepareWilltopicrespMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
     verifyCb_ReportedWillTopicUpdate(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -3348,7 +3348,7 @@ void ClientBasic::test36()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto topicRespMsg = dataProc.prepareWilltopicrespMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto topicRespMsg = dataProc.prepareWilltopicrespMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, topicRespMsg, "WILLTOPICRESP");
     verifyCb_ReportedWillTopicUpdate(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -3428,7 +3428,7 @@ void ClientBasic::test37()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto msgRespMsg = dataProc.prepareWillmsgrespMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto msgRespMsg = dataProc.prepareWillmsgrespMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, msgRespMsg, "WILLMSGRESP");
     TS_ASSERT(state.m_nextOutput.empty());
     verifyNoOtherEvent(state);
@@ -3602,7 +3602,7 @@ void ClientBasic::test39()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
     verifyCb_ReportedReconnect(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -3658,7 +3658,7 @@ void ClientBasic::test40()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
     verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -3698,7 +3698,7 @@ void ClientBasic::test41()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
     verifyCb_ReportedWillUpdate(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -3732,7 +3732,7 @@ void ClientBasic::test42()
     clearState(state);
     static const unsigned NextTicks = 1000;
     state.m_nextElapsedTicks = NextTicks;
-    auto connackMsg = dataProc.prepareConnackMsg(mqttsn::field::ReturnCodeVal::Accepted);
+    auto connackMsg = dataProc.prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, connackMsg, "CONNACK");
 
     // check connected
@@ -3796,7 +3796,7 @@ void ClientBasic::test44()
             (static_cast<MqttsnTopicId>(Topic[0]) << 8U) | static_cast<std::uint8_t>(Topic[1]));
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::field::ReturnCodeVal::Congestion);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Congestion);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Congestion, Qos2);
     verifyNoOtherEvent(state);
@@ -3810,7 +3810,7 @@ void ClientBasic::test44()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos2);
     verifyNoOtherEvent(state);
@@ -3829,7 +3829,7 @@ void ClientBasic::test44()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
@@ -3875,7 +3875,7 @@ void ClientBasic::test45()
     static const MqttsnTopicId TopicId = 0x1111;
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::field::ReturnCodeVal::Congestion);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Congestion);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Congestion, Qos2);
     verifyNoOtherEvent(state);
@@ -3889,7 +3889,7 @@ void ClientBasic::test45()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    subackMsg = dataProc.prepareSubackMsg(transformQos(Qos2), TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     verifyCb_ReportedSubsribe(state, MqttsnAsyncOpStatus_Successful, Qos2);
     verifyNoOtherEvent(state);
@@ -3908,7 +3908,7 @@ void ClientBasic::test45()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     verifyCb_ReportedPublish(state, MqttsnAsyncOpStatus_Successful);
     verifyNoOtherEvent(state);
