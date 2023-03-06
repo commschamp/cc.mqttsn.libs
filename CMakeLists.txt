@@ -40,7 +40,7 @@ if ("${CC_COMMS_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_COMMS_TAG}" STREQUAL "")
-    set (CC_COMMS_TAG "v5.0.1")
+    set (CC_COMMS_TAG "develop")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
@@ -48,7 +48,7 @@ if ("${CC_MQTTSN_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTTSN_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTTSN_PROTOCOL_TAG "v2.0")
+    set (CC_MQTTSN_PROTOCOL_TAG "v2.1")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
@@ -56,7 +56,7 @@ if ("${CC_MQTT311_PROTOCOL_REPO}" STREQUAL "")
 endif ()
 
 if ("${CC_MQTT311_PROTOCOL_TAG}" STREQUAL "")
-    set (CC_MQTT311_PROTOCOL_TAG "v2.0")
+    set (CC_MQTT311_PROTOCOL_TAG "v2.1")
 endif ()
 
 ##########################################################################
