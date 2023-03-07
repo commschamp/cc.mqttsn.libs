@@ -148,9 +148,9 @@ Also **NOTE**, that the library is implemented in **C++** (although it provides
 constructors prior to invocation of the `main()` function. 
 
 It is recommended to read 
-[Practical Guide to Bare Metal C++](https://www.gitbook.com/book/arobenko/bare_metal_cpp/details)
+[Practical Guide to Bare Metal C++](https://arobenko.github.io/bare_metal_cpp)
 free e-book, especially 
-[Know Your Compiler Output](https://arobenko.gitbooks.io/bare_metal_cpp/content/compiler_output/)
+[Know Your Compiler Output](https://arobenko.github.io/bare_metal_cpp/#_know_your_compiler_output)
 chapter. It will guide the reader through necessary functions that may need
 to be implemented to make the bare-metal application, written in C++, work.
 
