@@ -2,6 +2,7 @@ image:
     - Visual Studio 2015
     - Visual Studio 2017
     - Visual Studio 2019
+    - Visual Studio 2022
 
 init:
     - git config --global core.autocrlf input
@@ -18,6 +19,10 @@ configuration:
     - Release
 
 environment:
+    COMMS_BRANCH: develop
+    CC_MQTTSN_BRANCH: master
+    CC_MQTT311_BRANCH: master
+
     matrix:
         - CPP_STD: 11
         - CPP_STD: 14
@@ -37,13 +42,24 @@ matrix:
 install:
     - call script\appveyor_install.bat
     - set PATH=%PATH%;%QTDIR%\bin
+    - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
+    - if exist %BUILD_DIR% rmdir /S /Q %BUILD_DIR%
+    - set COMMS_TAG=%COMMS_BRANCH%
+    - set CC_MQTTSN_TAG=%CC_MQTTSN_BRANCH%
+    - set CC_MQTT311_TAG=%CC_MQTT311_BRANCH%
+    - set COMMON_INSTALL_DIR=%BUILD_DIR%\install
+    - set COMMON_BUILD_TYPE=%CONFIGURATION%
+    - set COMMON_CXX_STANDARD=%CPP_STD%
+    - call script\prepare_externals.bat    
 
 build_script:
-    - mkdir build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
-    - cd build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
-    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCC_MQTTSN_QT_DIR=%QTDIR% -DCMAKE_INSTALL_PREFIX=install -DCMAKE_CXX_STANDARD=%CPP_STD%
-    - nmake install
+    - echo ------------------------- Building Project -------------------------
+    - cd %BUILD_DIR%
+    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=install ^
+        -DCMAKE_CXX_STANDARD=%CPP_STD%
+    - cmake --build . --config %CONFIGURATION% --target install
 
 test_script:
+    - echo ------------------------- Testing -------------------------
     - ctest 
 
