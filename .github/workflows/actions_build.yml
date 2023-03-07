@@ -2,6 +2,11 @@ name: Github Actions Build
 
 on: [push]
 
+env:
+  COMMS_BRANCH: develop
+  CC_MQTTSN_BRANCH: master
+  CC_MQTT311_BRANCH: master
+
 jobs:
   build_gcc_old_ubuntu_20_04:
     runs-on: ubuntu-20.04
@@ -29,12 +34,27 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Prepare externals
+      shell: bash
+      run: $GITHUB_WORKSPACE/script/prepare_externals.sh
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        CC: gcc-${{matrix.cc_ver}}
+        CXX: g++-${{matrix.cc_ver}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_BRANCH}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
-        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold
+        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=gold -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install
       env:
         CC: gcc-${{matrix.cc_ver}}
         CXX: g++-${{matrix.cc_ver}}
@@ -72,12 +92,27 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Prepare externals
+      shell: bash
+      run: $GITHUB_WORKSPACE/script/prepare_externals.sh
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        CC: gcc-${{matrix.cc_ver}}
+        CXX: g++-${{matrix.cc_ver}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_BRANCH}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: 
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
-        -DCMAKE_INSTALL_PREFIX=install
+        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install
       env:
         CC: gcc-${{matrix.cc_ver}}
         CXX: g++-${{matrix.cc_ver}}
@@ -115,12 +150,27 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Prepare externals
+      shell: bash
+      run: $GITHUB_WORKSPACE/script/prepare_externals.sh
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        CC: gcc-${{matrix.cc_ver}}
+        CXX: g++-${{matrix.cc_ver}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_BRANCH}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: 
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
-        -DCMAKE_INSTALL_PREFIX=install
+        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install
       env:
         CC: gcc-${{matrix.cc_ver}}
         CXX: g++-${{matrix.cc_ver}}
@@ -159,12 +209,27 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Prepare externals
+      shell: bash
+      run: $GITHUB_WORKSPACE/script/prepare_externals.sh
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        CC: clang-${{matrix.cc_ver}}
+        CXX: clang++-${{matrix.cc_ver}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_BRANCH}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
-        -DCMAKE_INSTALL_PREFIX=install
+        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install
       env:
         CC: clang-${{matrix.cc_ver}}
         CXX: clang++-${{matrix.cc_ver}}
@@ -202,12 +267,27 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Prepare externals
+      shell: bash
+      run: $GITHUB_WORKSPACE/script/prepare_externals.sh
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        CC: clang-${{matrix.cc_ver}}
+        CXX: clang++-${{matrix.cc_ver}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_BRANCH}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}      
+
     - name: Configure CMake
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
-        -DCMAKE_INSTALL_PREFIX=install
+        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install
       env:
         CC: clang-${{matrix.cc_ver}}
         CXX: clang++-${{matrix.cc_ver}}

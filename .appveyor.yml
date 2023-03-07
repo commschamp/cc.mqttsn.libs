@@ -56,7 +56,7 @@ build_script:
     - echo ------------------------- Building Project -------------------------
     - cd %BUILD_DIR%
     - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=install ^
-        -DCMAKE_CXX_STANDARD=%CPP_STD%
+        -DCMAKE_CXX_STANDARD=%CPP_STD% -DCMAKE_PREFIX_PATH="%COMMON_INSTALL_DIR%"
     - cmake --build . --config %CONFIGURATION% --target install
 
 test_script:
