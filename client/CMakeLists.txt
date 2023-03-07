@@ -74,7 +74,7 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
     message (STATUS "Defining library ${lib_name}") 
     add_library (${lib_name} STATIC ${src_output})
     target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-    target_link_libraries(${lib_name} PRIVATE cc::comms)
+    target_link_libraries(${lib_name} PRIVATE cc::cc_mqttsn cc::comms)
 
     set_target_properties(
         ${lib_name} PROPERTIES 
@@ -102,18 +102,6 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
         )
     endif ()
 
-    if (TARGET cc::cc_mqttsn)
-        target_link_libraries(${lib_name} PRIVATE cc::cc_mqttsn)
-    endif ()
-
-    if (NOT "${CC_MQTTSN_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
-        target_include_directories(${lib_name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
-    endif ()
-    
-    if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
-        add_dependencies(${lib_name} ${CC_MQTTSN_EXTERNAL_TGT})
-    endif ()
-
     if (inst)
         install (
             FILES ${header_output}
@@ -128,6 +116,9 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
 endfunction()
 
 ######################################################################
+
+find_package(LibComms REQUIRED)
+find_package(cc_mqttsn REQUIRED)
 
 include_directories(
     BEFORE
