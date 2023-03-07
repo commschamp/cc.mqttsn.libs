@@ -14,10 +14,10 @@
 #define MQTTSN_GW_MAJOR_VERSION 0U
 
 /// @brief Minor verion of the library
-#define MQTTSN_GW_MINOR_VERSION 13U
+#define MQTTSN_GW_MINOR_VERSION 14U
 
 /// @brief Patch level of the library
-#define MQTTSN_GW_PATCH_VERSION 5U
+#define MQTTSN_GW_PATCH_VERSION 0U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define MQTTSN_GW_MAKE_VERSION(major_, minor_, patch_) \

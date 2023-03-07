@@ -8,7 +8,6 @@ option (CC_MQTTSN_BUILD_CLIENT_APPS "Build and install client applications" ${CC
 option (CC_MQTTSN_BUILD_GATEWAY_APPS "Build and install gateway applications" ${CC_MQTTSN_BUILD_GATEWAY})
 option (CC_MQTTSN_NO_UNIT_TESTS "Disable unittests." OFF)
 option (CC_MQTTSN_NO_VALGRIND "Disable valgrind in unittests." OFF)
-option (CC_MQTTSN_EXTERNALS_UPDATE_DISCONNECTED "Allow skip of external projects update." OFF)
 option (CC_MQTTSN_USE_CCACHE "Use ccache on unix system" ON)
 
 # Extra variables
