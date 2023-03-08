@@ -29,7 +29,7 @@ function (bin_sub_udp)
     
     install (
         TARGETS ${name}
-        DESTINATION ${BIN_INSTALL_DIR})
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
         
 endfunction ()
 

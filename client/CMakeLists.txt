@@ -105,12 +105,12 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
     if (inst)
         install (
             FILES ${header_output}
-            DESTINATION ${INC_INSTALL_DIR}/cc_mqttsn/client
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cc_mqttsn/client
         )
         
         install (
             TARGETS ${lib_name}
-            DESTINATION ${LIB_INSTALL_DIR}
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
     endif ()
 endfunction()
@@ -127,7 +127,7 @@ include_directories(
 
 install (
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn
-    DESTINATION ${INC_INSTALL_DIR}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 add_subdirectory (src) 
@@ -137,7 +137,7 @@ add_subdirectory (test)
 
 find_package (Doxygen)
 if (DOXYGEN_FOUND AND CC_MQTTSN_CLIENT_DEFAULT_LIB)
-    set (doc_output_dir "${DOC_INSTALL_DIR}/cc_mqttsn/client")
+    set (doc_output_dir "${CMAKE_INSTALL_DATAROOTDIR}/doc/cc_mqttsn/client")
     make_directory (${doc_output_dir})
     
     set (match_str "OUTPUT_DIRECTORY[^\n]*")

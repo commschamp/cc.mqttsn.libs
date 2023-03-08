@@ -33,7 +33,7 @@ function (bin_gateway_udp)
     
     install (
         TARGETS ${name}
-        DESTINATION ${BIN_INSTALL_DIR})
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
         
 endfunction ()
 

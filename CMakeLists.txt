@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.1)
 project ("cc_mqttsn")
 
-option (CC_MQTTSN_NO_WARN_AS_ERR "Do NOT treat warning as error" OFF)
+option (CC_MQTTSN_WARN_AS_ERR "Do NOT treat warning as error" ON)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
 option (CC_MQTTSN_BUILD_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
 option (CC_MQTTSN_BUILD_CLIENT_APPS "Build and install client applications" ${CC_MQTTSN_CLIENT_DEFAULT_LIB})
@@ -23,12 +23,21 @@ if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
     message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
 endif()
 
-set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
-set (CXXTEST_EXTERNAL_DIR "${EXTERNALS_DIR}/cxxtest")
+find_package(LibComms REQUIRED)
 
-if (MSVC)
-    add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+set (compile_opts)
+if (CC_MQTTSN_USE_CCACHE)
+    list (APPEND compile_opts USE_CCACHE)
 endif ()
+
+if (CC_MQTTSN_WARN_AS_ERR)
+    list (APPEND compile_opts WARN_AS_ERR)
+endif ()
+
+include (${LibComms_DIR}/CC_Compile.cmake)
+cc_compile(${compile_opts})
+
+set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
 
 while (TRUE)
     if (CC_MQTTSN_NO_UNIT_TESTS)
@@ -53,17 +62,7 @@ while (TRUE)
     break()
 endwhile ()
 
-set (INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
-
 include(GNUInstallDirs)
-set (LIB_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR})
-set (BIN_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_BINDIR})
-set (ETC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_SYSCONFDIR})
-set (INC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
-set (CONFIG_INSTALL_DIR ${INSTALL_DIR}/config)
-set (PLUGIN_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/CommsChampion/plugin)
-set (DOC_INSTALL_DIR ${INSTALL_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/doc)
-
 set (DEFAULT_CLIENT_LIB_TGT "cc_mqttsn_client")
 
 ######################################################################

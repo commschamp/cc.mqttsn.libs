@@ -28,7 +28,7 @@ function (lib_mqttsn_gateway)
     
     install (
         TARGETS ${name}
-        DESTINATION ${LIB_INSTALL_DIR}
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
     
 endfunction()
