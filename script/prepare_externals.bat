@@ -66,7 +66,9 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 echo "Building COMMS library..."
 mkdir "%COMMS_BUILD_DIR%"
 cd %COMMS_BUILD_DIR%
-cmake -G %GENERATOR% -S %COMMS_SRC_DIR% -B %COMMS_BUILD_DIR% -DCMAKE_INSTALL_PREFIX=%COMMS_INSTALL_DIR% -DCMAKE_BUILD_TYPE=%COMMON_BUILD_TYPE% -DCMAKE_CXX_STANDARD=%COMMON_CXX_STANDARD%
+cmake -G %GENERATOR% -S %COMMS_SRC_DIR% -B %COMMS_BUILD_DIR% ^
+    -DCMAKE_INSTALL_PREFIX=%COMMS_INSTALL_DIR% -DCMAKE_BUILD_TYPE=%COMMON_BUILD_TYPE% ^
+    -DCMAKE_CXX_STANDARD=%COMMON_CXX_STANDARD%
 if %errorlevel% neq 0 exit /b %errorlevel%
 cmake --build %COMMS_BUILD_DIR% --config %COMMON_BUILD_TYPE% --target install
 if %errorlevel% neq 0 exit /b %errorlevel%
@@ -90,7 +92,9 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 echo "Building cc.mqttsn.generated library..."
 mkdir "%CC_MQTTSN_BUILD_DIR%"
 cd %CC_MQTTSN_BUILD_DIR%
-cmake -G %GENERATOR% -S %CC_MQTTSN_SRC_DIR% -B %CC_MQTTSN_BUILD_DIR% -DCMAKE_INSTALL_PREFIX=%CC_MQTTSN_INSTALL_DIR% -DCMAKE_BUILD_TYPE=%COMMON_BUILD_TYPE% -DCMAKE_CXX_STANDARD=%COMMON_CXX_STANDARD%
+cmake -G %GENERATOR% -S %CC_MQTTSN_SRC_DIR% -B %CC_MQTTSN_BUILD_DIR% ^
+    -DCMAKE_INSTALL_PREFIX=%CC_MQTTSN_INSTALL_DIR% -DCMAKE_BUILD_TYPE=%COMMON_BUILD_TYPE% ^
+    -DCMAKE_CXX_STANDARD=%COMMON_CXX_STANDARD% -DOPT_REQUIRE_COMMS_LIB=OFF
 if %errorlevel% neq 0 exit /b %errorlevel%
 cmake --build %CC_MQTTSN_BUILD_DIR% --config %COMMON_BUILD_TYPE% --target install
 if %errorlevel% neq 0 exit /b %errorlevel%
@@ -114,7 +118,9 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 echo "Building cc.mqtt311.generated library..."
 mkdir "%CC_MQTT311_BUILD_DIR%"
 cd %CC_MQTT311_BUILD_DIR%
-cmake -G %GENERATOR% -S %CC_MQTT311_SRC_DIR% -B %CC_MQTT311_BUILD_DIR% -DCMAKE_INSTALL_PREFIX=%CC_MQTT311_INSTALL_DIR% -DCMAKE_BUILD_TYPE=%COMMON_BUILD_TYPE% -DCMAKE_CXX_STANDARD=%COMMON_CXX_STANDARD%
+cmake -G %GENERATOR% -S %CC_MQTT311_SRC_DIR% -B %CC_MQTT311_BUILD_DIR% ^
+    -DCMAKE_INSTALL_PREFIX=%CC_MQTT311_INSTALL_DIR% -DCMAKE_BUILD_TYPE=%COMMON_BUILD_TYPE% ^
+    -DCMAKE_CXX_STANDARD=%COMMON_CXX_STANDARD% -DOPT_REQUIRE_COMMS_LIB=OFF
 if %errorlevel% neq 0 exit /b %errorlevel%
 cmake --build %CC_MQTT311_BUILD_DIR% --config %COMMON_BUILD_TYPE% --target install
 if %errorlevel% neq 0 exit /b %errorlevel%
