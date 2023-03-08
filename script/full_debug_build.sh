@@ -16,7 +16,8 @@ mkdir -p ${BUILD_DIR}
 ${SCRIPT_DIR}/prepare_externals.sh
 
 cd ${BUILD_DIR}
-cmake .. -DCMAKE_INSTALL_PREFIX=${COMMON_INSTALL_DIR} -DCMAKE_BUILD_TYPE=Debug  "$@"
+cmake .. -DCMAKE_INSTALL_PREFIX=${COMMON_INSTALL_DIR} -DCMAKE_BUILD_TYPE=Debug \
+    -DCC_MQTTSN_WITH_SANITIZERS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON "$@"
 
 procs=$(nproc)
 if [ -n "${procs}" ]; then
