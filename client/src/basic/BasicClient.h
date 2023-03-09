@@ -16,19 +16,16 @@
 
 #include "comms/comms.h"
 #include "comms/util/ScopeGuard.h"
-#include "cc_mqttsn/client/common.h"
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn/frame/Frame.h"
 #include "cc_mqttsn/input/ClientInputMessages.h"
 #include "cc_mqttsn/options/ClientDefaultOptions.h"
+#include "cc_mqttsn_client/common.h"
 #include "details/WriteBufStorageType.h"
 
 //#include <iostream>
 
-namespace cc_mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 namespace details
@@ -2979,8 +2976,6 @@ private:
     static const Timestamp DefaultStartTimestamp = 100;
 };
 
-}  // namespace client
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_client
 
 

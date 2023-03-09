@@ -5,21 +5,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "cc_mqttsn/gateway/gateway_all.h"
+#include "cc_mqttsn_gateway/gateway_all.h"
 
 #include <sstream>
 #include <fstream>
 #include <algorithm>
 #include <limits>
 
-#include "cc_mqttsn/gateway/gateway_allpp.h"
+#include "cc_mqttsn_gateway/gateway_allpp.h"
 
 namespace
 {
 
-typedef cc_mqttsn::gateway::Config Config;
-typedef cc_mqttsn::gateway::Gateway Gateway;
-typedef cc_mqttsn::gateway::Session Session;
+typedef cc_mqttsn_gateway::Config Config;
+typedef cc_mqttsn_gateway::Gateway Gateway;
+typedef cc_mqttsn_gateway::Session Session;
 
 }  // namespace
 
@@ -557,7 +557,7 @@ unsigned mqttsn_gw_config_get_predefined_topics(
 
     std::transform(
         predefinedTopics.begin(), predefinedTopics.begin() + total, buf,
-        [](const cc_mqttsn::gateway::Config::PredefinedTopicInfo& info) -> MqttsnPredefinedTopicInfo
+        [](const cc_mqttsn_gateway::Config::PredefinedTopicInfo& info) -> MqttsnPredefinedTopicInfo
         {
             MqttsnPredefinedTopicInfo retInfo;
             retInfo.clientId = info.clientId.c_str();
@@ -592,7 +592,7 @@ unsigned mqttsn_gw_config_get_auth_infos(
 
     std::transform(
         authInfos.begin(), authInfos.begin() + total, buf,
-        [](const cc_mqttsn::gateway::Config::AuthInfo& info) -> MqttsnAuthInfo
+        [](const cc_mqttsn_gateway::Config::AuthInfo& info) -> MqttsnAuthInfo
         {
             MqttsnAuthInfo retInfo;
             retInfo.clientId = info.clientId.c_str();

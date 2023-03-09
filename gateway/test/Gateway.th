@@ -8,7 +8,7 @@
 #pragma once
 
 #include "comms/comms.h"
-#include "cc_mqttsn/gateway/Gateway.h"
+#include "cc_mqttsn_gateway/Gateway.h"
 
 CC_DISABLE_WARNINGS()
 #include "cxxtest/TestSuite.h"
@@ -22,7 +22,7 @@ public:
 
 void GatewayTests::test1()
 {
-    cc_mqttsn::gateway::Gateway gw;
+    cc_mqttsn_gateway::Gateway gw;
 
     TS_ASSERT(!gw.start());
 

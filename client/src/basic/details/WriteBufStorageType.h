@@ -9,10 +9,7 @@
 
 #include "comms/comms.h"
 
-namespace cc_mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 namespace details
@@ -70,8 +67,6 @@ using WriteBufStorageTypeT =
 
 }  // namespace details
 
-}  // namespace client
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_client
 
 

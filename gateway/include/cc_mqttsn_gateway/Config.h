@@ -6,7 +6,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /// @file
-/// @brief Contains interface of cc_mqttsn::gateway::Config class.
+/// @brief Contains interface of cc_mqttsn_gateway::Config class.
 
 #pragma once
 
@@ -20,10 +20,7 @@
 #include <list>
 #include <utility>
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class ConfigImpl;
@@ -146,8 +143,6 @@ private:
     std::unique_ptr<ConfigImpl> m_pImpl;
 };
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway
 
 

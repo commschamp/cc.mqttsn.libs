@@ -9,10 +9,7 @@
 
 #include <cstddef>
 
-namespace cc_mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 namespace option
@@ -63,8 +60,6 @@ struct MessageDataStaticStorageSize
 
 }  // namespace option
 
-}  // namespace client
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_client
 
 

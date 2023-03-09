@@ -9,12 +9,9 @@
 
 #include <iostream>
 
-#include "cc_mqttsn/gateway/Config.h"
+#include "cc_mqttsn_gateway/Config.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class ConfigImpl
@@ -75,8 +72,4 @@ private:
     mutable std::uint16_t m_brokerPort = 0;
 };
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

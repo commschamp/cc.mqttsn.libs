@@ -20,10 +20,7 @@
 
 #include "client.h"
 
-namespace cc_mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 namespace app
@@ -186,8 +183,6 @@ private:
 
 }  // namespace app
 
-}  // namespace client
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_client
 
 

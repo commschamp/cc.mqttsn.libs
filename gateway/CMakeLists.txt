@@ -25,20 +25,20 @@ add_subdirectory (src)
 add_subdirectory (test)
 
 install (
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn_gateway
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 install (
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/etc/
-    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/cc_mqttsn/
+    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/cc_mqttsn_gateway
 )
 
 ######################################################################
 
 find_package (Doxygen)
 if (DOXYGEN_FOUND)
-    set (doc_output_dir "${CMAKE_INSTALL_DATAROOTDIR}/doc/cc_mqttsn/gateway")
+    set (doc_output_dir "${CMAKE_INSTALL_DATAROOTDIR}/doc/cc_mqttsn_gateway")
     make_directory (${doc_output_dir})
     
     set (match_str "OUTPUT_DIRECTORY[^\n]*")

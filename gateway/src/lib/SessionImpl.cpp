@@ -21,10 +21,7 @@
 #include "session_op/Forward.h"
 #include "session_op/WillUpdate.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace
@@ -386,9 +383,6 @@ auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&S
 
 #endif // #ifdef _MSC_VER
 
-
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway
 
 

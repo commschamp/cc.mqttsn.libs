@@ -5,14 +5,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "cc_mqttsn/gateway/Gateway.h"
+#include "cc_mqttsn_gateway/Gateway.h"
 
 #include "GatewayImpl.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 Gateway::Gateway()
@@ -57,8 +54,4 @@ void Gateway::tick()
     m_pImpl->tick();
 }
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

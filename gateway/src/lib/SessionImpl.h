@@ -13,16 +13,13 @@
 #include <algorithm>
 #include <limits>
 
-#include "cc_mqttsn/gateway/Session.h"
+#include "cc_mqttsn_gateway/Session.h"
 #include "MsgHandler.h"
 #include "SessionOp.h"
 #include "common.h"
 #include "comms/util/ScopeGuard.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class SessionImpl : public MsgHandler
@@ -214,8 +211,6 @@ private:
     SessionState m_state;
 };
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway
 
 

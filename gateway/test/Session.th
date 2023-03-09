@@ -10,7 +10,7 @@
 #include <memory>
 
 #include "comms/comms.h"
-#include "cc_mqttsn/gateway/Session.h"
+#include "cc_mqttsn_gateway/Session.h"
 
 CC_DISABLE_WARNINGS()
 #include "cxxtest/TestSuite.h"
@@ -51,7 +51,7 @@ public:
     void test28();
 
 private:
-    typedef std::unique_ptr<cc_mqttsn::gateway::Session> SessionPtr;
+    typedef std::unique_ptr<cc_mqttsn_gateway::Session> SessionPtr;
     typedef std::vector<std::uint8_t> DataBuf;
     using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
 
@@ -90,7 +90,7 @@ private:
         const DataBuf* password = nullptr,
         bool connectToBroker = true)
     {
-        SessionPtr session(new cc_mqttsn::gateway::Session);
+        SessionPtr session(new cc_mqttsn_gateway::Session);
 
         session->setNextTickProgramReqCb(
             [&state](unsigned val) {
@@ -143,9 +143,9 @@ private:
             });
 
         session->setAuthInfoReqCb(
-            [username, password](const std::string&) -> cc_mqttsn::gateway::Session::AuthInfo
+            [username, password](const std::string&) -> cc_mqttsn_gateway::Session::AuthInfo
             {
-                cc_mqttsn::gateway::Session::AuthInfo info;
+                cc_mqttsn_gateway::Session::AuthInfo info;
                 if (username == nullptr) {
                     return info;
                 }
@@ -350,7 +350,7 @@ private:
     }
 
     static void dataFromClient(
-        cc_mqttsn::gateway::Session& session,
+        cc_mqttsn_gateway::Session& session,
         const DataBuf& buf,
         const std::string& msgStr)
     {
@@ -360,7 +360,7 @@ private:
     }
 
     static void dataFromBroker(
-        cc_mqttsn::gateway::Session& session,
+        cc_mqttsn_gateway::Session& session,
         const DataBuf& buf,
         const std::string& msgStr)
     {
@@ -1378,7 +1378,7 @@ private:
         return static_cast<cc_mqtt311::field::QosVal>(val);
     }
 
-    static void doTick(State& state, cc_mqttsn::gateway::Session& session, unsigned ms = 0)
+    static void doTick(State& state, cc_mqttsn_gateway::Session& session, unsigned ms = 0)
     {
         if (ms != 0) {
             TS_TRACE("[TICK]: " + std::to_string(ms));
@@ -1400,7 +1400,7 @@ private:
     }
 
     static void doConnect(
-        cc_mqttsn::gateway::Session& session,
+        cc_mqttsn_gateway::Session& session,
         State& state,
         TestMsgHandler& handler,
         WillInfo* willInfo = nullptr,
@@ -1462,13 +1462,13 @@ private:
         verifyNoOtherEvent(state, handler);
     }
 
-    static void doBrokerConnect(cc_mqttsn::gateway::Session& session)
+    static void doBrokerConnect(cc_mqttsn_gateway::Session& session)
     {
         session.setBrokerConnected(true);
         TS_TRACE("[BROKER connected]");
     }
 
-    static void doBrokerDisconnect(cc_mqttsn::gateway::Session& session)
+    static void doBrokerDisconnect(cc_mqttsn_gateway::Session& session)
     {
         session.setBrokerConnected(false);
         TS_TRACE("[BROKER disconnected]");
@@ -1802,9 +1802,9 @@ void SessionTest::test9()
     TS_ASSERT_LESS_THAN_EQUALS(topicId, DefaultMaxTopicId);
     verifyNoOtherEvent(state, handler);
 
-    auto registerMsg2 = handler.prepareClientRegister(Topic, MsgId + 1);
+    auto registerMsg2 = handler.prepareClientRegister(Topic, static_cast<std::uint16_t>(MsgId + 1));
     dataFromClient(*session, registerMsg2, "REGISTER");
-    auto topicId2 = verifySentToClient_RegackMsg(state, handler, MsgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
+    auto topicId2 = verifySentToClient_RegackMsg(state, handler, static_cast<std::uint16_t>(MsgId + 1), cc_mqttsn::field::ReturnCodeVal::Accepted);
     verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_EQUALS(topicId, topicId2);
     verifyNoOtherEvent(state, handler);
@@ -1833,9 +1833,9 @@ void SessionTest::test10()
     TS_ASSERT_DIFFERS(topicId, TopicId1);
     verifyNoOtherEvent(state, handler);
 
-    auto registerMsg2 = handler.prepareClientRegister(Topic1, MsgId + 1);
+    auto registerMsg2 = handler.prepareClientRegister(Topic1, static_cast<std::uint16_t>(MsgId + 1));
     dataFromClient(*session, registerMsg2, "REGISTER");
-    auto topicId2 = verifySentToClient_RegackMsg(state, handler, MsgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
+    auto topicId2 = verifySentToClient_RegackMsg(state, handler, static_cast<std::uint16_t>(MsgId + 1), cc_mqttsn::field::ReturnCodeVal::Accepted);
     verifySentToBroker_PingreqMsg(state, handler);
     TS_ASSERT_EQUALS(topicId2, TopicId1);
     verifyNoOtherEvent(state, handler);
@@ -1968,7 +1968,7 @@ void SessionTest::test13()
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
-    auto pubcompMsg = handler.prepareClientPubcomp(pubMsgId + 1);
+    auto pubcompMsg = handler.prepareClientPubcomp(static_cast<std::uint16_t>(pubMsgId + 1));
     dataFromClient(*session, pubcompMsg, "PUBCOMP");
     verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
     verifyNoOtherEvent(state, handler);
@@ -2221,9 +2221,9 @@ void SessionTest::test17()
     static const auto Qos = cc_mqttsn::field::QosVal::AtLeastOnceDelivery;
     static const bool Retain = false;
 
-    auto publishMsg = handler.prepareClientPublish(Data, topicId + 1, MsgId, TopicIdTypeVal::Normal, Qos, Retain, false);
+    auto publishMsg = handler.prepareClientPublish(Data, static_cast<decltype(topicId)>(topicId + 1), MsgId, TopicIdTypeVal::Normal, Qos, Retain, false);
     dataFromClient(*session, publishMsg, "PUBLISH");
-    verifySentToClient_PubackMsg(state, handler, topicId + 1, MsgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    verifySentToClient_PubackMsg(state, handler, static_cast<decltype(topicId)>(topicId + 1), MsgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     verifySentToBroker_PingreqMsg(state, handler);
     verifyNoOtherEvent(state, handler);
 
@@ -2949,7 +2949,7 @@ void SessionTest::test26()
 
     static const DataBuf Data2 = {0, 1, 2, 5, 8, 10, 16};
     state.m_elapsed.push_back(1000);
-    auto pub2 = handler.prepareClientPublish(Data2, TopicId, MsgId + 1, TopicIdTypeVal::PredefinedTopicId, cc_mqttsn::field::QosVal::NoGwPublish, false, false);
+    auto pub2 = handler.prepareClientPublish(Data2, TopicId, static_cast<std::uint16_t>(MsgId + 1), TopicIdTypeVal::PredefinedTopicId, cc_mqttsn::field::QosVal::NoGwPublish, false, false);
     dataFromClient(*session, pub2, "PUBLISH");
     verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
     verifyNoOtherEvent(state, handler);

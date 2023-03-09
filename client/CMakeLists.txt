@@ -105,7 +105,7 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
     if (inst)
         install (
             FILES ${header_output}
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cc_mqttsn/client
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cc_mqttsn_client
         )
         
         install (
@@ -126,7 +126,7 @@ include_directories(
 )
 
 install (
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn_client
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
@@ -137,7 +137,7 @@ add_subdirectory (test)
 
 find_package (Doxygen)
 if (DOXYGEN_FOUND AND CC_MQTTSN_CLIENT_DEFAULT_LIB)
-    set (doc_output_dir "${CMAKE_INSTALL_DATAROOTDIR}/doc/cc_mqttsn/client")
+    set (doc_output_dir "${CMAKE_INSTALL_FULL_DATAROOTDIR}/doc/cc_mqttsn_client")
     make_directory (${doc_output_dir})
     
     set (match_str "OUTPUT_DIRECTORY[^\n]*")
@@ -155,7 +155,7 @@ if (DOXYGEN_FOUND AND CC_MQTTSN_CLIENT_DEFAULT_LIB)
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E copy 
         ${CMAKE_CURRENT_SOURCE_DIR}/doc/main.dox 
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn/client/common.h 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn_client/common.h 
         ${interface_doc_dir}/)
     
     add_custom_target ("doc_mqttsn_client"

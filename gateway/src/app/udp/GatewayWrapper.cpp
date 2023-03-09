@@ -10,10 +10,7 @@
 #include <iostream>
 #include <algorithm>
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace app
@@ -54,8 +51,6 @@ void GatewayWrapper::tickTimeout()
 
 }  // namespace app
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway
 
 

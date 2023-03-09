@@ -31,18 +31,18 @@
 /// @section mqttsn_gw_headers Headers
 /// To use the C++ interface, use the following include statement:
 /// @code
-/// #include "cc_mqttsn/gateway/gateway_allpp.h"
+/// #include "cc_mqttsn_gateway/gateway_allpp.h"
 /// @endcode
 /// Per-entity includes can also be used (see @ref mqttsn_gw_entities)
 /// @code
-/// #include "cc_mqttsn/gateway/Gateway.h"
-/// #include "cc_mqttsn/gateway/Session.h"
-/// #include "cc_mqttsn/gateway/Config.h"
+/// #include "cc_mqttsn_gateway/Gateway.h"
+/// #include "cc_mqttsn_gateway/Session.h"
+/// #include "cc_mqttsn_gateway/Config.h"
 /// @endcode
 ///
 /// And for C interface, use the the following include statement:
 /// @code
-/// #include "cc_mqttsn/gateway/gateway_all.h"
+/// #include "cc_mqttsn_gateway/gateway_all.h"
 /// @endcode
 ///
 /// @section mqttsn_gw_entities Entities

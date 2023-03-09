@@ -9,10 +9,7 @@
 
 #include "comms/comms.h"
 
-namespace cc_mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 namespace details
@@ -63,8 +60,6 @@ private:
     Alloc m_alloc;
 };
 
-}  // namespace client
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_client
 
 

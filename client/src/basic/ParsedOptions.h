@@ -9,17 +9,12 @@
 
 #pragma once
 
-namespace cc_mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 template <typename... TOptions>
 using ParsedOptions = details::OptionsParser<TOptions...>;
 
-}  // namespace client
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_client
 
 

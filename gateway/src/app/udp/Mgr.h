@@ -15,14 +15,11 @@
 #include <QtCore/QObject>
 #include <QtNetwork/QUdpSocket>
 
-#include "cc_mqttsn/gateway/Config.h"
+#include "cc_mqttsn_gateway/Config.h"
 #include "GatewayWrapper.h"
 #include "SessionWrapper.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace app
@@ -67,6 +64,4 @@ private:
 
 }  // namespace app
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway

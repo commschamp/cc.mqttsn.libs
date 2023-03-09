@@ -5,10 +5,10 @@
 /// needed, there is no need to create or use the @b Gateway object.
 ///
 /// @section mqttsn_gw_gateway_page_alloc Allocation
-/// When using @b C++ interface, just instantiate object of cc_mqttsn::gateway::Gateway
+/// When using @b C++ interface, just instantiate object of cc_mqttsn_gateway::Gateway
 /// class. The destruction of the object will clean up all acquired resources.
 /// @code
-/// cc_mqttsn::gateway::Gateway gw;
+/// cc_mqttsn_gateway::Gateway gw;
 /// @endcode
 ///
 /// When using @b C interface, the allocation is performed using mqttsn_gw_alloc()
@@ -140,8 +140,8 @@
 /// for the next time.
 ///
 /// If the @b Gateway's operation needs to be paused for a while, use
-/// cc_mqttsn::gateway::Gateway::stop() or mqttsn_gw_stop() functions. The
-/// operation can be resumed using cc_mqttsn::gateway::Gateway::start() or 
+/// cc_mqttsn_gateway::Gateway::stop() or mqttsn_gw_stop() functions. The
+/// operation can be resumed using cc_mqttsn_gateway::Gateway::start() or 
 /// mqttsn_gw_start() respectively.
 ///
 /// @b C++ interface:

@@ -10,14 +10,11 @@
 #include <array>
 #include <algorithm>
 
-#include "cc_mqttsn/gateway/Gateway.h"
+#include "cc_mqttsn_gateway/Gateway.h"
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn/frame/Frame.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class GatewayImpl
@@ -84,6 +81,4 @@ private:
     ProtStack m_protStack;
 };
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway

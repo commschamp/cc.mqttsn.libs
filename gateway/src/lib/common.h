@@ -18,10 +18,7 @@
 
 #include "RegMgr.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 typedef std::vector<std::uint8_t> DataBuf;
@@ -141,7 +138,4 @@ struct SessionState
     RegMgr m_regMgr;
 };
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
+}  // namespace cc_mqttsn_gateway

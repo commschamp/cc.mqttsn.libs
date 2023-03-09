@@ -6,7 +6,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /// @file
-/// @brief Contains interface of cc_mqttsn::gateway::Session class.
+/// @brief Contains interface of cc_mqttsn_gateway::Session class.
 
 #pragma once
 
@@ -17,10 +17,7 @@
 #include <string>
 #include <utility>
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class SessionImpl;
@@ -262,7 +259,5 @@ private:
     std::unique_ptr<SessionImpl> m_pImpl;
 };
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway
 

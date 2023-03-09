@@ -10,10 +10,7 @@
 #include "SessionOp.h"
 #include "common.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace session_op
@@ -46,8 +43,6 @@ private:
 
 }  // namespace session_op
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway
 
 

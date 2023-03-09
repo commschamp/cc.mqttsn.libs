@@ -10,10 +10,7 @@
 #include <cassert>
 #include <iterator>
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 bool GatewayImpl::start()
@@ -76,8 +73,4 @@ void GatewayImpl::sendAndReprogram()
     m_tickProgramCb(m_advertisePeriod * 1000U);
 }
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

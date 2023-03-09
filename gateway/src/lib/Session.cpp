@@ -5,13 +5,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "cc_mqttsn/gateway/Session.h"
+#include "cc_mqttsn_gateway/Session.h"
 #include "SessionImpl.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 Session::Session()
@@ -136,7 +133,5 @@ bool Session::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxV
     return m_pImpl->setTopicIdAllocationRange(minVal, maxVal);
 }
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
+}  // namespace cc_mqttsn_gateway
 

@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "comms/comms.h"
-#include "cc_mqttsn/client/common.h"
+#include "cc_mqttsn_client/common.h"
 #include "client.h"
 
 CC_DISABLE_WARNINGS()
@@ -2613,7 +2613,7 @@ void ClientBasic::test24()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    publishMsg = dataProc.preparePublishMsg(TopicId, MsgId + 1, Data, TopicIdTypeVal::Normal, Qos, Retain, false);
+    publishMsg = dataProc.preparePublishMsg(TopicId, static_cast<std::uint16_t>(MsgId + 1), Data, TopicIdTypeVal::Normal, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifyCb_ReportedMessage(state, Topic, 0, Data, transformQos(Qos), Retain);
     TS_ASSERT(state.m_nextOutput.empty());
@@ -2622,9 +2622,9 @@ void ClientBasic::test24()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    publishMsg = dataProc.preparePublishMsg(TopicId + 1, MsgId + 2, Data, TopicIdTypeVal::Normal, Qos, Retain, false);
+    publishMsg = dataProc.preparePublishMsg(static_cast<MqttsnTopicId>(TopicId + 1), static_cast<std::uint16_t>(MsgId + 2), Data, TopicIdTypeVal::Normal, Qos, Retain, false);
     dataFromGw(*client, publishMsg, "PUBLISH");
-    verifySent_PubackMsg(state, dataProc, TopicId + 1, MsgId + 2, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
+    verifySent_PubackMsg(state, dataProc, static_cast<MqttsnTopicId>(TopicId + 1), static_cast<std::uint16_t>(MsgId + 2), cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     TS_ASSERT(state.m_reportedMsgs.empty());
     verifyNoOtherEvent(state);
 }
@@ -2679,7 +2679,7 @@ void ClientBasic::test25()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    expectedMsgId = MsgId + 1;
+    expectedMsgId = static_cast<decltype(expectedMsgId)>(MsgId + 1);
     publishMsg = dataProc.preparePublishMsg(TopicId, expectedMsgId, Data, TopicIdType, Qos, Retain, true);
     dataFromGw(*client, publishMsg, "PUBLISH");
     verifySent_PubackMsg(state, dataProc, TopicId, expectedMsgId);

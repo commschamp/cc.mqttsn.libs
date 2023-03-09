@@ -15,10 +15,7 @@
 
 #include "cc_mqttsn/field/FlagsCommon.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class RegMgr
@@ -64,8 +61,4 @@ private:
     static const std::uint16_t DefaultMaxTopicId = 0xfffe;
 };
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

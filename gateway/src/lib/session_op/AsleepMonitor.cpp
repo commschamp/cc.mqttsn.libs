@@ -10,13 +10,10 @@
 #include <cassert>
 #include <algorithm>
 
-namespace cc_mqttsn
+namespace cc_mqttsn_gateway
 {
 
-namespace gateway
-{
-
-namespace session_op
+namespace session_op    
 {
 
 AsleepMonitor::AsleepMonitor(SessionState& sessionState)
@@ -98,9 +95,4 @@ void AsleepMonitor::reqNextTick()
 
 }  // namespace session_op
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
-
-
+}  // namespace cc_mqttsn_gateway

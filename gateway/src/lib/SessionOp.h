@@ -11,14 +11,11 @@
 #include <cassert>
 #include <memory>
 
-#include "cc_mqttsn/gateway/Session.h"
+#include "cc_mqttsn_gateway/Session.h"
 #include "MsgHandler.h"
 #include "common.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class SessionOp : public MsgHandler
@@ -153,8 +150,4 @@ private:
 
 typedef std::unique_ptr<SessionOp> SessionOpPtr;
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

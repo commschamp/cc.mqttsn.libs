@@ -18,10 +18,10 @@ typedef std::tuple<
     ##CLIENT_OPTS##
 > ClientOptions;
 
-typedef cc_mqttsn::client::ParsedOptions<ClientOptions> ParsedClientOptions;
+typedef cc_mqttsn_client::ParsedOptions<ClientOptions> ParsedClientOptions;
 
-typedef cc_mqttsn::client::BasicClient<ParsedClientOptions> MqttsnClient;
-typedef cc_mqttsn::client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
+typedef cc_mqttsn_client::BasicClient<ParsedClientOptions> MqttsnClient;
+typedef cc_mqttsn_client::ClientMgr<MqttsnClient, ParsedClientOptions> MqttsnClientMgr;
 
 MqttsnClientMgr& getClientMgr()
 {

@@ -44,43 +44,43 @@ foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     
     mqttsn_append_option (
         mqttsn_library_opts 
-        "cc_mqttsn::client::option::ClientIdStaticStorageSize"
+        "cc_mqttsn_client::option::ClientIdStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
-        "cc_mqttsn::client::option::GwAddStaticStorageSize"
+        "cc_mqttsn_client::option::GwAddStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
-        "cc_mqttsn::client::option::TopicNameStaticStorageSize"
+        "cc_mqttsn_client::option::TopicNameStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
-        "cc_mqttsn::client::option::MessageDataStaticStorageSize"
+        "cc_mqttsn_client::option::MessageDataStaticStorageSize"
         "${MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
-        "cc_mqttsn::client::option::ClientsAllocLimit"
+        "cc_mqttsn_client::option::ClientsAllocLimit"
         "${MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
-        "cc_mqttsn::client::option::TrackedGatewaysLimit"
+        "cc_mqttsn_client::option::TrackedGatewaysLimit"
         "${MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
-        "cc_mqttsn::client::option::RegisteredTopicsLimit"
+        "cc_mqttsn_client::option::RegisteredTopicsLimit"
         "${MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT}"
     )
 

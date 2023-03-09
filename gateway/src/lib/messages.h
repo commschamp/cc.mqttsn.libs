@@ -18,10 +18,7 @@
 #include "cc_mqtt311/options/ClientDefaultOptions.h"
 #include "cc_mqtt311/options/DataViewDefaultOptions.h"
 
-namespace cc_mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class MsgHandler;
@@ -116,8 +113,4 @@ using InputMqtt311Messages = cc_mqtt311::input::AllMessages<TMsgBase, Mqtt311GwO
 using MqttProtStack = 
     cc_mqtt311::frame::Frame<MqttMessage, InputMqtt311Messages<MqttMessage> > ;
 
-}  // namespace gateway
-
-}  // namespace cc_mqttsn
-
-
+}  // namespace cc_mqttsn_gateway
