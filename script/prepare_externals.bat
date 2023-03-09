@@ -24,13 +24,13 @@ if [%COMMS_REPO%] == [] set COMMS_REPO="https://github.com/commschamp/comms.git"
 
 if [%COMMS_TAG%] == [] set COMMS_TAG="master"
 
-if [%CC_MQTTSN_REPO%] == [] set COMMS_REPO="https://github.com/commschamp/cc.mqttsn.generated.git"
+if [%CC_MQTTSN_REPO%] == [] set CC_MQTTSN_REPO="https://github.com/commschamp/cc.mqttsn.generated.git"
 
-if [%CC_MQTTSN_TAG%] == [] set COMMS_TAG="master"
+if [%CC_MQTTSN_TAG%] == [] set CC_MQTTSN_TAG="master"
 
-if [%CC_MQTT311_REPO%] == [] set COMMS_REPO="https://github.com/commschamp/cc.mqtt311.generated.git"
+if [%CC_MQTT311_REPO%] == [] set CC_MQTT311_REPO="https://github.com/commschamp/cc.mqtt311.generated.git"
 
-if [%CC_MQTT311_TAG%] == [] set COMMS_TAG="master"
+if [%CC_MQTT311_TAG%] == [] set CC_MQTT311_TAG="master"
 
 if [%COMMON_BUILD_TYPE%] == [] set COMMON_BUILD_TYPE=Debug
 
