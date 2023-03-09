@@ -39,10 +39,15 @@ set COMMS_BUILD_DIR=%BUILD_DIR%/externals/comms/build
 set COMMS_INSTALL_DIR=%COMMS_BUILD_DIR%/install
 if NOT [%COMMON_INSTALL_DIR%] == [] set COMMS_INSTALL_DIR=%COMMON_INSTALL_DIR%
 
-set COMMSDSL_SRC_DIR=%EXTERNALS_DIR%/commsdsl
-set COMMSDSL_BUILD_DIR=%BUILD_DIR%/externals/commsdsl/build
-set COMMSDSL_INSTALL_DIR=%COMMSDSL_BUILD_DIR%/install
-if NOT [%COMMON_INSTALL_DIR%] == [] set COMMSDSL_INSTALL_DIR=%COMMON_INSTALL_DIR%
+set CC_MQTTSN_SRC_DIR=%EXTERNALS_DIR%/cc.mqttsn.generated
+set CC_MQTTSN_BUILD_DIR=%BUILD_DIR%/externals/cc.mqttsn.generated/build
+set CC_MQTTSN_INSTALL_DIR=%COMMSDSL_BUILD_DIR%/install
+if NOT [%COMMON_INSTALL_DIR%] == [] set CC_MQTTSN_INSTALL_DIR=%COMMON_INSTALL_DIR%
+
+set CC_MQTT311_SRC_DIR=%EXTERNALS_DIR%/cc.mqtt311.generated
+set CC_MQTT311_BUILD_DIR=%BUILD_DIR%/externals/cc.mqtt311.generated/build
+set CC_MQTT311_INSTALL_DIR=%COMMSDSL_BUILD_DIR%/install
+if NOT [%COMMON_INSTALL_DIR%] == [] set CC_MQTT311_INSTALL_DIR=%COMMON_INSTALL_DIR%
 
 rem ----------------------------------------------------
 
