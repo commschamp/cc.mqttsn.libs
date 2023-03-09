@@ -2797,7 +2797,7 @@ void ClientBasic::test27()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, msgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
+    auto subackMsg = dataProc.prepareSubackMsg(transformQos(Qos), TopicId, static_cast<std::uint16_t>(msgId + 1), cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, subackMsg, "SUBACK");
     TS_ASSERT(state.m_reportedSubscribes.empty());
     verifyNoOtherEvent(state);
