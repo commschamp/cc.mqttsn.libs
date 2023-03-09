@@ -1920,7 +1920,7 @@ void ClientBasic::test13()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto pubackMsg = dataProc.preparePubackMsg(TopicId, msgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
+    auto pubackMsg = dataProc.preparePubackMsg(TopicId, static_cast<std::uint16_t>(msgId + 1), cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, pubackMsg, "PUBACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     TS_ASSERT(state.m_nextOutput.empty()); // must be ignored
@@ -2068,7 +2068,7 @@ void ClientBasic::test16()
 
     clearState(state);
     state.m_nextElapsedTicks = 1000;
-    auto regackMsg = dataProc.prepareRegackMsg(TopicId, msgId + 1, cc_mqttsn::field::ReturnCodeVal::Accepted);
+    auto regackMsg = dataProc.prepareRegackMsg(TopicId, static_cast<std::uint16_t>(msgId + 1), cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromGw(*client, regackMsg, "REGACK");
     TS_ASSERT(state.m_reportedPublishes.empty());
     TS_ASSERT(state.m_nextOutput.empty());
