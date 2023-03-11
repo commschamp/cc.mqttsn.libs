@@ -86,7 +86,7 @@ public:
         m_topicIds = topicIds;
     }
 
-    void setQos(MqttsnQoS value)
+    void setQos(CC_MqttsnQoS value)
     {
         m_qos = value;
     }
@@ -123,28 +123,28 @@ private:
     void sendData(const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool broadcast);
 
-    void gwStatusReport(unsigned short gwId, MqttsnGwStatus status);
-    static void gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status);
+    void gwStatusReport(unsigned short gwId, CC_MqttsnGwStatus status);
+    static void gwStatusReportCb(void* obj, unsigned char gwId, CC_MqttsnGwStatus status);
 
     void gwDisconnectReport();
     static void gwDisconnectReportCb(void* obj);
 
-    void messageReport(const MqttsnMessageInfo* msgInfo);
-    static void messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo);
+    void messageReport(const CC_MqttsnMessageInfo* msgInfo);
+    static void messageReportCb(void* obj, const CC_MqttsnMessageInfo* msgInfo);
 
     void doConnect(bool reconnecting = false);
     void doSubscribe();
-    void connectComplete(MqttsnAsyncOpStatus status);
-    static void connectCompleteCb(void* obj, MqttsnAsyncOpStatus status);
-    void subscribeComplete(MqttsnAsyncOpStatus status);
-    static void subscribeCompleteCb(void* obj, MqttsnAsyncOpStatus status, MqttsnQoS qos);
+    void connectComplete(CC_MqttsnAsyncOpStatus status);
+    static void connectCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status);
+    void subscribeComplete(CC_MqttsnAsyncOpStatus status);
+    static void subscribeCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
     bool bindLocalPort();
     bool openSocket();
     bool connectToGw();
     void broadcastData(const unsigned char* buf, unsigned bufLen);
     void sendDataConnected(const unsigned char* buf, unsigned bufLen);
 
-    MqttsnClientHandle m_client;
+    CC_MqttsnClientHandle m_client;
     QTimer m_timer;
     unsigned m_reqTimeout = 0;
     QString m_gwAddr;
@@ -162,7 +162,7 @@ private:
     bool m_hexOutput = false;
     TopicsList m_topics;
     TopicIdsList m_topicIds;
-    MqttsnQoS m_qos = MqttsnQoS_ExactlyOnceDelivery;
+    CC_MqttsnQoS m_qos = CC_MqttsnQoS_ExactlyOnceDelivery;
 };
 
 }  // namespace udp

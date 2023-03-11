@@ -15,7 +15,7 @@
 ///
 /// When using @b C interface, the allocation is performed using cc_mqttsn_gw_config_alloc()
 /// @code
-/// MqttsnConfigHandle handle = cc_mqttsn_gw_config_alloc();
+/// CC_MqttsnConfigHandle handle = cc_mqttsn_gw_config_alloc();
 /// @endcode
 /// and de-allocation is performed using cc_mqttsn_gw_config_free() functions.
 /// @code
@@ -165,11 +165,11 @@
 ///
 /// @b C interface:
 /// @code
-/// MqttsnPredefinedTopicInfo infos[100];
+/// CC_MqttsnPredefinedTopicInfo infos[100];
 /// unsigned count = cc_mqttsn_gw_config_get_predefined_topics(handle, infos, 100);
 /// unsigned idx;
 /// for (idx = 0; idx < count; idx++) {
-///     const MqttsnPredefinedTopicInfo* elem = infos[idx];
+///     const CC_MqttsnPredefinedTopicInfo* elem = infos[idx];
 ///     ... /* assign elem info to @b Session object(s).
 /// }
 /// @endcode
@@ -194,7 +194,7 @@
 ///
 /// @b C interface:
 /// @code
-/// MqttsnAuthInfo infos[100];
+/// CC_MqttsnAuthInfo infos[100];
 /// unsigned count = cc_mqttsn_gw_config_get_auth_infos(handle, infos, 100);
 /// ... // use up to count infos.
 /// @endcode

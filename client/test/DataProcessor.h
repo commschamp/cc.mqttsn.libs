@@ -169,7 +169,7 @@ public:
         bool retain,
         bool duplicate);
     DataBuf preparePubackMsg(
-        MqttsnTopicId topicId,
+        CC_MqttsnTopicId topicId,
         std::uint16_t msgId,
         cc_mqttsn::field::ReturnCodeVal retCode);
     DataBuf preparePubrecMsg(std::uint16_t msgId);
@@ -177,7 +177,7 @@ public:
     DataBuf preparePubcompMsg(std::uint16_t msgId);
     DataBuf prepareSubackMsg(
         cc_mqttsn::field::QosVal qos,
-        MqttsnTopicId topicId,
+        CC_MqttsnTopicId topicId,
         std::uint16_t msgId,
         cc_mqttsn::field::ReturnCodeVal retCode);
     DataBuf prepareUnsubackMsg(std::uint16_t msgId);

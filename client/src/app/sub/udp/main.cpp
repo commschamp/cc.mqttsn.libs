@@ -319,7 +319,7 @@ cc_mqttsn_client::app::sub::udp::Sub::TopicIdsList getTopicIds(const QCommandLin
     return cc_mqttsn_client::app::sub::udp::Sub::TopicIdsList(topics.begin(), topics.end());
 }
 
-MqttsnQoS getQos(const QCommandLineParser& parser)
+CC_MqttsnQoS getQos(const QCommandLineParser& parser)
 {
     auto value = DefaultQos;
     do {
@@ -336,7 +336,7 @@ MqttsnQoS getQos(const QCommandLineParser& parser)
 
         value = std::min(value, valueTmp);
     } while (false);
-    return static_cast<MqttsnQoS>(value);
+    return static_cast<CC_MqttsnQoS>(value);
 }
 
 

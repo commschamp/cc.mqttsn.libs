@@ -25,20 +25,20 @@ typedef cc_mqttsn_gateway::Session Session;
 
 /*===================== Gateway Object ======================*/
 
-MqttsnGatewayHandle cc_mqttsn_gw_alloc(void)
+CC_MqttsnGatewayHandle cc_mqttsn_gw_alloc(void)
 {
-    MqttsnGatewayHandle gw;
+    CC_MqttsnGatewayHandle gw;
     gw.obj = new Gateway();
     return gw;
 }
 
-void cc_mqttsn_gw_free(MqttsnGatewayHandle gw)
+void cc_mqttsn_gw_free(CC_MqttsnGatewayHandle gw)
 {
     std::unique_ptr<Gateway>(reinterpret_cast<Gateway*>(gw.obj));
 }
 
 void cc_mqttsn_gw_set_advertise_period(
-    MqttsnGatewayHandle gw,
+    CC_MqttsnGatewayHandle gw,
     unsigned short value)
 {
     if (gw.obj == nullptr) {
@@ -48,7 +48,7 @@ void cc_mqttsn_gw_set_advertise_period(
     reinterpret_cast<Gateway*>(gw.obj)->setAdvertisePeriod(value);
 }
 
-void cc_mqttsn_gw_set_id(MqttsnGatewayHandle gw, unsigned char id)
+void cc_mqttsn_gw_set_id(CC_MqttsnGatewayHandle gw, unsigned char id)
 {
     if (gw.obj == nullptr) {
         return;
@@ -57,7 +57,7 @@ void cc_mqttsn_gw_set_id(MqttsnGatewayHandle gw, unsigned char id)
     reinterpret_cast<Gateway*>(gw.obj)->setGatewayId(id);
 }
 
-void cc_mqttsn_gw_set_tick_req_cb(MqttsnGatewayHandle gw, MqttsnGwTickReqCb cb, void* data)
+void cc_mqttsn_gw_set_tick_req_cb(CC_MqttsnGatewayHandle gw, CC_MqttsnGwTickReqCb cb, void* data)
 {
     if ((gw.obj == nullptr) || (cb == nullptr)) {
         return;
@@ -71,8 +71,8 @@ void cc_mqttsn_gw_set_tick_req_cb(MqttsnGatewayHandle gw, MqttsnGwTickReqCb cb, 
 }
 
 void cc_mqttsn_gw_set_advertise_broadcast_req_cb(
-    MqttsnGatewayHandle gw,
-    MqttsnGwBroadcastReqCb cb,
+    CC_MqttsnGatewayHandle gw,
+    CC_MqttsnGwBroadcastReqCb cb,
     void* data)
 {
     if ((gw.obj == nullptr) || (cb == nullptr)) {
@@ -86,7 +86,7 @@ void cc_mqttsn_gw_set_advertise_broadcast_req_cb(
         });
 }
 
-bool cc_mqttsn_gw_start(MqttsnGatewayHandle gw)
+bool cc_mqttsn_gw_start(CC_MqttsnGatewayHandle gw)
 {
     if (gw.obj == nullptr) {
         return false;
@@ -95,7 +95,7 @@ bool cc_mqttsn_gw_start(MqttsnGatewayHandle gw)
     return reinterpret_cast<Gateway*>(gw.obj)->start();
 }
 
-void cc_mqttsn_gw_stop(MqttsnGatewayHandle gw)
+void cc_mqttsn_gw_stop(CC_MqttsnGatewayHandle gw)
 {
     if (gw.obj == nullptr) {
         return;
@@ -104,7 +104,7 @@ void cc_mqttsn_gw_stop(MqttsnGatewayHandle gw)
     reinterpret_cast<Gateway*>(gw.obj)->stop();
 }
 
-void cc_mqttsn_gw_tick(MqttsnGatewayHandle gw)
+void cc_mqttsn_gw_tick(CC_MqttsnGatewayHandle gw)
 {
     if (gw.obj == nullptr) {
         return;
@@ -116,21 +116,21 @@ void cc_mqttsn_gw_tick(MqttsnGatewayHandle gw)
 /*===================== Session Object ======================*/
 
 
-MqttsnSessionHandle cc_mqttsn_gw_session_alloc(void)
+CC_MqttsnSessionHandle cc_mqttsn_gw_session_alloc(void)
 {
-    MqttsnSessionHandle session;
+    CC_MqttsnSessionHandle session;
     session.obj = new Session;
     return session;
 }
 
-void cc_mqttsn_gw_session_free(MqttsnSessionHandle session)
+void cc_mqttsn_gw_session_free(CC_MqttsnSessionHandle session)
 {
     std::unique_ptr<Session>(reinterpret_cast<Session*>(session.obj));
 }
 
 void cc_mqttsn_gw_session_set_tick_req_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionTickReqCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionTickReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {
@@ -145,8 +145,8 @@ void cc_mqttsn_gw_session_set_tick_req_cb(
 }
 
 void cc_mqttsn_gw_session_set_cancel_tick_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionCancelTickReqCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionCancelTickReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {
@@ -161,8 +161,8 @@ void cc_mqttsn_gw_session_set_cancel_tick_cb(
 }
 
 void cc_mqttsn_gw_session_set_send_data_to_client_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionSendDataReqCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionSendDataReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {
@@ -178,8 +178,8 @@ void cc_mqttsn_gw_session_set_send_data_to_client_cb(
 
 
 void cc_mqttsn_gw_session_set_send_data_to_broker_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionSendDataReqCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionSendDataReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {
@@ -194,8 +194,8 @@ void cc_mqttsn_gw_session_set_send_data_to_broker_cb(
 }
 
 void cc_mqttsn_gw_session_set_term_req_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionTermReqCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionTermReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {
@@ -210,8 +210,8 @@ void cc_mqttsn_gw_session_set_term_req_cb(
 }
 
 void cc_mqttsn_gw_session_set_broker_reconnect_req_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionBrokerReconnectReqCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionBrokerReconnectReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {
@@ -226,8 +226,8 @@ void cc_mqttsn_gw_session_set_broker_reconnect_req_cb(
 }
 
 void cc_mqttsn_gw_session_set_client_connect_report_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionClientConnectReportCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionClientConnectReportCb cb,
     void* data)
 {
     if (session.obj == nullptr) {
@@ -247,8 +247,8 @@ void cc_mqttsn_gw_session_set_client_connect_report_cb(
 }
 
 void cc_mqttsn_gw_session_set_auth_info_req_cb(
-    MqttsnSessionHandle session,
-    MqttsnSessionAuthInfoReqCb cb,
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionAuthInfoReqCb cb,
     void* data)
 {
     if (session.obj == nullptr) {
@@ -281,7 +281,7 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
         });
 }
 
-void cc_mqttsn_gw_session_set_id(MqttsnSessionHandle session, unsigned char id)
+void cc_mqttsn_gw_session_set_id(CC_MqttsnSessionHandle session, unsigned char id)
 {
     if (session.obj == nullptr) {
         return;
@@ -290,7 +290,7 @@ void cc_mqttsn_gw_session_set_id(MqttsnSessionHandle session, unsigned char id)
     reinterpret_cast<Session*>(session.obj)->setGatewayId(id);
 }
 
-void cc_mqttsn_gw_session_set_retry_period(MqttsnSessionHandle session, unsigned value)
+void cc_mqttsn_gw_session_set_retry_period(CC_MqttsnSessionHandle session, unsigned value)
 {
     if (session.obj == nullptr) {
         return;
@@ -299,7 +299,7 @@ void cc_mqttsn_gw_session_set_retry_period(MqttsnSessionHandle session, unsigned
     reinterpret_cast<Session*>(session.obj)->setRetryPeriod(value);
 }
 
-void cc_mqttsn_gw_session_set_retry_count(MqttsnSessionHandle session, unsigned value)
+void cc_mqttsn_gw_session_set_retry_count(CC_MqttsnSessionHandle session, unsigned value)
 {
     if (session.obj == nullptr) {
         return;
@@ -309,7 +309,7 @@ void cc_mqttsn_gw_session_set_retry_count(MqttsnSessionHandle session, unsigned 
 }
 
 void cc_mqttsn_gw_session_set_sleeping_client_msg_limit(
-    MqttsnSessionHandle session,
+    CC_MqttsnSessionHandle session,
     unsigned value)
 {
     if (session.obj == nullptr) {
@@ -319,7 +319,7 @@ void cc_mqttsn_gw_session_set_sleeping_client_msg_limit(
     reinterpret_cast<Session*>(session.obj)->setSleepingClientMsgLimit(value);
 }
 
-void cc_mqttsn_gw_session_set_default_client_id(MqttsnSessionHandle session, const char* clientId)
+void cc_mqttsn_gw_session_set_default_client_id(CC_MqttsnSessionHandle session, const char* clientId)
 {
     if (session.obj == nullptr) {
         return;
@@ -329,7 +329,7 @@ void cc_mqttsn_gw_session_set_default_client_id(MqttsnSessionHandle session, con
 }
 
 void cc_mqttsn_gw_session_set_pub_only_keep_alive(
-    MqttsnSessionHandle session,
+    CC_MqttsnSessionHandle session,
     unsigned value)
 {
     if (session.obj == nullptr) {
@@ -339,7 +339,7 @@ void cc_mqttsn_gw_session_set_pub_only_keep_alive(
     reinterpret_cast<Session*>(session.obj)->setPubOnlyKeepAlive(static_cast<std::uint16_t>(value));
 }
 
-bool cc_mqttsn_gw_session_start(MqttsnSessionHandle session)
+bool cc_mqttsn_gw_session_start(CC_MqttsnSessionHandle session)
 {
     if (session.obj == nullptr) {
         return false;
@@ -348,7 +348,7 @@ bool cc_mqttsn_gw_session_start(MqttsnSessionHandle session)
     return reinterpret_cast<Session*>(session.obj)->start();
 }
 
-void cc_mqttsn_gw_session_stop(MqttsnSessionHandle session)
+void cc_mqttsn_gw_session_stop(CC_MqttsnSessionHandle session)
 {
     if (session.obj == nullptr) {
         return;
@@ -357,7 +357,7 @@ void cc_mqttsn_gw_session_stop(MqttsnSessionHandle session)
     reinterpret_cast<Session*>(session.obj)->stop();
 }
 
-void cc_mqttsn_gw_session_tick(MqttsnSessionHandle session)
+void cc_mqttsn_gw_session_tick(CC_MqttsnSessionHandle session)
 {
     if (session.obj == nullptr) {
         return;
@@ -367,7 +367,7 @@ void cc_mqttsn_gw_session_tick(MqttsnSessionHandle session)
 }
 
 unsigned cc_mqttsn_gw_session_data_from_client(
-    MqttsnSessionHandle session,
+    CC_MqttsnSessionHandle session,
     const unsigned char* buf,
     unsigned bufLen)
 {
@@ -381,7 +381,7 @@ unsigned cc_mqttsn_gw_session_data_from_client(
 }
 
 unsigned cc_mqttsn_gw_session_data_from_broker(
-    MqttsnSessionHandle session,
+    CC_MqttsnSessionHandle session,
     const unsigned char* buf,
     unsigned bufLen)
 {
@@ -394,7 +394,7 @@ unsigned cc_mqttsn_gw_session_data_from_broker(
 
 }
 
-void cc_mqttsn_gw_session_broker_connected(MqttsnSessionHandle session, bool connected)
+void cc_mqttsn_gw_session_broker_connected(CC_MqttsnSessionHandle session, bool connected)
 {
     if (session.obj == nullptr) {
         return;
@@ -404,7 +404,7 @@ void cc_mqttsn_gw_session_broker_connected(MqttsnSessionHandle session, bool con
 }
 
 bool cc_mqttsn_gw_session_add_predefined_topic(
-    MqttsnSessionHandle session,
+    CC_MqttsnSessionHandle session,
     const char* topic,
     unsigned short topicId)
 {
@@ -416,7 +416,7 @@ bool cc_mqttsn_gw_session_add_predefined_topic(
 }
 
 bool cc_mqttsn_gw_session_set_topic_id_alloc_range(
-    MqttsnSessionHandle session,
+    CC_MqttsnSessionHandle session,
     unsigned short minTopicId,
     unsigned short maxTopicId)
 {
@@ -429,19 +429,19 @@ bool cc_mqttsn_gw_session_set_topic_id_alloc_range(
 
 /*===================== Config Object ======================*/
 
-MqttsnConfigHandle cc_mqttsn_gw_config_alloc(void)
+CC_MqttsnConfigHandle cc_mqttsn_gw_config_alloc(void)
 {
-    MqttsnConfigHandle config;
+    CC_MqttsnConfigHandle config;
     config.obj = new Config;
     return config;
 }
 
-void cc_mqttsn_gw_config_free(MqttsnConfigHandle config)
+void cc_mqttsn_gw_config_free(CC_MqttsnConfigHandle config)
 {
     std::unique_ptr<Config>(reinterpret_cast<Config*>(config.obj));
 }
 
-void cc_mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str)
+void cc_mqttsn_gw_config_parse(CC_MqttsnConfigHandle config, const char* str)
 {
     if (config.obj == nullptr) {
         return;
@@ -452,7 +452,7 @@ void cc_mqttsn_gw_config_parse(MqttsnConfigHandle config, const char* str)
     reinterpret_cast<Config*>(config.obj)->read(stream);
 }
 
-bool cc_mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename)
+bool cc_mqttsn_gw_config_read(CC_MqttsnConfigHandle config, const char* filename)
 {
     if (config.obj == nullptr) {
         return false;
@@ -467,7 +467,7 @@ bool cc_mqttsn_gw_config_read(MqttsnConfigHandle config, const char* filename)
     return true;
 }
 
-unsigned char cc_mqttsn_gw_config_id(MqttsnConfigHandle config)
+unsigned char cc_mqttsn_gw_config_id(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -476,7 +476,7 @@ unsigned char cc_mqttsn_gw_config_id(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->gatewayId();
 }
 
-unsigned short cc_mqttsn_gw_config_advertise_period(MqttsnConfigHandle config)
+unsigned short cc_mqttsn_gw_config_advertise_period(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -485,7 +485,7 @@ unsigned short cc_mqttsn_gw_config_advertise_period(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->advertisePeriod();
 }
 
-unsigned cc_mqttsn_gw_config_retry_period(MqttsnConfigHandle config)
+unsigned cc_mqttsn_gw_config_retry_period(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -494,7 +494,7 @@ unsigned cc_mqttsn_gw_config_retry_period(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->retryPeriod();
 }
 
-unsigned cc_mqttsn_gw_config_retry_count(MqttsnConfigHandle config)
+unsigned cc_mqttsn_gw_config_retry_count(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -503,7 +503,7 @@ unsigned cc_mqttsn_gw_config_retry_count(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->retryCount();
 }
 
-const char* cc_mqttsn_gw_config_default_client_id(MqttsnConfigHandle config)
+const char* cc_mqttsn_gw_config_default_client_id(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return nullptr;
@@ -512,7 +512,7 @@ const char* cc_mqttsn_gw_config_default_client_id(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->defaultClientId().c_str();
 }
 
-unsigned cc_mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config)
+unsigned cc_mqttsn_gw_config_pub_only_keep_alive(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -521,7 +521,7 @@ unsigned cc_mqttsn_gw_config_pub_only_keep_alive(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->pubOnlyKeepAlive();
 }
 
-unsigned cc_mqttsn_gw_config_sleeping_client_msg_limit(MqttsnConfigHandle config)
+unsigned cc_mqttsn_gw_config_sleeping_client_msg_limit(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return std::numeric_limits<unsigned>::max();
@@ -533,7 +533,7 @@ unsigned cc_mqttsn_gw_config_sleeping_client_msg_limit(MqttsnConfigHandle config
             static_cast<std::size_t>(std::numeric_limits<unsigned>::max())));
 }
 
-unsigned cc_mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle config)
+unsigned cc_mqttsn_gw_config_available_predefined_topics(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -544,8 +544,8 @@ unsigned cc_mqttsn_gw_config_available_predefined_topics(MqttsnConfigHandle conf
 }
 
 unsigned cc_mqttsn_gw_config_get_predefined_topics(
-    MqttsnConfigHandle config,
-    MqttsnPredefinedTopicInfo* buf,
+    CC_MqttsnConfigHandle config,
+    CC_MqttsnPredefinedTopicInfo* buf,
     unsigned bufLen)
 {
     if (config.obj == nullptr) {
@@ -557,9 +557,9 @@ unsigned cc_mqttsn_gw_config_get_predefined_topics(
 
     std::transform(
         predefinedTopics.begin(), predefinedTopics.begin() + total, buf,
-        [](const cc_mqttsn_gateway::Config::PredefinedTopicInfo& info) -> MqttsnPredefinedTopicInfo
+        [](const cc_mqttsn_gateway::Config::PredefinedTopicInfo& info) -> CC_MqttsnPredefinedTopicInfo
         {
-            MqttsnPredefinedTopicInfo retInfo;
+            CC_MqttsnPredefinedTopicInfo retInfo;
             retInfo.clientId = info.clientId.c_str();
             retInfo.topic = info.topic.c_str();
             retInfo.topicId = info.topicId;
@@ -568,7 +568,7 @@ unsigned cc_mqttsn_gw_config_get_predefined_topics(
     return total;
 }
 
-unsigned cc_mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config)
+unsigned cc_mqttsn_gw_config_available_auth_infos(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -579,8 +579,8 @@ unsigned cc_mqttsn_gw_config_available_auth_infos(MqttsnConfigHandle config)
 }
 
 unsigned cc_mqttsn_gw_config_get_auth_infos(
-    MqttsnConfigHandle config,
-    MqttsnAuthInfo* buf,
+    CC_MqttsnConfigHandle config,
+    CC_MqttsnAuthInfo* buf,
     unsigned bufLen)
 {
     if (config.obj == nullptr) {
@@ -592,9 +592,9 @@ unsigned cc_mqttsn_gw_config_get_auth_infos(
 
     std::transform(
         authInfos.begin(), authInfos.begin() + total, buf,
-        [](const cc_mqttsn_gateway::Config::AuthInfo& info) -> MqttsnAuthInfo
+        [](const cc_mqttsn_gateway::Config::AuthInfo& info) -> CC_MqttsnAuthInfo
         {
-            MqttsnAuthInfo retInfo;
+            CC_MqttsnAuthInfo retInfo;
             retInfo.clientId = info.clientId.c_str();
             retInfo.username = info.username.c_str();
             retInfo.password = info.password.c_str();
@@ -604,7 +604,7 @@ unsigned cc_mqttsn_gw_config_get_auth_infos(
 }
 
 void cc_mqttsn_gw_config_topic_id_alloc_range(
-    MqttsnConfigHandle config,
+    CC_MqttsnConfigHandle config,
     unsigned short* min,
     unsigned short* max)
 {
@@ -622,7 +622,7 @@ void cc_mqttsn_gw_config_topic_id_alloc_range(
     }
 }
 
-const char* cc_mqttsn_gw_config_broker_address(MqttsnConfigHandle config)
+const char* cc_mqttsn_gw_config_broker_address(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return nullptr;
@@ -631,7 +631,7 @@ const char* cc_mqttsn_gw_config_broker_address(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->brokerTcpHostAddress().c_str();
 }
 
-unsigned short cc_mqttsn_gw_config_broker_port(MqttsnConfigHandle config)
+unsigned short cc_mqttsn_gw_config_broker_port(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -640,7 +640,7 @@ unsigned short cc_mqttsn_gw_config_broker_port(MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->brokerTcpHostPort();
 }
 
-unsigned cc_mqttsn_gw_config_values_count(MqttsnConfigHandle config, const char* key)
+unsigned cc_mqttsn_gw_config_values_count(CC_MqttsnConfigHandle config, const char* key)
 {
     if (config.obj == nullptr) {
         return 0U;
@@ -651,7 +651,7 @@ unsigned cc_mqttsn_gw_config_values_count(MqttsnConfigHandle config, const char*
     return static_cast<unsigned>(std::distance(range.first, range.second));
 }
 
-const char* cc_mqttsn_gw_config_get_value(MqttsnConfigHandle config, const char* key, unsigned idx)
+const char* cc_mqttsn_gw_config_get_value(CC_MqttsnConfigHandle config, const char* key, unsigned idx)
 {
     if (config.obj == nullptr) {
         return 0U;

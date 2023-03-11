@@ -22,7 +22,7 @@
 ///
 /// When using @b C interface, the allocation is performed using cc_mqttsn_gw_session_alloc()
 /// @code
-/// MqttsnSessionHandle handle = cc_mqttsn_gw_session_alloc();
+/// CC_MqttsnSessionHandle handle = cc_mqttsn_gw_session_alloc();
 /// @endcode
 /// and de-allocation is performed using cc_mqttsn_gw_session_free() functions.
 /// @code

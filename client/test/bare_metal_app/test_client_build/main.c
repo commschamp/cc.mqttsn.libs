@@ -24,11 +24,11 @@ unsigned cancelTick(void* data)
     return 0U;
 }
 
-void connectComplete(void* data, MqttsnAsyncOpStatus status)
+void connectComplete(void* data, CC_MqttsnAsyncOpStatus status)
 {
 }
 
-void disconnectComplete(void* data, MqttsnAsyncOpStatus status)
+void disconnectComplete(void* data, CC_MqttsnAsyncOpStatus status)
 {
 }
 
@@ -40,27 +40,27 @@ void sendOutputData(void* data, const unsigned char* buf, unsigned bufSize, bool
 {
 }
 
-void publishCallback(void* data, MqttsnAsyncOpStatus status)
+void publishCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
 }
 
-void subscribeCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+void subscribeCallback(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos)
 {
 }
 
-void unsubscribeCallback(void* data, MqttsnAsyncOpStatus status)
+void unsubscribeCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
 }
 
-void gwStatusReport(void* data, unsigned char gwId, MqttsnGwStatus status)
+void gwStatusReport(void* data, unsigned char gwId, CC_MqttsnGwStatus status)
 {
 }
 
-void msgReport(void* data, const MqttsnMessageInfo* msgInfo)
+void msgReport(void* data, const CC_MqttsnMessageInfo* msgInfo)
 {
 }
 
-void willUpdated(void* data, MqttsnAsyncOpStatus status)
+void willUpdated(void* data, CC_MqttsnAsyncOpStatus status)
 {
 }
 
@@ -74,8 +74,8 @@ int main(int argc, const char** argv)
     };
     static const unsigned DataSize = sizeof(Data)/sizeof(Data[0]);
     const unsigned char* from = &Seq[0];
-    MqttsnClientHandle client = cc_mqttsn_test_bare_metal_client_new();
-    MqttsnWillInfo willInfo;
+    CC_MqttsnClientHandle client = cc_mqttsn_test_bare_metal_client_new();
+    CC_MqttsnWillInfo willInfo;
 
 
     cc_mqttsn_test_bare_metal_client_set_next_tick_program_callback(client, &programNextTick, NULL);
@@ -96,7 +96,7 @@ int main(int argc, const char** argv)
         Topic,
         &Data[0],
         DataSize,
-        MqttsnQoS_ExactlyOnceDelivery,
+        CC_MqttsnQoS_ExactlyOnceDelivery,
         false,
         &publishCallback,
         NULL);
@@ -106,7 +106,7 @@ int main(int argc, const char** argv)
         0x1234,
         &Data[0],
         DataSize,
-        MqttsnQoS_ExactlyOnceDelivery,
+        CC_MqttsnQoS_ExactlyOnceDelivery,
         false,
         &publishCallback,
         NULL);
@@ -114,14 +114,14 @@ int main(int argc, const char** argv)
     cc_mqttsn_test_bare_metal_client_subscribe(
         client,
         Topic,
-        MqttsnQoS_ExactlyOnceDelivery,
+        CC_MqttsnQoS_ExactlyOnceDelivery,
         &subscribeCallback,
         NULL);
 
     cc_mqttsn_test_bare_metal_client_subscribe_id(
         client,
         0x1111,
-        MqttsnQoS_ExactlyOnceDelivery,
+        CC_MqttsnQoS_ExactlyOnceDelivery,
         &subscribeCallback,
         NULL);
 
@@ -160,7 +160,7 @@ int main(int argc, const char** argv)
     cc_mqttsn_test_bare_metal_client_reconnect(client, &connectComplete, NULL);
 
     cc_mqttsn_test_bare_metal_client_will_update(client, &willInfo, &willUpdated, NULL);
-    cc_mqttsn_test_bare_metal_client_will_topic_update(client, Topic, MqttsnQoS_ExactlyOnceDelivery, false, &willUpdated, NULL);
+    cc_mqttsn_test_bare_metal_client_will_topic_update(client, Topic, CC_MqttsnQoS_ExactlyOnceDelivery, false, &willUpdated, NULL);
     cc_mqttsn_test_bare_metal_client_will_msg_update(client, Data, DataSize, &willUpdated, NULL);
 
     cc_mqttsn_test_bare_metal_client_disconnect(client, &disconnectComplete, NULL);

@@ -136,35 +136,35 @@ using ClientIdStorageOptT =
 
 //-----------------------------------------------------------
 
-cc_mqttsn::field::QosVal translateQosValue(MqttsnQoS val)
+cc_mqttsn::field::QosVal translateQosValue(CC_MqttsnQoS val)
 {
     static_assert(
-        static_cast<int>(cc_mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtMostOnceDelivery) == CC_MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(cc_mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtLeastOnceDelivery) == CC_MqttsnQoS_AtLeastOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(cc_mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::ExactlyOnceDelivery) == CC_MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
 
-    if (val == MqttsnQoS_NoGwPublish) {
+    if (val == CC_MqttsnQoS_NoGwPublish) {
         return cc_mqttsn::field::QosVal::NoGwPublish;
     }
 
     return static_cast<cc_mqttsn::field::QosVal>(val);
 }
 
-MqttsnQoS translateQosValue(cc_mqttsn::field::QosVal val)
+CC_MqttsnQoS translateQosValue(cc_mqttsn::field::QosVal val)
 {
 
     if (val == cc_mqttsn::field::QosVal::NoGwPublish) {
-        return MqttsnQoS_NoGwPublish;
+        return CC_MqttsnQoS_NoGwPublish;
     }
 
-    return static_cast<MqttsnQoS>(val);
+    return static_cast<CC_MqttsnQoS>(val);
 }
 
 }  // namespace details
@@ -210,14 +210,14 @@ class BasicClient
 
     struct AsyncOpBase : public OpBase
     {
-        MqttsnAsyncOpCompleteReportFn m_cb = nullptr;
+        CC_MqttsnAsyncOpCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
     };
 
 
     struct ConnectOp : public AsyncOpBase
     {
-        MqttsnWillInfo m_willInfo = MqttsnWillInfo();
+        CC_MqttsnWillInfo m_willInfo = CC_MqttsnWillInfo();
         const char* m_clientId = nullptr;
         std::uint16_t m_keepAlivePeriod = 0;
         bool m_hasWill = false;
@@ -230,11 +230,11 @@ class BasicClient
 
     struct PublishOpBase : public AsyncOpBase
     {
-        MqttsnTopicId m_topicId = 0U;
+        CC_MqttsnTopicId m_topicId = 0U;
         std::uint16_t m_msgId = 0U;
         const std::uint8_t* m_msg = nullptr;
         std::size_t m_msgLen = 0;
-        MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
+        CC_MqttsnQoS m_qos = CC_MqttsnQoS_AtMostOnceDelivery;
         bool m_retain = false;
         bool m_ackReceived = false;
     };
@@ -253,11 +253,11 @@ class BasicClient
 
     struct SubscribeOpBase : public OpBase
     {
-        MqttsnQoS m_qos = MqttsnQoS_AtMostOnceDelivery;
-        MqttsnSubscribeCompleteReportFn m_cb = nullptr;
+        CC_MqttsnQoS m_qos = CC_MqttsnQoS_AtMostOnceDelivery;
+        CC_MqttsnSubscribeCompleteReportFn m_cb = nullptr;
         void* m_cbData = nullptr;
         std::uint16_t m_msgId = 0U;
-        MqttsnTopicId m_topicId = 0U;
+        CC_MqttsnTopicId m_topicId = 0U;
     };
 
     struct SubscribeIdOp : public SubscribeOpBase
@@ -273,7 +273,7 @@ class BasicClient
     struct UnsubscribeOpBase : public AsyncOpBase
     {
         std::uint16_t m_msgId = 0U;
-        MqttsnTopicId m_topicId = 0U;
+        CC_MqttsnTopicId m_topicId = 0U;
     };
 
     struct UnsubscribeIdOp : public UnsubscribeOpBase
@@ -289,7 +289,7 @@ class BasicClient
     struct WillTopicUpdateOp : public AsyncOpBase
     {
         const char* m_topic = nullptr;
-        MqttsnQoS m_qos;
+        CC_MqttsnQoS m_qos;
         bool m_retain;
     };
 
@@ -313,7 +313,7 @@ class BasicClient
         Asleep
     };
 
-    typedef void (BasicClient<TClientOpts>::*FinaliseFunc)(MqttsnAsyncOpStatus);
+    typedef void (BasicClient<TClientOpts>::*FinaliseFunc)(CC_MqttsnAsyncOpStatus);
 
     using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
     using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
@@ -438,7 +438,7 @@ public:
         m_broadcastRadius = val;
     }
 
-    void setNextTickProgramCallback(MqttsnNextTickProgramFn cb, void* data)
+    void setNextTickProgramCallback(CC_MqttsnNextTickProgramFn cb, void* data)
     {
         if (cb != nullptr) {
             m_nextTickProgramFn = cb;
@@ -446,7 +446,7 @@ public:
         }
     }
 
-    void setCancelNextTickWaitCallback(MqttsnCancelNextTickWaitFn cb, void* data)
+    void setCancelNextTickWaitCallback(CC_MqttsnCancelNextTickWaitFn cb, void* data)
     {
         if (cb != nullptr) {
             m_cancelNextTickWaitFn = cb;
@@ -454,7 +454,7 @@ public:
         }
     }
 
-    void setSendOutputDataCallback(MqttsnSendOutputDataFn cb, void* data)
+    void setSendOutputDataCallback(CC_MqttsnSendOutputDataFn cb, void* data)
     {
         if (cb != nullptr) {
             m_sendOutputDataFn = cb;
@@ -462,19 +462,19 @@ public:
         }
     }
 
-    void setGwStatusReportCallback(MqttsnGwStatusReportFn cb, void* data)
+    void setGwStatusReportCallback(CC_MqttsnGwStatusReportFn cb, void* data)
     {
         m_gwStatusReportFn = cb;
         m_gwStatusReportData = data;
     }
 
-    void setGwDisconnectReportCallback(MqttsnGwDisconnectReportFn cb, void* data)
+    void setGwDisconnectReportCallback(CC_MqttsnGwDisconnectReportFn cb, void* data)
     {
         m_gwDisconnectReportFn = cb;
         m_gwDisconnectReportData = data;
     }
 
-    void setMessageReportCallback(MqttsnMessageReportFn cb, void* data)
+    void setMessageReportCallback(CC_MqttsnMessageReportFn cb, void* data)
     {
         m_msgReportFn = cb;
         m_msgReportData = data;
@@ -506,7 +506,7 @@ public:
         }
 
         m_gwInfos.erase(iter);
-        reportGwStatus(gwId, MqttsnGwStatus_Discarded);
+        reportGwStatus(gwId, CC_MqttsnGwStatus_Discarded);
     }
 
     void discardAllGw()
@@ -530,21 +530,21 @@ public:
 
         m_gwInfos.clear();
         for (auto gwId : ids) {
-            reportGwStatus(gwId, MqttsnGwStatus_Discarded);
+            reportGwStatus(gwId, CC_MqttsnGwStatus_Discarded);
         }
     }
 
-    MqttsnErrorCode start()
+    CC_MqttsnErrorCode start()
     {
         if (m_running) {
-            return MqttsnErrorCode_AlreadyStarted;
+            return CC_MqttsnErrorCode_AlreadyStarted;
         }
 
         if ((m_nextTickProgramFn == nullptr) ||
             (m_cancelNextTickWaitFn == nullptr) ||
             (m_sendOutputDataFn == nullptr) ||
             (m_msgReportFn == nullptr)) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         m_running = true;
@@ -565,18 +565,18 @@ public:
 
         checkGwSearchReq();
         programNextTimeout();
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode stop()
+    CC_MqttsnErrorCode stop()
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         auto guard = apiCall();
         m_running = false;
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
     void tick()
@@ -638,28 +638,28 @@ public:
 
         auto fn = getFinaliseFunc();
         COMMS_ASSERT(fn != nullptr);
-        (this->*(fn))(MqttsnAsyncOpStatus_Aborted);
+        (this->*(fn))(CC_MqttsnAsyncOpStatus_Aborted);
         return true;
     }
 
-    MqttsnErrorCode connect(
+    CC_MqttsnErrorCode connect(
         const char* clientId,
         unsigned short keepAlivePeriod,
         bool cleanSession,
-        const MqttsnWillInfo* willInfo,
-        MqttsnAsyncOpCompleteReportFn callback,
+        const CC_MqttsnWillInfo* willInfo,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Disconnected) {
-            return MqttsnErrorCode_AlreadyConnected;
+            return CC_MqttsnErrorCode_AlreadyConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         auto guard = apiCall();
@@ -679,27 +679,27 @@ public:
         bool result = doConnect();
         static_cast<void>(result);
         COMMS_ASSERT(result);
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode reconnect(
-        MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnErrorCode reconnect(
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus == ConnectionStatus::Disconnected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -715,23 +715,23 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode disconnect(
-        MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnErrorCode disconnect(
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus == ConnectionStatus::Disconnected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         auto guard = apiCall();
@@ -743,42 +743,42 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode publish(
-        MqttsnTopicId topicId,
+    CC_MqttsnErrorCode publish(
+        CC_MqttsnTopicId topicId,
         const std::uint8_t* msg,
         std::size_t msgLen,
-        MqttsnQoS qos,
+        CC_MqttsnQoS qos,
         bool retain,
-        MqttsnAsyncOpCompleteReportFn callback,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
-        if ((m_connectionStatus != ConnectionStatus::Connected) && (qos != MqttsnQoS_NoGwPublish)) {
-            return MqttsnErrorCode_NotConnected;
+        if ((m_connectionStatus != ConnectionStatus::Connected) && (qos != CC_MqttsnQoS_NoGwPublish)) {
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
-        if ((qos < MqttsnQoS_NoGwPublish) ||
-            (MqttsnQoS_ExactlyOnceDelivery < qos)) {
-            return MqttsnErrorCode_BadParam;
+        if ((qos < CC_MqttsnQoS_NoGwPublish) ||
+            (CC_MqttsnQoS_ExactlyOnceDelivery < qos)) {
+            return CC_MqttsnErrorCode_BadParam;
         }
 
-        if ((callback == nullptr) && (MqttsnQoS_AtLeastOnceDelivery <= qos)) {
-            return MqttsnErrorCode_BadParam;
+        if ((callback == nullptr) && (CC_MqttsnQoS_AtLeastOnceDelivery <= qos)) {
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
 
-        if (MqttsnQoS_AtLeastOnceDelivery <= qos) {
+        if (CC_MqttsnQoS_AtLeastOnceDelivery <= qos) {
             m_currOp = Op::PublishId;
             auto* pubOp = newAsyncOp<PublishIdOp>(callback, data);
             pubOp->m_topicId = topicId;
@@ -802,39 +802,39 @@ public:
                 retain,
                 false);
             if (callback != nullptr) {
-                callback(data, MqttsnAsyncOpStatus_Successful);
+                callback(data, CC_MqttsnAsyncOpStatus_Successful);
             }
         }
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode publish(
+    CC_MqttsnErrorCode publish(
         const char* topic,
         const std::uint8_t* msg,
         std::size_t msgLen,
-        MqttsnQoS qos,
+        CC_MqttsnQoS qos,
         bool retain,
-        MqttsnAsyncOpCompleteReportFn callback,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
-        if ((m_connectionStatus != ConnectionStatus::Connected) && (qos != MqttsnQoS_NoGwPublish)) {
-            return MqttsnErrorCode_NotConnected;
+        if ((m_connectionStatus != ConnectionStatus::Connected) && (qos != CC_MqttsnQoS_NoGwPublish)) {
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
-        if ((qos < MqttsnQoS_AtMostOnceDelivery) ||
-            (MqttsnQoS_ExactlyOnceDelivery < qos) ||
+        if ((qos < CC_MqttsnQoS_AtMostOnceDelivery) ||
+            (CC_MqttsnQoS_ExactlyOnceDelivery < qos) ||
             (callback == nullptr)) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -856,32 +856,32 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode subscribe(
-        MqttsnTopicId topicId,
-        MqttsnQoS qos,
-        MqttsnSubscribeCompleteReportFn callback,
+    CC_MqttsnErrorCode subscribe(
+        CC_MqttsnTopicId topicId,
+        CC_MqttsnQoS qos,
+        CC_MqttsnSubscribeCompleteReportFn callback,
         void* data
     )
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Connected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
-        if ((qos < MqttsnQoS_AtMostOnceDelivery) ||
-            (MqttsnQoS_ExactlyOnceDelivery < qos) ||
+        if ((qos < CC_MqttsnQoS_AtMostOnceDelivery) ||
+            (CC_MqttsnQoS_ExactlyOnceDelivery < qos) ||
             (callback == nullptr)) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -898,33 +898,33 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode subscribe(
+    CC_MqttsnErrorCode subscribe(
         const char* topic,
-        MqttsnQoS qos,
-        MqttsnSubscribeCompleteReportFn callback,
+        CC_MqttsnQoS qos,
+        CC_MqttsnSubscribeCompleteReportFn callback,
         void* data
     )
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Connected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
-        if ((qos < MqttsnQoS_AtMostOnceDelivery) ||
-            (MqttsnQoS_ExactlyOnceDelivery < qos) ||
+        if ((qos < CC_MqttsnQoS_AtMostOnceDelivery) ||
+            (CC_MqttsnQoS_ExactlyOnceDelivery < qos) ||
             (topic == nullptr) ||
             (callback == nullptr)) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -945,29 +945,29 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode unsubscribe(
-        MqttsnTopicId topicId,
-        MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnErrorCode unsubscribe(
+        CC_MqttsnTopicId topicId,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data
     )
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Connected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -981,28 +981,28 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode unsubscribe(
+    CC_MqttsnErrorCode unsubscribe(
         const char* topic,
-        MqttsnAsyncOpCompleteReportFn callback,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Connected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -1020,28 +1020,28 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode willUpdate(
-        const MqttsnWillInfo* willInfo,
-        MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnErrorCode willUpdate(
+        const CC_MqttsnWillInfo* willInfo,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Connected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -1060,30 +1060,30 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode willTopicUpdate(
+    CC_MqttsnErrorCode willTopicUpdate(
         const char* topic,
-        MqttsnQoS qos,
+        CC_MqttsnQoS qos,
         bool retain,
-        MqttsnAsyncOpCompleteReportFn callback,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Connected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -1098,29 +1098,29 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode willMsgUpdate(
+    CC_MqttsnErrorCode willMsgUpdate(
         const unsigned char* msg,
         unsigned msgLen,
-        MqttsnAsyncOpCompleteReportFn callback,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Connected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -1134,28 +1134,28 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode sleep(
+    CC_MqttsnErrorCode sleep(
         std::uint16_t duration,
-        MqttsnAsyncOpCompleteReportFn callback,
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus == ConnectionStatus::Disconnected) {
-            return MqttsnErrorCode_NotConnected;
+            return CC_MqttsnErrorCode_NotConnected;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -1168,27 +1168,27 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
-    MqttsnErrorCode checkMessages(
-        MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnErrorCode checkMessages(
+        CC_MqttsnAsyncOpCompleteReportFn callback,
         void* data)
     {
         if (!m_running) {
-            return MqttsnErrorCode_NotStarted;
+            return CC_MqttsnErrorCode_NotStarted;
         }
 
         if (m_connectionStatus != ConnectionStatus::Asleep) {
-            return MqttsnErrorCode_NotSleeping;
+            return CC_MqttsnErrorCode_NotSleeping;
         }
 
         if (m_currOp != Op::None) {
-            return MqttsnErrorCode_Busy;
+            return CC_MqttsnErrorCode_Busy;
         }
 
         if (callback == nullptr) {
-            return MqttsnErrorCode_BadParam;
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         auto guard = apiCall();
@@ -1201,7 +1201,7 @@ public:
         static_cast<void>(result);
         COMMS_ASSERT(result);
 
-        return MqttsnErrorCode_Success;
+        return CC_MqttsnErrorCode_Success;
     }
 
     void handle(AdvertiseMsg& msg)
@@ -1219,7 +1219,7 @@ public:
             return;
         }
 
-        reportGwStatus(msg.field_gwId().value(), MqttsnGwStatus_Available);
+        reportGwStatus(msg.field_gwId().value(), CC_MqttsnGwStatus_Available);
     }
 
     void handle(GwinfoMsg& msg)
@@ -1243,7 +1243,7 @@ public:
 //            iter->m_addr = addrField.value();
 //        }
 
-        reportGwStatus(msg.field_gwId().value(), MqttsnGwStatus_Available);
+        reportGwStatus(msg.field_gwId().value(), CC_MqttsnGwStatus_Available);
     }
 
     void handle(ConnackMsg& msg)
@@ -1376,7 +1376,7 @@ public:
         auto reportMsgFunc =
             [this, &msg](const char* topicName)
             {
-                auto msgInfo = MqttsnMessageInfo();
+                auto msgInfo = CC_MqttsnMessageInfo();
 
                 msgInfo.topic = topicName;
                 if (topicName == nullptr) {
@@ -1503,14 +1503,14 @@ public:
             return;
         }
 
-        if ((op->m_qos == MqttsnQoS_ExactlyOnceDelivery) &&
+        if ((op->m_qos == CC_MqttsnQoS_ExactlyOnceDelivery) &&
             (retCodeValue == ReturnCodeVal::Accepted)) {
             // PUBREC is expected instead
             return;
         }
 
         do {
-            if ((op->m_qos < MqttsnQoS_AtLeastOnceDelivery) ||
+            if ((op->m_qos < CC_MqttsnQoS_AtLeastOnceDelivery) ||
                 (retCodeValue != ReturnCodeVal::InvalidTopicId) ||
                 (m_currOp != Op::Publish) ||
                 (opPtr<PublishOp>()->m_didRegistration)) {
@@ -1557,7 +1557,7 @@ public:
         sendMessage(compMsg);
 
         if (!m_lastInMsg.m_reported) {
-            auto msgInfo = MqttsnMessageInfo();
+            auto msgInfo = CC_MqttsnMessageInfo();
 
             if (m_lastInMsg.m_usingShortTopicName) {
                 msgInfo.topic = &m_lastInMsg.m_shortTopic[0];
@@ -1579,7 +1579,7 @@ public:
 
             msgInfo.msg = &(*m_lastInMsg.m_msgData.begin());
             msgInfo.msgLen = static_cast<decltype(msgInfo.msgLen)>(m_lastInMsg.m_msgData.size());
-            msgInfo.qos = MqttsnQoS_ExactlyOnceDelivery;
+            msgInfo.qos = CC_MqttsnQoS_ExactlyOnceDelivery;
             msgInfo.retain = m_lastInMsg.m_retain;
 
             m_lastInMsg.m_reported = true;
@@ -1602,7 +1602,7 @@ public:
             return;
         }
 
-        finalisePublishOp(MqttsnAsyncOpStatus_Successful);
+        finalisePublishOp(CC_MqttsnAsyncOpStatus_Successful);
     }
 
     void handle(SubackMsg& msg)
@@ -1654,7 +1654,7 @@ public:
         if ((m_currOp == Op::SubscribeId) &&
             (opPtr<SubscribeIdOp>()->m_topicId != msg.field_topicId().value())) {
             if (!doSubscribeId()) {
-                finaliseSubscribeOp(MqttsnAsyncOpStatus_InvalidId);
+                finaliseSubscribeOp(CC_MqttsnAsyncOpStatus_InvalidId);
             }
             return;
         }
@@ -1665,7 +1665,7 @@ public:
         }
 
         op->m_qos = qosValue;
-        finaliseSubscribeOp(MqttsnAsyncOpStatus_Successful);
+        finaliseSubscribeOp(CC_MqttsnAsyncOpStatus_Successful);
     }
 
     void handle(UnsubackMsg& msg)
@@ -1705,7 +1705,7 @@ public:
             iter->m_locked = false;
         } while (false);
 
-        finaliseUnsubscribeOp(MqttsnAsyncOpStatus_Successful);
+        finaliseUnsubscribeOp(CC_MqttsnAsyncOpStatus_Successful);
     }
 
     void handle(PingreqMsg& msg)
@@ -1727,7 +1727,7 @@ public:
 
         // checking messages in asleep mode
         COMMS_ASSERT(m_connectionStatus == ConnectionStatus::Asleep);
-        finaliseCheckMessagesOp(MqttsnAsyncOpStatus_Successful);
+        finaliseCheckMessagesOp(CC_MqttsnAsyncOpStatus_Successful);
     }
 
     void handle(DisconnectMsg& msg)
@@ -1735,13 +1735,13 @@ public:
         static_cast<void>(msg);
 
         if (m_currOp == Op::Disconnect) {
-            finaliseDisconnectOp(MqttsnAsyncOpStatus_Successful);
+            finaliseDisconnectOp(CC_MqttsnAsyncOpStatus_Successful);
             return;
         }
 
         if (m_currOp == Op::Sleep) {
             m_connectionStatus = ConnectionStatus::Asleep;
-            finaliseSleepOp(MqttsnAsyncOpStatus_Successful);
+            finaliseSleepOp(CC_MqttsnAsyncOpStatus_Successful);
             return;
         }
 
@@ -1814,7 +1814,7 @@ private:
     struct LastInMsgInfo
     {
         DataType m_msgData;
-        MqttsnTopicId m_topicId = 0;
+        CC_MqttsnTopicId m_topicId = 0;
         std::uint16_t m_msgId = 0;
         char m_shortTopic[3] = {0};
         bool m_retain = false;
@@ -1910,7 +1910,7 @@ private:
     }
 
     template <typename TOp>
-    TOp* newAsyncOp(MqttsnAsyncOpCompleteReportFn cb, void* cbData)
+    TOp* newAsyncOp(CC_MqttsnAsyncOpCompleteReportFn cb, void* cbData)
     {
         static_assert(std::is_base_of<AsyncOpBase, TOp>::value, "Invalid base");
 
@@ -2076,7 +2076,7 @@ private:
             m_gwInfos.end());
 
         for (auto id : idsToRemove) {
-            reportGwStatus(id, MqttsnGwStatus_TimedOut);
+            reportGwStatus(id, CC_MqttsnGwStatus_TimedOut);
         }
     }
 
@@ -2166,7 +2166,7 @@ private:
 
         auto finaliseFn = getFinaliseFunc();
         COMMS_ASSERT(finaliseFn != nullptr);
-        (this->*finaliseFn)(MqttsnAsyncOpStatus_NoResponse);
+        (this->*finaliseFn)(CC_MqttsnAsyncOpStatus_NoResponse);
     }
 
     void checkTimeouts()
@@ -2195,7 +2195,7 @@ private:
         return true;
     }
 
-    void reportGwStatus(GwIdValueType id, MqttsnGwStatus status)
+    void reportGwStatus(GwIdValueType id, CC_MqttsnGwStatus status)
     {
         if (m_gwStatusReportFn != nullptr) {
             m_gwStatusReportFn(m_gwStatusReportData, id, status);
@@ -2287,13 +2287,13 @@ private:
         bool firstAttempt = (op->m_attempt == 0U);
         ++op->m_attempt;
 
-        if (firstAttempt && (MqttsnQoS_AtLeastOnceDelivery <= op->m_qos)) {
+        if (firstAttempt && (CC_MqttsnQoS_AtLeastOnceDelivery <= op->m_qos)) {
             op->m_msgId = allocMsgId();
         }
 
         if ((!firstAttempt) &&
             (op->m_ackReceived) &&
-            (MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
+            (CC_MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
             sendPubrel(op->m_msgId);
             return true;
         }
@@ -2308,8 +2308,8 @@ private:
             op->m_retain,
             !firstAttempt);
 
-        if (op->m_qos <= MqttsnQoS_AtMostOnceDelivery) {
-            finalisePublishOp(MqttsnAsyncOpStatus_Successful);
+        if (op->m_qos <= CC_MqttsnQoS_AtMostOnceDelivery) {
+            finalisePublishOp(CC_MqttsnAsyncOpStatus_Successful);
         }
 
         return true;
@@ -2354,7 +2354,7 @@ private:
         } while (false);
 
         op->m_msgId = 0U;
-        if (firstAttempt && (MqttsnQoS_AtLeastOnceDelivery <= op->m_qos)) {
+        if (firstAttempt && (CC_MqttsnQoS_AtLeastOnceDelivery <= op->m_qos)) {
             op->m_msgId = allocMsgId();
         }
 
@@ -2362,7 +2362,7 @@ private:
 
         if ((!firstAttempt) &&
             (op->m_ackReceived) &&
-            (MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
+            (CC_MqttsnQoS_ExactlyOnceDelivery <= op->m_qos)) {
             sendPubrel(op->m_msgId);
             return true;
         }
@@ -2382,8 +2382,8 @@ private:
             op->m_retain,
             !firstAttempt);
 
-        if (op->m_qos <= MqttsnQoS_AtMostOnceDelivery) {
-            finalisePublishOp(MqttsnAsyncOpStatus_Successful);
+        if (op->m_qos <= CC_MqttsnQoS_AtMostOnceDelivery) {
+            finalisePublishOp(CC_MqttsnAsyncOpStatus_Successful);
         }
 
         return true;
@@ -2607,7 +2607,7 @@ private:
 
     void sendWilltopic(
         const char* topic,
-        MqttsnQoS qos,
+        CC_MqttsnQoS qos,
         bool retain)
     {
         WilltopicMsg msg;
@@ -2633,7 +2633,7 @@ private:
     }
 
     void sendPublish(
-        MqttsnTopicId topicId,
+        CC_MqttsnTopicId topicId,
         std::uint16_t msgId,
         const std::uint8_t* msg,
         std::size_t msgLen,
@@ -2656,7 +2656,7 @@ private:
     }
 
     void sendPuback(
-        MqttsnTopicId topicId,
+        CC_MqttsnTopicId topicId,
         std::uint16_t msgId,
         ReturnCodeVal retCode)
     {
@@ -2700,7 +2700,7 @@ private:
     }
 
     template <typename TOp, Op TCurr>
-    void finaliseAsyncOp(MqttsnAsyncOpStatus status)
+    void finaliseAsyncOp(CC_MqttsnAsyncOpStatus status)
     {
         COMMS_ASSERT(m_currOp == TCurr);
 
@@ -2716,7 +2716,7 @@ private:
     }
 
     template <typename TOp1, Op TCurr1, typename TOp2, Op TCurr2>
-    void finaliseAsyncDoubleOp(MqttsnAsyncOpStatus status)
+    void finaliseAsyncDoubleOp(CC_MqttsnAsyncOpStatus status)
     {
         COMMS_ASSERT((m_currOp == TCurr1) || (m_currOp == TCurr2));
 
@@ -2738,22 +2738,22 @@ private:
         cb(cbData, status);
     }
 
-    void finaliseConnectOp(MqttsnAsyncOpStatus status)
+    void finaliseConnectOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<ConnectOp, Op::Connect>(status);
     }
 
-    void finaliseDisconnectOp(MqttsnAsyncOpStatus status)
+    void finaliseDisconnectOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<DisconnectOp, Op::Disconnect>(status);
     }
 
-    void finalisePublishOp(MqttsnAsyncOpStatus status)
+    void finalisePublishOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncDoubleOp<PublishOp, Op::Publish, PublishIdOp, Op::PublishId>(status);
     }
 
-    void finaliseSubscribeOp(MqttsnAsyncOpStatus status)
+    void finaliseSubscribeOp(CC_MqttsnAsyncOpStatus status)
     {
         COMMS_ASSERT((m_currOp == Op::Subscribe) || (m_currOp == Op::SubscribeId));
         auto* op = opPtr<SubscribeOpBase>();
@@ -2771,27 +2771,27 @@ private:
         cb(cbData, status, op->m_qos);
     }
 
-    void finaliseUnsubscribeOp(MqttsnAsyncOpStatus status)
+    void finaliseUnsubscribeOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncDoubleOp<UnsubscribeOp, Op::Unsubscribe, UnsubscribeIdOp, Op::UnsubscribeId>(status);
     }
 
-    void finaliseWillTopicUpdateOp(MqttsnAsyncOpStatus status)
+    void finaliseWillTopicUpdateOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<WillTopicUpdateOp, Op::WillTopicUpdate>(status);
     }
 
-    void finaliseWillMsgUpdateOp(MqttsnAsyncOpStatus status)
+    void finaliseWillMsgUpdateOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<WillMsgUpdateOp, Op::WillMsgUpdate>(status);
     }
 
-    void finaliseSleepOp(MqttsnAsyncOpStatus status)
+    void finaliseSleepOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<SleepOp, Op::Sleep>(status);
     }
 
-    void finaliseCheckMessagesOp(MqttsnAsyncOpStatus status)
+    void finaliseCheckMessagesOp(CC_MqttsnAsyncOpStatus status)
     {
         finaliseAsyncOp<CheckMessagesOp, Op::CheckMessages>(status);
     }
@@ -2824,13 +2824,13 @@ private:
         return Map[opIdx];
     }
 
-    MqttsnAsyncOpStatus retCodeToStatus(ReturnCodeVal val)
+    CC_MqttsnAsyncOpStatus retCodeToStatus(ReturnCodeVal val)
     {
-        static const MqttsnAsyncOpStatus Map[] = {
-            /* ReturnCodeVal_Accepted */ MqttsnAsyncOpStatus_Successful,
-            /* ReturnCodeVal_Congestion */ MqttsnAsyncOpStatus_Congestion,
-            /* ReturnCodeVal_InvalidTopicId */ MqttsnAsyncOpStatus_InvalidId,
-            /* ReturnCodeVal_NotSupported */ MqttsnAsyncOpStatus_NotSupported
+        static const CC_MqttsnAsyncOpStatus Map[] = {
+            /* ReturnCodeVal_Accepted */ CC_MqttsnAsyncOpStatus_Successful,
+            /* ReturnCodeVal_Congestion */ CC_MqttsnAsyncOpStatus_Congestion,
+            /* ReturnCodeVal_InvalidTopicId */ CC_MqttsnAsyncOpStatus_InvalidId,
+            /* ReturnCodeVal_NotSupported */ CC_MqttsnAsyncOpStatus_NotSupported
         };
 
         static const std::size_t MapSize = std::extent<decltype(Map)>::value;
@@ -2838,7 +2838,7 @@ private:
         static_assert(MapSize == static_cast<unsigned>(ReturnCodeVal::ValuesLimit),
             "Map is incorrect");
 
-        MqttsnAsyncOpStatus status = MqttsnAsyncOpStatus_NotSupported;
+        CC_MqttsnAsyncOpStatus status = CC_MqttsnAsyncOpStatus_NotSupported;
         if (static_cast<unsigned>(val) < MapSize) {
             status = Map[static_cast<unsigned>(val)];
         }
@@ -2899,17 +2899,17 @@ private:
         return topic[2] == '\0';
     }
 
-    static MqttsnTopicId shortTopicToTopicId(const char* topic)
+    static CC_MqttsnTopicId shortTopicToTopicId(const char* topic)
     {
         COMMS_ASSERT(topic[0] != '\0');
         COMMS_ASSERT(topic[1] != '\0');
 
         return
-            static_cast<MqttsnTopicId>(
-                (static_cast<MqttsnTopicId>(topic[0]) << 8) | static_cast<std::uint8_t>(topic[1]));
+            static_cast<CC_MqttsnTopicId>(
+                (static_cast<CC_MqttsnTopicId>(topic[0]) << 8) | static_cast<std::uint8_t>(topic[1]));
     }
 
-    static void topicIdToShortTopic(MqttsnTopicId topicId, char* topicOut)
+    static void topicIdToShortTopic(CC_MqttsnTopicId topicId, char* topicOut)
     {
         topicOut[0] = static_cast<char>((topicId >> 8) & 0xff);
         topicOut[1] = static_cast<char>(topicId & 0xff);
@@ -2947,22 +2947,22 @@ private:
 
     LastInMsgInfo m_lastInMsg;
 
-    MqttsnNextTickProgramFn m_nextTickProgramFn = nullptr;
+    CC_MqttsnNextTickProgramFn m_nextTickProgramFn = nullptr;
     void* m_nextTickProgramData = nullptr;
 
-    MqttsnCancelNextTickWaitFn m_cancelNextTickWaitFn = nullptr;
+    CC_MqttsnCancelNextTickWaitFn m_cancelNextTickWaitFn = nullptr;
     void* m_cancelNextTickWaitData = nullptr;
 
-    MqttsnSendOutputDataFn m_sendOutputDataFn = nullptr;
+    CC_MqttsnSendOutputDataFn m_sendOutputDataFn = nullptr;
     void* m_sendOutputDataData = nullptr;
 
-    MqttsnGwStatusReportFn m_gwStatusReportFn = nullptr;
+    CC_MqttsnGwStatusReportFn m_gwStatusReportFn = nullptr;
     void* m_gwStatusReportData = nullptr;
 
-    MqttsnGwDisconnectReportFn m_gwDisconnectReportFn = nullptr;
+    CC_MqttsnGwDisconnectReportFn m_gwDisconnectReportFn = nullptr;
     void* m_gwDisconnectReportData = nullptr;
 
-    MqttsnMessageReportFn m_msgReportFn = nullptr;
+    CC_MqttsnMessageReportFn m_msgReportFn = nullptr;
     void* m_msgReportData = nullptr;
 
     WriteBufStorage m_writeBuf;

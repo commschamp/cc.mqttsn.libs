@@ -54,55 +54,55 @@ extern "C" {
 /// @brief Quality of Service
 typedef enum
 {
-    MqttsnQoS_NoGwPublish = -1, ///< QoS=-1. No gateway publish, used by publish only clients.
-    MqttsnQoS_AtMostOnceDelivery, ///< QoS=0. At most once delivery.
-    MqttsnQoS_AtLeastOnceDelivery, ///< QoS=1. At least once delivery.
-    MqttsnQoS_ExactlyOnceDelivery ///< QoS=2. Exactly once delivery.
-} MqttsnQoS;
+    CC_MqttsnQoS_NoGwPublish = -1, ///< QoS=-1. No gateway publish, used by publish only clients.
+    CC_MqttsnQoS_AtMostOnceDelivery, ///< QoS=0. At most once delivery.
+    CC_MqttsnQoS_AtLeastOnceDelivery, ///< QoS=1. At least once delivery.
+    CC_MqttsnQoS_ExactlyOnceDelivery ///< QoS=2. Exactly once delivery.
+} CC_MqttsnQoS;
 
 /// @brief Error code returned by various API functions.
 typedef enum
 {
-    MqttsnErrorCode_Success, ///< The requested operation was successfully started.
-    MqttsnErrorCode_AlreadyStarted, ///< Returned by cc_mqttsn_client_start() function if invoked twice.
-    MqttsnErrorCode_NotStarted, ///< Returned by various operations if issued prior to successful start using cc_mqttsn_client_start().
-    MqttsnErrorCode_Busy, ///< The client library is in the middle of previous operation, cannot start a new one.
-    MqttsnErrorCode_AlreadyConnected, ///< The client library is already connected to the gateway. Returned when cc_mqttsn_client_connect() invoked second time.
-    MqttsnErrorCode_NotConnected, ///< The client library is not connected to the gateway. Returned by operations that require connection to the gateway.
-    MqttsnErrorCode_NotSleeping, ///< The client is not in ASLEEP mode.
-    MqttsnErrorCode_BadParam, ///< Bad parameter is passed to the function.
-} MqttsnErrorCode;
+    CC_MqttsnErrorCode_Success, ///< The requested operation was successfully started.
+    CC_MqttsnErrorCode_AlreadyStarted, ///< Returned by cc_mqttsn_client_start() function if invoked twice.
+    CC_MqttsnErrorCode_NotStarted, ///< Returned by various operations if issued prior to successful start using cc_mqttsn_client_start().
+    CC_MqttsnErrorCode_Busy, ///< The client library is in the middle of previous operation, cannot start a new one.
+    CC_MqttsnErrorCode_AlreadyConnected, ///< The client library is already connected to the gateway. Returned when cc_mqttsn_client_connect() invoked second time.
+    CC_MqttsnErrorCode_NotConnected, ///< The client library is not connected to the gateway. Returned by operations that require connection to the gateway.
+    CC_MqttsnErrorCode_NotSleeping, ///< The client is not in ASLEEP mode.
+    CC_MqttsnErrorCode_BadParam, ///< Bad parameter is passed to the function.
+} CC_MqttsnErrorCode;
 
 /// @brief Status of the gateway
 typedef enum
 {
-    MqttsnGwStatus_Invalid, ///< Invalid value, should never be used
-    MqttsnGwStatus_Available, ///< The gateway is available.
-    MqttsnGwStatus_TimedOut, ///< The gateway hasn't advertised its presence in time, assumed disconnected.
-    MqttsnGwStatus_Discarded ///< The gateway info was discarded using cc_mqttsn_client_discard_gw() or cc_mqttsn_client_discard_all_gw().
-} MqttsnGwStatus;
+    CC_MqttsnGwStatus_Invalid, ///< Invalid value, should never be used
+    CC_MqttsnGwStatus_Available, ///< The gateway is available.
+    CC_MqttsnGwStatus_TimedOut, ///< The gateway hasn't advertised its presence in time, assumed disconnected.
+    CC_MqttsnGwStatus_Discarded ///< The gateway info was discarded using cc_mqttsn_client_discard_gw() or cc_mqttsn_client_discard_all_gw().
+} CC_MqttsnGwStatus;
 
 /// @brief Status of the asynchronous operation
 typedef enum
 {
-    MqttsnAsyncOpStatus_Invalid, ///< Invalid value, should never be used
-    MqttsnAsyncOpStatus_Successful, ///< The operation was successful
-    MqttsnAsyncOpStatus_Congestion, ///< The gateway/broker was busy and could not handle the request, try again
-    MqttsnAsyncOpStatus_InvalidId, ///< Publish message used invalid topic ID.
-    MqttsnAsyncOpStatus_NotSupported, ///< The issued request is not supported by the gateway.
-    MqttsnAsyncOpStatus_NoResponse, ///< The gateway/broker didn't respond the the request
-    MqttsnAsyncOpStatus_Aborted, ///< The operation was cancelled using cc_mqttsn_client_cancel() call.
-} MqttsnAsyncOpStatus;
+    CC_MqttsnAsyncOpStatus_Invalid, ///< Invalid value, should never be used
+    CC_MqttsnAsyncOpStatus_Successful, ///< The operation was successful
+    CC_MqttsnAsyncOpStatus_Congestion, ///< The gateway/broker was busy and could not handle the request, try again
+    CC_MqttsnAsyncOpStatus_InvalidId, ///< Publish message used invalid topic ID.
+    CC_MqttsnAsyncOpStatus_NotSupported, ///< The issued request is not supported by the gateway.
+    CC_MqttsnAsyncOpStatus_NoResponse, ///< The gateway/broker didn't respond the the request
+    CC_MqttsnAsyncOpStatus_Aborted, ///< The operation was cancelled using cc_mqttsn_client_cancel() call.
+} CC_MqttsnAsyncOpStatus;
 
 /// @brief Handler used to access client specific data structures.
 /// @details Returned by cc_mqttsn_client_new() function.
 typedef struct 
 {
     void* m_ptr;
-} MqttsnClientHandle;
+} CC_MqttsnClientHandle;
 
 /// @brief Type used to hold Topic ID value.
-typedef unsigned short MqttsnTopicId;
+typedef unsigned short CC_MqttsnTopicId;
 
 /// @brief Will Information
 typedef struct
@@ -110,20 +110,20 @@ typedef struct
     const char* topic; ///< Topic of the will, can be NULL (means empty topic)
     const unsigned char* msg; ///< Pointer to the buffer containing will binary message.
     unsigned msgLen; ///< Length of the buffer containing will binary message.
-    MqttsnQoS qos; ///< QoS level of the will message.
+    CC_MqttsnQoS qos; ///< QoS level of the will message.
     bool retain; ///< Retain flag
-} MqttsnWillInfo;
+} CC_MqttsnWillInfo;
 
 /// @brief Incoming message information
 typedef struct
 {
     const char* topic; ///< Topic the message was published with. May be NULL if message is reported with predefined topic ID.
-    MqttsnTopicId topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.
+    CC_MqttsnTopicId topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.
     const unsigned char* msg; ///< Pointer to reported message binary data.
     unsigned msgLen; ///< Number of bytes in reported message binary data.
-    MqttsnQoS qos; ///< QoS level the message was received with.
+    CC_MqttsnQoS qos; ///< QoS level the message was received with.
     bool retain; ///< Retain flag of the message.
-} MqttsnMessageInfo;
+} CC_MqttsnMessageInfo;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
@@ -132,7 +132,7 @@ typedef struct
 ///     cc_mqttsn_client_set_next_tick_program_callback() function.
 /// @param[in] duration Time duration in @b milliseconds. After the requested
 ///     time expires, the cc_mqttsn_client_tick() function is expected to be invoked.
-typedef void (*MqttsnNextTickProgramFn)(void* data, unsigned duration);
+typedef void (*CC_MqttsnNextTickProgramFn)(void* data, unsigned duration);
 
 /// @brief Callback used to request termination of existing time measurement.
 /// @details The callback is set using
@@ -140,7 +140,7 @@ typedef void (*MqttsnNextTickProgramFn)(void* data, unsigned duration);
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_cancel_next_tick_wait_callback() function.
 /// @return Number of elapsed milliseconds since last time measurement request.
-typedef unsigned (*MqttsnCancelNextTickWaitFn)(void* data);
+typedef unsigned (*CC_MqttsnCancelNextTickWaitFn)(void* data);
 
 /// @brief Callback used to request to send data to the gateway.
 /// @details The callback is set using
@@ -155,7 +155,7 @@ typedef unsigned (*MqttsnCancelNextTickWaitFn)(void* data);
 /// @param[in] bufLen Number of bytes to send
 /// @param[in] broadcast Indication whether data needs to be broadcasted or
 ///     sent directly to the gateway.
-typedef void (*MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
+typedef void (*CC_MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
 
 /// @brief Callback used to report gateway status.
 /// @details The callback is set using
@@ -164,25 +164,25 @@ typedef void (*MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, uns
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
 /// @param[in] gwId ID of the gateway.
 /// @param[in] status Status of the gateway.
-typedef void (*MqttsnGwStatusReportFn)(void* data, unsigned char gwId, MqttsnGwStatus status);
+typedef void (*CC_MqttsnGwStatusReportFn)(void* data, unsigned char gwId, CC_MqttsnGwStatus status);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
-typedef void (*MqttsnGwDisconnectReportFn)(void* data);
+typedef void (*CC_MqttsnGwDisconnectReportFn)(void* data);
 
 /// @brief Callback used to report completion of the asynchronous operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
 /// @param[in] status Status of the asynchronous operation.
-typedef void (*MqttsnAsyncOpCompleteReportFn)(void* data, MqttsnAsyncOpStatus status);
+typedef void (*CC_MqttsnAsyncOpCompleteReportFn)(void* data, CC_MqttsnAsyncOpStatus status);
 
 /// @brief Callback used to report completion of the subscribe operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the subscribe request.
 /// @param[in] status Status of the subscribe operation.
 /// @param[in] qos Maximal level of quality of service, the gateway/broker is going to use to publish incoming messages.
-typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
+typedef void (*CC_MqttsnSubscribeCompleteReportFn)(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
 
 /// @brief Callback used to report incoming messages.
 /// @details The callback is set using
@@ -192,7 +192,7 @@ typedef void (*MqttsnSubscribeCompleteReportFn)(void* data, MqttsnAsyncOpStatus 
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_message_report_callback() function.
 /// @param[in] msgInfo Information about incoming message.
-typedef void (*MqttsnMessageReportFn)(void* data, const MqttsnMessageInfo* msgInfo);
+typedef void (*CC_MqttsnMessageReportFn)(void* data, const CC_MqttsnMessageInfo* msgInfo);
 
 #ifdef __cplusplus
 }

@@ -192,18 +192,18 @@ As the result of such configuration, the static library `cc_mqttsn_bare_metal_cl
 will be generated, which will contain functions defined in 
 `include/cc_mqttsn_client/bare_metal_client.h" header file:
 ```c
-MqttsnClientHandle mqttsn_bare_metal_client_new();
+CC_MqttsnClientHandle mqttsn_bare_metal_client_new();
 
-void mqttsn_bare_metal_client_free(MqttsnClientHandle client);
+void mqttsn_bare_metal_client_free(CC_MqttsnClientHandle client);
 
 void mqttsn_bare_metal_client_set_next_tick_program_callback(
-    MqttsnClientHandle client,
-    MqttsnNextTickProgramFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnNextTickProgramFn fn,
     void* data);
     
 void mqttsn_bare_metal_client_set_cancel_next_tick_wait_callback(
-    MqttsnClientHandle client,
-    MqttsnCancelNextTickWaitFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnCancelNextTickWaitFn fn,
     void* data);
 
 ...

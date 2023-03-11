@@ -31,22 +31,22 @@ MqttsnClientMgr& getClientMgr()
 
 }  // namespace
 
-MqttsnClientHandle cc_mqttsn_##NAME##client_new()
+CC_MqttsnClientHandle cc_mqttsn_##NAME##client_new()
 {
     auto client = getClientMgr().alloc();
-    auto handle = MqttsnClientHandle();
+    auto handle = CC_MqttsnClientHandle();
     handle.m_ptr = client.release();
     return handle;
 }
 
-void cc_mqttsn_##NAME##client_free(MqttsnClientHandle client)
+void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client)
 {
     getClientMgr().free(reinterpret_cast<MqttsnClient*>(client.m_ptr));
 }
 
 void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
-    MqttsnClientHandle client,
-    MqttsnNextTickProgramFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnNextTickProgramFn fn,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
@@ -54,8 +54,8 @@ void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
 }
 
 void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
-    MqttsnClientHandle client,
-    MqttsnCancelNextTickWaitFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnCancelNextTickWaitFn fn,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
@@ -63,8 +63,8 @@ void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
 }
 
 void cc_mqttsn_##NAME##client_set_send_output_data_callback(
-    MqttsnClientHandle client,
-    MqttsnSendOutputDataFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnSendOutputDataFn fn,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
@@ -72,8 +72,8 @@ void cc_mqttsn_##NAME##client_set_send_output_data_callback(
 }
 
 void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
-    MqttsnClientHandle client,
-    MqttsnGwStatusReportFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwStatusReportFn fn,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
@@ -81,8 +81,8 @@ void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
 }
 
 void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
-    MqttsnClientHandle client,
-    MqttsnGwDisconnectReportFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwDisconnectReportFn fn,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
@@ -90,28 +90,28 @@ void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
 }
 
 void cc_mqttsn_##NAME##client_set_message_report_callback(
-    MqttsnClientHandle client,
-    MqttsnMessageReportFn fn,
+    CC_MqttsnClientHandle client,
+    CC_MqttsnMessageReportFn fn,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->setMessageReportCallback(fn, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_start(MqttsnClientHandle client)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_start(CC_MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     return clientObj->start();
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_stop(MqttsnClientHandle client)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_stop(CC_MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     return clientObj->stop();
 }
 
 unsigned cc_mqttsn_##NAME##client_process_data(
-    MqttsnClientHandle client,
+    CC_MqttsnClientHandle client,
     const unsigned char* from,
     unsigned len)
 {
@@ -119,71 +119,71 @@ unsigned cc_mqttsn_##NAME##client_process_data(
     return static_cast<unsigned>(clientObj->processData(from, len));
 }
 
-void cc_mqttsn_##NAME##client_tick(MqttsnClientHandle client)
+void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->tick();
 }
 
-void cc_mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value)
+void cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->setRetryPeriod(value);
 }
 
-void cc_mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned value)
+void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->setRetryCount(value);
 }
 
-void cc_mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsigned char value)
+void cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned char value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->setBroadcastRadius(value);
 }
 
 void cc_mqttsn_##NAME##client_set_searchgw_enabled(
-    MqttsnClientHandle client, 
+    CC_MqttsnClientHandle client, 
     bool value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->setSearchgwEnabled(value);
 }   
 
-void cc_mqttsn_##NAME##client_search_gw(MqttsnClientHandle client)
+void cc_mqttsn_##NAME##client_search_gw(CC_MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->sendSearchGw();
 } 
 
 void cc_mqttsn_##NAME##client_discard_gw(
-    MqttsnClientHandle client, 
+    CC_MqttsnClientHandle client, 
     unsigned char gwId)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->discardGw(gwId);
 }    
     
-void cc_mqttsn_##NAME##client_discard_all_gw(MqttsnClientHandle client)
+void cc_mqttsn_##NAME##client_discard_all_gw(CC_MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->discardAllGw();
 }    
 
-bool cc_mqttsn_##NAME##client_cancel(MqttsnClientHandle client)
+bool cc_mqttsn_##NAME##client_cancel(CC_MqttsnClientHandle client)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     return clientObj->cancel();
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
+    CC_MqttsnClientHandle client,
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
-    const MqttsnWillInfo* willInfo,
-    MqttsnAsyncOpCompleteReportFn callback,
+    const CC_MqttsnWillInfo* willInfo,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
@@ -196,9 +196,9 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
         data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_reconnect(
-    MqttsnClientHandle client,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_reconnect(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -206,48 +206,48 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_reconnect(
     return clientObj->reconnect(callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
-    MqttsnClientHandle client,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     return clientObj->disconnect(callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_publish_id(
-    MqttsnClientHandle client,
-    MqttsnTopicId topicId,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_id(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnTopicId topicId,
     const unsigned char* msg,
     unsigned msgLen,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     return clientObj->publish(topicId, msg, msgLen, qos, retain, callback, data);
 }    
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
+    CC_MqttsnClientHandle client,
     const char* topic,
     const unsigned char* msg,
     unsigned msgLen,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     return clientObj->publish(topic, msg, msgLen, qos, retain, callback, data);
 }    
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_id(
-    MqttsnClientHandle client,
-    MqttsnTopicId topicId,
-    MqttsnQoS qos,
-    MqttsnSubscribeCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_id(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnTopicId topicId,
+    CC_MqttsnQoS qos,
+    CC_MqttsnSubscribeCompleteReportFn callback,
     void* data
 )
 {
@@ -255,11 +255,11 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_id(
     return clientObj->subscribe(topicId, qos, callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
+    CC_MqttsnClientHandle client,
     const char* topic,
-    MqttsnQoS qos,
-    MqttsnSubscribeCompleteReportFn callback,
+    CC_MqttsnQoS qos,
+    CC_MqttsnSubscribeCompleteReportFn callback,
     void* data
 )
 {
@@ -267,10 +267,10 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
     return clientObj->subscribe(topic, qos, callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_id(
-    MqttsnClientHandle client,
-    MqttsnTopicId topicId,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_id(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnTopicId topicId,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -279,10 +279,10 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_id(
 }
 
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
+    CC_MqttsnClientHandle client,
     const char* topic,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -290,10 +290,10 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
     return clientObj->unsubscribe(topic, callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_will_update(
-    MqttsnClientHandle client,
-    const MqttsnWillInfo* willInfo,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_update(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnWillInfo* willInfo,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -301,12 +301,12 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_will_update(
     return clientObj->willUpdate(willInfo, callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_will_topic_update(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_topic_update(
+    CC_MqttsnClientHandle client,
     const char* topic,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -314,11 +314,11 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_will_topic_update(
     return clientObj->willTopicUpdate(topic, qos, retain, callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_will_msg_update(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_msg_update(
+    CC_MqttsnClientHandle client,
     const unsigned char* msg,
     unsigned msgLen,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -326,10 +326,10 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_will_msg_update(
     return clientObj->willMsgUpdate(msg, msgLen, callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
+    CC_MqttsnClientHandle client,
     unsigned short duration,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {
@@ -337,9 +337,9 @@ MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
     return clientObj->sleep(duration, callback, data);
 }
 
-MqttsnErrorCode cc_mqttsn_##NAME##client_check_messages(
-    MqttsnClientHandle client,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_check_messages(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 )
 {

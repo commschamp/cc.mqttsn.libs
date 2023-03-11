@@ -291,7 +291,7 @@ std::uint16_t getTopicId(const QCommandLineParser& parser)
     return topicId;
 }
 
-MqttsnQoS getQos(const QCommandLineParser& parser)
+CC_MqttsnQoS getQos(const QCommandLineParser& parser)
 {
     auto value = DefaultQos;
     do {
@@ -308,7 +308,7 @@ MqttsnQoS getQos(const QCommandLineParser& parser)
 
         value = std::max(-1, std::min(2, valueTmp));
     } while (false);
-    return static_cast<MqttsnQoS>(value);
+    return static_cast<CC_MqttsnQoS>(value);
 }
 
 std::vector<std::uint8_t> getMessage(const QCommandLineParser& parser)

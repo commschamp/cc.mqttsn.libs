@@ -53,7 +53,7 @@
 /// allocation of data structures relevant to a single client is performed 
 /// using cc_mqttsn_client_new() function.
 /// @code
-/// MqttsnClientHandle client = cc_mqttsn_client_new();
+/// CC_MqttsnClientHandle client = cc_mqttsn_client_new();
 /// @endcode
 /// All other functions are client specific, the receive the returned handle 
 /// as their first parameter.
@@ -112,7 +112,7 @@
 /// -# Callback to be invoked when new application message arrives
 /// (see cc_mqttsn_client_set_message_report_callback()).
 /// @code
-/// void my_message_handler(void* userData, const MqttsnMessageInfo* msgInfo)
+/// void my_message_handler(void* userData, const CC_MqttsnMessageInfo* msgInfo)
 /// {
 ///     ... /* handle application message */
 /// }
@@ -137,8 +137,8 @@
 ///
 /// After client has been successfully configured, it needs to be started.
 /// @code
-/// MqttsnErrorCode result = cc_mqttsn_client_start(client);
-/// if (result != MqttsnErrorCode_Success) {
+/// CC_MqttsnErrorCode result = cc_mqttsn_client_start(client);
+/// if (result != CC_MqttsnErrorCode_Success) {
 ///     ... /* start has failed, probably some mandatory callback hasn't been set */
 /// }
 /// @endcode
@@ -250,12 +250,12 @@
 /// their own independent advertising of their presence (using @b ADVERTISE
 /// message) and reports the discovered gateways via callback.
 /// @code
-/// void my_gw_status_report(void* userData, unsigned char gwId, MqttsnGwStatus status)
+/// void my_gw_status_report(void* userData, unsigned char gwId, CC_MqttsnGwStatus status)
 /// {
-///     if (status == MqttsnGwStatus_Available) {
+///     if (status == CC_MqttsnGwStatus_Available) {
 ///         ... /* New gateway has been discovered */
 ///     }
-///     else if (status == MqttsnGwStatus_TimedOut) {
+///     else if (status == CC_MqttsnGwStatus_TimedOut) {
 ///         ... /* The gateway hasn't advertise its presence for a while, probably is not available any more */
 ///     }
 ///     ...
@@ -313,9 +313,9 @@
 /// cc_mqttsn_client_connect() call.
 /// @code
 /// const char* clientId = "my_client_id";
-/// void my_connect_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_connect_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
-///     if (status == MqttsnAsyncOpStatus_Successful) {
+///     if (status == CC_MqttsnAsyncOpStatus_Successful) {
 ///         ... /* Connection is successful, do something */
 ///     }
 ///     else {
@@ -326,7 +326,7 @@
 ///
 /// void someFunc()
 /// {
-///     MqttsnErrorCode result = cc_mqttsn_client_connect(client, clientId, 60, true, NULL, &my_client_connect, someUserData);
+///     CC_MqttsnErrorCode result = cc_mqttsn_client_connect(client, clientId, 60, true, NULL, &my_client_connect, someUserData);
 ///     ... 
 /// }
 /// @endcode
@@ -338,7 +338,7 @@
 ///
 /// Also @b NOTE, that @b will information (fifth parameter) may also be NULL to
 /// indicate that will doesn't exist. NULL or empty string as topic in the
-/// passed @ref MqttsnWillInfo structure will have the same effect.
+/// passed @ref CC_MqttsnWillInfo structure will have the same effect.
 /// @code
 /// const char* willTopic = "this/is/will/topic"
 /// const unsigned char willMsg[] = {...}
@@ -346,14 +346,14 @@
 ///
 /// void someFunc()
 /// {
-///     MqttsnWillInfo willInfo;
+///     CC_MqttsnWillInfo willInfo;
 ///     willInfo.topic = willTopic;
 ///     willInfo.msg = willMsg;
 ///     willInfo.msgLen = willMsgSize;
-///     willInfo.qos = MqttsnQoS_AtMostOnceDelivery;
+///     willInfo.qos = CC_MqttsnQoS_AtMostOnceDelivery;
 ///     willInfo.retain = false;
 ///
-///     MqttsnErrorCode result = cc_mqttsn_client_connect(client, clientId, 60, true, &willInfo, &my_client_connect, someUserData);
+///     CC_MqttsnErrorCode result = cc_mqttsn_client_connect(client, clientId, 60, true, &willInfo, &my_client_connect, someUserData);
 ///     ...
 /// }
 /// @endcode
@@ -367,12 +367,12 @@
 /// needs to send @b DISCONNECT message. It can be achieved by calling to
 /// cc_mqttsn_client_disconnect() function.
 /// @code
-/// void my_disconnect_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_disconnect_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
 ///     ... /* do something */
 /// }
 ///
-/// MqttsnErrorCode result = cc_mqttsn_client_disconnect(client, &my_disconnect_complete, someUserData);
+/// CC_MqttsnErrorCode result = cc_mqttsn_client_disconnect(client, &my_disconnect_complete, someUserData);
 /// ...
 /// @endcode
 /// If client just abandons its connection to the gateway without proper 
@@ -402,15 +402,15 @@
 /// data structures of the library. When there is a need to refresh the same
 /// connection to the client, cc_mqttsn_client_reconnect() function may be used.
 /// Such need may arise when any asynchronous operation reports
-/// @ref MqttsnAsyncOpStatus_NoResponse. It may happen for multiple reasons,
+/// @ref CC_MqttsnAsyncOpStatus_NoResponse. It may happen for multiple reasons,
 /// for example, when gateway issued unsolicited disconnect request, but its
 /// @b DISCONNECT message wasn't received by the client. The gateway will 
 /// drop or reject any incoming messages until the new connection request is
 /// sent.
 /// @code
-/// void my_reconnect_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_reconnect_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
-///     if (status == MqttsnAsyncOpStatus_Successful) {
+///     if (status == CC_MqttsnAsyncOpStatus_Successful) {
 ///         ... /* Connection is successful, do something */
 ///     }
 ///     else {
@@ -419,14 +419,14 @@
 ///     ...
 /// }
 ///
-/// MqttsnErrorCode result = cc_mqttsn_client_reconnect(client, &my_reconnect_complete, someUserData);
+/// CC_MqttsnErrorCode result = cc_mqttsn_client_reconnect(client, &my_reconnect_complete, someUserData);
 /// ...
 /// @endcode
 ///
 /// @section cc_mqttsn_client_publish Publishing
 /// The publish operation is performed using cc_mqttsn_client_publish() function call.
 /// @code
-/// void my_publish_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_publish_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
 ///     ...    
 /// }
@@ -436,13 +436,13 @@
 /// const unsigned pubDataSize = sizeof(pubData)/sizeof(pubData[0]);
 /// 
 /// void someFunc() {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_publish(
 ///             client, 
 ///             pubTopic,
 ///             pubData,
 ///             pubDataSize,
-///             MqttsnQoS_AtLeastOnceDelivery,
+///             CC_MqttsnQoS_AtLeastOnceDelivery,
 ///             false,
 ///             &my_publish_complete,
 ///             someUserData);
@@ -456,13 +456,13 @@
 /// topic strings. To publish such message use cc_mqttsn_client_publish_id().
 /// @code
 /// void someFunc() {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_publish_id(
 ///             client, 
 ///             pubTopicId, /* numeric topic ID instead of string */
 ///             pubData,
 ///             pubDataSize,
-///             MqttsnQoS_AtLeastOnceDelivery,
+///             CC_MqttsnQoS_AtLeastOnceDelivery,
 ///             false,
 ///             &my_publish_complete,
 ///             someUserData);
@@ -473,7 +473,7 @@
 /// The subscribe operation is performed using cc_mqttsn_client_subscribe() function
 /// call.
 /// @code
-/// void my_subscribe_complete(void* userData, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+/// void my_subscribe_complete(void* userData, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos)
 /// {
 ///     ...    
 /// }
@@ -481,11 +481,11 @@
 /// const char* subTopic = "subtopic1/+/subtopic2/#"
 /// 
 /// void someFunc() {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_subscribe(
 ///             client, 
 ///             subTopic,
-///             MqttsnQoS_ExactlyOnceDelivery, /* max QoS */
+///             CC_MqttsnQoS_ExactlyOnceDelivery, /* max QoS */
 ///             &my_subscribe_complete,
 ///             someUserData);
 ///     ...
@@ -507,11 +507,11 @@
 /// instead of topic strings. To do so use cc_mqttsn_client_subscribe_id().
 /// @code
 /// void someFunc() {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_subscribe_id(
 ///             client, 
 ///             subTopicId, /* numeric topic ID instead of string */
-///             MqttsnQoS_ExactlyOnceDelivery,
+///             CC_MqttsnQoS_ExactlyOnceDelivery,
 ///             &my_subscribe_complete,
 ///             someUserData);
 ///     ...
@@ -521,7 +521,7 @@
 /// @section cc_mqttsn_client_unsubscribe Unsubscribing
 /// To unsubscribe use either cc_mqttsn_client_unsubscribe() for string topics:
 /// @code
-/// void my_unsubscribe_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_unsubscribe_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
 ///     ...    
 /// }
@@ -529,7 +529,7 @@
 /// const char* unsubTopic = "some/topic"
 /// 
 /// void someFunc() {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_unsubscribe(
 ///             client, 
 ///             unsubTopic,
@@ -541,7 +541,7 @@
 /// and cc_mqttsn_client_unsubscribe_id() for predefined numeric topic IDs:
 /// @code
 /// void someFunc() {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_unsubscribe_id(
 ///             client, 
 ///             unsubTopicId, // numeric ID
@@ -557,7 +557,7 @@
 ///
 /// One way is to update both topic and message body in one go:
 /// @code
-/// void my_will_update_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_will_update_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
 ///     ...
 /// }
@@ -567,27 +567,27 @@
 ///
 /// void someFunc()
 /// {
-///     MqttsnWillInfo willInfo;
+///     CC_MqttsnWillInfo willInfo;
 ///     willInfo.topic = willTopic;
 ///     willInfo.msg = willMsg;
 ///     willInfo.msgLen = willMsgSize;
-///     willInfo.qos = MqttsnQoS_AtMostOnceDelivery;
+///     willInfo.qos = CC_MqttsnQoS_AtMostOnceDelivery;
 ///     willInfo.retain = false;
 ///
-///     MqttsnErrorCode result = cc_mqttsn_client_will_update(client, &willInfo, &my_will_update_complete, someUserData);
+///     CC_MqttsnErrorCode result = cc_mqttsn_client_will_update(client, &willInfo, &my_will_update_complete, someUserData);
 ///     ...
 /// }
 /// @endcode
 /// Just like with connection request, all the buffers must be preserved by the
 /// caller until callback is called. Passing NULL as second parameter 
-/// (pointer to MqttsnWillInfo structure) as well as assigning NULL or empty
+/// (pointer to CC_MqttsnWillInfo structure) as well as assigning NULL or empty
 /// string to @b topic data member of the struct means clearing the will
 /// information recorded with the broker.
 ///
 /// Another possible way is to update both will topic and will message body
 /// separately.
 /// @code
-/// void my_will_topic_update_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_will_topic_update_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
 ///     ...
 /// }
@@ -595,11 +595,11 @@
 ///
 /// void someFunc()
 /// {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_will_topic_update(
 ///             client, 
 ///             willTopic, 
-///             MqttsnQoS_AtMostOnceDelivery, 
+///             CC_MqttsnQoS_AtMostOnceDelivery, 
 ///             false, 
 ///             &my_will_topic_update_complete, 
 ///             someUserData);
@@ -611,7 +611,7 @@
 ///
 /// Updating will message body:
 /// @code
-/// void my_will_msg_update_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_will_msg_update_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
 ///     ...
 /// }
@@ -620,7 +620,7 @@
 ///
 /// void someFunc()
 /// {
-///     MqttsnErrorCode result = 
+///     CC_MqttsnErrorCode result = 
 ///         cc_mqttsn_client_will_msg_update(
 ///             client, 
 ///             willMsg, 
@@ -638,16 +638,16 @@
 ///
 /// To notify the gateway use cc_mqttsn_client_sleep() function.
 /// @code
-/// void my_sleep_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_sleep_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
-///     if (status == MqttsnAsyncOpStatus_Successful) {
+///     if (status == CC_MqttsnAsyncOpStatus_Successful) {
 ///         ... /* Enter low power mode */
 ///     }
 ///     ...
 /// }
 ///
 /// // Next communication attempt in 10 minutes (600 seconds)
-/// MqttsnErrorCode result = cc_mqttsn_client_sleep(client, 600, &my_sleep_complete, someUserData);
+/// CC_MqttsnErrorCode result = cc_mqttsn_client_sleep(client, 600, &my_sleep_complete, someUserData);
 /// ...
 /// @endcode
 /// The second parameter specifies time duration in seconds within which the
@@ -661,12 +661,12 @@
 /// Check for pending messages to be delivered can be performed using
 /// cc_mqttsn_client_check_messages() function.
 /// @code
-/// void my_check_messages_complete(void* userData, MqttsnAsyncOpStatus status)
+/// void my_check_messages_complete(void* userData, CC_MqttsnAsyncOpStatus status)
 /// {
 ///     ...
 /// }
 ///
-/// MqttsnErrorCode result = cc_mqttsn_client_check_messages(client, &my_check_messages_complete, someUserData);
+/// CC_MqttsnErrorCode result = cc_mqttsn_client_check_messages(client, &my_check_messages_complete, someUserData);
 /// @endcode
 /// Between issuing the check request and completion callback invocation, there
 /// can be multiple exchange of messages between the client and gateway with
@@ -685,5 +685,5 @@
 /// @endcode
 /// The return value shows whether the operation was really cancelled. If no
 /// operation was in progress, false is returned. If the operation is cancelled,
-/// the relevant callback will be invoked with @ref MqttsnAsyncOpStatus_Aborted
+/// the relevant callback will be invoked with @ref CC_MqttsnAsyncOpStatus_Aborted
 /// status.

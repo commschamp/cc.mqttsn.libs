@@ -406,7 +406,7 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
 }
 
 DataProcessor::DataBuf DataProcessor::preparePubackMsg(
-    MqttsnTopicId topicId,
+    CC_MqttsnTopicId topicId,
     std::uint16_t msgId,
     cc_mqttsn::field::ReturnCodeVal retCode)
 {
@@ -440,7 +440,7 @@ DataProcessor::DataBuf DataProcessor::preparePubcompMsg(std::uint16_t msgId)
 
 DataProcessor::DataBuf DataProcessor::prepareSubackMsg(
     cc_mqttsn::field::QosVal qos,
-    MqttsnTopicId topicId,
+    CC_MqttsnTopicId topicId,
     std::uint16_t msgId,
     cc_mqttsn::field::ReturnCodeVal retCode)
 {

@@ -13,7 +13,7 @@
 ///
 /// When using @b C interface, the allocation is performed using cc_mqttsn_gw_alloc()
 /// @code
-/// MqttsnGatewayHandle gw = cc_mqttsn_gw_alloc();
+/// CC_MqttsnGatewayHandle gw = cc_mqttsn_gw_alloc();
 /// @endcode
 /// and de-allocation is performed using cc_mqttsn_gw_free() functions.
 /// @code

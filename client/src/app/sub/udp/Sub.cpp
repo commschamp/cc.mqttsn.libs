@@ -83,7 +83,7 @@ bool Sub::start()
         bindLocalPort() &&
         openSocket() &&
         connectToGw() &&
-        cc_mqttsn_client_start(m_client) == MqttsnErrorCode_Success;
+        cc_mqttsn_client_start(m_client) == CC_MqttsnErrorCode_Success;
 
 
     if (result && (m_socket.state() == QUdpSocket::ConnectedState)) {
@@ -183,9 +183,9 @@ void Sub::sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool 
     reinterpret_cast<Sub*>(obj)->sendData(buf, bufLen, broadcast);
 }
 
-void Sub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
+void Sub::gwStatusReport(unsigned short gwId, CC_MqttsnGwStatus status)
 {
-    if (status != MqttsnGwStatus_Available) {
+    if (status != CC_MqttsnGwStatus_Available) {
         return;
     }
 
@@ -207,7 +207,7 @@ void Sub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
     doConnect();
 }
 
-void Sub::gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status)
+void Sub::gwStatusReportCb(void* obj, unsigned char gwId, CC_MqttsnGwStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Sub*>(obj)->gwStatusReport(gwId, status);
@@ -225,7 +225,7 @@ void Sub::gwDisconnectReportCb(void* obj)
     reinterpret_cast<Sub*>(obj)->gwDisconnectReport();
 }
 
-void Sub::messageReport(const MqttsnMessageInfo* msgInfo)
+void Sub::messageReport(const CC_MqttsnMessageInfo* msgInfo)
 {
     assert(msgInfo != nullptr);
     if (msgInfo->retain && m_noRetain) {
@@ -262,7 +262,7 @@ void Sub::messageReport(const MqttsnMessageInfo* msgInfo)
     std::cout << std::dec << std::endl;
 }
 
-void Sub::messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo)
+void Sub::messageReportCb(void* obj, const CC_MqttsnMessageInfo* msgInfo)
 {
     assert(obj != nullptr);
     reinterpret_cast<Sub*>(obj)->messageReport(msgInfo);
@@ -284,7 +284,7 @@ void Sub::doConnect(bool reconnecting)
             nullptr,
             &Sub::connectCompleteCb,
             this);
-    if (result != MqttsnErrorCode_Success) {
+    if (result != CC_MqttsnErrorCode_Success) {
         std::cerr << "ERROR: Failed to connect to the gateway" << std::endl;
     }
 }
@@ -299,7 +299,7 @@ void Sub::doSubscribe()
                 m_qos,
                 &Sub::subscribeCompleteCb,
                 this);
-        if (result != MqttsnErrorCode_Success) {
+        if (result != CC_MqttsnErrorCode_Success) {
             std::cerr << "ERROR: Failed to initiate subscribe for topic " << m_topics.front() << std::endl;
             m_topics.pop_front();
             doSubscribe();
@@ -316,7 +316,7 @@ void Sub::doSubscribe()
                 &Sub::subscribeCompleteCb,
                 this);
 
-        if (result != MqttsnErrorCode_Success) {
+        if (result != CC_MqttsnErrorCode_Success) {
             std::cerr << "ERROR: Failed to initiate subscribe for topic ID " << m_topicIds.front() << std::endl;
             m_topicIds.pop_front();
             doSubscribe();
@@ -325,14 +325,14 @@ void Sub::doSubscribe()
     }
 }
 
-void Sub::connectComplete(MqttsnAsyncOpStatus status)
+void Sub::connectComplete(CC_MqttsnAsyncOpStatus status)
 {
-    if (status == MqttsnAsyncOpStatus_Successful) {
+    if (status == CC_MqttsnAsyncOpStatus_Successful) {
         doSubscribe();
         return;
     }
 
-    if (status == MqttsnAsyncOpStatus_Congestion) {
+    if (status == CC_MqttsnAsyncOpStatus_Congestion) {
         std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
         doConnect();
         return;
@@ -342,22 +342,22 @@ void Sub::connectComplete(MqttsnAsyncOpStatus status)
     QTimer::singleShot(10, qApp, SLOT(quit()));
 }
 
-void Sub::connectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+void Sub::connectCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Sub*>(obj)->connectComplete(status);
 }
 
 
-void Sub::subscribeComplete(MqttsnAsyncOpStatus status)
+void Sub::subscribeComplete(CC_MqttsnAsyncOpStatus status)
 {
-    if (status == MqttsnAsyncOpStatus_Congestion) {
+    if (status == CC_MqttsnAsyncOpStatus_Congestion) {
         std::cerr << "WARNING: Failed to subscribe due to congestion, retrying..." << std::endl;
         doSubscribe();
         return;
     }
 
-    if (status != MqttsnAsyncOpStatus_Successful) {
+    if (status != CC_MqttsnAsyncOpStatus_Successful) {
         std::cerr << "WARNING: Failed to subscribe to topic ";
         if (!m_topics.empty()) {
             std::cerr << m_topics.front();
@@ -378,7 +378,7 @@ void Sub::subscribeComplete(MqttsnAsyncOpStatus status)
     doSubscribe();
 }
 
-void Sub::subscribeCompleteCb(void* obj, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+void Sub::subscribeCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos)
 {
     static_cast<void>(qos);
     assert(obj != nullptr);

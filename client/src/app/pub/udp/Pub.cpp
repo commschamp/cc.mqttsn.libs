@@ -82,13 +82,13 @@ bool Pub::start()
         bindLocalPort() &&
         openSocket() &&
         connectToGw() &&
-        cc_mqttsn_client_start(m_client) == MqttsnErrorCode_Success;
+        cc_mqttsn_client_start(m_client) == CC_MqttsnErrorCode_Success;
 
     if (!result) {
         return false;
     }
 
-    if (m_qos == MqttsnQoS_NoGwPublish) {
+    if (m_qos == CC_MqttsnQoS_NoGwPublish) {
         doPublish();
         return true;
     }
@@ -199,9 +199,9 @@ void Pub::sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool 
     reinterpret_cast<Pub*>(obj)->sendData(buf, bufLen, broadcast);
 }
 
-void Pub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
+void Pub::gwStatusReport(unsigned short gwId, CC_MqttsnGwStatus status)
 {
-    if (status != MqttsnGwStatus_Available) {
+    if (status != CC_MqttsnGwStatus_Available) {
         return;
     }
 
@@ -223,7 +223,7 @@ void Pub::gwStatusReport(unsigned short gwId, MqttsnGwStatus status)
     doConnect();
 }
 
-void Pub::gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status)
+void Pub::gwStatusReportCb(void* obj, unsigned char gwId, CC_MqttsnGwStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Pub*>(obj)->gwStatusReport(gwId, status);
@@ -246,7 +246,7 @@ void Pub::gwDisconnectReportCb(void* obj)
     reinterpret_cast<Pub*>(obj)->gwDisconnectReport();
 }
 
-void Pub::messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo)
+void Pub::messageReportCb(void* obj, const CC_MqttsnMessageInfo* msgInfo)
 {
     static_cast<void>(obj);
     static_cast<void>(msgInfo);
@@ -268,7 +268,7 @@ void Pub::doConnect(bool reconnecting)
             nullptr,
             &Pub::connectCompleteCb,
             this);
-    if (result != MqttsnErrorCode_Success) {
+    if (result != CC_MqttsnErrorCode_Success) {
         std::cerr << "ERROR: Failed to connect to the gateway" << std::endl;
     }
 }
@@ -286,7 +286,7 @@ void Pub::doPublish()
                 m_retain,
                 &Pub::publishCompleteCb,
                 this);
-        if (result != MqttsnErrorCode_Success) {
+        if (result != CC_MqttsnErrorCode_Success) {
             std::cerr << "ERROR: Failed to initiate publish of topic " << m_topic << std::endl;
             quitApp();
         }
@@ -305,14 +305,14 @@ void Pub::doPublish()
                 &Pub::publishCompleteCb,
                 this);
 
-        if (result != MqttsnErrorCode_Success) {
+        if (result != CC_MqttsnErrorCode_Success) {
             std::cerr << "ERROR: Failed to initiate subscribe for topic ID " << m_topicId << std::endl;
             quitApp();
         }
         return;
     }
 
-    if (m_qos == MqttsnQoS_NoGwPublish) {
+    if (m_qos == CC_MqttsnQoS_NoGwPublish) {
         quitApp();
         return;
     }
@@ -321,18 +321,18 @@ void Pub::doPublish()
     cc_mqttsn_client_disconnect(m_client, &Pub::disconnectCompleteCb, this);
 }
 
-void Pub::connectComplete(MqttsnAsyncOpStatus status)
+void Pub::connectComplete(CC_MqttsnAsyncOpStatus status)
 {
-    if (m_qos == MqttsnQoS_NoGwPublish) {
+    if (m_qos == CC_MqttsnQoS_NoGwPublish) {
         return;
     }
 
-    if (status == MqttsnAsyncOpStatus_Successful) {
+    if (status == CC_MqttsnAsyncOpStatus_Successful) {
         doPublish();
         return;
     }
 
-    if (status == MqttsnAsyncOpStatus_Congestion) {
+    if (status == CC_MqttsnAsyncOpStatus_Congestion) {
         std::cerr << "WARNING: Congestion reported, reconnecting..." << std::endl;
         doConnect();
         return;
@@ -342,33 +342,33 @@ void Pub::connectComplete(MqttsnAsyncOpStatus status)
     quitApp();
 }
 
-void Pub::connectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+void Pub::connectCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Pub*>(obj)->connectComplete(status);
 }
 
-void Pub::disconnectComplete(MqttsnAsyncOpStatus status)
+void Pub::disconnectComplete(CC_MqttsnAsyncOpStatus status)
 {
     static_cast<void>(status);
     quitApp();
 }
 
-void Pub::disconnectCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+void Pub::disconnectCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Pub*>(obj)->disconnectComplete(status);
 }
 
-void Pub::publishComplete(MqttsnAsyncOpStatus status)
+void Pub::publishComplete(CC_MqttsnAsyncOpStatus status)
 {
-    if (status == MqttsnAsyncOpStatus_Congestion) {
+    if (status == CC_MqttsnAsyncOpStatus_Congestion) {
         std::cerr << "WARNING: Failed to publish due to congestion, retrying..." << std::endl;
         doPublish();
         return;
     }
 
-    if (status != MqttsnAsyncOpStatus_Successful) {
+    if (status != CC_MqttsnAsyncOpStatus_Successful) {
         std::cerr << "WARNING: Failed to publish topic ";
         if (!m_topic.empty()) {
             std::cerr << m_topic;
@@ -379,7 +379,7 @@ void Pub::publishComplete(MqttsnAsyncOpStatus status)
         std::cerr << std::endl;
     }
 
-    if (m_qos == MqttsnQoS_NoGwPublish) {
+    if (m_qos == CC_MqttsnQoS_NoGwPublish) {
         m_socket.flush();
         quitApp();
         return;
@@ -389,7 +389,7 @@ void Pub::publishComplete(MqttsnAsyncOpStatus status)
     cc_mqttsn_client_disconnect(m_client, &Pub::disconnectCompleteCb, this);
 }
 
-void Pub::publishCompleteCb(void* obj, MqttsnAsyncOpStatus status)
+void Pub::publishCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status)
 {
     assert(obj != nullptr);
     reinterpret_cast<Pub*>(obj)->publishComplete(status);
