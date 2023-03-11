@@ -1,6 +1,6 @@
 /// @mainpage MQTT-SN Gateway Library
 /// @tableofcontents
-/// @section mqttsn_gw_overview Overview
+/// @section cc_mqttsn_gw_overview Overview
 /// The MQTT-SN Gateway Library provides simple, asynchronous, non-blocking, 
 /// and easy to use interface to implement and operate MQTT-SN gateway. 
 /// The library doesn't make any assumption on the system it is running on, 
@@ -28,12 +28,12 @@
 /// sent or received data to be wrapped with or unwrapped from additional 
 /// independent transport data, that insures safe and correct delivery.
 ///
-/// @section mqttsn_gw_headers Headers
+/// @section cc_mqttsn_gw_headers Headers
 /// To use the C++ interface, use the following include statement:
 /// @code
 /// #include "cc_mqttsn_gateway/gateway_allpp.h"
 /// @endcode
-/// Per-entity includes can also be used (see @ref mqttsn_gw_entities)
+/// Per-entity includes can also be used (see @ref cc_mqttsn_gw_entities)
 /// @code
 /// #include "cc_mqttsn_gateway/Gateway.h"
 /// #include "cc_mqttsn_gateway/Session.h"
@@ -45,7 +45,7 @@
 /// #include "cc_mqttsn_gateway/gateway_all.h"
 /// @endcode
 ///
-/// @section mqttsn_gw_entities Entities
+/// @section cc_mqttsn_gw_entities Entities
 /// The gateway library works with and provides an interface for three 
 /// intependent entities.
 /// - @b Gateway - Its main responsibility to advertise presence of the MQTT-SN
@@ -54,20 +54,20 @@
 ///     case would be UDP/IP network where the clients know up front the
 ///     address of the gateway, and do not require gateway advertising its
 ///     presence. For API description and tutorial, please read the
-///     @ref mqttsn_gw_gateway_page page.
+///     @ref cc_mqttsn_gw_gateway_page page.
 /// - @b Session - It is responsible to inteligently forward traffic between
 ///     single client and the broker. New "session" object must be created
 ///     when message from new client has been received. Once the relevant client
 ///     gets disconnected, the "session" object needs to be deleted.
 ///     For API description and tutorial, please read the
-///     @ref mqttsn_gw_session_page page.
+///     @ref cc_mqttsn_gw_session_page page.
 /// - @b Config - It is responsible to provide a common way to parse the configuration
 ///     file and provide a convenient interface to retrieve any configuration
 ///     values, which can later be applied to the @b Gateway and/or @b Session
 ///     entities. The format of the configuration file is described in the
 ///     example config file provided with the project. For API description and 
-///     tutorial, please read the @ref mqttsn_gw_config_page page.
+///     tutorial, please read the @ref cc_mqttsn_gw_config_page page.
 ///
-/// @section mqttsn_gw_thread_safety Thread Safety
+/// @section cc_mqttsn_gw_thread_safety Thread Safety
 /// Parallel access to the distinct objects @b is safe, but parallel access
 /// to the same one is @b NOT.

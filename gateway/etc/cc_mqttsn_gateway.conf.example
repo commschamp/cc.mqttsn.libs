@@ -5,7 +5,7 @@
 # =================================================================
 
 # Gateway ID, reported in ADVERTISE and GWINFO messages. Default value is 0.
-#mqttsn_gw_id 0
+#cc_mqttsn_gw_id 0
 
 # Advertise period (in seconds), when gateway is expected to advertise its 
 # presence by broadcasting ADVERTISE message. Default value is 900 (=15 min).
