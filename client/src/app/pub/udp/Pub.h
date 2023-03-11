@@ -36,6 +36,7 @@ class Pub : public QObject
     Q_OBJECT
 public:
     Pub();
+    ~Pub();
 
     void setGwAddr(const QString& value)
     {
@@ -111,19 +112,6 @@ private slots:
     void socketErrorOccurred(QAbstractSocket::SocketError err);
 
 private:
-    struct ClientDeleter
-    {
-        void operator()(MqttsnClientHandle client)
-        {
-            cc_mqttsn_client_free(client);
-        }
-    };
-
-    typedef std::unique_ptr<
-        typename std::remove_pointer<MqttsnClientHandle>::type,
-        ClientDeleter
-    > ClientPtr;
-
     void nextTickProgram(unsigned ms);
     static void nextTickProgramCb(void* obj, unsigned ms);
 
@@ -156,7 +144,7 @@ private:
     void sendDataConnected(const unsigned char* buf, unsigned bufLen);
     static void quitApp();
 
-    ClientPtr m_client;
+    MqttsnClientHandle m_client;
     QTimer m_timer;
     unsigned m_reqTimeout = 0;
     QString m_gwAddr;

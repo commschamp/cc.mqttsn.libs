@@ -40,22 +40,22 @@ Sub::Sub()
   : m_client(cc_mqttsn_client_new())
 {
     cc_mqttsn_client_set_next_tick_program_callback(
-        m_client.get(), &Sub::nextTickProgramCb, this);
+        m_client, &Sub::nextTickProgramCb, this);
 
     cc_mqttsn_client_set_cancel_next_tick_wait_callback(
-        m_client.get(), &Sub::caneclTickCb, this);
+        m_client, &Sub::caneclTickCb, this);
 
     cc_mqttsn_client_set_send_output_data_callback(
-        m_client.get(), &Sub::sendDataCb, this);
+        m_client, &Sub::sendDataCb, this);
 
     cc_mqttsn_client_set_gw_status_report_callback(
-        m_client.get(), &Sub::gwStatusReportCb, this);
+        m_client, &Sub::gwStatusReportCb, this);
 
     cc_mqttsn_client_set_gw_disconnect_report_callback(
-        m_client.get(), &Sub::gwDisconnectReportCb, this);
+        m_client, &Sub::gwDisconnectReportCb, this);
 
     cc_mqttsn_client_set_message_report_callback(
-        m_client.get(), &Sub::messageReportCb, this);
+        m_client, &Sub::messageReportCb, this);
 
 
     connect(
@@ -72,13 +72,18 @@ Sub::Sub()
 
 }
 
+Sub::~Sub()
+{
+    cc_mqttsn_client_free(m_client);
+}
+
 bool Sub::start()
 {
     bool result =
         bindLocalPort() &&
         openSocket() &&
         connectToGw() &&
-        cc_mqttsn_client_start(m_client.get()) == MqttsnErrorCode_Success;
+        cc_mqttsn_client_start(m_client) == MqttsnErrorCode_Success;
 
 
     if (result && (m_socket.state() == QUdpSocket::ConnectedState)) {
@@ -90,7 +95,7 @@ bool Sub::start()
 void Sub::tick()
 {
     m_reqTimeout = 0;
-    cc_mqttsn_client_tick(m_client.get());
+    cc_mqttsn_client_tick(m_client);
 }
 
 void Sub::readFromSocket()
@@ -111,7 +116,7 @@ void Sub::readFromSocket()
 //        std::copy_n(&data[0], data.size(), std::ostream_iterator<unsigned>(std::cout, " "));
 //        std::cout << std::dec << std::endl;
 
-        cc_mqttsn_client_process_data(m_client.get(), &data[0], static_cast<unsigned>(data.size()));
+        cc_mqttsn_client_process_data(m_client, &data[0], static_cast<unsigned>(data.size()));
     }
 }
 
@@ -272,7 +277,7 @@ void Sub::doConnect(bool reconnecting)
 
     auto result =
         cc_mqttsn_client_connect(
-            m_client.get(),
+            m_client,
             m_clientId.c_str(),
             m_keepAlive,
             cleanSession,
@@ -289,7 +294,7 @@ void Sub::doSubscribe()
     if (!m_topics.empty()) {
         auto result =
             cc_mqttsn_client_subscribe(
-                m_client.get(),
+                m_client,
                 m_topics.front().c_str(),
                 m_qos,
                 &Sub::subscribeCompleteCb,
@@ -305,7 +310,7 @@ void Sub::doSubscribe()
     if (!m_topicIds.empty()) {
         auto result =
             cc_mqttsn_client_subscribe_id(
-                m_client.get(),
+                m_client,
                 m_topicIds.front(),
                 m_qos,
                 &Sub::subscribeCompleteCb,
@@ -422,7 +427,7 @@ bool Sub::connectToGw()
     assert(m_socket.isOpen());
     assert(m_socket.state() == QUdpSocket::ConnectedState);
 
-    cc_mqttsn_client_set_searchgw_enabled(m_client.get(), false);
+    cc_mqttsn_client_set_searchgw_enabled(m_client, false);
     return true;
 }
 

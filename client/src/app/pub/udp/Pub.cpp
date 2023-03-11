@@ -39,22 +39,22 @@ Pub::Pub()
   : m_client(cc_mqttsn_client_new())
 {
     cc_mqttsn_client_set_next_tick_program_callback(
-        m_client.get(), &Pub::nextTickProgramCb, this);
+        m_client, &Pub::nextTickProgramCb, this);
 
     cc_mqttsn_client_set_cancel_next_tick_wait_callback(
-        m_client.get(), &Pub::caneclTickCb, this);
+        m_client, &Pub::caneclTickCb, this);
 
     cc_mqttsn_client_set_send_output_data_callback(
-        m_client.get(), &Pub::sendDataCb, this);
+        m_client, &Pub::sendDataCb, this);
 
     cc_mqttsn_client_set_gw_status_report_callback(
-        m_client.get(), &Pub::gwStatusReportCb, this);
+        m_client, &Pub::gwStatusReportCb, this);
 
     cc_mqttsn_client_set_gw_disconnect_report_callback(
-        m_client.get(), &Pub::gwDisconnectReportCb, this);
+        m_client, &Pub::gwDisconnectReportCb, this);
 
     cc_mqttsn_client_set_message_report_callback(
-        m_client.get(), &Pub::messageReportCb, this);
+        m_client, &Pub::messageReportCb, this);
 
 
     connect(
@@ -71,13 +71,18 @@ Pub::Pub()
 
 }
 
+Pub::~Pub()
+{
+    cc_mqttsn_client_free(m_client);
+}
+
 bool Pub::start()
 {
     bool result =
         bindLocalPort() &&
         openSocket() &&
         connectToGw() &&
-        cc_mqttsn_client_start(m_client.get()) == MqttsnErrorCode_Success;
+        cc_mqttsn_client_start(m_client) == MqttsnErrorCode_Success;
 
     if (!result) {
         return false;
@@ -98,7 +103,7 @@ bool Pub::start()
 void Pub::tick()
 {
     m_reqTimeout = 0;
-    cc_mqttsn_client_tick(m_client.get());
+    cc_mqttsn_client_tick(m_client);
 }
 
 void Pub::readFromSocket()
@@ -123,7 +128,7 @@ void Pub::readFromSocket()
             std::cout << std::dec << std::endl;
         }
 
-        cc_mqttsn_client_process_data(m_client.get(), &data[0], static_cast<unsigned>(data.size()));
+        cc_mqttsn_client_process_data(m_client, &data[0], static_cast<unsigned>(data.size()));
     }
 }
 
@@ -256,7 +261,7 @@ void Pub::doConnect(bool reconnecting)
 
     auto result =
         cc_mqttsn_client_connect(
-            m_client.get(),
+            m_client,
             m_clientId.c_str(),
             m_keepAlive,
             cleanSession,
@@ -273,7 +278,7 @@ void Pub::doPublish()
     if (!m_topic.empty()) {
         auto result =
             cc_mqttsn_client_publish(
-                m_client.get(),
+                m_client,
                 m_topic.c_str(),
                 m_msg.empty() ? nullptr : &m_msg[0],
                 static_cast<unsigned>(m_msg.size()),
@@ -291,7 +296,7 @@ void Pub::doPublish()
     if (m_topicId != 0) {
         auto result =
             cc_mqttsn_client_publish_id(
-                m_client.get(),
+                m_client,
                 m_topicId,
                 m_msg.empty() ? nullptr : &m_msg[0],
                 static_cast<unsigned>(m_msg.size()),
@@ -313,7 +318,7 @@ void Pub::doPublish()
     }
 
     m_disconnecting = true;
-    cc_mqttsn_client_disconnect(m_client.get(), &Pub::disconnectCompleteCb, this);
+    cc_mqttsn_client_disconnect(m_client, &Pub::disconnectCompleteCb, this);
 }
 
 void Pub::connectComplete(MqttsnAsyncOpStatus status)
@@ -381,7 +386,7 @@ void Pub::publishComplete(MqttsnAsyncOpStatus status)
     }
 
     m_disconnecting = true;
-    cc_mqttsn_client_disconnect(m_client.get(), &Pub::disconnectCompleteCb, this);
+    cc_mqttsn_client_disconnect(m_client, &Pub::disconnectCompleteCb, this);
 }
 
 void Pub::publishCompleteCb(void* obj, MqttsnAsyncOpStatus status)
@@ -432,7 +437,7 @@ bool Pub::connectToGw()
     assert(m_socket.isOpen());
     assert(m_socket.state() == QUdpSocket::ConnectedState);
 
-    cc_mqttsn_client_set_searchgw_enabled(m_client.get(), false);
+    cc_mqttsn_client_set_searchgw_enabled(m_client, false);
     return true;
 }
 

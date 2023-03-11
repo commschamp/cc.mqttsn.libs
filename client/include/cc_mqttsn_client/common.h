@@ -96,7 +96,10 @@ typedef enum
 
 /// @brief Handler used to access client specific data structures.
 /// @details Returned by cc_mqttsn_client_new() function.
-typedef void* MqttsnClientHandle;
+typedef struct 
+{
+    void* m_ptr;
+} MqttsnClientHandle;
 
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short MqttsnTopicId;
