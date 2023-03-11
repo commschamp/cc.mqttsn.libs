@@ -70,7 +70,7 @@ jobs:
     - name: Test
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: ctest 
+      run: ctest -V 
 
   build_gcc_ubuntu_20_04:
     runs-on: ubuntu-20.04
@@ -129,7 +129,7 @@ jobs:
     - name: Test
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: ctest 
+      run: ctest -V 
 
   build_gcc_ubuntu_22_04:
     runs-on: ubuntu-22.04
@@ -188,7 +188,7 @@ jobs:
     - name: Test
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: ctest       
+      run: ctest -V       
       
 # - clang crashes up to version 9
   build_clang_ubuntu_20_04:
@@ -248,7 +248,7 @@ jobs:
     - name: Test
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: ctest 
+      run: ctest -V 
           
   build_clang_ubuntu_22_04:
     runs-on: ubuntu-22.04
@@ -307,5 +307,5 @@ jobs:
     - name: Test
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: ctest 
+      run: ctest -V 
           
