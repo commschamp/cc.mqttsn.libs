@@ -16,7 +16,7 @@
 /// and @b C. The @b C interface is a wrapper around @b C++ one, but provides 
 /// an interface to be used with any project developed using C.
 ///
-/// @section mqttsn_client_io_links Various I/O Links
+/// @section cc_mqttsn_client_io_links Various I/O Links
 /// MQTT-SN is designed to be a @b datagram protocol, i.e. if sent message is 
 /// received by the other side, it is received <b>in full</b> and 
 /// <b>without errors</b>. If sent over UDP link, it can be used as is. The

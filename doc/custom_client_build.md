@@ -25,7 +25,7 @@ and can be suitable for bare-metal systems.
 This variable specifies the name of the custom client library.
 It will influence the names of the API functions. The **default** client build
 (controlled by **CC_MQTTSN_CLIENT_DEFAULT_LIB** option) prefixes all the 
-functions with `mqttsn_client_`, while client with custom name will produce 
+functions with `cc_mqttsn_client_`, while client with custom name will produce 
 functions having `mqttsn_<custom_name>_client_` prefix. For example having the
 `set (MQTTSN_CUSTOM_CLIENT_NAME "my_name")` statement in configuration file
 will produce a library which prefixes all API functions with 
@@ -89,7 +89,7 @@ set(MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE 128)
 
 ### MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT
 The client library allows allocation of multiple client managing objects
-(**mqttsn_client_alloc()** function). By default, there is no limit on such
+(**cc_mqttsn_client_alloc()** function). By default, there is no limit on such
 allocations, and as a result every such object is dynamically allocated.
 However, if there is a known limit for number of client managing objects, the
 library will be requested to allocate, use ***MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT**

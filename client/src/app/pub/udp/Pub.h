@@ -115,7 +115,7 @@ private:
     {
         void operator()(MqttsnClientHandle client)
         {
-            mqttsn_client_free(client);
+            cc_mqttsn_client_free(client);
         }
     };
 

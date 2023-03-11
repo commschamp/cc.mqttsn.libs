@@ -38,7 +38,7 @@ install (
 
 find_package (Doxygen)
 if (DOXYGEN_FOUND)
-    set (doc_output_dir "${CMAKE_INSTALL_DATAROOTDIR}/doc/cc_mqttsn_gateway")
+    set (doc_output_dir "${CMAKE_INSTALL_FULL_DATAROOTDIR}/doc/cc_mqttsn_gateway")
     make_directory (${doc_output_dir})
     
     set (match_str "OUTPUT_DIRECTORY[^\n]*")

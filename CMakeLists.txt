@@ -14,6 +14,7 @@ option (CC_MQTTSN_WITH_SANITIZERS "Build with sanitizers" OFF)
 # Extra variables
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
+# CC_MQTTSN_SANITIZERS - List of sanitizing options
 
 # Updating default settings
 set(CMAKE_CXX_STANDARD 11 CACHE STRING "The C++ standard to use")
@@ -37,6 +38,11 @@ endif ()
 
 if (CC_MQTTSN_WITH_SANITIZERS)
     list (APPEND compile_opts DEFAULT_SANITIZERS)
+
+    if (CMAKE_COMPILER_IS_GNUCC)
+        # gcc gives false pasitive on vptr sanitizer
+        list (APPEND compile_opts EXTRA -fno-sanitize=vptr)
+    endif ()
 endif ()
 
 include (${LibComms_DIR}/CC_Compile.cmake)

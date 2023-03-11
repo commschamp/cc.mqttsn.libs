@@ -18,36 +18,36 @@
 #include "cc_mqttsn/field/QosCommon.h"
 #include "client.h"
 
-typedef decltype(&mqttsn_client_new) ClientNewFunc;
-typedef decltype(&mqttsn_client_free) ClientFreeFunc;
-typedef decltype(&mqttsn_client_set_next_tick_program_callback) NextTickProgramCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_cancel_next_tick_wait_callback) CancelNextTickCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_send_output_data_callback) SendOutDataCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_gw_status_report_callback) GwStatusReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_gw_disconnect_report_callback) GwDisconnectsReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_message_report_callback) MessageReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_start) StartFunc;
-typedef decltype(&mqttsn_client_process_data) ProcessDataFunc;
-typedef decltype(&mqttsn_client_tick) TickFunc;
-typedef decltype(&mqttsn_client_set_retry_period) SetRetryPeriodFunc;
-typedef decltype(&mqttsn_client_set_retry_count) SetRetryCountFunc;
-typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
-typedef decltype(&mqttsn_client_set_searchgw_enabled) SetSearchgwEnabledFunc;
-typedef decltype(&mqttsn_client_cancel) CancelFunc;
-typedef decltype(&mqttsn_client_connect) ConnectFunc;
-typedef decltype(&mqttsn_client_disconnect) DisconnectFunc;
-typedef decltype(&mqttsn_client_publish_id) PublishIdFunc;
-typedef decltype(&mqttsn_client_publish) PublishFunc;
-typedef decltype(&mqttsn_client_subscribe_id) SubscribeIdFunc;
-typedef decltype(&mqttsn_client_subscribe) SubscribeFunc;
-typedef decltype(&mqttsn_client_unsubscribe_id) UnsubscribeIdFunc;
-typedef decltype(&mqttsn_client_unsubscribe) UnsubscribeFunc;
-typedef decltype(&mqttsn_client_will_update) WillUpdateFunc;
-typedef decltype(&mqttsn_client_will_topic_update) WillTopicUpdateFunc;
-typedef decltype(&mqttsn_client_will_msg_update) WillMsgUpdateFunc;
-typedef decltype(&mqttsn_client_sleep) SleepFunc;
-typedef decltype(&mqttsn_client_reconnect) ReconnectFunc;
-typedef decltype(&mqttsn_client_check_messages) CheckMessagesFunc;
+typedef decltype(&cc_mqttsn_client_new) ClientNewFunc;
+typedef decltype(&cc_mqttsn_client_free) ClientFreeFunc;
+typedef decltype(&cc_mqttsn_client_set_next_tick_program_callback) NextTickProgramCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_cancel_next_tick_wait_callback) CancelNextTickCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_send_output_data_callback) SendOutDataCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_gw_status_report_callback) GwStatusReportCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_gw_disconnect_report_callback) GwDisconnectsReportCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_message_report_callback) MessageReportCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_start) StartFunc;
+typedef decltype(&cc_mqttsn_client_process_data) ProcessDataFunc;
+typedef decltype(&cc_mqttsn_client_tick) TickFunc;
+typedef decltype(&cc_mqttsn_client_set_retry_period) SetRetryPeriodFunc;
+typedef decltype(&cc_mqttsn_client_set_retry_count) SetRetryCountFunc;
+typedef decltype(&cc_mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
+typedef decltype(&cc_mqttsn_client_set_searchgw_enabled) SetSearchgwEnabledFunc;
+typedef decltype(&cc_mqttsn_client_cancel) CancelFunc;
+typedef decltype(&cc_mqttsn_client_connect) ConnectFunc;
+typedef decltype(&cc_mqttsn_client_disconnect) DisconnectFunc;
+typedef decltype(&cc_mqttsn_client_publish_id) PublishIdFunc;
+typedef decltype(&cc_mqttsn_client_publish) PublishFunc;
+typedef decltype(&cc_mqttsn_client_subscribe_id) SubscribeIdFunc;
+typedef decltype(&cc_mqttsn_client_subscribe) SubscribeFunc;
+typedef decltype(&cc_mqttsn_client_unsubscribe_id) UnsubscribeIdFunc;
+typedef decltype(&cc_mqttsn_client_unsubscribe) UnsubscribeFunc;
+typedef decltype(&cc_mqttsn_client_will_update) WillUpdateFunc;
+typedef decltype(&cc_mqttsn_client_will_topic_update) WillTopicUpdateFunc;
+typedef decltype(&cc_mqttsn_client_will_msg_update) WillMsgUpdateFunc;
+typedef decltype(&cc_mqttsn_client_sleep) SleepFunc;
+typedef decltype(&cc_mqttsn_client_reconnect) ReconnectFunc;
+typedef decltype(&cc_mqttsn_client_check_messages) CheckMessagesFunc;
 
 
 struct ClientLibFuncs

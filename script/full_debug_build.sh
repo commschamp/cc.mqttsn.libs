@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "${CC}" -o -z "$CXX" ]; then
+if [ -z "${CC}" -o -z "${CXX}" ]; then
     echo "ERROR: Compilers are not provided"
     exit 1
 fi
