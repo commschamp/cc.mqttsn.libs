@@ -15,8 +15,7 @@ function (lib_common_test_client)
         "DataProcessor.cpp"
     )
     add_library (${COMMON_TEST_CLIENT_LIB} STATIC ${src})
-    add_dependencies(${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
-    target_link_libraries(${COMMON_TEST_CLIENT_LIB} PUBLIC cc::cc_mqttsn cc::comms)
+    target_link_libraries(${COMMON_TEST_CLIENT_LIB} PUBLIC cc::${DEFAULT_CLIENT_LIB_TGT} cc::cc_mqttsn cc::comms)
 endfunction ()
 
 #################################################################
@@ -36,7 +35,7 @@ function (test_func test_suite_name)
         SRC ${tests}
         ${valgrand_args})      
 
-    target_link_libraries(${name} PRIVATE ${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT} cxxtest::cxxtest)
+    target_link_libraries(${name} PRIVATE ${COMMON_TEST_CLIENT_LIB} cc::${DEFAULT_CLIENT_LIB_TGT} cxxtest::cxxtest)
 endfunction ()
 
 #################################################################
