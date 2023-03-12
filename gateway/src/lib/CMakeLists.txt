@@ -25,20 +25,33 @@ function (lib_mqttsn_gateway)
     add_library (${name} STATIC ${src})
     
     target_link_libraries(${name} PRIVATE cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
+
+    set_target_properties(
+        ${name} PROPERTIES 
+        INTERFACE_LINK_LIBRARIES ""
+    )
+
+    target_include_directories(
+        ${name} BEFORE
+            PUBLIC
+                $<INSTALL_INTERFACE:include>
+                $<BUILD_INTERFACE:${GATEWAY_INC_DIR}>
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR})        
     
     install (
         TARGETS ${name}
         DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        EXPORT ${name}Config
     )
+
+    install(EXPORT ${name}Config NAMESPACE cc::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${name}/cmake
+    )       
     
 endfunction()
 
 ######################################################################
-
-include_directories(
-    BEFORE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
 
 lib_mqttsn_gateway ()
 

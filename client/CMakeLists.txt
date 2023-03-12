@@ -14,6 +14,7 @@ set (TEMPL_PROCESS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/script/ProcessTemplate.cma
 set (DEFAULT_CLIENT_NAME "")
 set (MQTTSN_CLIENT_LIB_NAME "cc_mqttsn_client")
 set (MQTTSN_CLIENT_HEADER_TGT "client.h.tgt")
+set (COMMON_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 ######################################################################
 
@@ -73,12 +74,20 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
     
     message (STATUS "Defining library ${lib_name}") 
     add_library (${lib_name} STATIC ${src_output})
-    target_include_directories(${lib_name} BEFORE PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    add_library (cc::${lib_name} ALIAS ${lib_name})
     target_link_libraries(${lib_name} PRIVATE cc::cc_mqttsn cc::comms)
+    target_include_directories(
+            ${lib_name} BEFORE
+                PUBLIC
+                    $<INSTALL_INTERFACE:include>
+                    $<BUILD_INTERFACE:${COMMON_INC_DIR}>
+                PRIVATE 
+                    "${CMAKE_CURRENT_BINARY_DIR}")    
 
     set_target_properties(
         ${lib_name} PROPERTIES 
         POSITION_INDEPENDENT_CODE TRUE
+        INTERFACE_LINK_LIBRARIES ""
     )
     add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})
     
@@ -111,7 +120,12 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
         install (
             TARGETS ${lib_name}
             DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            EXPORT ${lib_name}Config
         )
+
+        install(EXPORT ${lib_name}Config NAMESPACE cc::
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/${lib_name}/cmake
+        )        
     endif ()
 endfunction()
 
@@ -119,11 +133,6 @@ endfunction()
 
 find_package(LibComms REQUIRED)
 find_package(cc_mqttsn REQUIRED)
-
-include_directories(
-    BEFORE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
 
 install (
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn_client

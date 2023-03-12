@@ -12,7 +12,7 @@ function (lib_common_test_session)
         "TestMsgHandler.cpp"
     )
     add_library (${COMMON_TEST_SESSION_LIB} STATIC ${src})
-    target_link_libraries(${COMMON_TEST_SESSION_LIB} PRIVATE cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
+    target_link_libraries(${COMMON_TEST_SESSION_LIB} PUBLIC cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
     add_dependencies (${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME})
     
 endfunction ()
@@ -34,7 +34,7 @@ function (test_func test_suite_name)
         SRC ${tests}
         ${valgrand_args})    
 
-    target_link_libraries(${name} PRIVATE ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME} cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
+    target_link_libraries(${name} PRIVATE ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME} cxxtest::cxxtest)
 endfunction ()
 
 #################################################################
@@ -50,10 +50,6 @@ function (test_session)
 endfunction ()
 
 #################################################################
-
-include_directories (
-    "${CXXTEST_INCLUDE_DIR}"
-)
 
 lib_common_test_session()
 test_gateway()

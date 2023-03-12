@@ -36,7 +36,7 @@ function (test_func test_suite_name)
         SRC ${tests}
         ${valgrand_args})      
 
-    target_link_libraries(${name} PRIVATE ${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT})
+    target_link_libraries(${name} PRIVATE ${COMMON_TEST_CLIENT_LIB} ${DEFAULT_CLIENT_LIB_TGT} cxxtest::cxxtest)
 endfunction ()
 
 #################################################################
@@ -48,7 +48,6 @@ endfunction ()
 #################################################################
 
 include_directories (
-    "${CXXTEST_INCLUDE_DIR}"
     "${CMAKE_BINARY_DIR}/client/src/basic"
 )
 

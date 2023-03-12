@@ -22,10 +22,8 @@ function (bin_pub_udp)
         Pub.h
     )
     
-    #qt5_add_resources(resources ${CMAKE_CURRENT_SOURCE_DIR}/ui.qrc)
-
     add_executable(${name} ${src} ${moc})
-    target_link_libraries(${name} ${MQTTSN_CLIENT_LIB_NAME} Qt5::Network Qt5::Core)
+    target_link_libraries(${name} PRIVATE cc::${MQTTSN_CLIENT_LIB_NAME} Qt5::Network Qt5::Core)
     
     install (
         TARGETS ${name}

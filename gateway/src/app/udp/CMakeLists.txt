@@ -42,8 +42,4 @@ endfunction ()
 find_package(Qt5Core)
 find_package(Qt5Network)
 
-include_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
 bin_gateway_udp()

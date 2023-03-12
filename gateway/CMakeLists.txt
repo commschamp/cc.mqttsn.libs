@@ -9,12 +9,9 @@ find_package(cc_mqttsn REQUIRED)
 find_package(cc_mqtt311 REQUIRED)
 
 ######################################################################
-        
-include_directories(
-    BEFORE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
 
+set (GATEWAY_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+        
 if (CMAKE_COMPILER_IS_GNUCC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 endif ()
