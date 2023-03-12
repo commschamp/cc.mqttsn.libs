@@ -11,10 +11,10 @@
 #pragma once
 
 /// @brief Major verion of the library
-#define CC_MQTTSN_GW_MAJOR_VERSION 0U
+#define CC_MQTTSN_GW_MAJOR_VERSION 1U
 
 /// @brief Minor verion of the library
-#define CC_MQTTSN_GW_MINOR_VERSION 14U
+#define CC_MQTTSN_GW_MINOR_VERSION 0U
 
 /// @brief Patch level of the library
 #define CC_MQTTSN_GW_PATCH_VERSION 0U
