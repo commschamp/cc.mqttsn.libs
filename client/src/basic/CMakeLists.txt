@@ -34,8 +34,8 @@ foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     include (${f})  
     
     if ("${f}" STREQUAL "${CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE}")
-        set (MQTTSN_CUSTOM_CLIENT_NAME "${DEFAULT_CLIENT_NAME}")
-    elseif ("${MQTTSN_CUSTOM_CLIENT_NAME}" STREQUAL "")
+        set (CC_MQTTSN_CUSTOM_CLIENT_NAME "${DEFAULT_CLIENT_NAME}")
+    elseif ("${CC_MQTTSN_CUSTOM_CLIENT_NAME}" STREQUAL "")
         message (WARNING "File ${f} does not specify client name!")
         continue ()
     endif ()
@@ -45,54 +45,54 @@ foreach (f ${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES})
     mqttsn_append_option (
         mqttsn_library_opts 
         "cc_mqttsn_client::option::ClientIdStaticStorageSize"
-        "${MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE}"
+        "${CC_MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
         "cc_mqttsn_client::option::GwAddStaticStorageSize"
-        "${MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE}"
+        "${CC_MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
         "cc_mqttsn_client::option::TopicNameStaticStorageSize"
-        "${MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE}"
+        "${CC_MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
         "cc_mqttsn_client::option::MessageDataStaticStorageSize"
-        "${MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE}"
+        "${CC_MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
         "cc_mqttsn_client::option::ClientsAllocLimit"
-        "${MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT}"
+        "${CC_MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
         "cc_mqttsn_client::option::TrackedGatewaysLimit"
-        "${MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT}"
+        "${CC_MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT}"
     )
     
     mqttsn_append_option (
         mqttsn_library_opts 
         "cc_mqttsn_client::option::RegisteredTopicsLimit"
-        "${MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT}"
+        "${CC_MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT}"
     )
 
     set (extra_flags)    
-    if (CMAKE_COMPILER_IS_GNUCC AND MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
+    if (CMAKE_COMPILER_IS_GNUCC AND CC_MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
         set (extra_flags "-nostdlib")
     endif ()
     
     
-    gen_lib_mqttsn_client("${MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_library_opts}" TRUE "${extra_flags}")
+    gen_lib_mqttsn_client("${CC_MQTTSN_CUSTOM_CLIENT_NAME}" "${mqttsn_library_opts}" TRUE "${extra_flags}")
     
-    if (MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
-        target_compile_definitions("cc_mqttsn_${MQTTSN_CUSTOM_CLIENT_NAME}_client" PRIVATE "-DNOSTDLIB")
+    if (CC_MQTTSN_CUSTOM_CLIENT_NO_STDLIB)
+        target_compile_definitions("cc_mqttsn_${CC_MQTTSN_CUSTOM_CLIENT_NAME}_client" PRIVATE "-DNOSTDLIB")
     endif ()
 endforeach()
