@@ -86,7 +86,6 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
 
     set_target_properties(
         ${lib_name} PROPERTIES 
-        POSITION_INDEPENDENT_CODE TRUE
         INTERFACE_LINK_LIBRARIES ""
     )
     add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name})
