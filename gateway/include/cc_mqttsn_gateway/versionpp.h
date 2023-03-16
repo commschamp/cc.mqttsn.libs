@@ -12,47 +12,42 @@
 
 #include "version.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 /// @brief Major verion of the library
 inline
 constexpr unsigned versionMajor()
 {
-    return MQTTSN_GW_MAJOR_VERSION;
+    return CC_MQTTSN_GW_MAJOR_VERSION;
 }
 
 /// @brief Minor verion of the library
 inline
 constexpr unsigned versionMinor()
 {
-    return MQTTSN_GW_MINOR_VERSION;
+    return CC_MQTTSN_GW_MINOR_VERSION;
 }
 
 /// @brief Patch level of the library
 inline
 constexpr unsigned versionPatch()
 {
-    return MQTTSN_GW_PATCH_VERSION;
+    return CC_MQTTSN_GW_PATCH_VERSION;
 }
 
 /// @brief Create version of the library as single unsigned numeric value.
 inline
 constexpr unsigned versionCreate(unsigned major, unsigned minor, unsigned patch)
 {
-    return MQTTSN_GW_MAKE_VERSION(major, minor, patch);
+    return CC_MQTTSN_GW_MAKE_VERSION(major, minor, patch);
 }
 
 /// @brief Version of the library as single numeric value
 inline
 constexpr unsigned version()
 {
-    return MQTTSN_GW_VERSION;
+    return CC_MQTTSN_GW_VERSION;
 }
 
-} // namespace gateway
-
-} // namespace mqttsn
+} // namespace cc_mqttsn_gateway

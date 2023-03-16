@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,13 +10,10 @@
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 
-#include "mqttsn/gateway/Config.h"
-#include "mqttsn/gateway/Gateway.h"
+#include "cc_mqttsn_gateway/Config.h"
+#include "cc_mqttsn_gateway/Gateway.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace app
@@ -33,7 +30,7 @@ public:
 
     explicit GatewayWrapper(const Config& config);
 
-    typedef mqttsn::gateway::Gateway::SendDataReqCb SendDataReqCb;
+    typedef cc_mqttsn_gateway::Gateway::SendDataReqCb SendDataReqCb;
     bool start(SendDataReqCb&& sendCb);
 
 private slots:
@@ -41,7 +38,7 @@ private slots:
 
 private:
     const Config& m_config;
-    mqttsn::gateway::Gateway m_gw;
+    cc_mqttsn_gateway::Gateway m_gw;
     QTimer m_timer;
 };
 
@@ -49,6 +46,4 @@ private:
 
 }  // namespace app
 
-}  // namespace gateway
-
-}  // namespace mqttsn
+}  // namespace cc_mqttsn_gateway

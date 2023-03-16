@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,14 +7,11 @@
 
 #pragma once
 
-#include "mqttsn/gateway/Session.h"
+#include "cc_mqttsn_gateway/Session.h"
 #include "SessionOp.h"
 #include "common.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace session_op
@@ -60,7 +57,7 @@ private:
         bool m_pubOnlyClient = false;
     };
 
-    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
+    using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
 
     using Base::handle;
     virtual void handle(ConnectMsg_SN& msg) override;
@@ -87,8 +84,6 @@ private:
 
 }  // namespace session_op
 
-}  // namespace gateway
-
-}  // namespace mqttsn
+}  // namespace cc_mqttsn_gateway
 
 

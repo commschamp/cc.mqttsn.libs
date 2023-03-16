@@ -15,21 +15,24 @@ The provided libraries depend on several external projects:
   provides [COMMS library](https://github.com/commschamp/comms)
   which is used to define the protocols.
 
-In case these external dependencies are also built externally paths to them
-can be provided using **CC_MQTTSN_GENERATED_INSTALL_DIR**, **CC_MQTT311_GENERATED_INSTALL_DIR**,
-and **CC_MAIN_INSTALL_DIR** respectively. If these paths are not provided, the
-build process will check out and build the necessary dependencies.
+These dependencies are expected to be built independenty and access to them provided
+via standard **CMAKE_PREFIX_PATH** cmake variable. There are also scripts (
+[script/prepare_externals.sh](script/prepare_externals.sh) for Linux and
+[script/prepare_externals.bat](script/prepare_externals.bat) for Windows)
+which can help in preparation of these dependencies. They are also used
+in configuration of the [github actions](.github/workflows/actions_build.yml) and
+[appveyor](.appveyor.yml).  
 
 
 ## Choosing C++ Standard
-
 Since CMake v3.1 it became possible to set version of C++ standard by setting
 **CMAKE_CXX_STANDARD** variable. If no value of this variable is set in command
 line arguments, default value **11** will be assigned to it. In order to use
 c++14 standard in compilation, set the variable value to **14**. 
 
-Please **NOTE**, that _clang_ compiler has problems compiling valid c++11 constructs
-used in this project. Hence, the compilation will fail unless the compilation is
+Please **NOTE**, that some older versions of the _clang_ compiler habe problems 
+compiling valid c++11 constructs used in this project. 
+Hence, the compilation will fail unless the compilation is
 configured to use c++14 standard.
 
 ## Build and Install Examples
@@ -49,21 +52,24 @@ builds.
 
 ### Build MQTT-SN Client/Gateway Libraries and Applications
 ```
-$> cmake -DCMAKE_BUILD_TYPE=Release ..
+$> cmake .. -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install\;/path/to/cc.mqtt311.generated/install
 ```
 
 ### Build Two Custom Client Libraries
 See [custom_client_build.md](custom_client_build.md)
 for details on custom build configuration
 ```
-$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
+$> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
     -DCC_MQTTSN_BUILD_GATEWAY=OFF \
-    -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES=config1.cmake\;config2.cmake ..
+    -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES=config1.cmake\;config2.cmake \
+    -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install
 ```
 
 ### Build Gateway Library and Application(s)
 ```
-$> cmake -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF ..
+$> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
+  -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install\;/path/to/cc.mqtt311.generated/install
 ```
 
 

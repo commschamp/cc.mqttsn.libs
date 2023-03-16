@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -342,7 +342,7 @@ DataProcessor::DataBuf DataProcessor::prepareAdvertiseMsg(std::uint8_t id, unsig
     return buf;
 }
 
-DataProcessor::DataBuf DataProcessor::prepareConnackMsg(mqttsn::field::ReturnCodeVal val)
+DataProcessor::DataBuf DataProcessor::prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal val)
 {
     ConnackMsg msg;
     msg.field_returnCode().value() = val;
@@ -376,7 +376,7 @@ DataProcessor::DataBuf DataProcessor::prepareRegisterMsg(
 DataProcessor::DataBuf DataProcessor::prepareRegackMsg(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::field::ReturnCodeVal retCode)
+    cc_mqttsn::field::ReturnCodeVal retCode)
 {
     RegackMsg msg;
     msg.field_topicId().value() = topicId;
@@ -390,7 +390,7 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
     std::uint16_t msgId,
     const std::vector<std::uint8_t>& data,
     TopicIdTypeVal topicIdType,
-    mqttsn::field::QosVal qos,
+    cc_mqttsn::field::QosVal qos,
     bool retain,
     bool duplicate)
 {
@@ -406,9 +406,9 @@ DataProcessor::DataBuf DataProcessor::preparePublishMsg(
 }
 
 DataProcessor::DataBuf DataProcessor::preparePubackMsg(
-    MqttsnTopicId topicId,
+    CC_MqttsnTopicId topicId,
     std::uint16_t msgId,
-    mqttsn::field::ReturnCodeVal retCode)
+    cc_mqttsn::field::ReturnCodeVal retCode)
 {
     PubackMsg msg;
     msg.field_topicId().value() = topicId;
@@ -439,10 +439,10 @@ DataProcessor::DataBuf DataProcessor::preparePubcompMsg(std::uint16_t msgId)
 }
 
 DataProcessor::DataBuf DataProcessor::prepareSubackMsg(
-    mqttsn::field::QosVal qos,
-    MqttsnTopicId topicId,
+    cc_mqttsn::field::QosVal qos,
+    CC_MqttsnTopicId topicId,
     std::uint16_t msgId,
-    mqttsn::field::ReturnCodeVal retCode)
+    cc_mqttsn::field::ReturnCodeVal retCode)
 {
     SubackMsg msg;
     msg.field_flags().field_qos().value() = qos;
@@ -485,7 +485,7 @@ DataProcessor::DataBuf DataProcessor::prepareDisconnectMsg(std::uint16_t duratio
 }
 
 DataProcessor::DataBuf DataProcessor::prepareWilltopicrespMsg(
-    mqttsn::field::ReturnCodeVal retCode)
+    cc_mqttsn::field::ReturnCodeVal retCode)
 {
     WilltopicrespMsg msg;
     msg.field_returnCode().value() = retCode;
@@ -493,7 +493,7 @@ DataProcessor::DataBuf DataProcessor::prepareWilltopicrespMsg(
 }
 
 DataProcessor::DataBuf DataProcessor::prepareWillmsgrespMsg(
-    mqttsn::field::ReturnCodeVal retCode)
+    cc_mqttsn::field::ReturnCodeVal retCode)
 {
     WillmsgrespMsg msg;
     msg.field_returnCode().value() = retCode;

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,15 +8,13 @@
 #pragma once
 
 #include <array>
+#include <algorithm>
 
-#include "mqttsn/gateway/Gateway.h"
-#include "mqttsn/Message.h"
-#include "mqttsn/frame/Frame.h"
+#include "cc_mqttsn_gateway/Gateway.h"
+#include "cc_mqttsn/Message.h"
+#include "cc_mqttsn/frame/Frame.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class GatewayImpl
@@ -26,15 +24,15 @@ public:
     using SendDataReqCb = Gateway::SendDataReqCb;
 
     using Message =
-        mqttsn::Message<
+        cc_mqttsn::Message<
         comms::option::IdInfoInterface,
             comms::option::WriteIterator<std::uint8_t*>,
             comms::option::LengthInfoInterface
         >;
 
-    using AdvertiseMsg = mqttsn::message::Advertise<Message>;
+    using AdvertiseMsg = cc_mqttsn::message::Advertise<Message>;
     using AllMsgs = std::tuple<AdvertiseMsg>;
-    using ProtStack = mqttsn::frame::Frame<Message, AllMsgs>;
+    using ProtStack = cc_mqttsn::frame::Frame<Message, AllMsgs>;
 
     template <typename TFunc>
     void setNextTickProgramReqCb(TFunc&& func)
@@ -83,6 +81,4 @@ private:
     ProtStack m_protStack;
 };
 
-}  // namespace gateway
-
-}  // namespace mqttsn
+}  // namespace cc_mqttsn_gateway

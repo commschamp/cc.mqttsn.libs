@@ -1,17 +1,14 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "mqttsn/gateway/Session.h"
+#include "cc_mqttsn_gateway/Session.h"
 #include "SessionImpl.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 Session::Session()
@@ -136,7 +133,5 @@ bool Session::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxV
     return m_pImpl->setTopicIdAllocationRange(minVal, maxVal);
 }
 
-}  // namespace gateway
-
-}  // namespace mqttsn
+}  // namespace cc_mqttsn_gateway
 

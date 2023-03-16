@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,10 +11,7 @@
 #include <limits>
 #include <algorithm>
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace
@@ -252,8 +249,4 @@ void RegMgr::removeFromTopicMap(const std::string& topic, RegInfosList::iterator
     }
 }
 
-}  // namespace gateway
-
-}  // namespace mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

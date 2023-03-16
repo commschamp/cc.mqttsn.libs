@@ -22,7 +22,7 @@ details below.
 This repository provides the MQTT-SN **client** library. It is implemented 
 using C++(11) programming language, but provides **C** interface. The library's
 code doesn't use [RTTI](https://en.wikipedia.org/wiki/Run-time_type_information)
-or exceptions, but by default,
+or exceptions, but by default
 the library's implementation uses C++ STL data types, such as 
 [std::string](http://en.cppreference.com/w/cpp/string/basic_string) and 
 [std::vector](http://en.cppreference.com/w/cpp/container/vector). However,
@@ -32,8 +32,7 @@ refer to [doc/custom_client_build.md](doc/custom_client_build.md) for instructio
 how to do it. 
 
 The doxygen generated documentation of the library with its full tutorial can
-be downloaded from
-[release artefacts](https://github.com/arobenko/mqtt-sn/releases).
+be downloaded from the [release artefacts](releases).
 
 # Client Applications
 The [Client Library](#client-library) described above is I/O link agnostic,
@@ -42,7 +41,7 @@ correct delivery of the messages. This repository also provides a couple of
 MQTT-SN **client** "publish"(**cc_mqttsn_pub_udp**) and "subscribe" 
 (**cc_mqttsn_sub_udp**) example applications, which use
 UDP/IP as its datagram transport layer. These applications are also using
-[QT5](https://doc.qt.io/qt-5/) framework for their operation. It means that if
+[Qt5](https://doc.qt.io/qt-5/) framework for their operation. It means that if
 proper QT5 libraries are not installed or can not be found, these applications won't
 be compiled.
 
@@ -60,8 +59,7 @@ The gateway uses [v3.1.1](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3
 of the MQTT protocol to connect to and communicate with the broker.
 
 The doxygen generated documentation of the library with its full tutorial can
-be downloaded from
-[release artefacts](https://github.com/arobenko/mqtt-sn/releases).
+be downloaded from the [release artefacts](releases).
 
 # Gateway Applications
 The [Gateway Library](#gateway-library) described above is I/O link agnostic,
@@ -69,7 +67,7 @@ it allows to do any additional packatisation of the sent data to allow
 correct delivery of the messages. This repository also provides the 
 MQTT-SN gateway(**cc_mqttsn_gateway_udp**) example application, which uses
 UDP/IP as its datagram transport layer. The application also using
-[QT5](https://doc.qt.io/qt-5/) framework for its operation. It means that if
+[Qt5](https://doc.qt.io/qt-5/) framework for its operation. It means that if
 proper QT5 libraries are not installed or can not be found, the gateway example
 application won't be compiled.
 

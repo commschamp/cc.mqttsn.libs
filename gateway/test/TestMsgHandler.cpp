@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -541,7 +541,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientConnect(
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopic(
     const std::string& topic,
-    mqttsn::field::QosVal qos,
+    cc_mqttsn::field::QosVal qos,
     bool retain)
 {
     WilltopicMsg_SN msg;
@@ -584,7 +584,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegister(
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientRegack(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::field::ReturnCodeVal rc)
+    cc_mqttsn::field::ReturnCodeVal rc)
 {
     RegackMsg_SN msg;
     msg.field_topicId().value() = topicId;
@@ -598,7 +598,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPublish(
     std::uint16_t topicId,
     std::uint16_t msgId,
     TopicIdTypeVal topicIdType,
-    mqttsn::field::QosVal qos,
+    cc_mqttsn::field::QosVal qos,
     bool retain,
     bool dup)
 {
@@ -616,7 +616,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPublish(
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientPuback(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::field::ReturnCodeVal rc)
+    cc_mqttsn::field::ReturnCodeVal rc)
 {
     PubackMsg_SN msg;
     msg.field_topicId().value() = topicId;
@@ -662,7 +662,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientPingresp()
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     std::uint16_t topicId,
     std::uint16_t msgId,
-    mqttsn::field::QosVal qos)
+    cc_mqttsn::field::QosVal qos)
 {
     SubscribeMsg_SN msg;
 
@@ -678,7 +678,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientSubscribe(
     const std::string& topic,
     std::uint16_t msgId,
-    mqttsn::field::QosVal qos)
+    cc_mqttsn::field::QosVal qos)
 {
     SubscribeMsg_SN msg;
     msg.field_flags().field_qos().value() = qos;
@@ -743,7 +743,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientUnsubscribe(
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareClientWilltopicupd(
     const std::string& topic,
-    mqttsn::field::QosVal qos,
+    cc_mqttsn::field::QosVal qos,
     bool retain)
 {
     WilltopicupdMsg_SN msg;
@@ -790,7 +790,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
     const std::string& topic,
     const DataBuf& msgData,
     std::uint16_t packetId,
-    mqtt311::field::QosVal qos,
+    cc_mqtt311::field::QosVal qos,
     bool retain,
     bool duplicate)
 {
@@ -805,9 +805,9 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerPublish(
     flags.field_dup().setBitValue_bit(duplicate);
 
     msg.doRefresh();
-    assert((qos == mqtt311::field::QosVal::AtMostOnceDelivery) ||
+    assert((qos == cc_mqtt311::field::QosVal::AtMostOnceDelivery) ||
            (msg.field_packetId().doesExist()));
-    assert((mqtt311::field::QosVal::AtMostOnceDelivery < qos) ||
+    assert((cc_mqtt311::field::QosVal::AtMostOnceDelivery < qos) ||
            (msg.field_packetId().isMissing()));
     return prepareInput(msg);
 }

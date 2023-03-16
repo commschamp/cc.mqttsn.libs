@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,10 +10,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace session_op
@@ -32,7 +29,7 @@ void Forward::handle(PublishMsg_SN& msg)
 
     do {
 
-        if ((msg.field_flags().field_qos().value() != mqttsn::field::QosVal::NoGwPublish) ||
+        if ((msg.field_flags().field_qos().value() != cc_mqttsn::field::QosVal::NoGwPublish) ||
             (st.m_connStatus == ConnectionStatus::Connected)) {
             break;
         }
@@ -371,7 +368,7 @@ void Forward::handle(SubackMsg& msg)
             return (elem.m_timestamp + state().m_retryPeriod) < state().m_timestamp;
         });
 
-    auto qos = mqttsn::field::QosVal::AtMostOnceDelivery;
+    auto qos = cc_mqttsn::field::QosVal::AtMostOnceDelivery;
     auto rc = ReturnCodeVal::NotSupported;
     do {
         auto& retCodesList = msg.field_list().value();
@@ -386,7 +383,7 @@ void Forward::handle(SubackMsg& msg)
         }
 
         auto adjustedRetCode = std::min(ackRetCode.value(), SubackRetCode::Qos2);
-        auto reportedQos = static_cast<mqtt311::field::QosVal>(adjustedRetCode);
+        auto reportedQos = static_cast<cc_mqtt311::field::QosVal>(adjustedRetCode);
         qos = translateQosForClient(translateQos(reportedQos));
         rc = ReturnCodeVal::Accepted;
     } while (false);
@@ -420,9 +417,4 @@ void Forward::sendPubackToClient(
 
 }  // namespace session_op
 
-}  // namespace gateway
-
-}  // namespace mqttsn
-
-
-
+}  // namespace cc_mqttsn_gateway

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -291,7 +291,7 @@ std::uint16_t getTopicId(const QCommandLineParser& parser)
     return topicId;
 }
 
-MqttsnQoS getQos(const QCommandLineParser& parser)
+CC_MqttsnQoS getQos(const QCommandLineParser& parser)
 {
     auto value = DefaultQos;
     do {
@@ -308,7 +308,7 @@ MqttsnQoS getQos(const QCommandLineParser& parser)
 
         value = std::max(-1, std::min(2, valueTmp));
     } while (false);
-    return static_cast<MqttsnQoS>(value);
+    return static_cast<CC_MqttsnQoS>(value);
 }
 
 std::vector<std::uint8_t> getMessage(const QCommandLineParser& parser)
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
     unsigned short port = getLocalPort(parser, gwAddr);
     auto keepAlive = getKeepAlive(parser);
 
-    mqttsn::client::app::sub::udp::Pub pub;
+    cc_mqttsn_client::app::sub::udp::Pub pub;
 
     pub.setGwAddr(gwAddr);
     pub.setGwPort(gwPort);

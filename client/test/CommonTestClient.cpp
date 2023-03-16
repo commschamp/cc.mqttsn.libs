@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,36 +16,36 @@ namespace
 ClientLibFuncs createDefaultLibFuncs()
 {
     ClientLibFuncs funcs;
-    funcs.m_newFunc = &mqttsn_client_new;
-    funcs.m_freeFunc = &mqttsn_client_free;
-    funcs.m_nextTickProgramCallbackSetFunc = &mqttsn_client_set_next_tick_program_callback;
-    funcs.m_cancelNextTickCallbackSetFunc = &mqttsn_client_set_cancel_next_tick_wait_callback;
-    funcs.m_sentOutDataCallbackSetFunc = &mqttsn_client_set_send_output_data_callback;
-    funcs.m_gwStatusReportCallbackSetFunc = &mqttsn_client_set_gw_status_report_callback;
-    funcs.m_gwDisconnectReportCallbackSetFunc = &mqttsn_client_set_gw_disconnect_report_callback;
-    funcs.m_msgReportCallbackSetFunc = &mqttsn_client_set_message_report_callback;
-    funcs.m_startFunc = &mqttsn_client_start;
-    funcs.m_processDataFunc = &mqttsn_client_process_data;
-    funcs.m_tickFunc = &mqttsn_client_tick;
-    funcs.m_setRetryPeriodFunc = &mqttsn_client_set_retry_period;
-    funcs.m_setRetryCountFunc = &mqttsn_client_set_retry_count;
-    funcs.m_setBroadcastRadius = &mqttsn_client_set_broadcast_radius;
-    funcs.m_setSearchgwEnabledFunc = &mqttsn_client_set_searchgw_enabled;
-    funcs.m_cancelFunc = &mqttsn_client_cancel;
-    funcs.m_connectFunc = &mqttsn_client_connect;
-    funcs.m_disconnectFunc = &mqttsn_client_disconnect;
-    funcs.m_publishIdFunc = &mqttsn_client_publish_id;
-    funcs.m_publishFunc = &mqttsn_client_publish;
-    funcs.m_subscribeIdFunc = &mqttsn_client_subscribe_id;
-    funcs.m_subscribeFunc = &mqttsn_client_subscribe;
-    funcs.m_unsubscribeIdFunc = &mqttsn_client_unsubscribe_id;
-    funcs.m_unsubscribeFunc = &mqttsn_client_unsubscribe;
-    funcs.m_willUpdateFunc = &mqttsn_client_will_update;
-    funcs.m_willTopicUpdateFunc = &mqttsn_client_will_topic_update;
-    funcs.m_willMsgUpdateFunc = &mqttsn_client_will_msg_update;
-    funcs.m_sleepFunc = &mqttsn_client_sleep;
-    funcs.m_reconnectFunc = &mqttsn_client_reconnect;
-    funcs.m_checkMessagesFunc = &mqttsn_client_check_messages;
+    funcs.m_newFunc = &cc_mqttsn_client_new;
+    funcs.m_freeFunc = &cc_mqttsn_client_free;
+    funcs.m_nextTickProgramCallbackSetFunc = &cc_mqttsn_client_set_next_tick_program_callback;
+    funcs.m_cancelNextTickCallbackSetFunc = &cc_mqttsn_client_set_cancel_next_tick_wait_callback;
+    funcs.m_sentOutDataCallbackSetFunc = &cc_mqttsn_client_set_send_output_data_callback;
+    funcs.m_gwStatusReportCallbackSetFunc = &cc_mqttsn_client_set_gw_status_report_callback;
+    funcs.m_gwDisconnectReportCallbackSetFunc = &cc_mqttsn_client_set_gw_disconnect_report_callback;
+    funcs.m_msgReportCallbackSetFunc = &cc_mqttsn_client_set_message_report_callback;
+    funcs.m_startFunc = &cc_mqttsn_client_start;
+    funcs.m_processDataFunc = &cc_mqttsn_client_process_data;
+    funcs.m_tickFunc = &cc_mqttsn_client_tick;
+    funcs.m_setRetryPeriodFunc = &cc_mqttsn_client_set_retry_period;
+    funcs.m_setRetryCountFunc = &cc_mqttsn_client_set_retry_count;
+    funcs.m_setBroadcastRadius = &cc_mqttsn_client_set_broadcast_radius;
+    funcs.m_setSearchgwEnabledFunc = &cc_mqttsn_client_set_searchgw_enabled;
+    funcs.m_cancelFunc = &cc_mqttsn_client_cancel;
+    funcs.m_connectFunc = &cc_mqttsn_client_connect;
+    funcs.m_disconnectFunc = &cc_mqttsn_client_disconnect;
+    funcs.m_publishIdFunc = &cc_mqttsn_client_publish_id;
+    funcs.m_publishFunc = &cc_mqttsn_client_publish;
+    funcs.m_subscribeIdFunc = &cc_mqttsn_client_subscribe_id;
+    funcs.m_subscribeFunc = &cc_mqttsn_client_subscribe;
+    funcs.m_unsubscribeIdFunc = &cc_mqttsn_client_unsubscribe_id;
+    funcs.m_unsubscribeFunc = &cc_mqttsn_client_unsubscribe;
+    funcs.m_willUpdateFunc = &cc_mqttsn_client_will_update;
+    funcs.m_willTopicUpdateFunc = &cc_mqttsn_client_will_topic_update;
+    funcs.m_willMsgUpdateFunc = &cc_mqttsn_client_will_msg_update;
+    funcs.m_sleepFunc = &cc_mqttsn_client_sleep;
+    funcs.m_reconnectFunc = &cc_mqttsn_client_reconnect;
+    funcs.m_checkMessagesFunc = &cc_mqttsn_client_check_messages;
     return funcs;
 }
 
@@ -199,7 +199,7 @@ CommonTestClient::Ptr CommonTestClient::alloc(const ClientLibFuncs& libFuncs)
     return Ptr(new CommonTestClient(libFuncs));
 }
 
-MqttsnErrorCode CommonTestClient::start()
+CC_MqttsnErrorCode CommonTestClient::start()
 {
     assert(m_libFuncs.m_startFunc != nullptr);
     return (m_libFuncs.m_startFunc)(m_client);
@@ -249,11 +249,11 @@ void CommonTestClient::setSearchgwEnabled(bool value)
     (m_libFuncs.m_setSearchgwEnabledFunc)(m_client, value);
 }
 
-MqttsnErrorCode CommonTestClient::connect(
+CC_MqttsnErrorCode CommonTestClient::connect(
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
-    const MqttsnWillInfo* willInfo)
+    const CC_MqttsnWillInfo* willInfo)
 {
     assert(m_libFuncs.m_connectFunc != nullptr);
 
@@ -274,7 +274,7 @@ bool CommonTestClient::cancel()
     return (m_libFuncs.m_cancelFunc)(m_client);
 }
 
-MqttsnErrorCode CommonTestClient::disconnect()
+CC_MqttsnErrorCode CommonTestClient::disconnect()
 {
     assert(m_libFuncs.m_disconnectFunc != nullptr);
     return (m_libFuncs.m_disconnectFunc)(
@@ -283,11 +283,11 @@ MqttsnErrorCode CommonTestClient::disconnect()
         this);
 }
 
-MqttsnErrorCode CommonTestClient::publishId(
-    MqttsnTopicId topicId,
+CC_MqttsnErrorCode CommonTestClient::publishId(
+    CC_MqttsnTopicId topicId,
     const std::uint8_t* msg,
     std::size_t msgLen,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain)
 {
     assert(m_libFuncs.m_publishIdFunc != nullptr);
@@ -302,11 +302,11 @@ MqttsnErrorCode CommonTestClient::publishId(
         this);
 }
 
-MqttsnErrorCode CommonTestClient::publish(
+CC_MqttsnErrorCode CommonTestClient::publish(
     const std::string& topic,
     const std::uint8_t* msg,
     std::size_t msgLen,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain)
 {
     assert(m_libFuncs.m_publishFunc != nullptr);
@@ -321,9 +321,9 @@ MqttsnErrorCode CommonTestClient::publish(
         this);
 }
 
-MqttsnErrorCode CommonTestClient::subscribe(
+CC_MqttsnErrorCode CommonTestClient::subscribe(
     const std::string& topic,
-    MqttsnQoS qos)
+    CC_MqttsnQoS qos)
 {
     assert(m_libFuncs.m_subscribeFunc != nullptr);
     return (m_libFuncs.m_subscribeFunc)(
@@ -334,9 +334,9 @@ MqttsnErrorCode CommonTestClient::subscribe(
         this);
 }
 
-MqttsnErrorCode CommonTestClient::subscribe(
-    MqttsnTopicId topicId,
-    MqttsnQoS qos)
+CC_MqttsnErrorCode CommonTestClient::subscribe(
+    CC_MqttsnTopicId topicId,
+    CC_MqttsnQoS qos)
 {
     assert(m_libFuncs.m_subscribeIdFunc != nullptr);
     return (m_libFuncs.m_subscribeIdFunc)(
@@ -347,7 +347,7 @@ MqttsnErrorCode CommonTestClient::subscribe(
         this);
 }
 
-MqttsnErrorCode CommonTestClient::unsubscribe(const std::string& topic)
+CC_MqttsnErrorCode CommonTestClient::unsubscribe(const std::string& topic)
 {
     assert(m_libFuncs.m_unsubscribeFunc != nullptr);
     return (m_libFuncs.m_unsubscribeFunc)(
@@ -357,7 +357,7 @@ MqttsnErrorCode CommonTestClient::unsubscribe(const std::string& topic)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::unsubscribe(MqttsnTopicId topicId)
+CC_MqttsnErrorCode CommonTestClient::unsubscribe(CC_MqttsnTopicId topicId)
 {
     assert(m_libFuncs.m_unsubscribeIdFunc != nullptr);
     return (m_libFuncs.m_unsubscribeIdFunc)(
@@ -367,8 +367,8 @@ MqttsnErrorCode CommonTestClient::unsubscribe(MqttsnTopicId topicId)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::willUpdate(
-    const MqttsnWillInfo* willInfo)
+CC_MqttsnErrorCode CommonTestClient::willUpdate(
+    const CC_MqttsnWillInfo* willInfo)
 {
     assert(m_libFuncs.m_willUpdateFunc != nullptr);
     return (m_libFuncs.m_willUpdateFunc)(
@@ -378,9 +378,9 @@ MqttsnErrorCode CommonTestClient::willUpdate(
         this);
 }
 
-MqttsnErrorCode CommonTestClient::willTopicUpdate(
+CC_MqttsnErrorCode CommonTestClient::willTopicUpdate(
     const std::string& topic,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain)
 {
     assert(m_libFuncs.m_willTopicUpdateFunc != nullptr);
@@ -393,7 +393,7 @@ MqttsnErrorCode CommonTestClient::willTopicUpdate(
         this);
 }
 
-MqttsnErrorCode CommonTestClient::willMsgUpdate(
+CC_MqttsnErrorCode CommonTestClient::willMsgUpdate(
     const std::uint8_t* msg,
     std::size_t msgLen)
 {
@@ -406,7 +406,7 @@ MqttsnErrorCode CommonTestClient::willMsgUpdate(
         this);
 }
 
-MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
+CC_MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
 {
     assert(m_libFuncs.m_sleepFunc != nullptr);
     return (m_libFuncs.m_sleepFunc)(
@@ -416,7 +416,7 @@ MqttsnErrorCode CommonTestClient::sleep(std::uint16_t duration)
         this);
 }
 
-MqttsnErrorCode CommonTestClient::reconnect()
+CC_MqttsnErrorCode CommonTestClient::reconnect()
 {
     assert(m_libFuncs.m_reconnectFunc != nullptr);
     return (m_libFuncs.m_reconnectFunc)(
@@ -425,7 +425,7 @@ MqttsnErrorCode CommonTestClient::reconnect()
         this);
 }
 
-MqttsnErrorCode CommonTestClient::checkMessages()
+CC_MqttsnErrorCode CommonTestClient::checkMessages()
 {
     assert(m_libFuncs.m_checkMessagesFunc != nullptr);
     return (m_libFuncs.m_checkMessagesFunc)(
@@ -434,35 +434,35 @@ MqttsnErrorCode CommonTestClient::checkMessages()
         this);
 }
 
-MqttsnQoS CommonTestClient::transformQos(mqttsn::field::QosVal val)
+CC_MqttsnQoS CommonTestClient::transformQos(cc_mqttsn::field::QosVal val)
 {
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::AtMostOnceDelivery) == MqttsnQoS_AtMostOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtMostOnceDelivery) == CC_MqttsnQoS_AtMostOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::AtLeastOnceDelivery) == MqttsnQoS_AtLeastOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::AtLeastOnceDelivery) == CC_MqttsnQoS_AtLeastOnceDelivery,
         "Invalid mapping");
 
     static_assert(
-        static_cast<int>(mqttsn::field::QosVal::ExactlyOnceDelivery) == MqttsnQoS_ExactlyOnceDelivery,
+        static_cast<int>(cc_mqttsn::field::QosVal::ExactlyOnceDelivery) == CC_MqttsnQoS_ExactlyOnceDelivery,
         "Invalid mapping");
 
-    if (val == mqttsn::field::QosVal::NoGwPublish) {
-        return MqttsnQoS_NoGwPublish;
+    if (val == cc_mqttsn::field::QosVal::NoGwPublish) {
+        return CC_MqttsnQoS_NoGwPublish;
     }
 
-    return static_cast<MqttsnQoS>(val);
+    return static_cast<CC_MqttsnQoS>(val);
 }
 
-mqttsn::field::QosVal CommonTestClient::transformQos(MqttsnQoS val)
+cc_mqttsn::field::QosVal CommonTestClient::transformQos(CC_MqttsnQoS val)
 {
 
-    if (val == MqttsnQoS_NoGwPublish) {
-        return mqttsn::field::QosVal::NoGwPublish;
+    if (val == CC_MqttsnQoS_NoGwPublish) {
+        return cc_mqttsn::field::QosVal::NoGwPublish;
     }
 
-    return static_cast<mqttsn::field::QosVal>(val);
+    return static_cast<cc_mqttsn::field::QosVal>(val);
 }
 
 CommonTestClient::CommonTestClient(const ClientLibFuncs& libFuncs)
@@ -514,7 +514,7 @@ void CommonTestClient::sendOutputData(const unsigned char* buf, unsigned bufLen,
     }
 }
 
-void CommonTestClient::reportGwStatus(unsigned short gwId, MqttsnGwStatus status)
+void CommonTestClient::reportGwStatus(unsigned short gwId, CC_MqttsnGwStatus status)
 {
     if (m_gwStatusReportCallback) {
         GwStatusReportCallback tmp(m_gwStatusReportCallback);
@@ -530,7 +530,7 @@ void CommonTestClient::reportGwDisconnect()
     }
 }
 
-void CommonTestClient::reportMessage(const MqttsnMessageInfo* msgInfo)
+void CommonTestClient::reportMessage(const CC_MqttsnMessageInfo* msgInfo)
 {
     if (m_msgReportCallback) {
         assert(msgInfo != nullptr);
@@ -539,7 +539,7 @@ void CommonTestClient::reportMessage(const MqttsnMessageInfo* msgInfo)
     }
 }
 
-void CommonTestClient::reportConnectComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportConnectComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_connectCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_connectCompleteCallback);
@@ -547,7 +547,7 @@ void CommonTestClient::reportConnectComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportDisconnectComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportDisconnectComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_disconnectCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_disconnectCompleteCallback);
@@ -555,7 +555,7 @@ void CommonTestClient::reportDisconnectComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportPublishComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportPublishComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_publishCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_publishCompleteCallback);
@@ -563,7 +563,7 @@ void CommonTestClient::reportPublishComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportSubsribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos)
+void CommonTestClient::reportSubsribeComplete(CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos)
 {
     if (m_subscribeCompleteCallback) {
         SubscribeCompleteCallback tmp(m_subscribeCompleteCallback);
@@ -571,7 +571,7 @@ void CommonTestClient::reportSubsribeComplete(MqttsnAsyncOpStatus status, Mqttsn
     }
 }
 
-void CommonTestClient::reportUnsubsribeComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportUnsubsribeComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_unsubscribeCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_unsubscribeCompleteCallback);
@@ -579,7 +579,7 @@ void CommonTestClient::reportUnsubsribeComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportWillUpdateComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportWillUpdateComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_willUpdateCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_willUpdateCompleteCallback);
@@ -587,7 +587,7 @@ void CommonTestClient::reportWillUpdateComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportWillTopicUpdateComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_willTopicUpdateCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_willTopicUpdateCompleteCallback);
@@ -595,7 +595,7 @@ void CommonTestClient::reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportWillMsgUpdateComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_willMsgUpdateCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_willMsgUpdateCompleteCallback);
@@ -603,7 +603,7 @@ void CommonTestClient::reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportSleepComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_sleepCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_sleepCompleteCallback);
@@ -611,7 +611,7 @@ void CommonTestClient::reportSleepComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportReconnectComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportReconnectComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_reconnectCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_reconnectCompleteCallback);
@@ -619,7 +619,7 @@ void CommonTestClient::reportReconnectComplete(MqttsnAsyncOpStatus status)
     }
 }
 
-void CommonTestClient::reportCheckMessagesComplete(MqttsnAsyncOpStatus status)
+void CommonTestClient::reportCheckMessagesComplete(CC_MqttsnAsyncOpStatus status)
 {
     if (m_checkMessagesCompleteCallback) {
         AsyncOpCompleteCallback tmp(m_checkMessagesCompleteCallback);
@@ -652,7 +652,7 @@ void CommonTestClient::sendOutputDataCallback(
 void CommonTestClient::gwStatusReportCallback(
     void* data,
     unsigned char gwId,
-    MqttsnGwStatus status)
+    CC_MqttsnGwStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportGwStatus(gwId, status);
@@ -664,73 +664,73 @@ void CommonTestClient::gwDisconnectReportCallback(void* data)
     reinterpret_cast<CommonTestClient*>(data)->reportGwDisconnect();
 }
 
-void CommonTestClient::msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo)
+void CommonTestClient::msgReportCallback(void* data, const CC_MqttsnMessageInfo* msgInfo)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportMessage(msgInfo);
 }
 
-void CommonTestClient::publishCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::publishCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportPublishComplete(status);
 }
 
-void CommonTestClient::connectCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::connectCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportConnectComplete(status);
 }
 
-void CommonTestClient::disconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::disconnectCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportDisconnectComplete(status);
 }
 
-void CommonTestClient::subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos)
+void CommonTestClient::subsribeCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportSubsribeComplete(status, qos);
 }
 
-void CommonTestClient::unsubsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::unsubsribeCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportUnsubsribeComplete(status);
 }
 
-void CommonTestClient::willUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::willUpdateCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportWillUpdateComplete(status);
 }
 
-void CommonTestClient::willTopicUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::willTopicUpdateCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportWillTopicUpdateComplete(status);
 }
 
-void CommonTestClient::willMsgUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::willMsgUpdateCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportWillMsgUpdateComplete(status);
 }
 
-void CommonTestClient::sleepCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::sleepCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportSleepComplete(status);
 }
 
-void CommonTestClient::reconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::reconnectCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportReconnectComplete(status);
 }
 
-void CommonTestClient::checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status)
+void CommonTestClient::checkMessagesCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status)
 {
     assert(data != nullptr);
     reinterpret_cast<CommonTestClient*>(data)->reportCheckMessagesComplete(status);

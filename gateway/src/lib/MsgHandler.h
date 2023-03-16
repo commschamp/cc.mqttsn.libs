@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,22 +10,19 @@
 #include "comms/comms.h"
 #include "messages.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 template<typename TMsgBase>
 using MqttsnMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqttsn::gateway::InputMqttsnMessages<TMsgBase>
+    cc_mqttsn_gateway::InputMqttsnMessages<TMsgBase>
 >;
 
 template<typename TMsgBase>
 using MqttMsgHandler = comms::GenericHandler<
     TMsgBase,
-    mqttsn::gateway::InputMqtt311Messages<TMsgBase>
+    cc_mqttsn_gateway::InputMqtt311Messages<TMsgBase>
 >;
 
 class MsgHandler : public MqttsnMsgHandler<MqttsnMessage>, public MqttMsgHandler<MqttMessage>
@@ -40,9 +37,4 @@ public:
     virtual ~MsgHandler() = default;
 };
 
-
-}  // namespace gateway
-
-}  // namespace mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

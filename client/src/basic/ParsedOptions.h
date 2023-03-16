@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,17 +9,12 @@
 
 #pragma once
 
-namespace mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 template <typename... TOptions>
 using ParsedOptions = details::OptionsParser<TOptions...>;
 
-}  // namespace client
-
-}  // namespace mqttsn
+}  // namespace cc_mqttsn_client
 
 

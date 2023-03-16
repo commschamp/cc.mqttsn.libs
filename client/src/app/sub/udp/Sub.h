@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,10 +20,7 @@
 
 #include "client.h"
 
-namespace mqttsn
-{
-
-namespace client
+namespace cc_mqttsn_client
 {
 
 namespace app
@@ -40,6 +37,7 @@ class Sub : public QObject
     Q_OBJECT
 public:
     Sub();
+    ~Sub();
 
     void setGwAddr(const QString& value)
     {
@@ -88,7 +86,7 @@ public:
         m_topicIds = topicIds;
     }
 
-    void setQos(MqttsnQoS value)
+    void setQos(CC_MqttsnQoS value)
     {
         m_qos = value;
     }
@@ -116,19 +114,6 @@ private slots:
     void socketErrorOccurred(QAbstractSocket::SocketError err);
 
 private:
-    struct ClientDeleter
-    {
-        void operator()(MqttsnClientHandle client)
-        {
-            mqttsn_client_free(client);
-        }
-    };
-
-    typedef std::unique_ptr<
-        typename std::remove_pointer<MqttsnClientHandle>::type,
-        ClientDeleter
-    > ClientPtr;
-
     void nextTickProgram(unsigned ms);
     static void nextTickProgramCb(void* obj, unsigned ms);
 
@@ -138,28 +123,28 @@ private:
     void sendData(const unsigned char* buf, unsigned bufLen, bool broadcast);
     static void sendDataCb(void* obj, const unsigned char* buf, unsigned bufLen, bool broadcast);
 
-    void gwStatusReport(unsigned short gwId, MqttsnGwStatus status);
-    static void gwStatusReportCb(void* obj, unsigned char gwId, MqttsnGwStatus status);
+    void gwStatusReport(unsigned short gwId, CC_MqttsnGwStatus status);
+    static void gwStatusReportCb(void* obj, unsigned char gwId, CC_MqttsnGwStatus status);
 
     void gwDisconnectReport();
     static void gwDisconnectReportCb(void* obj);
 
-    void messageReport(const MqttsnMessageInfo* msgInfo);
-    static void messageReportCb(void* obj, const MqttsnMessageInfo* msgInfo);
+    void messageReport(const CC_MqttsnMessageInfo* msgInfo);
+    static void messageReportCb(void* obj, const CC_MqttsnMessageInfo* msgInfo);
 
     void doConnect(bool reconnecting = false);
     void doSubscribe();
-    void connectComplete(MqttsnAsyncOpStatus status);
-    static void connectCompleteCb(void* obj, MqttsnAsyncOpStatus status);
-    void subscribeComplete(MqttsnAsyncOpStatus status);
-    static void subscribeCompleteCb(void* obj, MqttsnAsyncOpStatus status, MqttsnQoS qos);
+    void connectComplete(CC_MqttsnAsyncOpStatus status);
+    static void connectCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status);
+    void subscribeComplete(CC_MqttsnAsyncOpStatus status);
+    static void subscribeCompleteCb(void* obj, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
     bool bindLocalPort();
     bool openSocket();
     bool connectToGw();
     void broadcastData(const unsigned char* buf, unsigned bufLen);
     void sendDataConnected(const unsigned char* buf, unsigned bufLen);
 
-    ClientPtr m_client;
+    CC_MqttsnClientHandle m_client;
     QTimer m_timer;
     unsigned m_reqTimeout = 0;
     QString m_gwAddr;
@@ -177,7 +162,7 @@ private:
     bool m_hexOutput = false;
     TopicsList m_topics;
     TopicIdsList m_topicIds;
-    MqttsnQoS m_qos = MqttsnQoS_ExactlyOnceDelivery;
+    CC_MqttsnQoS m_qos = CC_MqttsnQoS_ExactlyOnceDelivery;
 };
 
 }  // namespace udp
@@ -186,8 +171,6 @@ private:
 
 }  // namespace app
 
-}  // namespace client
-
-}  // namespace mqttsn
+}  // namespace cc_mqttsn_client
 
 

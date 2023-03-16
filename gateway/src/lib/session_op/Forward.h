@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,10 +14,7 @@
 #include "SessionOp.h"
 #include "common.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 namespace session_op
@@ -68,8 +65,8 @@ private:
 
     typedef std::list<NoGwPubInfo> NoGwPubInfosList;
 
-    using ReturnCodeVal = mqttsn::field::ReturnCodeVal;
-    using TopicIdTypeVal = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
+    using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
+    using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
     void sendPubackToClient(
         std::uint16_t topicId,
         std::uint16_t msgId,
@@ -84,8 +81,4 @@ private:
 
 }  // namespace session_op
 
-}  // namespace gateway
-
-}  // namespace mqttsn
-
-
+}  // namespace cc_mqttsn_gateway

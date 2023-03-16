@@ -1,12 +1,12 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 /// @file
-/// @brief Contains interface of mqttsn::gateway::Gateway class.
+/// @brief Contains interface of cc_mqttsn_gateway::Gateway class.
 
 #pragma once
 
@@ -14,10 +14,7 @@
 #include <cstdint>
 #include <functional>
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 class GatewayImpl;
@@ -104,8 +101,6 @@ private:
     std::unique_ptr<GatewayImpl> m_pImpl;
 };
 
-}  // namespace gateway
-
-}  // namespace mqttsn
+}  // namespace cc_mqttsn_gateway
 
 

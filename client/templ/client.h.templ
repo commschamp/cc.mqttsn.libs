@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,170 +10,170 @@
 
 #pragma once
 
-#include "mqttsn/client/common.h"
+#include "cc_mqttsn_client/common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif // #ifdef __cplusplus
 
 /// @brief Allocate new client.
-/// @details When work with the client is complete, mqttsn_client_free()
-///     function, must be invoked.
+/// @details When work with the client is complete, @ref cc_mqttsn_##NAME##client_free()
+///     function must be invoked.
 /// @return Handle to allocated client object. This handle needs to be passed
 ///     as first parameter to all other API functions.
-MqttsnClientHandle mqttsn_##NAME##client_new();
+CC_MqttsnClientHandle cc_mqttsn_##NAME##client_new();
 
 /// @brief Free previously allocated client.
 /// @details When used communication channel to the gateway is no longer
 ///     needed, the client data structes allocated with 
-///     mqttsn_##NAME##client_new() must be released using this function.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
-void mqttsn_##NAME##client_free(MqttsnClientHandle client);
+///     cc_mqttsn_##NAME##client_new() must be released using this function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client);
 
 /// @brief Set callback to call when time measurement is required.
 /// @details The MQTT-SN client may require to measure time. When such 
 ///     measurement is required, the provided callback will be invoked with
 ///     the timeout duration in milliseconds. After requested time expires,
-///     the mqttsn_##NAME##client_tick() function must be invoked.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+///     the @ref cc_mqttsn_##NAME##client_tick() function must be invoked.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
-void mqttsn_##NAME##client_set_next_tick_program_callback(
-    MqttsnClientHandle client,
-    MqttsnNextTickProgramFn fn,
+void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnNextTickProgramFn fn,
     void* data);
     
 /// @brief Set callback to terminate current time measurement.
 /// @details The client may request termination of currently running time 
 ///     measurement, previously requested via callback, which was set using
-///     mqttsn_##NAME##client_set_next_tick_program_callback() function. This function
+///     @ref cc_mqttsn_##NAME##client_set_next_tick_program_callback() function. This function
 ///     sets appropriate callback. When invoked, it must returne number of
 ///     elapsed milliseconds since previoius time measurement request.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
-void mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
-    MqttsnClientHandle client,
-    MqttsnCancelNextTickWaitFn fn,
+void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnCancelNextTickWaitFn fn,
     void* data);
     
 /// @brief Set callback to send raw data over I/O link.
 /// @details The callback is invoked when there is a need to send data
 ///     to the gateway. The callback is invoked for every single message
 ///     that need to be sent as a single datagram. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
-void mqttsn_##NAME##client_set_send_output_data_callback(
-    MqttsnClientHandle client,
-    MqttsnSendOutputDataFn fn,
+void cc_mqttsn_##NAME##client_set_send_output_data_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnSendOutputDataFn fn,
     void* data);
     
 /// @brief Set callback to report status of the gateway.
 /// @details The callback is invoked when gateway status has changed.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
-void mqttsn_##NAME##client_set_gw_status_report_callback(
-    MqttsnClientHandle client,
-    MqttsnGwStatusReportFn fn,
+void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwStatusReportFn fn,
     void* data);
 
 /// @brief Set callback to report unsolicited disconnection of the gateway.
 /// @details The callback will be invoked when gateway sends unsolicited 
 ///     @b DISCONNECT message or does not reply to @b PINGREQ message.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
-void mqttsn_##NAME##client_set_gw_disconnect_report_callback(
-    MqttsnClientHandle client,
-    MqttsnGwDisconnectReportFn fn,
+void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwDisconnectReportFn fn,
     void* data);
 
 /// @brief Set callback to report incoming messages.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] fn Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
-void mqttsn_##NAME##client_set_message_report_callback(
-    MqttsnClientHandle client,
-    MqttsnMessageReportFn fn,
+void cc_mqttsn_##NAME##client_set_message_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnMessageReportFn fn,
     void* data);
     
 /// @brief Start the library's operation.
 /// @details The function will check whether all necessary callback functions
-///     were set. In not @ref MqttsnErrorCode_BadParam will be returned.
+///     were set. In not @ref CC_MqttsnErrorCode_BadParam will be returned.
 ///     If search for gateways is enabled (see description of 
-///     mqttsn_##NAME##client_set_searchgw_enabled()), the library may
+///     cc_mqttsn_##NAME##client_set_searchgw_enabled()), the library may
 ///     send @b SEARCHGW message by invoking the callback, set by
-///     mqttsn_##NAME##client_set_send_output_data_callback().
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+///     cc_mqttsn_##NAME##client_set_send_output_data_callback().
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_start(MqttsnClientHandle client);
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_start(CC_MqttsnClientHandle client);
 
 /// @brief Stop the library's operation.
-/// @details The operation may be resumed using mqttsn_##NAME##client_start(). 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @details The operation may be resumed using cc_mqttsn_##NAME##client_start(). 
+/// @param[in] client Handle returned by cc_mqttsn_##NAME##client_new() function.
 /// @return Error code indicating success/failure status of the operation
-MqttsnErrorCode mqttsn_##NAME##client_stop(MqttsnClientHandle client);
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_stop(CC_MqttsnClientHandle client);
 
 /// @brief Provide data, received over I/O link, to the library for processing.
 /// @details This call may cause invocation of some callbacks, such as 
 ///     request to cancel the currently running time measurement, send some messages to
 ///     the gateway, report incoming application message, and (re)start time
 ///     measurement.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] buf Pointer to the buffer of data to process.
 /// @param[in] bufLen Number of bytes in the data buffer.
 /// @return Number of processed bytes.
 /// @note The function returns number of bytes that were actually consumed, and
 ///     can be removed from the holding buffer.
-unsigned mqttsn_##NAME##client_process_data(MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen);
+unsigned cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen);
 
 /// @brief Notify client about requested time expiry.
 /// @details The reported amount of milliseconds needs to be from the 
 ///     last request to program timer via callback (set by
-///     mqttsn_##NAME##client_set_next_tick_program_callback()).
+///     cc_mqttsn_##NAME##client_set_next_tick_program_callback()).
 ///     It can be less than actually requested via the callback. If this
 ///     function is called, the library assumes that previously requested
 ///     timeout measurement is not in progress any more, and will request
 ///     new measurement if needed.
 ///     This call may cause invocation of some other callbacks, such as a request
 ///     to send new data to the gateway.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] ms Number of elapsed @b milliseconds.
-void mqttsn_##NAME##client_tick(MqttsnClientHandle client);
+void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client);
 
 /// @brief Set retry period to wait between resending unacknowledged message to the gateway.
 /// @details Some messages, sent to the gateway, may require acknowledgement by 
 ///     the latter. The delay (in seconds) between such attempts to resend the
 ///     message may be specified using this function. The default value is
 ///     @b 15 seconds.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] value Number of @b seconds to wait before making an attempt to resend.
-void mqttsn_##NAME##client_set_retry_period(MqttsnClientHandle client, unsigned value);
+void cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Set number of retry attempts to perform before reporting unsuccessful result of the operation.
 /// @details Some messages, sent to the gateway, may require acknowledgement by 
 ///     the latter. The amount of retry attempts before reporting unsuccessful result
 ///     of the operation may be specified using this function. The default value
 ///     is @b 3.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] value Number of retry attempts.
-void mqttsn_##NAME##client_set_retry_count(MqttsnClientHandle client, unsigned value);
+void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Set broadcast radius.
 /// @details When searching for gateways, the client library broadcasts @b SEARCHGW
 ///     messages. It contains the broadcast radius value. This value can be
 ///     set using this function. Default radius value is 0.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] value Broadcast radius.
-void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsigned char value);
+void cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned char value);
 
 /// @brief Enable/Disable search for gateways.
 /// @details According to @b MQTT-SN protocol specification the client may 
@@ -182,36 +182,36 @@ void mqttsn_##NAME##client_set_broadcast_radius(MqttsnClientHandle client, unsig
 ///     be no need to send these messages. To enable/disable search for available
 ///     gateways can be done using this function. By default the search for
 ///     the gateway is @b enabled.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] value @b true to enable, and @false to disable.
-void mqttsn_##NAME##client_set_searchgw_enabled(MqttsnClientHandle client, bool value);
+void cc_mqttsn_##NAME##client_set_searchgw_enabled(CC_MqttsnClientHandle client, bool value);
 
 /// @brief Send @b SEARCHGW message.
 /// @details This function performs one send of @b SEARCHGW message regardless
 ///     of whether the search for gateways is enabled or disabled. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
-void mqttsn_##NAME##client_search_gw(MqttsnClientHandle client);
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+void cc_mqttsn_##NAME##client_search_gw(CC_MqttsnClientHandle client);
 
 /// @brief Discard information about the gateway.
 /// @details The client library maintains the list of gateways that either
 ///     advertised their presence or replied to previously sent @b SEARCHGW
 ///     messages. This function causes information about specified gateway
 ///     to be dropped. If such information exists, the callback, set
-///     using mqttsn_##NAME##client_set_gw_status_report_callback() function,
-///     will be invoked reporting @ref MqttsnGwStatus_Discarded as status value.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+///     using @ref cc_mqttsn_##NAME##client_set_gw_status_report_callback() function,
+///     will be invoked reporting @ref CC_MqttsnGwStatus_Discarded as status value.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] gwId ID of the gateway.
-void mqttsn_##NAME##client_discard_gw(MqttsnClientHandle client, unsigned char gwId);
+void cc_mqttsn_##NAME##client_discard_gw(CC_MqttsnClientHandle client, unsigned char gwId);
 
 /// @brief Discard information about all gateways.
 /// @details The client library maintains the list of gateways that either
 ///     advertised their presence or replied to previously sent @b SEARCHGW
 ///     messages. This function causes the callback, set
-///     using mqttsn_##NAME##client_set_gw_status_report_callback() function,
-///     to be invoked reporting @ref MqttsnGwStatus_Discarded as status value for
+///     using @ref cc_mqttsn_##NAME##client_set_gw_status_report_callback() function,
+///     to be invoked reporting @ref CC_MqttsnGwStatus_Discarded as status value for
 ///     all the recorded gateways.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
-void mqttsn_##NAME##client_discard_all_gw(MqttsnClientHandle client);
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+void cc_mqttsn_##NAME##client_discard_all_gw(CC_MqttsnClientHandle client);
 
 /// @brief Cancel current asynchronous operation.
 /// @details The library provides support for multiple asynchronous operations,
@@ -219,33 +219,33 @@ void mqttsn_##NAME##client_discard_all_gw(MqttsnClientHandle client);
 ///     doesn't support start of the new operation before previous one completed.
 ///     This function provides an ability to cancel existing operation to allow
 ///     issue of the new request. When successfully cancelled the callback of 
-///     the asyncrhonous operation will report @ref MqttsnAsyncOpStatus_Aborted
+///     the asyncrhonous operation will report @ref CC_MqttsnAsyncOpStatus_Aborted
 ///     as operation result status. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @return true in case an asynchronous operation was cancelled,
 ///     false otherwise.
-bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
+bool cc_mqttsn_##NAME##client_cancel(CC_MqttsnClientHandle client);
 
 /// @brief Issue the connect request to the gateway.
 /// @details This function needs to be called to connect to the gateway. 
 ///     When the  operation is complete, the provided callback
 ///     will be invoked. Note, that the function cannot be successfully called when
 ///     client is already connected to the gateway. In order to change the
-///     will information use mqttsn_##NAME##client_will_update() function.
-///     If some other operation timed out, use mqttsn_##NAME##client_reconnect()
+///     will information use @ref cc_mqttsn_##NAME##client_will_update() function.
+///     If some other operation timed out, use @ref cc_mqttsn_##NAME##client_reconnect()
 ///     to refresh the connection.
 ///     In order to change client ID and/or "keep alive" value disconnect
-///     first (using mqttsn_##NAME##client_disconnect()) and then try to 
+///     first (using @ref cc_mqttsn_##NAME##client_disconnect()) and then try to 
 ///     connect again. 
 ///
 ///     @b IMPORTANT : The buffers containing client ID string, as well as
 ///     will topic and message (if such exist) must be preserved intact
 ///     until the connect operation is complete (provided
-///     callback is invoked). The @b MqttsnWillInfo structure passed as
+///     callback is invoked). The @b CC_MqttsnWillInfo structure passed as
 ///     @b willInfo parameter may reside on the stack and be destructed 
 ///     immediately after this function returns, but the buffers its data
 ///     members point to must be preserved. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] clientId Client ID string.
 /// @param[in] keepAliveSeconds Maximum number of seconds allowed between the 
 ///     messages sent to the gateway. If no publish is performed during this
@@ -258,31 +258,31 @@ bool mqttsn_##NAME##client_cancel(MqttsnClientHandle client);
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_connect(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
+    CC_MqttsnClientHandle client,
     const char* clientId,
     unsigned short keepAliveSeconds,
     bool cleanSession,
-    const MqttsnWillInfo* willInfo,
-    MqttsnAsyncOpCompleteReportFn callback,
+    const CC_MqttsnWillInfo* willInfo,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data);
     
 /// @brief Reconnect to the gateway using previously used client ID and keep alive
 ///     period.
 /// @details The invocation will work only when in "connected" or "asleep" state,
-///     It will not work after invocation of mqttsn_##NAME##client_disconnect(). 
+///     It will not work after invocation of @ref cc_mqttsn_##NAME##client_disconnect(). 
 ///     When the operation is complete, the provided callback
 ///     will be invoked. If successful completion is reported, the client
 ///     is properly connected to the gateway again.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_reconnect(
-    MqttsnClientHandle client,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_reconnect(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
@@ -291,11 +291,11 @@ MqttsnErrorCode mqttsn_##NAME##client_reconnect(
 ///     will be invoked. Regardless of the reported disconnect result,
 ///     the library assumes "disconnected" internal state and some functions,
 ///     such as requests to publish and/or subscribe may not work.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_disconnect(
-    MqttsnClientHandle client,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data);
 
 /// @brief Publish message with predefined topic ID.
@@ -306,7 +306,7 @@ MqttsnErrorCode mqttsn_##NAME##client_disconnect(
 ///
 ///     @b IMPORTANT : The buffer containing message data must be preserved
 ///     intact until the end of the operation (provided callback is invoked).
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topicId Predefined topic ID.
 /// @param[in] msg Pointer to buffer containing data to be published.
 /// @param[in] msgLen Size of the buffer containing data to be published.
@@ -319,14 +319,14 @@ MqttsnErrorCode mqttsn_##NAME##client_disconnect(
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_publish_id(
-    MqttsnClientHandle client,
-    MqttsnTopicId topicId,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_id(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnTopicId topicId,
     const unsigned char* msg,
     unsigned msgLen,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
@@ -338,7 +338,7 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
 ///
 ///     @b IMPORTANT : The buffer containing message data must be preserved
 ///     intact until the end of the operation (provided callback is invoked).
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topic Topic string.
 /// @param[in] msg Pointer to buffer containing data to be published.
 /// @param[in] msgLen Size of the buffer containing data to be published.
@@ -349,21 +349,21 @@ MqttsnErrorCode mqttsn_##NAME##client_publish_id(
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_publish(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
+    CC_MqttsnClientHandle client,
     const char* topic,
     const unsigned char* msg,
     unsigned msgLen,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
 /// @brief Subscribe to topic having predefined topic ID.
 /// @details When subscribe operation is complete, the provided callback
 ///     will be invoked. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topicId Predefined topic ID.
 /// @param[in] qos Maximum level of quality of service the messages are sent to this client.
 /// @param[in] callback Callback to be invoked when operation is complete,
@@ -371,11 +371,11 @@ MqttsnErrorCode mqttsn_##NAME##client_publish(
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
-    MqttsnClientHandle client,
-    MqttsnTopicId topicId,
-    MqttsnQoS qos,
-    MqttsnSubscribeCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_id(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnTopicId topicId,
+    CC_MqttsnQoS qos,
+    CC_MqttsnSubscribeCompleteReportFn callback,
     void* data
 );
 
@@ -385,7 +385,7 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
 ///
 ///     @b IMPORTANT : The buffer containing topic string must be preserved
 ///     intact until the end of the operation (provided callback is invoked).
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topic Topic string.
 /// @param[in] qos Maximum level of quality of service the messages are sent to this client.
 /// @param[in] callback Callback to be invoked when operation is complete,
@@ -393,54 +393,54 @@ MqttsnErrorCode mqttsn_##NAME##client_subscribe_id(
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_subscribe(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
+    CC_MqttsnClientHandle client,
     const char* topic,
-    MqttsnQoS qos,
-    MqttsnSubscribeCompleteReportFn callback,
+    CC_MqttsnQoS qos,
+    CC_MqttsnSubscribeCompleteReportFn callback,
     void* data
 );
 
 /// @brief Unsubscribe from messages having predefined topic ID.
 /// @details When unsubscribe operation is complete, the provided callback
 ///     will be invoked. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topicId Predefined topic ID.
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_unsubscribe_id(
-    MqttsnClientHandle client,
-    MqttsnTopicId topicId,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_id(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnTopicId topicId,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
 /// @brief Unsubscribe from messages having specified topic.
 /// @details When unsubscribe operation is complete, the provided callback
 ///     will be invoked. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topic Topic string.
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
+    CC_MqttsnClientHandle client,
     const char* topic,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
 /// @brief Update will recorded with the gateway/broker.
 /// @details When the operation is complete, the provided callback
 ///     will be invoked. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] willInfo New will full information. The parameter can be NULL
-///     or the @b topic data member of the @ref MqttsnWillInfo struct may be
+///     or the @b topic data member of the @ref CC_MqttsnWillInfo struct may be
 ///     null. In this case the request means erase current will information
 ///     recorded with the gateway/broker.
 /// @param[in] callback Callback to be invoked when operation is complete,
@@ -448,17 +448,17 @@ MqttsnErrorCode mqttsn_##NAME##client_unsubscribe(
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_will_update(
-    MqttsnClientHandle client,
-    const MqttsnWillInfo* willInfo,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_update(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnWillInfo* willInfo,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
 /// @brief Update topic of the will recorded with the gateway/broker.
 /// @details When the operation is complete, the provided callback
 ///     will be invoked. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topic New will topic string. The parameter can be NULL.
 ///     In this case the request means erase current will information
 ///     recorded with the gateway/broker.
@@ -469,19 +469,19 @@ MqttsnErrorCode mqttsn_##NAME##client_will_update(
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_will_topic_update(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_topic_update(
+    CC_MqttsnClientHandle client,
     const char* topic,
-    MqttsnQoS qos,
+    CC_MqttsnQoS qos,
     bool retain,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
 /// @brief Update will message body recorded with the gateway/broker.
 /// @details When the operation is complete, the provided callback
 ///     will be invoked. 
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] topic New will topic string. The parameter can be NULL.
 ///     In this case the request means erase current will information
 ///     recorded with the gateway/broker.
@@ -490,11 +490,11 @@ MqttsnErrorCode mqttsn_##NAME##client_will_topic_update(
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_msg_update(
+    CC_MqttsnClientHandle client,
     const unsigned char* msg,
     unsigned msgLen,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
@@ -502,50 +502,50 @@ MqttsnErrorCode mqttsn_##NAME##client_will_msg_update(
 /// @details When the operation is complete, the provided callback
 ///     will be invoked. If successful completion is reported, the client may
 ///     enter the low power mode and do not send any messages within the
-///     "keep alive" period specified in mqttsn_##NAME##client_connect() 
+///     "keep alive" period specified in @ref cc_mqttsn_##NAME##client_connect() 
 ///     invocation. However, there is a need to either wake up (using 
-///     mqttsn_##NAME##client_reconnect()) or check for the accumulated messages
-///     (using mqttsn_##NAME##client_check_messages()) within the period 
+///     @ref cc_mqttsn_##NAME##client_reconnect()) or check for the accumulated messages
+///     (using @ref cc_mqttsn_##NAME##client_check_messages()) within the period 
 ///     specified in this function invocation.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] duration Muximal number of seconds the client will remain in
 ///     the sleep state until next check of accumulated pending messages 
-///     (use mqttsn_##NAME##client_check_messages() for this purpose) or
-///     full wake up (use mqttsn_##NAME##client_reconnect() for this purpose).
+///     (use @ref cc_mqttsn_##NAME##client_check_messages() for this purpose) or
+///     full wake up (use @ref cc_mqttsn_##NAME##client_reconnect() for this purpose).
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_sleep(
-    MqttsnClientHandle client,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
+    CC_MqttsnClientHandle client,
     unsigned short duration,
-    MqttsnAsyncOpCompleteReportFn callback,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 
 /// @brief Check for accumulated pending messages the gateway has to report.
 /// @details Can be invoked after successful entering the sleep state using
-///     mqttsn_##NAME##client_sleep(). 
+///     @ref cc_mqttsn_##NAME##client_sleep(). 
 ///     According to MQTT-SN protocol specification, this function will
 ///     force sending @b PINGREQ message to the gateway. The gateway then will
 ///     deliver all the pending messages, which may cause multiple invocation
 ///     of message report callback (set with
-///     mqttsn_##NAME##client_set_message_report_callback()). After gateway
+///     @ref cc_mqttsn_##NAME##client_set_message_report_callback()). After gateway
 ///     reports all accumulated messages, it will send @b PINGRESP message,
 ///     which will case invocation of the provided callback. After the
 ///     callback is invoked, the client may return to "asleep" state and will
 ///     be required to check messages again or wake up after number of seconds
-///     provided in mqttsn_##NAME##client_sleep() call.
-/// @param[in] client Handle returned by mqttsn_##NAME##client_new() function.
+///     provided in @ref cc_mqttsn_##NAME##client_sleep() call.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
 ///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
-MqttsnErrorCode mqttsn_##NAME##client_check_messages(
-    MqttsnClientHandle client,
-    MqttsnAsyncOpCompleteReportFn callback,
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_check_messages(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnAsyncOpCompleteReportFn callback,
     void* data
 );
 

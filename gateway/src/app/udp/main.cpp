@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@
 #include <QtCore/QStringList>
 
 #include "Mgr.h"
-#include "mqttsn/gateway/Config.h"
+#include "cc_mqttsn_gateway/Config.h"
 
 namespace
 {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     prepareCommandLineOptions(parser);
     parser.process(app);
 
-    mqttsn::gateway::Config config;
+    cc_mqttsn_gateway::Config config;
     do {
         if (!parser.isSet(ConfigOptStr)) {
             break;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
         config.read(stream);
     } while (false);
 
-    mqttsn::gateway::app::udp::Mgr gw(config);
+    cc_mqttsn_gateway::app::udp::Mgr gw(config);
     if (!gw.start()) {
         std::cerr << "Failed to start!" << std::endl;
         return -1;

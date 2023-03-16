@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,40 +14,40 @@
 #include <cstdint>
 #include <string>
 
-#include "mqttsn/client/common.h"
-#include "mqttsn/field/QosCommon.h"
+#include "cc_mqttsn_client/common.h"
+#include "cc_mqttsn/field/QosCommon.h"
 #include "client.h"
 
-typedef decltype(&mqttsn_client_new) ClientNewFunc;
-typedef decltype(&mqttsn_client_free) ClientFreeFunc;
-typedef decltype(&mqttsn_client_set_next_tick_program_callback) NextTickProgramCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_cancel_next_tick_wait_callback) CancelNextTickCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_send_output_data_callback) SendOutDataCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_gw_status_report_callback) GwStatusReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_gw_disconnect_report_callback) GwDisconnectsReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_set_message_report_callback) MessageReportCallbackSetFunc;
-typedef decltype(&mqttsn_client_start) StartFunc;
-typedef decltype(&mqttsn_client_process_data) ProcessDataFunc;
-typedef decltype(&mqttsn_client_tick) TickFunc;
-typedef decltype(&mqttsn_client_set_retry_period) SetRetryPeriodFunc;
-typedef decltype(&mqttsn_client_set_retry_count) SetRetryCountFunc;
-typedef decltype(&mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
-typedef decltype(&mqttsn_client_set_searchgw_enabled) SetSearchgwEnabledFunc;
-typedef decltype(&mqttsn_client_cancel) CancelFunc;
-typedef decltype(&mqttsn_client_connect) ConnectFunc;
-typedef decltype(&mqttsn_client_disconnect) DisconnectFunc;
-typedef decltype(&mqttsn_client_publish_id) PublishIdFunc;
-typedef decltype(&mqttsn_client_publish) PublishFunc;
-typedef decltype(&mqttsn_client_subscribe_id) SubscribeIdFunc;
-typedef decltype(&mqttsn_client_subscribe) SubscribeFunc;
-typedef decltype(&mqttsn_client_unsubscribe_id) UnsubscribeIdFunc;
-typedef decltype(&mqttsn_client_unsubscribe) UnsubscribeFunc;
-typedef decltype(&mqttsn_client_will_update) WillUpdateFunc;
-typedef decltype(&mqttsn_client_will_topic_update) WillTopicUpdateFunc;
-typedef decltype(&mqttsn_client_will_msg_update) WillMsgUpdateFunc;
-typedef decltype(&mqttsn_client_sleep) SleepFunc;
-typedef decltype(&mqttsn_client_reconnect) ReconnectFunc;
-typedef decltype(&mqttsn_client_check_messages) CheckMessagesFunc;
+typedef decltype(&cc_mqttsn_client_new) ClientNewFunc;
+typedef decltype(&cc_mqttsn_client_free) ClientFreeFunc;
+typedef decltype(&cc_mqttsn_client_set_next_tick_program_callback) NextTickProgramCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_cancel_next_tick_wait_callback) CancelNextTickCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_send_output_data_callback) SendOutDataCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_gw_status_report_callback) GwStatusReportCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_gw_disconnect_report_callback) GwDisconnectsReportCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_set_message_report_callback) MessageReportCallbackSetFunc;
+typedef decltype(&cc_mqttsn_client_start) StartFunc;
+typedef decltype(&cc_mqttsn_client_process_data) ProcessDataFunc;
+typedef decltype(&cc_mqttsn_client_tick) TickFunc;
+typedef decltype(&cc_mqttsn_client_set_retry_period) SetRetryPeriodFunc;
+typedef decltype(&cc_mqttsn_client_set_retry_count) SetRetryCountFunc;
+typedef decltype(&cc_mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
+typedef decltype(&cc_mqttsn_client_set_searchgw_enabled) SetSearchgwEnabledFunc;
+typedef decltype(&cc_mqttsn_client_cancel) CancelFunc;
+typedef decltype(&cc_mqttsn_client_connect) ConnectFunc;
+typedef decltype(&cc_mqttsn_client_disconnect) DisconnectFunc;
+typedef decltype(&cc_mqttsn_client_publish_id) PublishIdFunc;
+typedef decltype(&cc_mqttsn_client_publish) PublishFunc;
+typedef decltype(&cc_mqttsn_client_subscribe_id) SubscribeIdFunc;
+typedef decltype(&cc_mqttsn_client_subscribe) SubscribeFunc;
+typedef decltype(&cc_mqttsn_client_unsubscribe_id) UnsubscribeIdFunc;
+typedef decltype(&cc_mqttsn_client_unsubscribe) UnsubscribeFunc;
+typedef decltype(&cc_mqttsn_client_will_update) WillUpdateFunc;
+typedef decltype(&cc_mqttsn_client_will_topic_update) WillTopicUpdateFunc;
+typedef decltype(&cc_mqttsn_client_will_msg_update) WillMsgUpdateFunc;
+typedef decltype(&cc_mqttsn_client_sleep) SleepFunc;
+typedef decltype(&cc_mqttsn_client_reconnect) ReconnectFunc;
+typedef decltype(&cc_mqttsn_client_check_messages) CheckMessagesFunc;
 
 
 struct ClientLibFuncs
@@ -91,11 +91,11 @@ public:
     typedef std::function<void (unsigned)> ProgramNextTickCallback;
     typedef std::function<unsigned ()> CancelNextTickCallback;
     typedef std::function<void (const std::uint8_t* buf, unsigned bufLen, bool broadcast)> SendDataCallback;
-    typedef std::function<void (unsigned short gwId, MqttsnGwStatus status)> GwStatusReportCallback;
+    typedef std::function<void (unsigned short gwId, CC_MqttsnGwStatus status)> GwStatusReportCallback;
     typedef std::function<void ()> GwDisconnectReportCallback;
-    typedef std::function<void (const MqttsnMessageInfo& msgInfo)> MessageReportCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
-    typedef std::function<void (MqttsnAsyncOpStatus status, MqttsnQoS qos)> SubscribeCompleteCallback;
+    typedef std::function<void (const CC_MqttsnMessageInfo& msgInfo)> MessageReportCallback;
+    typedef std::function<void (CC_MqttsnAsyncOpStatus status)> AsyncOpCompleteCallback;
+    typedef std::function<void (CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos)> SubscribeCompleteCallback;
 
     ~CommonTestClient();
 
@@ -118,7 +118,7 @@ public:
     AsyncOpCompleteCallback setCheckMessagesCompleteCallback(AsyncOpCompleteCallback&& func);
 
     static Ptr alloc(const ClientLibFuncs& libFuncs = DefaultFuncs);
-    MqttsnErrorCode start();
+    CC_MqttsnErrorCode start();
     void inputData(const std::uint8_t* buf, std::size_t bufLen);
     void tick();
     void setRetryPeriod(unsigned ms);
@@ -127,60 +127,60 @@ public:
     void setSearchgwEnabled(bool value);
 
     bool cancel();
-    MqttsnErrorCode connect(
+    CC_MqttsnErrorCode connect(
         const char* clientId,
         unsigned short keepAliveSeconds,
         bool cleanSession,
-        const MqttsnWillInfo* willInfo);
+        const CC_MqttsnWillInfo* willInfo);
 
-    MqttsnErrorCode disconnect();
+    CC_MqttsnErrorCode disconnect();
 
-    MqttsnErrorCode publishId(
-        MqttsnTopicId topicId,
+    CC_MqttsnErrorCode publishId(
+        CC_MqttsnTopicId topicId,
         const std::uint8_t* msg,
         std::size_t msgLen,
-        MqttsnQoS qos,
+        CC_MqttsnQoS qos,
         bool retain);
 
-    MqttsnErrorCode publish(
+    CC_MqttsnErrorCode publish(
         const std::string& topic,
         const std::uint8_t* msg,
         std::size_t msgLen,
-        MqttsnQoS qos,
+        CC_MqttsnQoS qos,
         bool retain);
 
-    MqttsnErrorCode subscribe(
+    CC_MqttsnErrorCode subscribe(
         const std::string& topic,
-        MqttsnQoS qos);
+        CC_MqttsnQoS qos);
 
-    MqttsnErrorCode subscribe(
-        MqttsnTopicId topicId,
-        MqttsnQoS qos);
+    CC_MqttsnErrorCode subscribe(
+        CC_MqttsnTopicId topicId,
+        CC_MqttsnQoS qos);
 
-    MqttsnErrorCode unsubscribe(const std::string& topic);
+    CC_MqttsnErrorCode unsubscribe(const std::string& topic);
 
-    MqttsnErrorCode unsubscribe(MqttsnTopicId topicId);
+    CC_MqttsnErrorCode unsubscribe(CC_MqttsnTopicId topicId);
 
-    MqttsnErrorCode willUpdate(
-        const MqttsnWillInfo* willInfo);
+    CC_MqttsnErrorCode willUpdate(
+        const CC_MqttsnWillInfo* willInfo);
 
-    MqttsnErrorCode willTopicUpdate(
+    CC_MqttsnErrorCode willTopicUpdate(
         const std::string& topic,
-        MqttsnQoS qos,
+        CC_MqttsnQoS qos,
         bool retain);
 
-    MqttsnErrorCode willMsgUpdate(
+    CC_MqttsnErrorCode willMsgUpdate(
         const std::uint8_t* msg,
         std::size_t msgLen);
 
-    MqttsnErrorCode sleep(std::uint16_t duration);
+    CC_MqttsnErrorCode sleep(std::uint16_t duration);
 
-    MqttsnErrorCode reconnect();
+    CC_MqttsnErrorCode reconnect();
 
-    MqttsnErrorCode checkMessages();
+    CC_MqttsnErrorCode checkMessages();
 
-    static MqttsnQoS transformQos(mqttsn::field::QosVal val);
-    static mqttsn::field::QosVal transformQos(MqttsnQoS val);
+    static CC_MqttsnQoS transformQos(cc_mqttsn::field::QosVal val);
+    static cc_mqttsn::field::QosVal transformQos(CC_MqttsnQoS val);
 
 private:
     typedef std::vector<std::uint8_t> InputData;
@@ -190,41 +190,41 @@ private:
     void programNextTick(unsigned duration);
     unsigned cancelNextTick();
     void sendOutputData(const unsigned char* buf, unsigned bufLen, bool broadcast);
-    void reportGwStatus(unsigned short gwId, MqttsnGwStatus status);
+    void reportGwStatus(unsigned short gwId, CC_MqttsnGwStatus status);
     void reportGwDisconnect();
-    void reportMessage(const MqttsnMessageInfo* msgInfo);
-    void reportConnectComplete(MqttsnAsyncOpStatus status);
-    void reportDisconnectComplete(MqttsnAsyncOpStatus status);
-    void reportPublishComplete(MqttsnAsyncOpStatus status);
-    void reportSubsribeComplete(MqttsnAsyncOpStatus status, MqttsnQoS qos);
-    void reportUnsubsribeComplete(MqttsnAsyncOpStatus status);
-    void reportWillUpdateComplete(MqttsnAsyncOpStatus status);
-    void reportWillTopicUpdateComplete(MqttsnAsyncOpStatus status);
-    void reportWillMsgUpdateComplete(MqttsnAsyncOpStatus status);
-    void reportSleepComplete(MqttsnAsyncOpStatus status);
-    void reportReconnectComplete(MqttsnAsyncOpStatus status);
-    void reportCheckMessagesComplete(MqttsnAsyncOpStatus status);
+    void reportMessage(const CC_MqttsnMessageInfo* msgInfo);
+    void reportConnectComplete(CC_MqttsnAsyncOpStatus status);
+    void reportDisconnectComplete(CC_MqttsnAsyncOpStatus status);
+    void reportPublishComplete(CC_MqttsnAsyncOpStatus status);
+    void reportSubsribeComplete(CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
+    void reportUnsubsribeComplete(CC_MqttsnAsyncOpStatus status);
+    void reportWillUpdateComplete(CC_MqttsnAsyncOpStatus status);
+    void reportWillTopicUpdateComplete(CC_MqttsnAsyncOpStatus status);
+    void reportWillMsgUpdateComplete(CC_MqttsnAsyncOpStatus status);
+    void reportSleepComplete(CC_MqttsnAsyncOpStatus status);
+    void reportReconnectComplete(CC_MqttsnAsyncOpStatus status);
+    void reportCheckMessagesComplete(CC_MqttsnAsyncOpStatus status);
 
     static void nextTickProgramCallback(void* data, unsigned duration);
     static unsigned cancelNextTickCallback(void* data);
     static void sendOutputDataCallback(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
-    static void gwStatusReportCallback(void* data, unsigned char gwId, MqttsnGwStatus status);
+    static void gwStatusReportCallback(void* data, unsigned char gwId, CC_MqttsnGwStatus status);
     static void gwDisconnectReportCallback(void* data);
-    static void msgReportCallback(void* data, const MqttsnMessageInfo* msgInfo);
-    static void connectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void disconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void publishCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void subsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status, MqttsnQoS qos);
-    static void unsubsribeCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void willUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void willTopicUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void willMsgUpdateCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void sleepCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void reconnectCompleteCallback(void* data, MqttsnAsyncOpStatus status);
-    static void checkMessagesCompleteCallback(void* data, MqttsnAsyncOpStatus status);
+    static void msgReportCallback(void* data, const CC_MqttsnMessageInfo* msgInfo);
+    static void connectCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void disconnectCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void publishCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void subsribeCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
+    static void unsubsribeCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void willUpdateCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void willTopicUpdateCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void willMsgUpdateCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void sleepCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void reconnectCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
+    static void checkMessagesCompleteCallback(void* data, CC_MqttsnAsyncOpStatus status);
 
     ClientLibFuncs m_libFuncs;
-    MqttsnClientHandle m_client = nullptr;
+    CC_MqttsnClientHandle m_client;
     InputData m_inData;
 
     ProgramNextTickCallback m_programNextTickCallback;

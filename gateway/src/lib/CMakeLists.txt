@@ -24,45 +24,34 @@ function (lib_mqttsn_gateway)
     
     add_library (${name} STATIC ${src})
     
-    if (TARGET cc::mqtt311)
-        target_link_libraries(${name} PRIVATE cc::mqtt311)    
-    endif ()
-    
-    if (TARGET cc::mqttsn)
-        target_link_libraries(${name} PRIVATE cc::mqttsn)    
-    endif ()    
-    
-    target_link_libraries(${name} PRIVATE cc::comms)
-    
-    if (NOT "${CC_MQTT_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
-        target_include_directories(${name} PRIVATE ${CC_MQTT_EXTERNAL_TGT_INCLUDE})
-    endif ()
-    
-    if (NOT "${CC_MQTTSN_EXTERNAL_TGT_INCLUDE}" STREQUAL "")
-        target_include_directories(${name} PRIVATE ${CC_MQTTSN_EXTERNAL_TGT_INCLUDE})
-    endif ()
-    
-    if (TARGET ${CC_MQTT_EXTERNAL_TGT})
-        add_dependencies(${name} ${CC_MQTT_EXTERNAL_TGT})
-    endif ()
-    
-    if (TARGET ${CC_MQTTSN_EXTERNAL_TGT})
-        add_dependencies(${name} ${CC_MQTTSN_EXTERNAL_TGT})
-    endif ()
+    target_link_libraries(${name} PRIVATE cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
 
+    set_target_properties(
+        ${name} PROPERTIES 
+        INTERFACE_LINK_LIBRARIES ""
+    )
+
+    target_include_directories(
+        ${name} BEFORE
+            PUBLIC
+                $<INSTALL_INTERFACE:include>
+                $<BUILD_INTERFACE:${GATEWAY_INC_DIR}>
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR})        
+    
     install (
         TARGETS ${name}
-        DESTINATION ${LIB_INSTALL_DIR}
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        EXPORT ${name}Config
     )
+
+    install(EXPORT ${name}Config NAMESPACE cc::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${name}/cmake
+    )       
     
 endfunction()
 
 ######################################################################
-
-include_directories(
-    BEFORE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
 
 lib_mqttsn_gateway ()
 

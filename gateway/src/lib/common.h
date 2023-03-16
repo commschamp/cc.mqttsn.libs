@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,15 +13,12 @@
 #include <memory>
 #include <limits>
 
-#include "mqttsn/field/QosCommon.h"
-#include "mqtt311/field/QosCommon.h"
+#include "cc_mqttsn/field/QosCommon.h"
+#include "cc_mqtt311/field/QosCommon.h"
 
 #include "RegMgr.h"
 
-namespace mqttsn
-{
-
-namespace gateway
+namespace cc_mqttsn_gateway
 {
 
 typedef std::vector<std::uint8_t> DataBuf;
@@ -35,27 +32,27 @@ enum QoS
 };
 
 inline
-mqtt311::field::QosVal translateQosForBroker(QoS val)
+cc_mqtt311::field::QosVal translateQosForBroker(QoS val)
 {
-    return static_cast<mqtt311::field::QosVal>(val);
+    return static_cast<cc_mqtt311::field::QosVal>(val);
 }
 
 inline
-mqttsn::field::QosVal translateQosForClient(QoS val)
+cc_mqttsn::field::QosVal translateQosForClient(QoS val)
 {
-    return static_cast<mqttsn::field::QosVal>(val);
+    return static_cast<cc_mqttsn::field::QosVal>(val);
 }
 
 inline
-QoS translateQos(mqtt311::field::QosVal val)
+QoS translateQos(cc_mqtt311::field::QosVal val)
 {
     return static_cast<QoS>(val);
 }
 
 inline
-QoS translateQos(mqttsn::field::QosVal val)
+QoS translateQos(cc_mqttsn::field::QosVal val)
 {
-    if (val == mqttsn::field::QosVal::NoGwPublish) {
+    if (val == cc_mqttsn::field::QosVal::NoGwPublish) {
         return QoS_AtMostOnceDelivery;
     }
 
@@ -141,7 +138,4 @@ struct SessionState
     RegMgr m_regMgr;
 };
 
-}  // namespace gateway
-
-}  // namespace mqttsn
-
+}  // namespace cc_mqttsn_gateway

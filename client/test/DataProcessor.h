@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2020 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,13 +13,13 @@
 #include <functional>
 
 #include "comms/comms.h"
-#include "mqttsn/frame/Frame.h"
-#include "mqttsn/Message.h"
-#include "mqttsn/client/common.h"
+#include "cc_mqttsn/frame/Frame.h"
+#include "cc_mqttsn/Message.h"
+#include "cc_mqttsn_client/common.h"
 
 class DataProcessor;
 
-typedef mqttsn::Message<
+typedef cc_mqttsn::Message<
     comms::option::IdInfoInterface,
     comms::option::ReadIterator<const std::uint8_t*>,
     comms::option::WriteIterator<std::uint8_t*>,
@@ -27,42 +27,42 @@ typedef mqttsn::Message<
     comms::option::LengthInfoInterface
 > TestMessage;
 
-typedef mqttsn::input::AllMessages<TestMessage> AllTestMessages;
+typedef cc_mqttsn::input::AllMessages<TestMessage> AllTestMessages;
 
 class DataProcessor : public comms::GenericHandler<TestMessage, AllTestMessages>
 {
     typedef comms::GenericHandler<TestMessage, AllTestMessages> Base;
 public:
     typedef std::vector<std::uint8_t> DataBuf;
-    using TopicIdTypeVal = mqttsn::field::FlagsMembersCommon::TopicIdTypeVal;
+    using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
 
-    typedef mqttsn::message::Advertise<TestMessage> AdvertiseMsg;
-    typedef mqttsn::message::Searchgw<TestMessage> SearchgwMsg;
-    typedef mqttsn::message::Gwinfo<TestMessage> GwinfoMsg;
-    typedef mqttsn::message::Connect<TestMessage> ConnectMsg;
-    typedef mqttsn::message::Connack<TestMessage> ConnackMsg;
-    typedef mqttsn::message::Willtopicreq<TestMessage> WilltopicreqMsg;
-    typedef mqttsn::message::Willtopic<TestMessage> WilltopicMsg;
-    typedef mqttsn::message::Willmsgreq<TestMessage> WillmsgreqMsg;
-    typedef mqttsn::message::Willmsg<TestMessage> WillmsgMsg;
-    typedef mqttsn::message::Register<TestMessage> RegisterMsg;
-    typedef mqttsn::message::Regack<TestMessage> RegackMsg;
-    typedef mqttsn::message::Publish<TestMessage> PublishMsg;
-    typedef mqttsn::message::Puback<TestMessage> PubackMsg;
-    typedef mqttsn::message::Pubrec<TestMessage> PubrecMsg;
-    typedef mqttsn::message::Pubrel<TestMessage> PubrelMsg;
-    typedef mqttsn::message::Pubcomp<TestMessage> PubcompMsg;
-    typedef mqttsn::message::Subscribe<TestMessage> SubscribeMsg;
-    typedef mqttsn::message::Suback<TestMessage> SubackMsg;
-    typedef mqttsn::message::Unsubscribe<TestMessage> UnsubscribeMsg;
-    typedef mqttsn::message::Unsuback<TestMessage> UnsubackMsg;
-    typedef mqttsn::message::Pingreq<TestMessage> PingreqMsg;
-    typedef mqttsn::message::Pingresp<TestMessage> PingrespMsg;
-    typedef mqttsn::message::Disconnect<TestMessage> DisconnectMsg;
-    typedef mqttsn::message::Willtopicupd<TestMessage> WilltopicupdMsg;
-    typedef mqttsn::message::Willmsgupd<TestMessage> WillmsgupdMsg;
-    typedef mqttsn::message::Willtopicresp<TestMessage> WilltopicrespMsg;
-    typedef mqttsn::message::Willmsgresp<TestMessage> WillmsgrespMsg;
+    typedef cc_mqttsn::message::Advertise<TestMessage> AdvertiseMsg;
+    typedef cc_mqttsn::message::Searchgw<TestMessage> SearchgwMsg;
+    typedef cc_mqttsn::message::Gwinfo<TestMessage> GwinfoMsg;
+    typedef cc_mqttsn::message::Connect<TestMessage> ConnectMsg;
+    typedef cc_mqttsn::message::Connack<TestMessage> ConnackMsg;
+    typedef cc_mqttsn::message::Willtopicreq<TestMessage> WilltopicreqMsg;
+    typedef cc_mqttsn::message::Willtopic<TestMessage> WilltopicMsg;
+    typedef cc_mqttsn::message::Willmsgreq<TestMessage> WillmsgreqMsg;
+    typedef cc_mqttsn::message::Willmsg<TestMessage> WillmsgMsg;
+    typedef cc_mqttsn::message::Register<TestMessage> RegisterMsg;
+    typedef cc_mqttsn::message::Regack<TestMessage> RegackMsg;
+    typedef cc_mqttsn::message::Publish<TestMessage> PublishMsg;
+    typedef cc_mqttsn::message::Puback<TestMessage> PubackMsg;
+    typedef cc_mqttsn::message::Pubrec<TestMessage> PubrecMsg;
+    typedef cc_mqttsn::message::Pubrel<TestMessage> PubrelMsg;
+    typedef cc_mqttsn::message::Pubcomp<TestMessage> PubcompMsg;
+    typedef cc_mqttsn::message::Subscribe<TestMessage> SubscribeMsg;
+    typedef cc_mqttsn::message::Suback<TestMessage> SubackMsg;
+    typedef cc_mqttsn::message::Unsubscribe<TestMessage> UnsubscribeMsg;
+    typedef cc_mqttsn::message::Unsuback<TestMessage> UnsubackMsg;
+    typedef cc_mqttsn::message::Pingreq<TestMessage> PingreqMsg;
+    typedef cc_mqttsn::message::Pingresp<TestMessage> PingrespMsg;
+    typedef cc_mqttsn::message::Disconnect<TestMessage> DisconnectMsg;
+    typedef cc_mqttsn::message::Willtopicupd<TestMessage> WilltopicupdMsg;
+    typedef cc_mqttsn::message::Willmsgupd<TestMessage> WillmsgupdMsg;
+    typedef cc_mqttsn::message::Willtopicresp<TestMessage> WilltopicrespMsg;
+    typedef cc_mqttsn::message::Willmsgresp<TestMessage> WillmsgrespMsg;
 
 
     virtual ~DataProcessor();
@@ -149,7 +149,7 @@ public:
 
     DataBuf prepareGwinfoMsg(std::uint8_t id);
     DataBuf prepareAdvertiseMsg(std::uint8_t id, unsigned short duration);
-    DataBuf prepareConnackMsg(mqttsn::field::ReturnCodeVal val);
+    DataBuf prepareConnackMsg(cc_mqttsn::field::ReturnCodeVal val);
     DataBuf prepareWilltopicreqMsg();
     DataBuf prepareWillmsgreqMsg();
     DataBuf prepareRegisterMsg(
@@ -159,36 +159,36 @@ public:
     DataBuf prepareRegackMsg(
         std::uint16_t topicId,
         std::uint16_t msgId,
-        mqttsn::field::ReturnCodeVal retCode);
+        cc_mqttsn::field::ReturnCodeVal retCode);
     DataBuf preparePublishMsg(
         std::uint16_t topicId,
         std::uint16_t msgId,
         const std::vector<std::uint8_t>& data,
         TopicIdTypeVal topicIdType,
-        mqttsn::field::QosVal qos,
+        cc_mqttsn::field::QosVal qos,
         bool retain,
         bool duplicate);
     DataBuf preparePubackMsg(
-        MqttsnTopicId topicId,
+        CC_MqttsnTopicId topicId,
         std::uint16_t msgId,
-        mqttsn::field::ReturnCodeVal retCode);
+        cc_mqttsn::field::ReturnCodeVal retCode);
     DataBuf preparePubrecMsg(std::uint16_t msgId);
     DataBuf preparePubrelMsg(std::uint16_t msgId);
     DataBuf preparePubcompMsg(std::uint16_t msgId);
     DataBuf prepareSubackMsg(
-        mqttsn::field::QosVal qos,
-        MqttsnTopicId topicId,
+        cc_mqttsn::field::QosVal qos,
+        CC_MqttsnTopicId topicId,
         std::uint16_t msgId,
-        mqttsn::field::ReturnCodeVal retCode);
+        cc_mqttsn::field::ReturnCodeVal retCode);
     DataBuf prepareUnsubackMsg(std::uint16_t msgId);
     DataBuf preparePingreqMsg();
     DataBuf preparePingrespMsg();
     DataBuf prepareDisconnectMsg(std::uint16_t duration = 0);
-    DataBuf prepareWilltopicrespMsg(mqttsn::field::ReturnCodeVal retCode);
-    DataBuf prepareWillmsgrespMsg(mqttsn::field::ReturnCodeVal retCode);
+    DataBuf prepareWilltopicrespMsg(cc_mqttsn::field::ReturnCodeVal retCode);
+    DataBuf prepareWillmsgrespMsg(cc_mqttsn::field::ReturnCodeVal retCode);
 
 private:
-    typedef mqttsn::frame::Frame<TestMessage, AllTestMessages> ProtStack;
+    typedef cc_mqttsn::frame::Frame<TestMessage, AllTestMessages> ProtStack;
 
     ProtStack m_stack;
     SearchgwMsgReportCallback m_searchgwMsgReportCallback;
