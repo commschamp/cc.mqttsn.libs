@@ -1,4 +1,4 @@
-The [MQTT-SN](http://mqtt.org/2013/12/mqtt-for-sensor-networks-mqtt-sn) 
+The [MQTT-SN](https://www.oasis-open.org/committees/download.php/66091/MQTT-SN_spec_v1.2.pdf) 
 protocol is a sibling of [MQTT](http://mqtt.org). While **MQTT** is designed to be 
 used over a **reliable stream** transport protocol (such as TCP/IP), the **MQTT-SN**
 was designed to be used over a **datagram** transport protocol. It means, that
@@ -73,7 +73,7 @@ application won't be compiled.
 
 # Spec Deviations
 There are a couple of deviations from official MQTT-SN 
-[v1.2](http://mqtt.org/new/wp-content/uploads/2009/06/MQTT-SN_spec_v1.2.pdf)
+[v1.2](https://www.oasis-open.org/committees/download.php/66091/MQTT-SN_spec_v1.2.pdf)
 spec.
 
 - The [client](#client-library) does NOT send **GWINFO** messages as a response

@@ -45,8 +45,11 @@ if (CC_MQTTSN_WITH_SANITIZERS)
     endif ()
 endif ()
 
-include (${LibComms_DIR}/CC_Compile.cmake)
-cc_compile(${compile_opts})
+if (EXISTS ${LibComms_DIR}/CC_Compile.cmake)
+    message (WARNING "Unexpected COMMS cmake scripts installation path, cannot reuse compilation options")
+    include (${LibComms_DIR}/CC_Compile.cmake)
+    cc_compile(${compile_opts})
+endif ()
 
 set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
 
@@ -60,6 +63,11 @@ while (TRUE)
     if (CMAKE_CROSSCOMPILING)
         message (STATUS "Not building unittests when cross-compiling")
         break()
+    endif ()
+
+    if (NOT EXISTS ${LibComms_DIR}/CC_CxxtestFuncs.cmake)
+        message (WARNING "Unexpected COMMS cmake scripts installation path, cannot unittest")
+        break ()
     endif ()
 
     include (${LibComms_DIR}/CC_CxxtestFuncs.cmake)
