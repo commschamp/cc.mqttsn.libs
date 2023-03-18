@@ -46,9 +46,10 @@ if (CC_MQTTSN_WITH_SANITIZERS)
 endif ()
 
 if (EXISTS ${LibComms_DIR}/CC_Compile.cmake)
-    message (WARNING "Unexpected COMMS cmake scripts installation path, cannot reuse compilation options")
     include (${LibComms_DIR}/CC_Compile.cmake)
     cc_compile(${compile_opts})
+else ()
+    message (WARNING "Unexpected COMMS cmake scripts installation path, cannot reuse compilation options")
 endif ()
 
 set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
