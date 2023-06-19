@@ -3,9 +3,9 @@ name: Github Actions Build
 on: [push]
 
 env:
-  COMMS_BRANCH: v5.2
+  COMMS_BRANCH: v5.2.1
   CC_MQTTSN_BRANCH: v2.3
-  CC_MQTT311_BRANCH: v2.3
+  CC_MQTT311_BRANCH: v2.3.1
 
 jobs:
   build_gcc_old_ubuntu_20_04:
