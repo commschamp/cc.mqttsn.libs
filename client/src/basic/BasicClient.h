@@ -16,6 +16,7 @@
 
 #include "comms/comms.h"
 #include "comms/util/ScopeGuard.h"
+#include "cc_mqttsn/Version.h"
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn/frame/Frame.h"
 #include "cc_mqttsn/input/ClientInputMessages.h"
@@ -23,7 +24,8 @@
 #include "cc_mqttsn_client/common.h"
 #include "details/WriteBufStorageType.h"
 
-//#include <iostream>
+static_assert(CC_MQTTSN_VERSION(2, 3, 0) <= cc_mqttsn::version(),
+    "The version of cc.mqttsn.generated library is too old");
 
 namespace cc_mqttsn_client
 {
