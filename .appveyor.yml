@@ -19,9 +19,9 @@ configuration:
     - Release
 
 environment:
-    COMMS_BRANCH: master
-    CC_MQTTSN_BRANCH: master
-    CC_MQTT311_BRANCH: master
+    COMMS_BRANCH: v5.2.1
+    CC_MQTTSN_BRANCH: v2.3
+    CC_MQTT311_BRANCH: v2.3.1
 
     matrix:
         - CPP_STD: 11

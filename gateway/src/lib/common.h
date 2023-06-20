@@ -13,10 +13,18 @@
 #include <memory>
 #include <limits>
 
+#include "cc_mqttsn/Version.h"
 #include "cc_mqttsn/field/QosCommon.h"
+#include "cc_mqtt311/Version.h"
 #include "cc_mqtt311/field/QosCommon.h"
 
 #include "RegMgr.h"
+
+static_assert(COMMS_MAKE_VERSION(2, 3, 0) <= cc_mqttsn::version(),
+    "The version of cc.mqttsn.generated library is too old");
+
+static_assert(COMMS_MAKE_VERSION(2, 3, 1) <= cc_mqtt311::version(),
+    "The version of cc.mqtt311.generated library is too old");    
 
 namespace cc_mqttsn_gateway
 {
