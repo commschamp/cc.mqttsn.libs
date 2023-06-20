@@ -24,7 +24,7 @@
 #include "cc_mqttsn_client/common.h"
 #include "details/WriteBufStorageType.h"
 
-static_assert(CC_MQTTSN_VERSION(2, 3, 0) <= cc_mqttsn::version(),
+static_assert(COMMS_MAKE_VERSION(2, 3, 0) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
 namespace cc_mqttsn_client
