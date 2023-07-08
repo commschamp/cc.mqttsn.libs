@@ -249,6 +249,7 @@ void PubSend::doSend()
 
     if (m_currPub->m_qos == QoS_AtMostOnceDelivery) {
         m_currPub.reset();
+        checkSend();
         return;
     }
 
