@@ -8,6 +8,8 @@
 #include <list>
 #include <vector>
 #include <memory>
+#include <iomanip>
+#include <sstream>
 
 #include "comms/comms.h"
 #include "cc_mqttsn_gateway/Session.h"
@@ -81,6 +83,16 @@ private:
         cc_mqtt311::field::QosVal m_qos = cc_mqtt311::field::QosVal::AtMostOnceDelivery;
         bool m_retain = false;
     };
+
+    static std::string toString(const DataBuf& buf) 
+    {
+        std::stringstream stream;
+        for (auto ch : buf) {
+            stream << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(ch) << ' ';
+        }
+
+        return stream.str();
+    }
 
     static SessionPtr allocSession(
         State& state,
@@ -1317,6 +1329,11 @@ private:
 
     static void verifyNoOtherEvent(State& state, TestMsgHandler& handler)
     {
+        if (!state.m_sentToClient.empty()) {
+            for (auto& data : state.m_sentToClient) {
+                TS_TRACE("Unverified data sent to client: " + toString(data));
+            }
+        }
         TS_ASSERT(state.m_sentToClient.empty());
         TS_ASSERT(state.m_sentToBroker.empty());
         TS_ASSERT(state.m_tickReq.empty());
