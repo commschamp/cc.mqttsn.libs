@@ -162,7 +162,10 @@ void PubSend::newSends()
     }
 
     if (st.m_pendingClientDisconnect) {
-        sendDisconnect();
+        if (!m_disconnectAlreadySent) {
+            sendDisconnect();
+            m_disconnectAlreadySent = true;
+        }
         return;
     }
 

@@ -57,6 +57,7 @@ private:
     bool m_registered = false;
     bool m_acked = false;
     bool m_ping = false;
+    bool m_disconnectAlreadySent = false;
 };
 
 }  // namespace session_op
