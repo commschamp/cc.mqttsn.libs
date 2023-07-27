@@ -162,7 +162,10 @@ void PubSend::newSends()
     }
 
     if (st.m_pendingClientDisconnect) {
-        sendDisconnect();
+        if (!m_disconnectAlreadySent) {
+            sendDisconnect();
+            m_disconnectAlreadySent = true;
+        }
         return;
     }
 
@@ -249,6 +252,7 @@ void PubSend::doSend()
 
     if (m_currPub->m_qos == QoS_AtMostOnceDelivery) {
         m_currPub.reset();
+        checkSend();
         return;
     }
 

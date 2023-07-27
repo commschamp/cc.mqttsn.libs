@@ -62,5 +62,5 @@ build_script:
 
 test_script:
     - echo ------------------------- Testing -------------------------
-    - ctest 
+    - ctest -V
 
