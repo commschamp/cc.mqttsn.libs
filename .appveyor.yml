@@ -20,8 +20,8 @@ configuration:
 
 environment:
     COMMS_BRANCH: v5.2.1
-    CC_MQTTSN_BRANCH: v2.3
-    CC_MQTT311_BRANCH: v2.3.1
+    CC_MQTTSN_BRANCH: v2.4
+    CC_MQTT311_BRANCH: v2.4
 
     matrix:
         - CPP_STD: 11
