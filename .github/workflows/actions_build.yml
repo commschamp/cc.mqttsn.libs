@@ -4,8 +4,8 @@ on: [push]
 
 env:
   COMMS_BRANCH: v5.2.1
-  CC_MQTTSN_BRANCH: v2.4
-  CC_MQTT311_BRANCH: v2.4
+  CC_MQTTSN_BRANCH: v2.5
+  CC_MQTT311_BRANCH: v2.5
 
 jobs:
   build_gcc_old_ubuntu_20_04:

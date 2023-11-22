@@ -135,7 +135,7 @@ typedef struct
 /// @details When the requested time is due, the driving code is expected
 ///     to call cc_mqttsn_gw_session_tick() member function.
 /// @param[in] userData User data passed as the last parameter to the setting function.
-/// @param[in] value Number of @b milliseconds to measure.
+/// @param[in] duration Number of @b milliseconds to measure.
 typedef void (*CC_MqttsnSessionTickReqCb)(void* userData, unsigned duration);
 
 /// @brief Type of callback, used to cancel existing time measurement.
@@ -388,7 +388,7 @@ void cc_mqttsn_gw_session_tick(CC_MqttsnSessionHandle session);
 ///     send new message(s) and/or (re)start time measurement.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] buf Pointer to the buffer of data to process.
-/// @param[in] len Number of bytes in the data buffer.
+/// @param[in] bufLen Number of bytes in the data buffer.
 /// @return Number of processed bytes.
 /// @note The function returns number of bytes that were actually consumed, and
 ///     can be removed from the holding buffer.
@@ -403,7 +403,7 @@ unsigned cc_mqttsn_gw_session_data_from_client(
 ///     send new message(s) and/or (re)start time measurement.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] buf Pointer to the buffer of data to process.
-/// @param[in] len Number of bytes in the data buffer.
+/// @param[in] bufLen Number of bytes in the data buffer.
 /// @return Number of processed bytes.
 /// @note The function returns number of bytes that were actually consumed, and
 ///     can be removed from the holding buffer.
@@ -418,7 +418,7 @@ unsigned cc_mqttsn_gw_session_data_from_broker(
 ///     started (see cc_mqttsn_gw_session_start()). Otherwise the call to this function gets
 ///     ignored.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
-/// @param[in] conneted Connection status - @b true means connected, @b false disconnected.
+/// @param[in] connected Connection status - @b true means connected, @b false disconnected.
 void cc_mqttsn_gw_session_broker_connected(CC_MqttsnSessionHandle session, bool connected);
 
 /// @brief Add predefined topic string and ID information.
@@ -433,8 +433,8 @@ bool cc_mqttsn_gw_session_add_predefined_topic(
 
 /// @brief Limit range of topic IDs allocated for newly registered topics.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
-/// @param[in] minVal Min topic ID.
-/// @param[in] maxVal Max topic ID.
+/// @param[in] minTopicId Min topic ID.
+/// @param[in] maxTopicId Max topic ID.
 /// @return success/failure status
 bool cc_mqttsn_gw_session_set_topic_id_alloc_range(
     CC_MqttsnSessionHandle session,

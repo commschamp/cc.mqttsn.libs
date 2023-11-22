@@ -20,10 +20,10 @@
 
 #include "RegMgr.h"
 
-static_assert(COMMS_MAKE_VERSION(2, 4, 0) <= cc_mqttsn::version(),
+static_assert(COMMS_MAKE_VERSION(2, 5, 0) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
-static_assert(COMMS_MAKE_VERSION(2, 4, 0) <= cc_mqtt311::version(),
+static_assert(COMMS_MAKE_VERSION(2, 5, 0) <= cc_mqtt311::version(),
     "The version of cc.mqtt311.generated library is too old");    
 
 namespace cc_mqttsn_gateway

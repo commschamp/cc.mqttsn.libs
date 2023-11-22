@@ -146,7 +146,6 @@ unsigned cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, con
 ///     This call may cause invocation of some other callbacks, such as a request
 ///     to send new data to the gateway.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
-/// @param[in] ms Number of elapsed @b milliseconds.
 void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client);
 
 /// @brief Set retry period to wait between resending unacknowledged message to the gateway.
@@ -183,7 +182,7 @@ void cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client,
 ///     gateways can be done using this function. By default the search for
 ///     the gateway is @b enabled.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
-/// @param[in] value @b true to enable, and @false to disable.
+/// @param[in] value @b true to enable, and @b false to disable.
 void cc_mqttsn_##NAME##client_set_searchgw_enabled(CC_MqttsnClientHandle client, bool value);
 
 /// @brief Send @b SEARCHGW message.
@@ -292,6 +291,10 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_reconnect(
 ///     the library assumes "disconnected" internal state and some functions,
 ///     such as requests to publish and/or subscribe may not work.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] callback Callback to be invoked when operation is complete,
+///     must @b NOT be NULL.
+/// @param[in] data Pointer to any user data, it will be passed as the first
+///     parameter to the invoked completion report callback, can be NULL.
 /// @return Error code indicating success/failure status of the operation.
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
     CC_MqttsnClientHandle client,
@@ -482,9 +485,8 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_topic_update(
 /// @details When the operation is complete, the provided callback
 ///     will be invoked. 
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
-/// @param[in] topic New will topic string. The parameter can be NULL.
-///     In this case the request means erase current will information
-///     recorded with the gateway/broker.
+/// @param[in] msg Pointer to message body buffer
+/// @param[in] msgLen Length of message body buffer.
 /// @param[in] callback Callback to be invoked when operation is complete,
 ///     must @b NOT be NULL.
 /// @param[in] data Pointer to any user data, it will be passed as the first
