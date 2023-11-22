@@ -240,7 +240,7 @@ public:
     ///     be performed only when the session's operation has been successfully
     ///     started (see start()). Otherwise the call to this function gets
     ///     ignored.
-    /// @param[in] conneted Connection status - @b true means connected, @b false disconnected.
+    /// @param[in] connected Connection status - @b true means connected, @b false disconnected.
     void setBrokerConnected(bool connected);
 
     /// @brief Add predefined topic string and ID information.
