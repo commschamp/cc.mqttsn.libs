@@ -256,8 +256,15 @@ jobs:
       fail-fast: false
       matrix:
         type: [Debug, Release, MinSizeRel]
-        cc_ver: [12, 13, 14]
+        cc_ver: [12, 13, 14, 15]
         cpp: [11, 14, 17, 20]
+        exclude:
+          - cc_ver: 12
+            cpp: 20
+          - cc_ver: 13
+            cpp: 20
+          - cc_ver: 14
+            cpp: 20
 
     steps:
     - uses: actions/checkout@v2
