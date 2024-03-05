@@ -18,6 +18,20 @@ set (COMMON_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 ######################################################################
 
+include(CMakePackageConfigHelpers)
+file (READ "${CMAKE_CURRENT_SOURCE_DIR}/include/cc_mqttsn_client/common.h" version_file)
+string (REGEX MATCH "CC_MQTTSN_CLIENT_MAJOR_VERSION ([0-9]*)U*" _ ${version_file})
+set (major_ver ${CMAKE_MATCH_1})
+string (REGEX MATCH "CC_MQTTSN_CLIENT_MINOR_VERSION ([0-9]*)U*" _ ${version_file})
+set (minor_ver ${CMAKE_MATCH_1})
+string (REGEX MATCH "CC_MQTTSN_CLIENT_PATCH_VERSION ([0-9]*)U*" _ ${version_file})
+set (patch_ver ${CMAKE_MATCH_1})
+set (CC_MQTTSN_CLIENT_VERSION "${major_ver}.${minor_ver}.${patch_ver}")
+write_basic_package_version_file(
+    ${PROJECT_BINARY_DIR}/ClientLibConfigVersion.cmake
+    VERSION ${CC_MQTTSN_CLIENT_VERSION}
+    COMPATIBILITY AnyNewerVersion)
+
 function (gen_lib_mqttsn_client name client_opts inst extra_flags)
     if (NOT ${name} STREQUAL "")
         set (name "${name}_")
@@ -124,7 +138,13 @@ function (gen_lib_mqttsn_client name client_opts inst extra_flags)
 
         install(EXPORT ${lib_name}Config NAMESPACE cc::
             DESTINATION ${CMAKE_INSTALL_LIBDIR}/${lib_name}/cmake
-        )        
+        )   
+
+        install(
+            FILES ${PROJECT_BINARY_DIR}/ClientLibConfigVersion.cmake
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/${lib_name}/cmake
+            RENAME ${lib_name}ConfigVersion.cmake
+        )               
     endif ()
 endfunction()
 
