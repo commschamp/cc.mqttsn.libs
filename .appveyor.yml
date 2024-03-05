@@ -55,10 +55,10 @@ install:
 build_script:
     - echo ------------------------- Building Project -------------------------
     - cd %BUILD_DIR%
-    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=install ^
+    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "%CMAKE_GENERATOR%" %PLATFORM_PARAM% -DCMAKE_INSTALL_PREFIX=install ^
         -DCMAKE_CXX_STANDARD=%CPP_STD% -DCMAKE_PREFIX_PATH="%COMMON_INSTALL_DIR%" ^
         -DCC_MQTTSN_BUILD_UNIT_TESTS=ON
-    - cmake --build . --config %CONFIGURATION% --target install
+    - cmake --build . --config %CONFIGURATION% --target install --parallel %NUMBER_OF_PROCESSORS%
 
 test_script:
     - echo ------------------------- Testing -------------------------
