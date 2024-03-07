@@ -16,14 +16,11 @@ option (CC_MQTTSN_WITH_SANITIZERS "Build with sanitizers" OFF)
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 # CC_MQTTSN_SANITIZERS - List of sanitizing options
 
-# Updating default settings
-set(CMAKE_CXX_STANDARD 11 CACHE STRING "The C++ standard to use")
-
 ##########################################################################
 
-if (CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_TOOLCHAIN_FILE})
-    message(STATUS "Loading toolchain from ${CMAKE_TOOLCHAIN_FILE}")
-endif()
+if ("${CMAKE_CXX_STANDARD}" STREQUAL "")
+    set(CMAKE_CXX_STANDARD 11)
+endif ()
 
 find_package(LibComms REQUIRED)
 

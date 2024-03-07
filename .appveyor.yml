@@ -19,9 +19,9 @@ configuration:
     - Release
 
 environment:
-    COMMS_BRANCH: v5.2.1
-    CC_MQTTSN_BRANCH: v2.5
-    CC_MQTT311_BRANCH: v2.5
+    COMMS_BRANCH: v5.2.2
+    CC_MQTTSN_BRANCH: v2.6
+    CC_MQTT311_BRANCH: v2.6
 
     matrix:
         - CPP_STD: 11
@@ -50,15 +50,17 @@ install:
     - set COMMON_INSTALL_DIR=%BUILD_DIR%\install
     - set COMMON_BUILD_TYPE=%CONFIGURATION%
     - set COMMON_CXX_STANDARD=%CPP_STD%
+    - set GENERATOR="%CMAKE_GENERATOR%"
+    - set PLATFORM="%CMAKE_PLATFORM%"    
     - call script\prepare_externals.bat    
 
 build_script:
     - echo ------------------------- Building Project -------------------------
     - cd %BUILD_DIR%
-    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=install ^
+    - cmake .. -DCMAKE_BUILD_TYPE=%CONFIGURATION% -G "%CMAKE_GENERATOR%" %PLATFORM_PARAM% -DCMAKE_INSTALL_PREFIX=install ^
         -DCMAKE_CXX_STANDARD=%CPP_STD% -DCMAKE_PREFIX_PATH="%COMMON_INSTALL_DIR%" ^
         -DCC_MQTTSN_BUILD_UNIT_TESTS=ON
-    - cmake --build . --config %CONFIGURATION% --target install
+    - cmake --build . --config %CONFIGURATION% --target install --parallel %NUMBER_OF_PROCESSORS%
 
 test_script:
     - echo ------------------------- Testing -------------------------

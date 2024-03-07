@@ -47,7 +47,26 @@ function (lib_mqttsn_gateway)
 
     install(EXPORT ${name}Config NAMESPACE cc::
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/${name}/cmake
-    )       
+    )     
+
+    include(CMakePackageConfigHelpers)
+    file (READ "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cc_mqttsn_gateway/version.h" version_file)
+    string (REGEX MATCH "CC_MQTTSN_GW_MAJOR_VERSION ([0-9]*)U*" _ ${version_file})
+    set (major_ver ${CMAKE_MATCH_1})
+    string (REGEX MATCH "CC_MQTTSN_GW_MINOR_VERSION ([0-9]*)U*" _ ${version_file})
+    set (minor_ver ${CMAKE_MATCH_1})
+    string (REGEX MATCH "CC_MQTTSN_GW_PATCH_VERSION ([0-9]*)U*" _ ${version_file})
+    set (patch_ver ${CMAKE_MATCH_1})
+    set (CC_MQTTSN_GW_VERSION "${major_ver}.${minor_ver}.${patch_ver}")
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/${name}ConfigVersion.cmake
+        VERSION ${CC_MQTTSN_GW_VERSION}
+        COMPATIBILITY AnyNewerVersion)  
+
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/${name}ConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${name}/cmake
+    )              
     
 endfunction()
 
