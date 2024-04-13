@@ -19,9 +19,9 @@ configuration:
     - Release
 
 environment:
-    COMMS_BRANCH: v5.2.2
-    CC_MQTTSN_BRANCH: v2.6
-    CC_MQTT311_BRANCH: v2.6
+    COMMS_TAG: v5.2.3
+    CC_MQTTSN_TAG: v2.7
+    CC_MQTT311_TAG: v2.7
 
     matrix:
         - CPP_STD: 11
@@ -44,9 +44,9 @@ install:
     - set PATH=%PATH%;%QTDIR%\bin
     - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\build.%PLATFORM%.%CONFIGURATION%.%TOOLCHAIN%
     - if exist %BUILD_DIR% rmdir /S /Q %BUILD_DIR%
-    - set COMMS_TAG=%COMMS_BRANCH%
-    - set CC_MQTTSN_TAG=%CC_MQTTSN_BRANCH%
-    - set CC_MQTT311_TAG=%CC_MQTT311_BRANCH%
+    - set COMMS_TAG=%COMMS_TAG%
+    - set CC_MQTTSN_TAG=%CC_MQTTSN_TAG%
+    - set CC_MQTT311_TAG=%CC_MQTT311_TAG%
     - set COMMON_INSTALL_DIR=%BUILD_DIR%\install
     - set COMMON_BUILD_TYPE=%CONFIGURATION%
     - set COMMON_CXX_STANDARD=%CPP_STD%

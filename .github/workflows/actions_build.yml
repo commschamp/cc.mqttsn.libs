@@ -3,9 +3,9 @@ name: Github Actions Build
 on: [push]
 
 env:
-  COMMS_BRANCH: v5.2.2
-  CC_MQTTSN_BRANCH: v2.6
-  CC_MQTT311_BRANCH: v2.6
+  COMMS_TAG: v5.2.3
+  CC_MQTTSN_TAG: v2.7
+  CC_MQTT311_TAG: v2.7
 
 jobs:
   build_gcc_old_ubuntu_20_04:
@@ -45,9 +45,9 @@ jobs:
         COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
         COMMON_BUILD_TYPE: ${{matrix.type}}
         COMMON_CXX_STANDARD: ${{matrix.cpp}}
-        COMMS_TAG: ${{env.COMMS_BRANCH}}
-        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
-        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
 
     - name: Configure CMake
       shell: bash
@@ -104,9 +104,9 @@ jobs:
         COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
         COMMON_BUILD_TYPE: ${{matrix.type}}
         COMMON_CXX_STANDARD: ${{matrix.cpp}}
-        COMMS_TAG: ${{env.COMMS_BRANCH}}
-        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
-        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
 
     - name: Configure CMake
       shell: bash
@@ -163,9 +163,9 @@ jobs:
         COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
         COMMON_BUILD_TYPE: ${{matrix.type}}
         COMMON_CXX_STANDARD: ${{matrix.cpp}}
-        COMMS_TAG: ${{env.COMMS_BRANCH}}
-        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
-        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
 
     - name: Configure CMake
       shell: bash
@@ -223,9 +223,9 @@ jobs:
         COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
         COMMON_BUILD_TYPE: ${{matrix.type}}
         COMMON_CXX_STANDARD: ${{matrix.cpp}}
-        COMMS_TAG: ${{env.COMMS_BRANCH}}
-        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
-        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
 
     - name: Configure CMake
       shell: bash
@@ -289,9 +289,9 @@ jobs:
         COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
         COMMON_BUILD_TYPE: ${{matrix.type}}
         COMMON_CXX_STANDARD: ${{matrix.cpp}}
-        COMMS_TAG: ${{env.COMMS_BRANCH}}
-        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_BRANCH}}
-        CC_MQTT311_TAG: ${{env.CC_MQTT311_BRANCH}}      
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}      
 
     - name: Configure CMake
       shell: bash
