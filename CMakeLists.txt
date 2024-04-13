@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.10)
 project ("cc_mqttsn")
 
 option (CC_MQTTSN_WARN_AS_ERR "Do NOT treat warning as error" ON)
