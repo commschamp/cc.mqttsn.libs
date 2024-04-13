@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2023 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2024 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@
 #include "cc_mqttsn_client/common.h"
 #include "details/WriteBufStorageType.h"
 
-static_assert(COMMS_MAKE_VERSION(2, 6, 0) <= cc_mqttsn::version(),
+static_assert(COMMS_MAKE_VERSION(2, 7, 0) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
 namespace cc_mqttsn_client

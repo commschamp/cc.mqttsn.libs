@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.1)
-project ("cc_mqttsn")
+cmake_minimum_required (VERSION 3.10)
+project ("cc_mqttsn_libs")
 
 option (CC_MQTTSN_WARN_AS_ERR "Do NOT treat warning as error" ON)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
