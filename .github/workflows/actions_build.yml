@@ -316,7 +316,7 @@ jobs:
       shell: bash
       run: ctest -V 
           
-build_msvc_2019:
+  build_msvc_2019:
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -361,7 +361,7 @@ build_msvc_2019:
       run: cmake --build . --config ${{matrix.type}}
       env:
         VERBOSE: 1 
-        
+
     - name: Testing
       working-directory: ${{runner.workspace}}/build
       shell: cmd
