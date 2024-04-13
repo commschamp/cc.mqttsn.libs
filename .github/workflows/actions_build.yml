@@ -18,7 +18,7 @@ jobs:
         cpp: [11, 14]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Add repositories
       run: |
@@ -82,7 +82,7 @@ jobs:
         cpp: [11, 14, 17]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Prepare Install
       run: sudo apt-get update --fix-missing    
@@ -141,7 +141,7 @@ jobs:
         cpp: [11, 14, 17, 20]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Prepare Install
       run: sudo apt-get update --fix-missing    
@@ -201,7 +201,7 @@ jobs:
         cpp: [11, 14, 17, 20]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Prepare Install
       run: sudo apt-get update --fix-missing    
@@ -267,7 +267,7 @@ jobs:
             cpp: 20
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Prepare Install
       run: sudo apt-get update --fix-missing    
@@ -316,3 +316,104 @@ jobs:
       shell: bash
       run: ctest -V 
           
+build_msvc_2019:
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [Debug, Release, MinSizeRel]
+        arch: [Win32, x64]
+        cpp: [11, 14, 17]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build   
+
+    - name: Prepare externals
+      shell: cmd
+      run: |
+        %GITHUB_WORKSPACE%\script\prepare_externals.bat
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        PLATFORM: ${{matrix.arch}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+
+    - name: Configure CMake
+      shell: cmd
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
+          -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
+          -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
+          -DCC_MQTTSN_BUILD_CLIENT_APPS=OFF -DCC_MQTTSN_BUILD_GATEWAY_APPS=OFF
+
+    - name: Build Target 
+      working-directory: ${{runner.workspace}}/build
+      shell: cmd
+      run: cmake --build . --config ${{matrix.type}}
+      env:
+        VERBOSE: 1 
+        
+    - name: Testing
+      working-directory: ${{runner.workspace}}/build
+      shell: cmd
+      run: ctest -V
+
+  build_msvc_2022:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [Debug, Release, MinSizeRel]
+        arch: [Win32, x64]
+        cpp: [11, 14, 17, 20]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build   
+
+    - name: Prepare externals
+      shell: cmd
+      run: |
+        %GITHUB_WORKSPACE%\script\prepare_externals.bat
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        PLATFORM: ${{matrix.arch}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+
+    - name: Configure CMake
+      shell: cmd
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
+          -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
+          -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
+          -DCC_MQTTSN_BUILD_CLIENT_APPS=OFF -DCC_MQTTSN_BUILD_GATEWAY_APPS=OFF
+
+    - name: Build Target 
+      working-directory: ${{runner.workspace}}/build
+      shell: cmd
+      run: cmake --build . --config ${{matrix.type}}
+      env:
+        VERBOSE: 1 
+
+    - name: Testing
+      working-directory: ${{runner.workspace}}/build
+      shell: cmd
+      run: ctest -V
