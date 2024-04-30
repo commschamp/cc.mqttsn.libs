@@ -88,8 +88,7 @@ void SessionImpl::sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& fun
 
     buf.resize(std::max(buf.size(), stack.length(msg)));
     auto iter = comms::writeIteratorFor<MsgType>(&buf[0]);
-    auto es = stack.write(msg, iter, buf.size());
-    static_cast<void>(es);
+    [[maybe_unused]] auto es = stack.write(msg, iter, buf.size());
     assert(es == comms::ErrorStatus::Success);
     auto writtenCount =
         static_cast<std::size_t>(
@@ -190,9 +189,8 @@ bool SessionImpl::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t 
     return m_state.m_regMgr.setTopicIdAllocationRange(minVal, maxVal);
 }
 
-void SessionImpl::handle(SearchgwMsg_SN& msg)
+void SessionImpl::handle([[maybe_unused]] SearchgwMsg_SN& msg)
 {
-    static_cast<void>(msg);
     GwinfoMsg_SN respMsg;
     auto& fields = respMsg.fields();
     auto& gwIdField = std::get<decltype(respMsg)::FieldIdx_gwId>(fields);

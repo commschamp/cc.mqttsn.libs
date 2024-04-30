@@ -177,9 +177,8 @@ void SessionWrapper::readFromBrokerSocket()
     m_brokerData.assign(buf + consumed, buf + bufSize);
 }
 
-void SessionWrapper::brokerSocketErrorOccurred(QAbstractSocket::SocketError err)
+void SessionWrapper::brokerSocketErrorOccurred([[maybe_unused]] QAbstractSocket::SocketError err)
 {
-    static_cast<void>(err);
     std::cerr << "ERROR: TCP Socket: " << m_brokerSocket.errorString().toStdString() << std::endl;
 }
 

@@ -42,8 +42,7 @@ void TestMsgHandler::processOutputInternal(TStack& stack, const DataBuf& data)
     auto iter = comms::readIteratorFor<MsgType>(&data[0]);
     MsgPtr msg;
 
-    auto es = stack.read(msg, iter, data.size());
-    static_cast<void>(es);
+    [[maybe_unused]] auto es = stack.read(msg, iter, data.size());
     if (es != comms::ErrorStatus::Success) {
         std::cout << "es=" << static_cast<unsigned>(es) << ": Output buffer: " << std::hex;
         std::copy(data.begin(), data.end(), std::ostream_iterator<unsigned>(std::cout, " "));
@@ -66,8 +65,7 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TStack& stack, cons
     buf.resize(stack.length(msg));
 
     auto iter = comms::writeIteratorFor<MsgType>(&buf[0]);
-    auto es = stack.write(msg, iter, buf.size());
-    static_cast<void>(es);
+    [[maybe_unused]] auto es = stack.write(msg, iter, buf.size());
     assert(es == comms::ErrorStatus::Success);
     assert(buf.size() == static_cast<unsigned>(std::distance(comms::writeIteratorFor<MsgType>(&buf[0]), iter)));
     return buf;
@@ -419,8 +417,7 @@ void TestMsgHandler::handle(WillmsgrespMsg_SN& msg)
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
 {
     std::cout << "Unhandled message sent to client: " << static_cast<unsigned>(msg.getId()) << std::endl;
-    constexpr bool Unhandled_message = false;
-    static_cast<void>(Unhandled_message);
+    [[maybe_unused]] constexpr bool Unhandled_message = false;
     assert(Unhandled_message);
 }
 
@@ -493,8 +490,7 @@ void TestMsgHandler::handle(UnsubscribeMsg& msg)
 void TestMsgHandler::handle(TestMqttMessage& msg)
 {
     std::cout << "Unhandled message sent to broker: " << static_cast<unsigned>(msg.getId()) << std::endl;
-    constexpr bool Unhandled_message = false;
-    static_cast<void>(Unhandled_message);
+    [[maybe_unused]] constexpr bool Unhandled_message = false;
     assert(Unhandled_message);
 }
 

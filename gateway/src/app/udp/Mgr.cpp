@@ -111,13 +111,13 @@ void Mgr::readClientData()
 
     while (m_socket.hasPendingDatagrams()) {
         data.resize(m_socket.pendingDatagramSize());
-        auto readBytes = m_socket.readDatagram(
-            reinterpret_cast<char*>(&data[0]),
-            data.size(),
-            &senderAddress,
-            &senderPort);
+        [[maybe_unused]] auto readBytes = 
+            m_socket.readDatagram(
+                reinterpret_cast<char*>(&data[0]),
+                data.size(),
+                &senderAddress,
+                &senderPort);
         assert(readBytes == static_cast<decltype(readBytes)>(data.size()));
-        static_cast<void>(readBytes);
 
         if (data == m_lastAdvertise) {
             continue;
@@ -149,8 +149,7 @@ void Mgr::readClientData()
                 auto key = QString("%1:%2").arg(s.getClientAddr()).arg(s.getClientPort());
                 auto it = m_sessions.find(key);
                 if (it == m_sessions.end()) {
-                    constexpr bool Session_not_found = false;
-                    static_cast<void>(Session_not_found);
+                    [[maybe_unused]] constexpr bool Session_not_found = false;
                     assert(Session_not_found);
                     return;
                 }
@@ -163,8 +162,7 @@ void Mgr::readClientData()
         auto sessionPtr = session.release();
 
         if (!sessionPtr->start()) {
-            constexpr bool Should_not_happen = false;
-            static_cast<void>(Should_not_happen);
+            [[maybe_unused]] constexpr bool Should_not_happen = false;
             assert(Should_not_happen);
             continue;
         }
@@ -173,9 +171,8 @@ void Mgr::readClientData()
     }
 }
 
-void Mgr::socketErrorOccurred(QAbstractSocket::SocketError err)
+void Mgr::socketErrorOccurred([[maybe_unused]] QAbstractSocket::SocketError err)
 {
-    static_cast<void>(err);
     std::cerr << "ERROR: UDP Socket: " << m_socket.errorString().toStdString() << std::endl;
 }
 

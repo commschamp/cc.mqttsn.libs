@@ -19,7 +19,7 @@ option (CC_MQTTSN_WITH_SANITIZERS "Build with sanitizers" OFF)
 ##########################################################################
 
 if ("${CMAKE_CXX_STANDARD}" STREQUAL "")
-    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 17)
 endif ()
 
 find_package(LibComms REQUIRED)

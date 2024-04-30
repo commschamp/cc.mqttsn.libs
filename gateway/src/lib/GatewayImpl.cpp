@@ -58,8 +58,7 @@ void GatewayImpl::refresh()
     durationField.value() = m_advertisePeriod;
 
     auto iter = &m_outputData[0];
-    auto es = m_protStack.write(msg, iter, m_outputData.size());
-    static_cast<void>(es);
+    [[maybe_unused]] auto es = m_protStack.write(msg, iter, m_outputData.size());
     assert(es == comms::ErrorStatus::Success);
     assert(std::distance(&m_outputData[0], iter) == AdvertiseLength);
 }

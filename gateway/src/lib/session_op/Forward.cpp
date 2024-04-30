@@ -97,9 +97,8 @@ void Forward::handle(PubrelMsg_SN& msg)
     sendToBroker(fwdMsg);
 }
 
-void Forward::handle(PingreqMsg_SN& msg)
+void Forward::handle([[maybe_unused]] PingreqMsg_SN& msg)
 {
-    static_cast<void>(msg);
     if (state().m_connStatus != ConnectionStatus::Connected) {
         return;
     }
@@ -108,9 +107,8 @@ void Forward::handle(PingreqMsg_SN& msg)
     sendToBroker(PingreqMsg());
 }
 
-void Forward::handle(PingrespMsg_SN& msg)
+void Forward::handle([[maybe_unused]] PingrespMsg_SN& msg)
 {
-    static_cast<void>(msg);
     sendToBroker(PingrespMsg());
 }
 
@@ -323,9 +321,8 @@ void Forward::handle(PubcompMsg& msg)
     sendToClient(respMsg);
 }
 
-void Forward::handle(PingrespMsg& msg)
+void Forward::handle([[maybe_unused]] PingrespMsg& msg)
 {
-    static_cast<void>(msg);
     if (!m_pingInProgress) {
         return;
     }

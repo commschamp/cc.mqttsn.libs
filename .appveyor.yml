@@ -1,6 +1,4 @@
 image:
-    - Visual Studio 2015
-    - Visual Studio 2017
     - Visual Studio 2019
     - Visual Studio 2022
 
@@ -24,19 +22,13 @@ environment:
     CC_MQTT311_TAG: v2.7
 
     matrix:
-        - CPP_STD: 11
-        - CPP_STD: 14
         - CPP_STD: 17
         - CPP_STD: 20
 
 matrix:
     fast_finish: false
     exclude:
-        - image: Visual Studio 2015
-          CPP_STD: 17 
-        - image: Visual Studio 2015
-          CPP_STD: 20    
-        - image: Visual Studio 2017
+        - image: Visual Studio 2019
           CPP_STD: 20         
 
 install:

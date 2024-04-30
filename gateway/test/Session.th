@@ -113,8 +113,7 @@ private:
             [&state]() -> unsigned
             {
                 if (state.m_elapsed.empty()) {
-                    constexpr bool Elapsed_time_not_specified = false;
-                    static_cast<void>(Elapsed_time_not_specified);
+                    [[maybe_unused]] constexpr bool Elapsed_time_not_specified = false;
                     assert(Elapsed_time_not_specified);
                     return 0U;
                 }

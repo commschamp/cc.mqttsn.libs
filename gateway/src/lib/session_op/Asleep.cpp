@@ -56,17 +56,15 @@ void Asleep::handle(DisconnectMsg_SN& msg)
     doPing();
 }
 
-void Asleep::handle(MqttsnMessage& msg)
+void Asleep::handle([[maybe_unused]] MqttsnMessage& msg)
 {
-    static_cast<void>(msg);
     if (state().m_connStatus != ConnectionStatus::Asleep) {
         cancelTick();
     }
 }
 
-void Asleep::handle(PingrespMsg& msg)
+void Asleep::handle([[maybe_unused]] PingrespMsg& msg)
 {
-    static_cast<void>(msg);
     auto& st = state();
     if ((st.m_pendingClientDisconnect) ||
         (st.m_connStatus != ConnectionStatus::Asleep)) {
@@ -78,9 +76,8 @@ void Asleep::handle(PingrespMsg& msg)
     reqNextTick();
 }
 
-void Asleep::handle(MqttMessage& msg)
+void Asleep::handle([[maybe_unused]] MqttMessage& msg)
 {
-    static_cast<void>(msg);
     if (state().m_connStatus != ConnectionStatus::Asleep) {
         cancelTick();
     }

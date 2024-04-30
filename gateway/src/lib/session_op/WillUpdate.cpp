@@ -48,17 +48,15 @@ void WillUpdate::brokerConnectionUpdatedImpl()
     }
 }
 
-void WillUpdate::handle(ConnectMsg_SN& msg)
+void WillUpdate::handle([[maybe_unused]] ConnectMsg_SN& msg)
 {
-    static_cast<void>(msg);
     if (m_op != Op::None) {
         cancelOp();
     }
 }
 
-void WillUpdate::handle(DisconnectMsg_SN& msg)
+void WillUpdate::handle([[maybe_unused]] DisconnectMsg_SN& msg)
 {
-    static_cast<void>(msg);
     if (m_op != Op::None) {
         cancelOp();
     }

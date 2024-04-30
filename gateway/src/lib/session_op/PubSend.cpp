@@ -132,15 +132,13 @@ void PubSend::handle(PingreqMsg_SN& msg)
     checkSend();
 }
 
-void PubSend::handle(MqttsnMessage& msg)
+void PubSend::handle([[maybe_unused]] MqttsnMessage& msg)
 {
-    static_cast<void>(msg);
     checkSend();
 }
 
-void PubSend::handle(MqttMessage& msg)
+void PubSend::handle([[maybe_unused]] MqttMessage& msg)
 {
-    static_cast<void>(msg);
     checkSend();
 }
 

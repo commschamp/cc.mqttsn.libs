@@ -39,8 +39,7 @@ void AsleepMonitor::handle(DisconnectMsg_SN& msg)
     }
 
     if (state().m_connStatus != ConnectionStatus::Asleep) {
-        constexpr bool Should_not_happen = false;
-        static_cast<void>(Should_not_happen);
+        [[maybe_unused]] constexpr bool Should_not_happen = false;
         assert(Should_not_happen);
         return;
     }
@@ -50,9 +49,8 @@ void AsleepMonitor::handle(DisconnectMsg_SN& msg)
     reqNextTick();
 }
 
-void AsleepMonitor::handle(PingreqMsg_SN& msg)
+void AsleepMonitor::handle([[maybe_unused]] PingreqMsg_SN& msg)
 {
-    static_cast<void>(msg);
     m_lastPing = state().m_timestamp;
     cancelTick();
     if (state().m_connStatus == ConnectionStatus::Asleep) {
@@ -60,15 +58,13 @@ void AsleepMonitor::handle(PingreqMsg_SN& msg)
     }
 }
 
-void AsleepMonitor::handle(MqttsnMessage& msg)
+void AsleepMonitor::handle([[maybe_unused]] MqttsnMessage& msg)
 {
-    static_cast<void>(msg);
     checkTickRequired();
 }
 
-void AsleepMonitor::handle(MqttMessage& msg)
+void AsleepMonitor::handle([[maybe_unused]] MqttMessage& msg)
 {
-    static_cast<void>(msg);
     checkTickRequired();
 }
 
