@@ -14,25 +14,8 @@
 
 #ifdef __cplusplus
 extern "C" {
-#else
-
-#ifdef WIN32
-#ifndef bool
-#define bool char
-#endif
-
-#ifndef true
-#define true 1
-#endif
-
-#ifndef false
-#define false 0
-#endif
-
-#else // #ifdef WIN32
+#else // #ifdef __cplusplus
 #include <stdbool.h>
-#endif // #ifdef WIN32
-
 #endif // #ifdef __cplusplus
 
 /*===================== Gateway Object ======================*/
@@ -135,55 +118,63 @@ typedef struct
 /// @details When the requested time is due, the driving code is expected
 ///     to call cc_mqttsn_gw_session_tick() member function.
 /// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the request
 /// @param[in] duration Number of @b milliseconds to measure.
-typedef void (*CC_MqttsnSessionTickReqCb)(void* userData, unsigned duration);
+typedef void (*CC_MqttsnSessionTickReqCb)(void* userData, CC_MqttsnSessionHandle session, unsigned duration);
 
 /// @brief Type of callback, used to cancel existing time measurement.
 /// @details When invoked the existing time measurement needs to be cancelled.
 ///     The function also needs to return amount of @b milliseconds elapsed
 ///     since last timer programming request.
 /// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the request
 /// @return Number of elapsed @b milliseconds since last timer programming
 ///     request.
-typedef unsigned (*CC_MqttsnSessionCancelTickReqCb)(void* userData);
+typedef unsigned (*CC_MqttsnSessionCancelTickReqCb)(void* userData, CC_MqttsnSessionHandle session);
 
 /// @brief Type of callback, used to request delivery of serialised message
 ///     to the client or broker.
 /// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the request
 /// @param[in] buf Buffer containing serialised message.
 /// @param[in] bufLen Number of bytes in the buffer
-typedef void (*CC_MqttsnSessionSendDataReqCb)(void* userData, const unsigned char* buf, unsigned bufLen);
+typedef void (*CC_MqttsnSessionSendDataReqCb)(void* userData, CC_MqttsnSessionHandle session, const unsigned char* buf, unsigned bufLen);
 
 /// @brief Type of callback, used to request session termination.
 /// @details When the callback is invoked, the driving code must flush
 ///     all the previously sent messages to appropriate I/O links and
 ///     delete this session object.
 /// @param[in] userData User data passed as the last parameter to the setting function.
-typedef void (*CC_MqttsnSessionTermReqCb)(void* userData);
+/// @param[in] session Handle of session performing the request
+typedef void (*CC_MqttsnSessionTermReqCb)(void* userData, CC_MqttsnSessionHandle session);
 
 /// @brief Type of callback used to request reconnection to the broker.
 /// @details When the callback is invoked, the driving code must close
 ///     existing TCP/IP connection to the broker and create a new one.
 /// @param[in] userData User data passed as the last parameter to the setting function.
-typedef void (*CC_MqttsnSessionBrokerReconnectReqCb)(void* userData);
+/// @param[in] session Handle of session performing the request
+typedef void (*CC_MqttsnSessionBrokerReconnectReqCb)(void* userData, CC_MqttsnSessionHandle session);
 
 /// @brief Type of callback used to report client ID of the newly connected
 ///     MQTT-SN client.
 /// @details The callback can be used to provide additional client specific
 ///     information, such as predefined topic IDs.
 /// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the report
 /// @param[in] clientId Client ID
-typedef void (*CC_MqttsnSessionClientConnectReportCb)(void* userData, const char* clientId);
+typedef void (*CC_MqttsnSessionClientConnectReportCb)(void* userData, CC_MqttsnSessionHandle session, const char* clientId);
 
 /// @brief Type of callback used to request authentication information of
 ///     the client that is trying to connect.
 /// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the request
 /// @param[in] clientId Client ID
 /// @param[out] username Username string
 /// @param[out] password Binary password buffer
 /// @param[out] passwordLen Length of the binary password
 typedef void (*CC_MqttsnSessionAuthInfoReqCb)(
     void* userData,
+    CC_MqttsnSessionHandle session,
     const char* clientId,
     const char** username,
     const unsigned char** password,

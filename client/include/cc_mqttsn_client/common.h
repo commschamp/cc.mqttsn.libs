@@ -12,25 +12,8 @@
 
 #ifdef __cplusplus
 extern "C" {
-#else
-
-#ifdef WIN32
-#ifndef bool
-#define bool char
-#endif
-
-#ifndef true
-#define true 1
-#endif
-
-#ifndef false
-#define false 0
-#endif
-
-#else // #ifdef WIN32
+#else // #ifdef __cplusplus  
 #include <stdbool.h>
-#endif // #ifdef WIN32
-
 #endif // #ifdef __cplusplus
 
 /// @brief Major verion of the library

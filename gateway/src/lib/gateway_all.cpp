@@ -138,9 +138,9 @@ void cc_mqttsn_gw_session_set_tick_req_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setNextTickProgramReqCb(
-        [cb, data](unsigned duration)
+        [cb, data, session](unsigned duration)
         {
-            cb(data, duration);
+            cb(data, session, duration);
         });
 }
 
@@ -154,9 +154,9 @@ void cc_mqttsn_gw_session_set_cancel_tick_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setCancelTickWaitReqCb(
-        [cb, data]() -> unsigned
+        [cb, data, session]() -> unsigned
         {
-            return cb(data);
+            return cb(data, session);
         });
 }
 
@@ -170,9 +170,9 @@ void cc_mqttsn_gw_session_set_send_data_to_client_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setSendDataClientReqCb(
-        [cb, data](const std::uint8_t* buf, std::size_t bufLen)
+        [cb, data, session](const std::uint8_t* buf, std::size_t bufLen)
         {
-            cb(data, buf, static_cast<unsigned>(bufLen));
+            cb(data, session, buf, static_cast<unsigned>(bufLen));
         });
 }
 
@@ -187,9 +187,9 @@ void cc_mqttsn_gw_session_set_send_data_to_broker_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setSendDataBrokerReqCb(
-        [cb, data](const std::uint8_t* buf, std::size_t bufLen)
+        [cb, data, session](const std::uint8_t* buf, std::size_t bufLen)
         {
-            cb(data, buf, static_cast<unsigned>(bufLen));
+            cb(data, session, buf, static_cast<unsigned>(bufLen));
         });
 }
 
@@ -203,9 +203,9 @@ void cc_mqttsn_gw_session_set_term_req_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setTerminationReqCb(
-        [cb, data]()
+        [cb, data, session]()
         {
-            cb(data);
+            cb(data, session);
         });
 }
 
@@ -219,9 +219,9 @@ void cc_mqttsn_gw_session_set_broker_reconnect_req_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setBrokerReconnectReqCb(
-        [cb, data]()
+        [cb, data, session]()
         {
-            cb(data);
+            cb(data, session);
         });
 }
 
@@ -240,9 +240,9 @@ void cc_mqttsn_gw_session_set_client_connect_report_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setClientConnectedReportCb(
-        [cb, data](const std::string& clientId)
+        [cb, data, session](const std::string& clientId)
         {
-            cb(data, clientId.c_str());
+            cb(data, session, clientId.c_str());
         });
 }
 
@@ -261,12 +261,12 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setAuthInfoReqCb(
-        [cb, data](const std::string& clientId) -> Session::AuthInfo
+        [cb, data, session](const std::string& clientId) -> Session::AuthInfo
         {
             const char* username = nullptr;
             const std::uint8_t* password = nullptr;
             unsigned passLen = 0U;
-            cb(data, clientId.c_str(), &username, &password, &passLen);
+            cb(data, session, clientId.c_str(), &username, &password, &passLen);
 
             Session::AuthInfo info;
             if (username != nullptr) {
