@@ -53,21 +53,6 @@ void Disconnect::handle(DisconnectMsg_SN& msg)
     termRequest();
 }
 
-void Disconnect::handle(DisconnectMsg& msg)
-{
-    static_cast<void>(msg);
-    if (state().m_connStatus == ConnectionStatus::Connected) {
-        sendDisconnectSn();
-    }
-
-    if (state().m_connStatus != ConnectionStatus::Asleep) {
-        termRequest();
-        return;
-    }
-
-    state().m_pendingClientDisconnect = true;
-}
-
 void Disconnect::sendDisconnectSn()
 {
     Base::sendDisconnectToClient();

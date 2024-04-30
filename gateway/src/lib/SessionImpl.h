@@ -200,8 +200,8 @@ private:
     ClientConnectedReportCb m_clientConnectedCb;
     AuthInfoReqCb m_authInfoReqCb;
 
-    MqttsnProtStack m_mqttsnStack;
-    MqttProtStack m_mqttStack;
+    MqttsnFrame m_mqttsnFrame;
+    MqttFrame m_mqttFrame;
 
     DataBuf m_mqttsnMsgData;
     DataBuf m_mqttMsgData;

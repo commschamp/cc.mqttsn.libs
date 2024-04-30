@@ -30,7 +30,6 @@ protected:
 private:
     using Base::handle;
     virtual void handle(DisconnectMsg_SN& msg) override;
-    virtual void handle(DisconnectMsg& msg) override;
 
     void sendDisconnectSn();
 };

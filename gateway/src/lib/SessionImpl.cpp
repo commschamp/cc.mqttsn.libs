@@ -155,12 +155,12 @@ void SessionImpl::tick()
 
 std::size_t SessionImpl::dataFromClient(const std::uint8_t* buf, std::size_t len)
 {
-    return processInputData(buf, len, m_mqttsnStack);
+    return processInputData(buf, len, m_mqttsnFrame);
 }
 
 std::size_t SessionImpl::dataFromBroker(const std::uint8_t* buf, std::size_t len)
 {
-    return processInputData(buf, len, m_mqttStack);
+    return processInputData(buf, len, m_mqttFrame);
 }
 
 void SessionImpl::setBrokerConnected(bool connected)
@@ -245,12 +245,12 @@ void SessionImpl::handle(MqttMessage& msg)
 
 void SessionImpl::sendToClient(const MqttsnMessage& msg)
 {
-    sendMessage(msg, m_mqttsnStack, m_sendToClientCb, m_mqttsnMsgData);
+    sendMessage(msg, m_mqttsnFrame, m_sendToClientCb, m_mqttsnMsgData);
 }
 
 void SessionImpl::sendToBroker(const MqttMessage& msg)
 {
-    sendMessage(msg, m_mqttStack, m_sendToBrokerCb, m_mqttMsgData);
+    sendMessage(msg, m_mqttFrame, m_sendToBrokerCb, m_mqttMsgData);
 }
 
 void SessionImpl::startOp(SessionOp& op)

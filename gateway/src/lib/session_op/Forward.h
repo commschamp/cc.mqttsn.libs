@@ -43,7 +43,6 @@ private:
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PubrecMsg& msg) override;
     virtual void handle(PubcompMsg& msg) override;
-    virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(SubackMsg& msg) override;
     virtual void handle(UnsubackMsg& msg) override;

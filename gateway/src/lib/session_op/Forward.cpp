@@ -323,16 +323,6 @@ void Forward::handle(PubcompMsg& msg)
     sendToClient(respMsg);
 }
 
-void Forward::handle(PingreqMsg& msg)
-{
-    static_cast<void>(msg);
-    if (state().m_connStatus != ConnectionStatus::Connected) {
-        return;
-    }
-
-    sendToClient(PingreqMsg_SN());
-}
-
 void Forward::handle(PingrespMsg& msg)
 {
     static_cast<void>(msg);
