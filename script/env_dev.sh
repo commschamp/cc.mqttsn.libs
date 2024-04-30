@@ -11,4 +11,4 @@ BUILD_DIR="${ROOT_DIR}/build.${CC}"
 mkdir -p ${BUILD_DIR}
 cd ${BUILD_DIR}
 
-cmake .. -DCMAKE_INSTALL_PREFIX=install -DCMAKE_BUILD_TYPE=Debug "$@"
+cmake .. -DCMAKE_INSTALL_PREFIX=install -DCMAKE_BUILD_TYPE=Debug -DCC_MQTTSN_USE_CCACHE=ON "$@"

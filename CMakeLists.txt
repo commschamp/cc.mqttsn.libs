@@ -8,7 +8,7 @@ option (CC_MQTTSN_BUILD_CLIENT_APPS "Build and install client applications" ${CC
 option (CC_MQTTSN_BUILD_GATEWAY_APPS "Build and install gateway applications" ${CC_MQTTSN_BUILD_GATEWAY})
 option (CC_MQTTSN_BUILD_UNIT_TESTS "Build unittests." OFF)
 option (CC_MQTTSN_UNIT_TEST_WITH_VALGRIND "Disable valgrind in unittests." OFF)
-option (CC_MQTTSN_USE_CCACHE "Use ccache on unix system" ON)
+option (CC_MQTTSN_USE_CCACHE "Use ccache on unix system" OFF)
 option (CC_MQTTSN_WITH_SANITIZERS "Build with sanitizers" OFF)
 
 # Extra variables
