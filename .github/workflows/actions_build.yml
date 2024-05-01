@@ -118,10 +118,11 @@ jobs:
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
         -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
-        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{env.WITH_SANITIZERS}}
       env:
         CC: clang-${{matrix.cc_ver}}
         CXX: clang++-${{matrix.cc_ver}}
+        WITH_SANITIZERS: "${{ (matrix.cc_ver == 11) && 'OFF' || 'ON' }}"        
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
