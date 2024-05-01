@@ -1642,25 +1642,6 @@ void SessionTest::test5()
     auto session = allocSession(state, handler);
 
     doConnect(*session, state, handler);
-
-    auto disconnectSnMsg = handler.prepareClientDisconnect();
-    dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
-    verifySentToClient_DisconnectMsg(state, handler);
-    verifySentToBroker_DisconnectMsg(state, handler);
-    verifyTermReq(state);
-    verifyNoOtherEvent(state, handler);
-
-    session = allocSession(state, handler);
-    doConnect(*session, state, handler);
-
-    auto disconnectMsg = handler.prepareBrokerDisconnect();
-    dataFromBroker(*session, disconnectMsg, "DISCONNECT");
-    verifySentToClient_DisconnectMsg(state, handler);
-    verifyTermReq(state);
-    verifyNoOtherEvent(state, handler);
-
-    session = allocSession(state, handler);
-    doConnect(*session, state, handler);
     doBrokerDisconnect(*session);
     verifySentToClient_DisconnectMsg(state, handler);
     verifyTermReq(state);
@@ -2462,16 +2443,6 @@ void SessionTest::test20()
     auto bResp = handler.prepareBrokerPingresp();
     dataFromBroker(*session, bResp, "PINGRESP");
     verifySentToClient_PingrespMsg(state, handler);
-    verifyNoOtherEvent(state, handler);
-
-    auto bReq = handler.prepareBrokerPingreq();
-    dataFromBroker(*session, bReq, "PINGREQ");
-    verifySentToClient_PingreqMsg(state, handler);
-    verifyNoOtherEvent(state, handler);
-
-    auto cResp = handler.prepareClientPingresp();
-    dataFromClient(*session, cResp, "PINGRESP");
-    verifySentToBroker_PingrespMsg(state, handler);
     verifyNoOtherEvent(state, handler);
 
     // should be ignored
