@@ -20,7 +20,7 @@
 
 #include "RegMgr.h"
 
-static_assert(COMMS_MAKE_VERSION(2, 7, 0) <= cc_mqttsn::version(),
+static_assert(COMMS_MAKE_VERSION(2, 7, 1) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
 static_assert(COMMS_MAKE_VERSION(2, 7, 0) <= cc_mqtt311::version(),

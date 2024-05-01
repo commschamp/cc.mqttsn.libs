@@ -14,6 +14,7 @@
 
 #include "comms/comms.h"
 #include "cc_mqttsn/frame/Frame.h"
+#include "cc_mqttsn/input/ProtMessages.h"
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn_client/common.h"
 
@@ -27,7 +28,7 @@ typedef cc_mqttsn::Message<
     comms::option::LengthInfoInterface
 > TestMessage;
 
-typedef cc_mqttsn::input::AllMessages<TestMessage> AllTestMessages;
+typedef cc_mqttsn::input::ProtMessages<TestMessage> AllTestMessages;
 
 class DataProcessor : public comms::GenericHandler<TestMessage, AllTestMessages>
 {
@@ -36,33 +37,7 @@ public:
     typedef std::vector<std::uint8_t> DataBuf;
     using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
 
-    typedef cc_mqttsn::message::Advertise<TestMessage> AdvertiseMsg;
-    typedef cc_mqttsn::message::Searchgw<TestMessage> SearchgwMsg;
-    typedef cc_mqttsn::message::Gwinfo<TestMessage> GwinfoMsg;
-    typedef cc_mqttsn::message::Connect<TestMessage> ConnectMsg;
-    typedef cc_mqttsn::message::Connack<TestMessage> ConnackMsg;
-    typedef cc_mqttsn::message::Willtopicreq<TestMessage> WilltopicreqMsg;
-    typedef cc_mqttsn::message::Willtopic<TestMessage> WilltopicMsg;
-    typedef cc_mqttsn::message::Willmsgreq<TestMessage> WillmsgreqMsg;
-    typedef cc_mqttsn::message::Willmsg<TestMessage> WillmsgMsg;
-    typedef cc_mqttsn::message::Register<TestMessage> RegisterMsg;
-    typedef cc_mqttsn::message::Regack<TestMessage> RegackMsg;
-    typedef cc_mqttsn::message::Publish<TestMessage> PublishMsg;
-    typedef cc_mqttsn::message::Puback<TestMessage> PubackMsg;
-    typedef cc_mqttsn::message::Pubrec<TestMessage> PubrecMsg;
-    typedef cc_mqttsn::message::Pubrel<TestMessage> PubrelMsg;
-    typedef cc_mqttsn::message::Pubcomp<TestMessage> PubcompMsg;
-    typedef cc_mqttsn::message::Subscribe<TestMessage> SubscribeMsg;
-    typedef cc_mqttsn::message::Suback<TestMessage> SubackMsg;
-    typedef cc_mqttsn::message::Unsubscribe<TestMessage> UnsubscribeMsg;
-    typedef cc_mqttsn::message::Unsuback<TestMessage> UnsubackMsg;
-    typedef cc_mqttsn::message::Pingreq<TestMessage> PingreqMsg;
-    typedef cc_mqttsn::message::Pingresp<TestMessage> PingrespMsg;
-    typedef cc_mqttsn::message::Disconnect<TestMessage> DisconnectMsg;
-    typedef cc_mqttsn::message::Willtopicupd<TestMessage> WilltopicupdMsg;
-    typedef cc_mqttsn::message::Willmsgupd<TestMessage> WillmsgupdMsg;
-    typedef cc_mqttsn::message::Willtopicresp<TestMessage> WilltopicrespMsg;
-    typedef cc_mqttsn::message::Willmsgresp<TestMessage> WillmsgrespMsg;
+    CC_MQTTSN_ALIASES_FOR_PROT_MESSAGES_DEFAULT_OPTIONS(, Msg, TestMessage);
 
 
     virtual ~DataProcessor();

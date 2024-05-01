@@ -19,12 +19,12 @@
 #include "cc_mqttsn/Version.h"
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn/frame/Frame.h"
-#include "cc_mqttsn/input/ClientInputMessages.h"
+#include "cc_mqttsn/input/ProtClientInputMessages.h"
 #include "cc_mqttsn/options/ClientDefaultOptions.h"
 #include "cc_mqttsn_client/common.h"
 #include "details/WriteBufStorageType.h"
 
-static_assert(COMMS_MAKE_VERSION(2, 7, 0) <= cc_mqttsn::version(),
+static_assert(COMMS_MAKE_VERSION(2, 7, 1) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
 namespace cc_mqttsn_client
@@ -1798,7 +1798,7 @@ private:
         >
     >::Type OpStorageType;
 
-    using InputMessages = cc_mqttsn::input::ClientInputMessages<Message, ProtOpts>;
+    using InputMessages = cc_mqttsn::input::ProtClientInputMessages<Message, ProtOpts>;
     typedef cc_mqttsn::frame::Frame<Message, InputMessages, ProtOpts> ProtStack;
     typedef typename ProtStack::MsgPtr MsgPtr;
 

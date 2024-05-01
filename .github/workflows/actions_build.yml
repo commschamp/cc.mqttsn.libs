@@ -4,7 +4,7 @@ on: [push]
 
 env:
   COMMS_TAG: v5.2.3
-  CC_MQTTSN_TAG: v2.7
+  CC_MQTTSN_TAG: develop
   CC_MQTT311_TAG: v2.7
 
 jobs:

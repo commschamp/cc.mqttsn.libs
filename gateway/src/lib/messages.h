@@ -10,7 +10,7 @@
 #include "cc_mqttsn/Message.h"
 #include "cc_mqttsn/frame/Frame.h"
 #include "cc_mqttsn/input/AllMessages.h"
-#include "cc_mqttsn/input/ServerInputMessages.h"
+#include "cc_mqttsn/input/GwServerInputMessages.h"
 #include "cc_mqttsn/options/ServerDefaultOptions.h"
 #include "cc_mqttsn/options/DataViewDefaultOptions.h"
 #include "cc_mqtt311/Message.h"
@@ -55,10 +55,10 @@ using MqttsnGwOptions =
 CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES(, Msg_SN, MqttsnMessage, MqttsnGwOptions)    
 
 template <typename TMsgBase>
-using InputMqttsnMessages = cc_mqttsn::input::ServerInputMessages<TMsgBase, MqttsnGwOptions>;
+using InputMqttsnMessages = cc_mqttsn::input::GwServerInputMessages<TMsgBase, MqttsnGwOptions>;
 
 using MqttsnFrame =
-    cc_mqttsn::frame::Frame<MqttsnMessage, InputMqttsnMessages<MqttsnMessage> >;
+    cc_mqttsn::frame::Frame<MqttsnMessage, InputMqttsnMessages<MqttsnMessage>, MqttsnGwOptions>;
     
     
 using Mqtt311GwOptions = cc_mqtt311::options::ClientDefaultOptions;
