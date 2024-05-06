@@ -12,10 +12,13 @@
 #include <algorithm>
 #include <limits>
 
+#include "comms/process.h"
+
 #include "session_op/Connect.h"
 #include "session_op/Disconnect.h"
 #include "session_op/Asleep.h"
 #include "session_op/AsleepMonitor.h"
+#include "session_op/Encapsulate.h"
 #include "session_op/PubRecv.h"
 #include "session_op/PubSend.h"
 #include "session_op/Forward.h"
@@ -31,64 +34,18 @@ const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
 
 }  // namespace
 
-template <typename TStack>
-std::size_t SessionImpl::processInputData(const std::uint8_t* buf, std::size_t len, TStack& stack)
-{
-    if ((!isRunning()) || m_state.m_terminating) {
-        return 0U;
-    }
-
-    auto guard = apiCall();
-    const std::uint8_t* bufTmp = buf;
-    while (true) {
-        typename TStack::MsgPtr msg;
-
-        typedef typename TStack::MsgPtr::element_type MsgType;
-        auto iter = comms::readIteratorFor<MsgType>(bufTmp);
-        auto consumedBytes =
-            static_cast<std::size_t>(std::distance(buf, bufTmp));
-        assert(consumedBytes <= len);
-        auto remLen = len - consumedBytes;
-        if (remLen == 0U) {
-            break;
-        }
-
-        auto es = stack.read(msg, iter, remLen);
-        if (es == comms::ErrorStatus::NotEnoughData) {
-            break;
-        }
-
-        if (es == comms::ErrorStatus::ProtocolError) {
-            ++bufTmp;
-            continue;
-        }
-
-        if (es == comms::ErrorStatus::Success) {
-            assert(msg);
-            m_state.m_lastMsgTimestamp = m_state.m_timestamp;
-            msg->dispatch(*this);
-        }
-
-        bufTmp = iter;
-    }
-
-    auto consumed = static_cast<std::size_t>(std::distance(buf, bufTmp));
-    assert(consumed <= len);
-    return consumed;
-}
-
-template <typename TMsg, typename TStack>
-void SessionImpl::sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& func, DataBuf& buf)
+template <typename TMsg, typename TFrame>
+void SessionImpl::sendMessage(const TMsg& msg, TFrame& frame, SendDataReqCb& func, DataBuf& buf)
 {
     if (!func) {
         return;
     }
 
-    typedef typename TStack::MsgPtr::element_type MsgType;
+    typedef typename TFrame::MsgPtr::element_type MsgType;
 
-    buf.resize(std::max(buf.size(), stack.length(msg)));
+    buf.resize(std::max(buf.size(), frame.length(msg)));
     auto iter = comms::writeIteratorFor<MsgType>(&buf[0]);
-    [[maybe_unused]] auto es = stack.write(msg, iter, buf.size());
+    [[maybe_unused]] auto es = frame.write(msg, iter, buf.size());
     assert(es == comms::ErrorStatus::Success);
     auto writtenCount =
         static_cast<std::size_t>(
@@ -133,11 +90,34 @@ SessionImpl::SessionImpl()
     m_ops.emplace_back(new session_op::PubSend(m_state));
     m_ops.emplace_back(new session_op::Forward(m_state));
     m_ops.emplace_back(new session_op::WillUpdate(m_state));
+    m_ops.emplace_back(new session_op::Encapsulate(m_state));
+    m_encapsulateOp = static_cast<decltype(m_encapsulateOp)>(m_ops.back().get());
 
     for (auto& op : m_ops) {
         startOp(*op);
     }
 }
+
+bool SessionImpl::start()
+{
+    if ((m_state.m_running) ||
+        (!m_nextTickProgramCb) ||
+        (!m_cancelTickCb) ||
+        (!m_sendToClientCb) ||
+        (!m_sendToBrokerCb) ||
+        (!m_termReqCb) ||
+        (!m_brokerReconnectReqCb)) {
+        return false;
+    }
+
+    if (static_cast<bool>(m_fwdEncSessionCreatedReportCb) != static_cast<bool>(m_fwdEncSessionDeletedReportCb)) {
+        return false;
+    }
+
+    m_state.m_running = true;
+    return true;
+}
+
 
 void SessionImpl::tick()
 {
@@ -154,12 +134,63 @@ void SessionImpl::tick()
 
 std::size_t SessionImpl::dataFromClient(const std::uint8_t* buf, std::size_t len)
 {
-    return processInputData(buf, len, m_mqttsnFrame);
+    if ((!isRunning()) || m_state.m_terminating) {
+        return 0U;
+    }
+
+    auto guard = apiCall();
+    const std::uint8_t* bufTmp = buf;
+    while (true) {
+        auto consumedBytes =
+            static_cast<std::size_t>(std::distance(buf, bufTmp));
+        assert(consumedBytes <= len);
+        auto remLen = len - consumedBytes;
+        if (remLen == 0U) {
+            m_state.m_encapsulatedMsg = false; // Just in case
+            break;
+        }
+
+        if (m_state.m_encapsulatedMsg) {
+            bufTmp += m_encapsulateOp->encapsulatedData(bufTmp, remLen);
+            continue;
+        }        
+
+        using MsgPtr = typename MqttsnFrame::MsgPtr;
+        using MsgType = typename MsgPtr::element_type;
+        MsgPtr msg;
+        auto iter = comms::readIteratorFor<MsgType>(bufTmp);
+        auto es = m_mqttsnFrame.read(msg, iter, remLen);
+        if (es == comms::ErrorStatus::NotEnoughData) {
+            break;
+        }
+
+        if (es == comms::ErrorStatus::ProtocolError) {
+            ++bufTmp;
+            continue;
+        }
+
+        if (es == comms::ErrorStatus::Success) {
+            assert(msg);
+            m_state.m_lastMsgTimestamp = m_state.m_timestamp;
+            msg->dispatch(*this);
+        }
+
+        bufTmp = iter;
+    }
+
+    auto consumed = static_cast<std::size_t>(std::distance(buf, bufTmp));
+    assert(consumed <= len);
+    return consumed;
 }
 
 std::size_t SessionImpl::dataFromBroker(const std::uint8_t* buf, std::size_t len)
 {
-    return processInputData(buf, len, m_mqttFrame);
+    if ((!isRunning()) || m_state.m_terminating) {
+        return 0U;
+    }
+
+    auto guard = apiCall();
+    return comms::processAllWithDispatch(buf, len, m_mqttFrame, *this);
 }
 
 void SessionImpl::setBrokerConnected(bool connected)

@@ -30,18 +30,18 @@ class Session
 public:
 
     /// @brief Type for buffer of binary data.
-    typedef std::vector<std::uint8_t> BinaryData;
+    using BinaryData = std::vector<std::uint8_t>;
 
     /// @brief Type of authentication information.
     /// @details The first element of the pair is @b username, and the
     ///     second element of the pair is binary @b password.
-    typedef std::pair<std::string, BinaryData> AuthInfo;
+    using AuthInfo = std::pair<std::string, BinaryData>;
 
     /// @brief Type of callback, used to request new time measurement.
     /// @details When the requested time is due, the driving code is expected
     ///     to call tick() member function.
     /// @param[in] value Number of @b milliseconds to measure.
-    typedef std::function<void (unsigned value)> NextTickProgramReqCb;
+    using NextTickProgramReqCb = std::function<void (unsigned value)>;
 
     /// @brief Type of callback, used to cancel existing time measurement.
     /// @details When invoked the existing time measurement needs to be cancelled.
@@ -49,37 +49,40 @@ public:
     ///     since last timer programming request.
     /// @return Number of elapsed @b milliseconds since last timer programming
     ///     request.
-    typedef std::function<unsigned ()> CancelTickWaitReqCb;
+    using CancelTickWaitReqCb = std::function<unsigned ()>;
 
     /// @brief Type of callback, used to request delivery of serialised message
     ///     to the client or broker.
     /// @param[in] buf Buffer containing serialised message.
     /// @param[in] bufSize Number of bytes in the buffer
-    typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
+    using SendDataReqCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize)>;
 
     /// @brief Type of callback, used to request session termination.
     /// @details When the callback is invoked, the driving code must flush
     ///     all the previously sent messages to appropriate I/O links and
     ///     delete this session object.
-    typedef std::function<void ()> TerminationReqCb;
+    using TerminationReqCb = std::function<void ()>;
 
     /// @brief Type of callback used to request reconnection to the broker.
     /// @details When the callback is invoked, the driving code must close
     ///     existing TCP/IP connection to the broker and create a new one.
-    typedef std::function<void ()> BrokerReconnectReqCb;
+    using BrokerReconnectReqCb = std::function<void ()>;
 
     /// @brief Type of callback used to report client ID of the newly connected
     ///     MQTT-SN client.
     /// @details The callback can be used to provide additional client specific
     ///     information, such as predefined topic IDs.
     /// @param[in] clientId Client ID
-    typedef std::function<void (const std::string& clientId)> ClientConnectedReportCb;
+    using ClientConnectedReportCb = std::function<void (const std::string& clientId)>;
 
     /// @brief Type of callback used to request authentication information of
     ///     the client that is trying connect.
     /// @param[in] clientId Client ID
     /// @return Authentication information
-    typedef std::function<AuthInfo (const std::string& clientId)> AuthInfoReqCb;
+    using AuthInfoReqCb = std::function<AuthInfo (const std::string& clientId)>;
+
+    using FwdEncSessionCreatedReportCb = std::function<bool (Session* session)>;
+    using FwdEncSessionDeletedReportCb = std::function<void (Session* session)>;
 
     /// @brief Default constructor
     Session();
@@ -143,6 +146,9 @@ public:
     ///     specific clients.
     /// @param[in] func R-value reference to the callback object
     void setAuthInfoReqCb(AuthInfoReqCb&& func);
+
+    void setFwdEncSessionCreatedReportCb(FwdEncSessionCreatedReportCb&& func);
+    void setFwdEncSessionDeletedReportCb(FwdEncSessionDeletedReportCb&& func);
 
     /// @brief Set gateway numeric ID to be reported when requested.
     /// @details If not set, default value 0 is assumed.

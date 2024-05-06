@@ -16,9 +16,10 @@ function (lib_mqttsn_gateway)
         session_op/Disconnect.cpp
         session_op/Asleep.cpp
         session_op/AsleepMonitor.cpp
+        session_op/Encapsulate.cpp
+        session_op/Forward.cpp
         session_op/PubRecv.cpp
         session_op/PubSend.cpp
-        session_op/Forward.cpp
         session_op/WillUpdate.cpp
     )    
     

@@ -58,6 +58,16 @@ void Session::setAuthInfoReqCb(AuthInfoReqCb&& func)
     m_pImpl->setAuthInfoReqCb(std::move(func));
 }
 
+void Session::setFwdEncSessionCreatedReportCb(FwdEncSessionCreatedReportCb&& func)
+{
+    m_pImpl->setFwdEncSessionCreatedReportCb(std::move(func));
+}
+
+void Session::setFwdEncSessionDeletedReportCb(FwdEncSessionDeletedReportCb&& func)
+{
+    m_pImpl->setFwdEncSessionDeletedReportCb(std::move(func));
+}
+
 void Session::setGatewayId(std::uint8_t value)
 {
     m_pImpl->setGatewayId(value);

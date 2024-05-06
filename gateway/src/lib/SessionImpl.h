@@ -16,6 +16,7 @@
 #include "cc_mqttsn_gateway/Session.h"
 #include "MsgHandler.h"
 #include "SessionOp.h"
+#include "session_op/Encapsulate.h"
 #include "common.h"
 #include "comms/util/ScopeGuard.h"
 
@@ -24,17 +25,18 @@ namespace cc_mqttsn_gateway
 
 class SessionImpl : public MsgHandler
 {
-    typedef MsgHandler Base;
+    using Base = MsgHandler;
 public:
-    typedef Session::AuthInfo AuthInfo;
-
-    typedef Session::NextTickProgramReqCb NextTickProgramReqCb;
-    typedef Session::SendDataReqCb SendDataReqCb;
-    typedef Session::CancelTickWaitReqCb CancelTickWaitReqCb;
-    typedef Session::TerminationReqCb TerminationReqCb;
-    typedef Session::BrokerReconnectReqCb BrokerReconnectReqCb;
-    typedef Session::ClientConnectedReportCb ClientConnectedReportCb;
-    typedef Session::AuthInfoReqCb AuthInfoReqCb;
+    using AuthInfo = Session::AuthInfo;
+    using NextTickProgramReqCb = Session::NextTickProgramReqCb;
+    using SendDataReqCb = Session::SendDataReqCb;
+    using CancelTickWaitReqCb = Session::CancelTickWaitReqCb;
+    using TerminationReqCb = Session::TerminationReqCb;
+    using BrokerReconnectReqCb = Session::BrokerReconnectReqCb;
+    using ClientConnectedReportCb = Session::ClientConnectedReportCb;
+    using AuthInfoReqCb = Session::AuthInfoReqCb;
+    using FwdEncSessionCreatedReportCb = Session::FwdEncSessionCreatedReportCb;
+    using FwdEncSessionDeletedReportCb = Session::FwdEncSessionDeletedReportCb;
 
     SessionImpl();
     ~SessionImpl() = default;
@@ -82,11 +84,23 @@ public:
         m_clientConnectedCb = std::forward<TFunc>(func);
     }
 
-    template  <typename TFunc>
+    template <typename TFunc>
     void setAuthInfoReqCb(TFunc&& func)
     {
         m_authInfoReqCb = std::forward<TFunc>(func);
     }
+
+    template <typename TFunc>
+    void setFwdEncSessionCreatedReportCb(TFunc&& func)
+    {
+        m_fwdEncSessionCreatedReportCb = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setFwdEncSessionDeletedReportCb(TFunc&& func)
+    {
+        m_fwdEncSessionDeletedReportCb = std::forward<TFunc>(func);
+    }    
 
     void setGatewayId(std::uint8_t value)
     {
@@ -118,21 +132,7 @@ public:
         m_state.m_pubOnlyKeepAlive = value;
     }
 
-    bool start()
-    {
-        if ((m_state.m_running) ||
-            (!m_nextTickProgramCb) ||
-            (!m_cancelTickCb) ||
-            (!m_sendToClientCb) ||
-            (!m_sendToBrokerCb) ||
-            (!m_termReqCb) ||
-            (!m_brokerReconnectReqCb)) {
-            return false;
-        }
-
-        m_state.m_running = true;
-        return true;
-    }
+    bool start();
 
     void stop()
     {
@@ -156,7 +156,7 @@ public:
 private:
 
     using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;
-    typedef std::vector<SessionOpPtr> OpsList;
+    using OpsList = std::vector<SessionOpPtr>;
 
     using Base::handle;
     virtual void handle(SearchgwMsg_SN& msg) override;
@@ -165,11 +165,8 @@ private:
 
     virtual void handle(MqttMessage& msg) override;
 
-    template <typename TStack>
-    std::size_t processInputData(const std::uint8_t* buf, std::size_t len, TStack& stack);
-
-    template <typename TMsg, typename TStack>
-    void sendMessage(const TMsg& msg, TStack& stack, SendDataReqCb& func, DataBuf& buf);
+    template <typename TMsg, typename TFrame>
+    void sendMessage(const TMsg& msg, TFrame& frame, SendDataReqCb& func, DataBuf& buf);
 
     template <typename TMsg>
     void dispatchToOpsCommon(TMsg& msg);
@@ -199,6 +196,8 @@ private:
     BrokerReconnectReqCb m_brokerReconnectReqCb;
     ClientConnectedReportCb m_clientConnectedCb;
     AuthInfoReqCb m_authInfoReqCb;
+    FwdEncSessionCreatedReportCb m_fwdEncSessionCreatedReportCb;
+    FwdEncSessionDeletedReportCb m_fwdEncSessionDeletedReportCb;
 
     MqttsnFrame m_mqttsnFrame;
     MqttFrame m_mqttFrame;
@@ -207,6 +206,7 @@ private:
     DataBuf m_mqttMsgData;
 
     OpsList m_ops;
+    session_op::Encapsulate* m_encapsulateOp = nullptr;
 
     SessionState m_state;
 };

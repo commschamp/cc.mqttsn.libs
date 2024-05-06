@@ -10,6 +10,8 @@
 #include <cassert>
 #include <algorithm>
 
+#include "comms/util/ScopeGuard.h"
+
 namespace cc_mqttsn_gateway
 {
 

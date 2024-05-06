@@ -121,29 +121,28 @@ struct SessionState
     unsigned m_retryPeriod = DefaultRetryPeriod;
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_tickReq = 0U;
+    unsigned m_callStackCount = 0U;
+    Timestamp m_timestamp = InitialTimestamp;
+    Timestamp m_lastMsgTimestamp = InitialTimestamp;
+    std::size_t m_sleepPubAccLimit = std::numeric_limits<std::size_t>::max();
+    std::string m_clientId;
+    std::string m_defaultClientId;
+    std::string m_username;
+    DataBuf m_password;
+    WillInfo m_will;
+    std::list<PubInfoPtr> m_brokerPubs;
+    RegMgr m_regMgr;
+    ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
+    std::uint16_t m_keepAlive = 0U;
+    std::uint16_t m_pubOnlyKeepAlive = DefaultKeepAlive;
+    std::uint8_t m_gwId = 0U;
     bool m_running = false;
     bool m_brokerConnected = false;
     bool m_reconnectingBroker = false;
     bool m_terminating = false;
     bool m_pendingClientDisconnect = false;
-    bool m_clientConnectReported = false;
-    Timestamp m_timestamp = InitialTimestamp;
-    Timestamp m_lastMsgTimestamp = InitialTimestamp;
-    unsigned m_callStackCount = 0U;
-
-    ConnectionStatus m_connStatus = ConnectionStatus::Disconnected;
-    std::string m_clientId;
-    std::string m_defaultClientId;
-    WillInfo m_will;
-    std::size_t m_sleepPubAccLimit = std::numeric_limits<std::size_t>::max();
-    std::uint16_t m_keepAlive = 0U;
-    std::uint16_t m_pubOnlyKeepAlive = DefaultKeepAlive;
-    std::uint8_t m_gwId = 0U;
-    std::string m_username;
-    DataBuf m_password;
-
-    std::list<PubInfoPtr> m_brokerPubs;
-    RegMgr m_regMgr;
+    bool m_clientConnectReported = false;    
+    bool m_encapsulatedMsg = false;
 };
 
 }  // namespace cc_mqttsn_gateway

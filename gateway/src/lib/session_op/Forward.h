@@ -10,7 +10,6 @@
 #include <cstdint>
 #include <list>
 
-#include "comms/util/ScopeGuard.h"
 #include "SessionOp.h"
 #include "common.h"
 
@@ -72,10 +71,10 @@ private:
         ReturnCodeVal rc);
 
 
-    std::uint16_t m_lastPubTopicId = 0;
-    bool m_pingInProgress = false;
     SubsInProgressList m_subs;
     NoGwPubInfosList m_pubs;
+    std::uint16_t m_lastPubTopicId = 0;
+    bool m_pingInProgress = false;
 };
 
 }  // namespace session_op
