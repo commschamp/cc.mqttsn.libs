@@ -29,12 +29,10 @@ class Encapsulate : public SessionOp
     using Base = SessionOp;
 
 public:
-    Encapsulate(SessionState& sessionState);
+    explicit Encapsulate(SessionImpl& session);
     ~Encapsulate();
 
     std::size_t encapsulatedData(const std::uint8_t* buf, std::size_t len);
-
-protected:
 
 private:
     using NodeId = std::vector<std::uint8_t>;
@@ -43,6 +41,9 @@ private:
 
     using Base::handle;
     virtual void handle(FwdMsg_SN& msg) override;
+
+    void sendDataClientReqFromSession(const NodeId& nodeId, const std::uint8_t* buf, std::size_t bufSize);
+    void terminationReqFromSession(Session* sessionPtr);
 
     SessionMap m_sessions;
     Session* m_selectedSession = nullptr;

@@ -24,7 +24,7 @@ class Forward : public SessionOp
     typedef SessionOp Base;
 
 public:
-    Forward(SessionState& sessionState);
+    explicit Forward(SessionImpl& session);
     ~Forward();
 
 protected:

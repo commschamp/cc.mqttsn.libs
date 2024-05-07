@@ -21,7 +21,7 @@ class AsleepMonitor : public SessionOp
     typedef SessionOp Base;
 
 public:
-    AsleepMonitor(SessionState& sessionState);
+    explicit AsleepMonitor(SessionImpl& session);
     ~AsleepMonitor();
 
 protected:

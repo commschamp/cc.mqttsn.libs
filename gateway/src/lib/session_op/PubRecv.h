@@ -21,7 +21,7 @@ class PubRecv : public SessionOp
     typedef SessionOp Base;
 
 public:
-    PubRecv(SessionState& sessionState);
+    explicit PubRecv(SessionImpl& session);
     ~PubRecv();
 
 protected:

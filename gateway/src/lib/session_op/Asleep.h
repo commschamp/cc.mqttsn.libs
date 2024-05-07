@@ -21,7 +21,7 @@ class Asleep : public SessionOp
     typedef SessionOp Base;
 
 public:
-    Asleep(SessionState& sessionState);
+    explicit Asleep(SessionImpl& session);
     ~Asleep();
 
 protected:

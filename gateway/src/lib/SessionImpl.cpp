@@ -64,7 +64,7 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 
 SessionImpl::SessionImpl()
 {
-    std::unique_ptr<session_op::Connect> connectOp(new session_op::Connect(m_state));
+    std::unique_ptr<session_op::Connect> connectOp(new session_op::Connect(*this));
     connectOp->setClientConnectedReportCb(
         [this](const std::string& clientId)
         {
@@ -83,14 +83,14 @@ SessionImpl::SessionImpl()
         });
 
     m_ops.push_back(std::move(connectOp));
-    m_ops.emplace_back(new session_op::Disconnect(m_state));
-    m_ops.emplace_back(new session_op::Asleep(m_state));
-    m_ops.emplace_back(new session_op::AsleepMonitor(m_state));
-    m_ops.emplace_back(new session_op::PubRecv(m_state));
-    m_ops.emplace_back(new session_op::PubSend(m_state));
-    m_ops.emplace_back(new session_op::Forward(m_state));
-    m_ops.emplace_back(new session_op::WillUpdate(m_state));
-    m_ops.emplace_back(new session_op::Encapsulate(m_state));
+    m_ops.emplace_back(new session_op::Disconnect(*this));
+    m_ops.emplace_back(new session_op::Asleep(*this));
+    m_ops.emplace_back(new session_op::AsleepMonitor(*this));
+    m_ops.emplace_back(new session_op::PubRecv(*this));
+    m_ops.emplace_back(new session_op::PubSend(*this));
+    m_ops.emplace_back(new session_op::Forward(*this));
+    m_ops.emplace_back(new session_op::WillUpdate(*this));
+    m_ops.emplace_back(new session_op::Encapsulate(*this));
     m_encapsulateOp = static_cast<decltype(m_encapsulateOp)>(m_ops.back().get());
 
     for (auto& op : m_ops) {
@@ -218,6 +218,26 @@ bool SessionImpl::addPredefinedTopic(const std::string& topic, std::uint16_t top
 bool SessionImpl::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal)
 {
     return m_state.m_regMgr.setTopicIdAllocationRange(minVal, maxVal);
+}
+
+void SessionImpl::reportFwdEncSessionCreated(Session* session)
+{
+    assert(m_fwdEncSessionCreatedReportCb);
+    assert(session != nullptr);
+    m_fwdEncSessionCreatedReportCb(session);
+}
+
+void SessionImpl::reportFwdEncSessionDeleted(Session* session)
+{
+    assert(m_fwdEncSessionDeletedReportCb);
+    assert(session != nullptr);
+    m_fwdEncSessionDeletedReportCb(session);
+}
+
+void SessionImpl::sendDataToClient(const std::uint8_t* buf, std::size_t bufLen)
+{
+    assert(m_sendToClientCb);
+    m_sendToClientCb(buf, bufLen);
 }
 
 void SessionImpl::handle([[maybe_unused]] SearchgwMsg_SN& msg)

@@ -15,8 +15,8 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-Disconnect::Disconnect(SessionState& sessionState)
-  : Base(sessionState)
+Disconnect::Disconnect(SessionImpl& session) :
+    Base(session)
 {
 }
 

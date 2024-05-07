@@ -153,6 +153,21 @@ public:
     bool addPredefinedTopic(const std::string& topic, std::uint16_t topicId);
     bool setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal);
 
+    // API used by ops
+    SessionState& state()
+    {
+        return m_state;
+    }
+
+    bool hasFwdEncSupport() const
+    {
+        return static_cast<bool>(m_fwdEncSessionCreatedReportCb);
+    }
+
+    void reportFwdEncSessionCreated(Session* session);
+    void reportFwdEncSessionDeleted(Session* session);
+    void sendDataToClient(const std::uint8_t* buf, std::size_t bufLen);
+
 private:
 
     using ReturnCodeVal = cc_mqttsn::field::ReturnCodeVal;

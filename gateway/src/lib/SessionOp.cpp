@@ -7,8 +7,37 @@
 
 #include "SessionOp.h"
 
+#include "SessionImpl.h"
+
 namespace cc_mqttsn_gateway
 {
+
+void SessionOp::timestampUpdated()
+{
+    if ((m_nextTickTimestamp != 0) &&
+        (m_nextTickTimestamp <= state().m_timestamp)) {
+        m_nextTickTimestamp = 0;
+        tickImpl();
+    }
+}    
+
+unsigned SessionOp::nextTick()
+{
+    if (m_nextTickTimestamp == 0) {
+        return std::numeric_limits<unsigned>::max();
+    }
+
+    if (m_nextTickTimestamp <= state().m_timestamp) {
+        return 1U;
+    }
+
+    return static_cast<unsigned>(m_nextTickTimestamp - state().m_timestamp);
+}    
+
+SessionState& SessionOp::state()
+{
+    return m_session.state();
+}    
 
 void SessionOp::sendDisconnectToClient()
 {
@@ -18,6 +47,18 @@ void SessionOp::sendDisconnectToClient()
     durationField.setMode(comms::field::OptionalMode::Missing);
     sendToClient(msg);
 
+}
+
+void SessionOp::tickImpl() 
+{
+}
+
+void SessionOp::startImpl() 
+{
+}
+
+void SessionOp::brokerConnectionUpdatedImpl() 
+{
 }
 
 }  // namespace cc_mqttsn_gateway

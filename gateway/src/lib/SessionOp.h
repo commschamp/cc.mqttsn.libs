@@ -18,6 +18,7 @@
 namespace cc_mqttsn_gateway
 {
 
+class SessionImpl;
 class SessionOp : public MsgHandler
 {
     typedef MsgHandler Base;
@@ -55,27 +56,9 @@ public:
         m_brokerReconnectReqFunc = std::forward<TFunc>(func);
     }
 
-    void timestampUpdated()
-    {
-        if ((m_nextTickTimestamp != 0) &&
-            (m_nextTickTimestamp <= m_state.m_timestamp)) {
-            m_nextTickTimestamp = 0;
-            tickImpl();
-        }
-    }
-
-    unsigned nextTick()
-    {
-        if (m_nextTickTimestamp == 0) {
-            return std::numeric_limits<unsigned>::max();
-        }
-
-        if (m_nextTickTimestamp <= m_state.m_timestamp) {
-            return 1U;
-        }
-
-        return static_cast<unsigned>(m_nextTickTimestamp - m_state.m_timestamp);
-    }
+    void timestampUpdated();
+    
+    unsigned nextTick();
 
     void start()
     {
@@ -88,8 +71,8 @@ public:
     }
 
 protected:
-    SessionOp(SessionState& state)
-      : m_state(state)
+    SessionOp(SessionImpl& session)
+      : m_session(session)
     {
     }
 
@@ -119,7 +102,7 @@ protected:
 
     void nextTickReq(unsigned ms)
     {
-        m_nextTickTimestamp = m_state.m_timestamp + ms;
+        m_nextTickTimestamp = state().m_timestamp + ms;
     }
 
     void cancelTick()
@@ -127,19 +110,21 @@ protected:
         m_nextTickTimestamp = 0;
     }
 
-    SessionState& state()
+    SessionImpl& session()
     {
-        return m_state;
+        return m_session;
     }
+
+    SessionState& state();
 
     void sendDisconnectToClient();
 
-    virtual void tickImpl() {};
-    virtual void startImpl() {};
-    virtual void brokerConnectionUpdatedImpl() {}
+    virtual void tickImpl();
+    virtual void startImpl();
+    virtual void brokerConnectionUpdatedImpl();
 
 private:
-    SessionState& m_state;
+    SessionImpl& m_session;
 
     SendToClientCb m_sendToClientFunc;
     SendToBrokerCb m_sendToBrokerFunc;

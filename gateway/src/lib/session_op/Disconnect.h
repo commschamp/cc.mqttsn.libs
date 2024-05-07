@@ -21,7 +21,7 @@ class Disconnect : public SessionOp
     typedef SessionOp Base;
 
 public:
-    Disconnect(SessionState& sessionState);
+    explicit Disconnect(SessionImpl& session);
     ~Disconnect();
 
 protected:

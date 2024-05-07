@@ -18,8 +18,8 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-Forward::Forward(SessionState& sessionState)
-  : Base(sessionState)
+Forward::Forward(SessionImpl& session) :
+    Base(session)
 {
 }
 

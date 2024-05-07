@@ -21,7 +21,7 @@ class PubSend : public SessionOp
     typedef SessionOp Base;
 
 public:
-    PubSend(SessionState& sessionState);
+    explicit PubSend(SessionImpl& session);
     ~PubSend();
 
 protected:

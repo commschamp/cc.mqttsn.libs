@@ -13,14 +13,16 @@
 #include "comms/util/assign.h"
 #include "comms/util/ScopeGuard.h"
 
+#include "SessionImpl.h"
+
 namespace cc_mqttsn_gateway
 {
 
 namespace session_op
 {
 
-Encapsulate::Encapsulate(SessionState& sessionState)
-  : Base(sessionState)
+Encapsulate::Encapsulate(SessionImpl& session) :
+    Base(session)
 {
 }
 
@@ -53,6 +55,10 @@ void Encapsulate::handle(FwdMsg_SN& msg)
     assert(!st.m_encapsulatedMsg);
     st.m_encapsulatedMsg = true;
 
+    if (!session().hasFwdEncSupport()) {
+        return;
+    }
+
     auto& nodeIdVec = msg.field_data().value();
     NodeId nodeId;
     comms::util::assign(nodeId, nodeIdVec.begin(), nodeIdVec.end());
@@ -65,25 +71,77 @@ void Encapsulate::handle(FwdMsg_SN& msg)
 
         std::tie(iter, std::ignore) = m_sessions.insert(std::make_pair(std::move(nodeId), std::make_unique<Session>()));        
         assert(iter != m_sessions.end());
-        auto& session = *(iter->second);
+        auto sessionPtr = iter->second.get();
 
-        // TODO: callbacks
+        sessionPtr->setGatewayId(st.m_gwId);
+        sessionPtr->setRetryPeriod(st.m_retryPeriod);
+        sessionPtr->setRetryCount(st.m_retryCount);
+        sessionPtr->setSleepingClientMsgLimit(st.m_sleepPubAccLimit);
+        sessionPtr->setDefaultClientId(st.m_defaultClientId);
+        sessionPtr->setPubOnlyKeepAlive(st.m_pubOnlyKeepAlive);
 
-        if (!session.start()) {
+        sessionPtr->setSendDataClientReqCb(
+            [this, nodeId](const std::uint8_t* buf, std::size_t bufSize)
+            {
+                sendDataClientReqFromSession(nodeId, buf, bufSize);
+            });     
+
+        sessionPtr->setTerminationReqCb(
+            [this, sessionPtr]()
+            {
+                terminationReqFromSession(sessionPtr);
+            });
+
+        session().reportFwdEncSessionCreated(sessionPtr);
+
+        if ((!sessionPtr->isRunning()) && (!sessionPtr->start())) {
             // Error failed to start session;
-            assert(false); // Should not happen
+            session().reportFwdEncSessionDeleted(sessionPtr);
             m_sessions.erase(iter);
             iter = m_sessions.end();
             break;
         }
-
-        // TODO: report session for app management
 
     } while (false);
 
     if (iter != m_sessions.end()) {
         m_selectedSession = iter->second.get();
     }
+}
+
+void Encapsulate::sendDataClientReqFromSession(const NodeId& nodeId, const std::uint8_t* buf, std::size_t bufSize)
+{
+    FwdMsg_SN fwdMsg;
+    fwdMsg.field_ctrl().field_radius().setValue(3); // TODO: make it configurable
+    comms::util::assign(fwdMsg.field_data().value(), nodeId.begin(), nodeId.end());
+
+    MqttsnFrame frame;
+    std::vector<std::uint8_t> data;
+    data.resize(frame.length(fwdMsg) + bufSize);
+    auto writeIter = comms::writeIteratorFor<FwdMsg_SN>(data.data());
+    [[maybe_unused]] auto es = frame.write(fwdMsg, writeIter, data.size());
+    assert(es == comms::ErrorStatus::Success);
+    std::copy_n(buf, bufSize, writeIter);
+    session().sendDataToClient(data.data(), data.size());
+}
+
+void Encapsulate::terminationReqFromSession(Session* sessionPtr)
+{
+    auto iter = 
+        std::find_if(
+            m_sessions.begin(), m_sessions.end(),
+            [sessionPtr](auto& elem)
+            {
+                return elem.second.get() == sessionPtr;
+            });
+
+    assert(iter != m_sessions.end());
+    if (iter == m_sessions.end()) {
+        return;
+    }
+
+    session().reportFwdEncSessionDeleted(sessionPtr);
+    m_sessions.erase(iter);
 }
 
 }  // namespace session_op

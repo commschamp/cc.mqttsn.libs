@@ -16,8 +16,8 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-WillUpdate::WillUpdate(SessionState& sessionState)
-  : Base(sessionState)
+WillUpdate::WillUpdate(SessionImpl& session) :
+    Base(session)
 {
 }
 

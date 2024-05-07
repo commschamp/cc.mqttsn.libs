@@ -27,7 +27,7 @@ public:
     typedef Session::ClientConnectedReportCb ClientConnectedReportCb;
     typedef Session::AuthInfoReqCb AuthInfoReqCb;
 
-    Connect(SessionState& sessionState);
+    explicit Connect(SessionImpl& session);
     ~Connect();
 
     template <typename TFunc>

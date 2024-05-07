@@ -21,7 +21,7 @@ class WillUpdate : public SessionOp
     typedef SessionOp Base;
 
 public:
-    WillUpdate(SessionState& sessionState);
+    explicit WillUpdate(SessionImpl& session);
     ~WillUpdate();
 
 protected:

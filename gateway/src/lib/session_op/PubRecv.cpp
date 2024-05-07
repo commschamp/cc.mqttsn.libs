@@ -16,8 +16,8 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-PubRecv::PubRecv(SessionState& sessionState)
-  : Base(sessionState)
+PubRecv::PubRecv(SessionImpl& session) :
+    Base(session)
 {
 }
 

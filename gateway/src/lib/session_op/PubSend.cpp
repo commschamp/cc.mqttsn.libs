@@ -16,8 +16,8 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-PubSend::PubSend(SessionState& sessionState)
-  : Base(sessionState)
+PubSend::PubSend(SessionImpl& session) :
+    Base(session)
 {
 }
 

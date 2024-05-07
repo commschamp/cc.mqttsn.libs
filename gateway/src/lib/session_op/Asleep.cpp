@@ -16,8 +16,8 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-Asleep::Asleep(SessionState& sessionState)
-  : Base(sessionState)
+Asleep::Asleep(SessionImpl& session) :
+    Base(session)
 {
 }
 
