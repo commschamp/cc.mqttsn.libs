@@ -171,6 +171,8 @@ public:
     void sendToBroker(const MqttMessage& msg);
     void termRequest();
     void brokerReconnectRequest();
+    void clientConnectedReport(const std::string& clientId);
+    AuthInfo authInfoRequest(const std::string& clientId);
 
 private:
 

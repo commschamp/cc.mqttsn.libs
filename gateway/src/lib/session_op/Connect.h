@@ -19,28 +19,13 @@ namespace session_op
 
 class Connect : public SessionOp
 {
-    typedef SessionOp Base;
+    using Base = SessionOp;
 
 public:
-    typedef Session::AuthInfo AuthInfo;
-
-    typedef Session::ClientConnectedReportCb ClientConnectedReportCb;
-    typedef Session::AuthInfoReqCb AuthInfoReqCb;
+    using AuthInfo = Session::AuthInfo;
 
     explicit Connect(SessionImpl& session);
     ~Connect();
-
-    template <typename TFunc>
-    void setClientConnectedReportCb(TFunc&& func)
-    {
-        m_clientConnectedCb = std::forward<TFunc>(func);
-    }
-
-    template <typename TFunc>
-    void setAuthInfoReqCb(TFunc&& func)
-    {
-        m_authInfoReqCb = std::forward<TFunc>(func);
-    }
 
 protected:
     virtual void tickImpl() override;
@@ -78,8 +63,6 @@ private:
     std::uint16_t m_keepAlive = 0;
     bool m_clean = false;
     State m_internalState;
-    ClientConnectedReportCb m_clientConnectedCb;
-    AuthInfoReqCb m_authInfoReqCb;
 };
 
 }  // namespace session_op

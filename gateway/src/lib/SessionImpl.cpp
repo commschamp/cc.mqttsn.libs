@@ -64,25 +64,7 @@ void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 
 SessionImpl::SessionImpl()
 {
-    std::unique_ptr<session_op::Connect> connectOp(new session_op::Connect(*this));
-    connectOp->setClientConnectedReportCb(
-        [this](const std::string& clientId)
-        {
-            if (m_clientConnectedCb) {
-                m_clientConnectedCb(clientId);
-            }
-        });
-    connectOp->setAuthInfoReqCb(
-        [this](const std::string& clientId) -> AuthInfo
-        {
-            if (!m_authInfoReqCb) {
-                return AuthInfo();
-            }
-
-            return m_authInfoReqCb(clientId);
-        });
-
-    m_ops.push_back(std::move(connectOp));
+    m_ops.emplace_back(new session_op::Connect(*this));
     m_ops.emplace_back(new session_op::Disconnect(*this));
     m_ops.emplace_back(new session_op::Asleep(*this));
     m_ops.emplace_back(new session_op::AsleepMonitor(*this));
@@ -269,6 +251,22 @@ void SessionImpl::brokerReconnectRequest()
 
     m_state.m_reconnectingBroker = true;
     m_brokerReconnectReqCb();
+}
+
+void SessionImpl::clientConnectedReport(const std::string& clientId)
+{
+    if (m_clientConnectedCb) {
+        m_clientConnectedCb(clientId);
+    }
+}
+
+SessionImpl::AuthInfo SessionImpl::authInfoRequest(const std::string& clientId)
+{
+    if (!m_authInfoReqCb) {
+        return AuthInfo();
+    }
+
+    return m_authInfoReqCb(clientId);
 }
 
 void SessionImpl::handle([[maybe_unused]] SearchgwMsg_SN& msg)

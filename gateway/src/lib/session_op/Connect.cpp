@@ -8,6 +8,8 @@
 #include "Connect.h"
 #include <cassert>
 
+#include "SessionImpl.h"
+
 namespace cc_mqttsn_gateway
 {
 
@@ -263,8 +265,7 @@ void Connect::doNextStep()
 
         if ((m_clientId != st.m_clientId) ||
             (st.m_clientId.empty() && (!st.m_clientConnectReported))) {
-            assert(m_authInfoReqCb);
-            m_authInfo = m_authInfoReqCb(m_clientId);
+            m_authInfo = session().authInfoRequest(m_clientId);
         }
         else {
             m_authInfo = std::make_pair(st.m_username, st.m_password);
@@ -361,8 +362,7 @@ void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
     auto& sessionState = state();
     if (!sessionState.m_clientConnectReported) {
         sessionState.m_clientConnectReported = true;
-        assert(m_clientConnectedCb);
-        m_clientConnectedCb(m_clientId);
+        session().clientConnectedReport(m_clientId);
     }
     sessionState.m_clientId = std::move(m_clientId);
     sessionState.m_connStatus = ConnectionStatus::Connected;
