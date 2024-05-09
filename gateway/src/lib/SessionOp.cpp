@@ -21,6 +21,26 @@ void SessionOp::timestampUpdated()
     }
 }    
 
+void SessionOp::sendToClient(const MqttsnMessage& msg)
+{
+    m_session.sendToClient(msg);
+}
+
+void SessionOp::sendToBroker(const MqttMessage& msg)
+{
+    m_session.sendToBroker(msg);
+}
+
+void SessionOp::termRequest()
+{
+    m_session.termRequest();
+}
+
+void SessionOp::brokerReconnectRequest()
+{
+    m_session.brokerReconnectRequest();
+}
+
 unsigned SessionOp::nextTick()
 {
     if (m_nextTickTimestamp == 0) {

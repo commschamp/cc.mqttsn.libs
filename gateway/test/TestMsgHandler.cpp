@@ -218,6 +218,14 @@ TestMsgHandler::WillmsgrespMsgHandlerFunc TestMsgHandler::setWillmsgrespMsgHandl
     return old;
 }
 
+TestMsgHandler::FwdMsgHandlerFunc TestMsgHandler::setFwdMsgHandler(
+    FwdMsgHandlerFunc&& func)
+{
+    FwdMsgHandlerFunc old(std::move(m_fwdMsgHandler));
+    m_fwdMsgHandler = std::move(func);
+    return old;
+}
+
 TestMsgHandler::ConnectMsgHandlerFunc
 TestMsgHandler::setConnectMsgHandler(ConnectMsgHandlerFunc&& func)
 {
@@ -414,6 +422,12 @@ void TestMsgHandler::handle(WillmsgrespMsg_SN& msg)
     m_willmsgrespMsgHandler(msg);
 }
 
+void TestMsgHandler::handle(FwdMsg_SN& msg)
+{
+    assert(m_fwdMsgHandler);
+    m_fwdMsgHandler(msg);
+}
+
 void TestMsgHandler::handle(TestMqttsnMessage& msg)
 {
     std::cout << "Unhandled message sent to client: " << static_cast<unsigned>(msg.getId()) << std::endl;
@@ -496,22 +510,22 @@ void TestMsgHandler::handle(TestMqttMessage& msg)
 
 void TestMsgHandler::processDataForClient(const DataBuf& data)
 {
-    processOutputInternal(m_mqttsnStack, data);
+    processOutputInternal(m_mqttsnFrame, data);
 }
 
 void TestMsgHandler::processDataForBroker(const DataBuf& data)
 {
-    processOutputInternal(m_mqttStack, data);
+    processOutputInternal(m_mqttFrame, data);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareInput(const TestMqttsnMessage& msg)
 {
-    return prepareInputInternal(m_mqttsnStack, msg);
+    return prepareInputInternal(m_mqttsnFrame, msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareInput(const TestMqttMessage& msg)
 {
-    return prepareInputInternal(m_mqttStack, msg);
+    return prepareInputInternal(m_mqttFrame, msg);
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareSearchgw(std::uint8_t radius)
@@ -755,6 +769,15 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareClientWillmsgupd(const DataBuf& d
     WillmsgupdMsg_SN msg;
     msg.field_willMsg().value() = data;
     return prepareInput(msg);
+}
+
+TestMsgHandler::DataBuf TestMsgHandler::prepareClientFwd(std::uint8_t nodeId, const DataBuf& data)
+{
+    FwdMsg_SN msg;
+    msg.field_nodeId().value().push_back(nodeId);
+    auto result = prepareInput(msg);
+    result.insert(result.end(), data.begin(), data.end());
+    return result;
 }
 
 TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerConnack(

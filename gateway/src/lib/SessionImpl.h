@@ -164,9 +164,13 @@ public:
         return static_cast<bool>(m_fwdEncSessionCreatedReportCb);
     }
 
-    void reportFwdEncSessionCreated(Session* session);
+    bool reportFwdEncSessionCreated(Session* session);
     void reportFwdEncSessionDeleted(Session* session);
     void sendDataToClient(const std::uint8_t* buf, std::size_t bufLen);
+    void sendToClient(const MqttsnMessage& msg);
+    void sendToBroker(const MqttMessage& msg);
+    void termRequest();
+    void brokerReconnectRequest();
 
 private:
 
@@ -186,9 +190,6 @@ private:
     template <typename TMsg>
     void dispatchToOpsCommon(TMsg& msg);
 
-    void sendToClient(const MqttsnMessage& msg);
-    void sendToBroker(const MqttMessage& msg);
-    void startOp(SessionOp& op);
     void dispatchToOps(MqttsnMessage& msg);
     void dispatchToOps(MqttMessage& msg);
     void programNextTimeout();

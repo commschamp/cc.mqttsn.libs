@@ -24,37 +24,9 @@ class SessionOp : public MsgHandler
     typedef MsgHandler Base;
 public:
 
-    typedef std::function<void (const MqttsnMessage&)> SendToClientCb;
-    typedef std::function<void (const MqttMessage&)> SendToBrokerCb;
-    typedef std::function<void ()> SessionTermReqCb;
-    typedef std::function<void ()> BrokerReconnectReqCb;
     typedef unsigned long long Timestamp;
 
     virtual ~SessionOp() = default;
-
-    template <typename TFunc>
-    void setSendToClientCb(TFunc&& func)
-    {
-        m_sendToClientFunc = std::forward<TFunc>(func);
-    }
-
-    template <typename TFunc>
-    void setSendToBrokerCb(TFunc&& func)
-    {
-        m_sendToBrokerFunc = std::forward<TFunc>(func);
-    }
-
-    template <typename TFunc>
-    void setSessionTermReqCb(TFunc&& func)
-    {
-        m_termReqFunc = std::forward<TFunc>(func);
-    }
-
-    template <typename TFunc>
-    void setBrokerReconnectReqCb(TFunc&& func)
-    {
-        m_brokerReconnectReqFunc = std::forward<TFunc>(func);
-    }
 
     void timestampUpdated();
     
@@ -76,29 +48,10 @@ protected:
     {
     }
 
-    void sendToClient(const MqttsnMessage& msg)
-    {
-        assert(m_sendToClientFunc);
-        m_sendToClientFunc(msg);
-    }
-
-    void sendToBroker(const MqttMessage& msg)
-    {
-        assert(m_sendToBrokerFunc);
-        m_sendToBrokerFunc(msg);
-    }
-
-    void termRequest()
-    {
-        assert(m_termReqFunc);
-        m_termReqFunc();
-    }
-
-    void brokerReconnectRequest()
-    {
-        assert(m_brokerReconnectReqFunc);
-        m_brokerReconnectReqFunc();
-    }
+    void sendToClient(const MqttsnMessage& msg);
+    void sendToBroker(const MqttMessage& msg);
+    void termRequest();
+    void brokerReconnectRequest();
 
     void nextTickReq(unsigned ms)
     {
@@ -125,11 +78,6 @@ protected:
 
 private:
     SessionImpl& m_session;
-
-    SendToClientCb m_sendToClientFunc;
-    SendToBrokerCb m_sendToBrokerFunc;
-    SessionTermReqCb m_termReqFunc;
-    BrokerReconnectReqCb m_brokerReconnectReqFunc;
     Timestamp m_nextTickTimestamp = 0;
 };
 

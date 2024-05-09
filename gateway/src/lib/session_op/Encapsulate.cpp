@@ -26,7 +26,12 @@ Encapsulate::Encapsulate(SessionImpl& session) :
 {
 }
 
-Encapsulate::~Encapsulate() = default;
+Encapsulate::~Encapsulate()
+{
+    for (auto& info : m_sessions) {
+        session().reportFwdEncSessionDeleted(info.second.get());
+    }
+}
 
 std::size_t Encapsulate::encapsulatedData(const std::uint8_t* buf, std::size_t len)
 {
@@ -46,7 +51,6 @@ std::size_t Encapsulate::encapsulatedData(const std::uint8_t* buf, std::size_t l
     }
 
     return m_selectedSession->dataFromClient(buf, len);
-    return 0U;
 }
 
 void Encapsulate::handle(FwdMsg_SN& msg)
@@ -59,7 +63,7 @@ void Encapsulate::handle(FwdMsg_SN& msg)
         return;
     }
 
-    auto& nodeIdVec = msg.field_data().value();
+    auto& nodeIdVec = msg.field_nodeId().value();
     NodeId nodeId;
     comms::util::assign(nodeId, nodeIdVec.begin(), nodeIdVec.end());
 
@@ -92,7 +96,11 @@ void Encapsulate::handle(FwdMsg_SN& msg)
                 terminationReqFromSession(sessionPtr);
             });
 
-        session().reportFwdEncSessionCreated(sessionPtr);
+        if (!session().reportFwdEncSessionCreated(sessionPtr)) {
+            m_sessions.erase(iter);
+            iter = m_sessions.end();
+            break;
+        }
 
         if ((!sessionPtr->isRunning()) && (!sessionPtr->start())) {
             // Error failed to start session;
@@ -113,7 +121,7 @@ void Encapsulate::sendDataClientReqFromSession(const NodeId& nodeId, const std::
 {
     FwdMsg_SN fwdMsg;
     fwdMsg.field_ctrl().field_radius().setValue(3); // TODO: make it configurable
-    comms::util::assign(fwdMsg.field_data().value(), nodeId.begin(), nodeId.end());
+    comms::util::assign(fwdMsg.field_nodeId().value(), nodeId.begin(), nodeId.end());
 
     MqttsnFrame frame;
     std::vector<std::uint8_t> data;

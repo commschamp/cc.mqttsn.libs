@@ -11,74 +11,39 @@
 
 #include "comms/comms.h"
 #include "cc_mqttsn/Message.h"
+#include "cc_mqttsn/input/AllMessages.h"
 #include "cc_mqttsn/frame/Frame.h"
 #include "cc_mqtt311/Message.h"
+#include "cc_mqtt311/input/AllMessages.h"
 #include "cc_mqtt311/frame/Frame.h"
 
 class TestMsgHandler;
 
-typedef cc_mqttsn::Message<
-    comms::option::IdInfoInterface,
-    comms::option::ReadIterator<const std::uint8_t*>,
-    comms::option::WriteIterator<std::uint8_t*>,
-    comms::option::Handler<TestMsgHandler>,
-    comms::option::LengthInfoInterface,
-    comms::option::RefreshInterface
-> TestMqttsnMessage;
+using TestMqttsnMessage =
+    cc_mqttsn::Message<
+        comms::option::IdInfoInterface,
+        comms::option::ReadIterator<const std::uint8_t*>,
+        comms::option::WriteIterator<std::uint8_t*>,
+        comms::option::Handler<TestMsgHandler>,
+        comms::option::LengthInfoInterface,
+        comms::option::RefreshInterface
+    >;
 
-typedef cc_mqtt311::Message<
-    comms::option::IdInfoInterface,
-    comms::option::ReadIterator<const std::uint8_t*>,
-    comms::option::WriteIterator<std::uint8_t*>,
-    comms::option::Handler<TestMsgHandler>,
-    comms::option::LengthInfoInterface,
-    comms::option::RefreshInterface
-> TestMqttMessage;
+using TestMqttMessage =
+    cc_mqtt311::Message<
+        comms::option::IdInfoInterface,
+        comms::option::ReadIterator<const std::uint8_t*>,
+        comms::option::WriteIterator<std::uint8_t*>,
+        comms::option::Handler<TestMsgHandler>,
+        comms::option::LengthInfoInterface,
+        comms::option::RefreshInterface
+    >;
 
-typedef cc_mqttsn::message::Advertise<TestMqttsnMessage> AdvertiseMsg_SN;
-typedef cc_mqttsn::message::Searchgw<TestMqttsnMessage> SearchgwMsg_SN;
-typedef cc_mqttsn::message::Gwinfo<TestMqttsnMessage> GwinfoMsg_SN;
-typedef cc_mqttsn::message::Connect<TestMqttsnMessage> ConnectMsg_SN;
-typedef cc_mqttsn::message::Connack<TestMqttsnMessage> ConnackMsg_SN;
-typedef cc_mqttsn::message::Willtopicreq<TestMqttsnMessage> WilltopicreqMsg_SN;
-typedef cc_mqttsn::message::Willtopic<TestMqttsnMessage> WilltopicMsg_SN;
-typedef cc_mqttsn::message::Willmsgreq<TestMqttsnMessage> WillmsgreqMsg_SN;
-typedef cc_mqttsn::message::Willmsg<TestMqttsnMessage> WillmsgMsg_SN;
-typedef cc_mqttsn::message::Register<TestMqttsnMessage> RegisterMsg_SN;
-typedef cc_mqttsn::message::Regack<TestMqttsnMessage> RegackMsg_SN;
-typedef cc_mqttsn::message::Publish<TestMqttsnMessage> PublishMsg_SN;
-typedef cc_mqttsn::message::Puback<TestMqttsnMessage> PubackMsg_SN;
-typedef cc_mqttsn::message::Pubrec<TestMqttsnMessage> PubrecMsg_SN;
-typedef cc_mqttsn::message::Pubrel<TestMqttsnMessage> PubrelMsg_SN;
-typedef cc_mqttsn::message::Pubcomp<TestMqttsnMessage> PubcompMsg_SN;
-typedef cc_mqttsn::message::Subscribe<TestMqttsnMessage> SubscribeMsg_SN;
-typedef cc_mqttsn::message::Suback<TestMqttsnMessage> SubackMsg_SN;
-typedef cc_mqttsn::message::Unsubscribe<TestMqttsnMessage> UnsubscribeMsg_SN;
-typedef cc_mqttsn::message::Unsuback<TestMqttsnMessage> UnsubackMsg_SN;
-typedef cc_mqttsn::message::Pingreq<TestMqttsnMessage> PingreqMsg_SN;
-typedef cc_mqttsn::message::Pingresp<TestMqttsnMessage> PingrespMsg_SN;
-typedef cc_mqttsn::message::Disconnect<TestMqttsnMessage> DisconnectMsg_SN;
-typedef cc_mqttsn::message::Willtopicupd<TestMqttsnMessage> WilltopicupdMsg_SN;
-typedef cc_mqttsn::message::Willtopicresp<TestMqttsnMessage> WilltopicrespMsg_SN;
-typedef cc_mqttsn::message::Willmsgupd<TestMqttsnMessage> WillmsgupdMsg_SN;
-typedef cc_mqttsn::message::Willmsgresp<TestMqttsnMessage> WillmsgrespMsg_SN;
-typedef cc_mqttsn::frame::Frame<TestMqttsnMessage> TestMqttsnProtStack;
+CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES_DEFAULT_OPTIONS(, Msg_SN, TestMqttsnMessage)    
+CC_MQTT311_ALIASES_FOR_ALL_MESSAGES_DEFAULT_OPTIONS(, Msg, TestMqttMessage)   
 
-typedef cc_mqtt311::message::Connect<TestMqttMessage> ConnectMsg;
-typedef cc_mqtt311::message::Connack<TestMqttMessage> ConnackMsg;
-typedef cc_mqtt311::message::Publish<TestMqttMessage> PublishMsg;
-typedef cc_mqtt311::message::Puback<TestMqttMessage> PubackMsg;
-typedef cc_mqtt311::message::Pubrec<TestMqttMessage> PubrecMsg;
-typedef cc_mqtt311::message::Pubrel<TestMqttMessage> PubrelMsg;
-typedef cc_mqtt311::message::Pubcomp<TestMqttMessage> PubcompMsg;
-typedef cc_mqtt311::message::Subscribe<TestMqttMessage> SubscribeMsg;
-typedef cc_mqtt311::message::Suback<TestMqttMessage> SubackMsg;
-typedef cc_mqtt311::message::Unsubscribe<TestMqttMessage> UnsubscribeMsg;
-typedef cc_mqtt311::message::Unsuback<TestMqttMessage> UnsubackMsg;
-typedef cc_mqtt311::message::Pingreq<TestMqttMessage> PingreqMsg;
-typedef cc_mqtt311::message::Pingresp<TestMqttMessage> PingrespMsg;
-typedef cc_mqtt311::message::Disconnect<TestMqttMessage> DisconnectMsg;
-typedef cc_mqtt311::frame::Frame<TestMqttMessage> TestMqttProtStack;
+using TestMqttsnFrame = cc_mqttsn::frame::Frame<TestMqttsnMessage>;
+using TestMqttFrame = cc_mqtt311::frame::Frame<TestMqttMessage>;
 
 using TestMqttsnMsgHandler = comms::GenericHandler<
     TestMqttsnMessage,
@@ -93,100 +58,102 @@ using TestMqttMsgHandler = comms::GenericHandler<
 
 class TestMsgHandler : public TestMqttsnMsgHandler, public TestMqttMsgHandler
 {
-    typedef TestMqttsnMsgHandler MqttsnBase;
-    typedef TestMqttMsgHandler MqttBase;
+    using MqttsnBase = TestMqttsnMsgHandler;
+    using MqttBase = TestMqttMsgHandler;
 public:
-    typedef std::vector<std::uint8_t> DataBuf;
+    using DataBuf = std::vector<std::uint8_t>;
 
     TestMsgHandler();
     ~TestMsgHandler();
 
-    typedef std::function<void (const GwinfoMsg_SN& msg)> GwinfoMsgHandlerFunc;
+    using GwinfoMsgHandlerFunc = std::function<void (const GwinfoMsg_SN& msg)>;
     GwinfoMsgHandlerFunc setGwinfoMsgHandler(GwinfoMsgHandlerFunc&& func);
 
-    typedef std::function<void (const ConnackMsg_SN&)> ConnackMsgHandlerFunc;
+    using ConnackMsgHandlerFunc = std::function<void (const ConnackMsg_SN&)>;
     ConnackMsgHandlerFunc setConnackMsgHandler(ConnackMsgHandlerFunc&& func);
 
-    typedef std::function<void (const WilltopicreqMsg_SN&)> WilltopicreqMsgHandlerFunc;
+    using WilltopicreqMsgHandlerFunc = std::function<void (const WilltopicreqMsg_SN&)>;
     WilltopicreqMsgHandlerFunc setWilltopicreqMsgHandler(WilltopicreqMsgHandlerFunc&& func);
 
-    typedef std::function<void (const WillmsgreqMsg_SN&)> WillmsgreqMsgHandlerFunc;
+    using WillmsgreqMsgHandlerFunc = std::function<void (const WillmsgreqMsg_SN&)>;
     WillmsgreqMsgHandlerFunc setWillmsgreqMsgHandler(WillmsgreqMsgHandlerFunc&& func);
 
-    typedef std::function<void (const DisconnectMsg_SN&)> DisconnectSnMsgHandlerFunc;
+    using DisconnectSnMsgHandlerFunc = std::function<void (const DisconnectMsg_SN&)>;
     DisconnectSnMsgHandlerFunc setDisconnectSnMsgHandler(DisconnectSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const RegisterMsg_SN&)> RegisterMsgHandlerFunc;
+    using RegisterMsgHandlerFunc = std::function<void (const RegisterMsg_SN&)>;
     RegisterMsgHandlerFunc setRegisterMsgHandler(RegisterMsgHandlerFunc&& func);
 
-    typedef std::function<void (const RegackMsg_SN&)> RegackMsgHandlerFunc;
+    using RegackMsgHandlerFunc = std::function<void (const RegackMsg_SN&)>;
     RegackMsgHandlerFunc setRegackMsgHandler(RegackMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PublishMsg_SN&)> PublishSnMsgHandlerFunc;
+    using PublishSnMsgHandlerFunc = std::function<void (const PublishMsg_SN&)>;
     PublishSnMsgHandlerFunc setPublishSnMsgHandler(PublishSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubackMsg_SN&)> PubackSnMsgHandlerFunc;
+    using PubackSnMsgHandlerFunc = std::function<void (const PubackMsg_SN&)>;
     PubackSnMsgHandlerFunc setPubackSnMsgHandler(PubackSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubrecMsg_SN&)> PubrecSnMsgHandlerFunc;
+    using PubrecSnMsgHandlerFunc = std::function<void (const PubrecMsg_SN&)>;
     PubrecSnMsgHandlerFunc setPubrecSnMsgHandler(PubrecSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubrelMsg_SN&)> PubrelSnMsgHandlerFunc;
+    using PubrelSnMsgHandlerFunc = std::function<void (const PubrelMsg_SN&)>;
     PubrelSnMsgHandlerFunc setPubrelSnMsgHandler(PubrelSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubcompMsg_SN&)> PubcompSnMsgHandlerFunc;
+    using PubcompSnMsgHandlerFunc = std::function<void (const PubcompMsg_SN&)>;
     PubcompSnMsgHandlerFunc setPubcompSnMsgHandler(PubcompSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PingreqMsg_SN&)> PingreqSnMsgHandlerFunc;
+    using PingreqSnMsgHandlerFunc = std::function<void (const PingreqMsg_SN&)>;
     PingreqSnMsgHandlerFunc setPingreqSnMsgHandler(PingreqSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PingrespMsg_SN&)> PingrespSnMsgHandlerFunc;
+    using PingrespSnMsgHandlerFunc = std::function<void (const PingrespMsg_SN&)>;
     PingrespSnMsgHandlerFunc setPingrespSnMsgHandler(PingrespSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const SubackMsg_SN&)> SubackSnMsgHandlerFunc;
+    using SubackSnMsgHandlerFunc = std::function<void (const SubackMsg_SN&)>;
     SubackSnMsgHandlerFunc setSubackSnMsgHandler(SubackSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const UnsubackMsg_SN&)> UnsubackSnMsgHandlerFunc;
+    using UnsubackSnMsgHandlerFunc = std::function<void (const UnsubackMsg_SN&)>;
     UnsubackSnMsgHandlerFunc setUnsubackSnMsgHandler(UnsubackSnMsgHandlerFunc&& func);
 
-    typedef std::function<void (const WilltopicrespMsg_SN&)> WilltopicrespMsgHandlerFunc;
+    using WilltopicrespMsgHandlerFunc = std::function<void (const WilltopicrespMsg_SN&)>;
     WilltopicrespMsgHandlerFunc setWilltopicrespMsgHandler(WilltopicrespMsgHandlerFunc&& func);
 
-    typedef std::function<void (const WillmsgrespMsg_SN&)> WillmsgrespMsgHandlerFunc;
+    using WillmsgrespMsgHandlerFunc = std::function<void (const WillmsgrespMsg_SN&)>;
     WillmsgrespMsgHandlerFunc setWillmsgrespMsgHandler(WillmsgrespMsgHandlerFunc&& func);
 
+    using FwdMsgHandlerFunc = std::function<void (const FwdMsg_SN&)>;
+    FwdMsgHandlerFunc setFwdMsgHandler(FwdMsgHandlerFunc&& func);
 
-    typedef std::function<void (const ConnectMsg&)> ConnectMsgHandlerFunc;
+    using ConnectMsgHandlerFunc = std::function<void (const ConnectMsg&)>;
     ConnectMsgHandlerFunc setConnectMsgHandler(ConnectMsgHandlerFunc&& func);
 
-    typedef std::function<void (const DisconnectMsg&)> DisconnectMsgHandlerFunc;
+    using DisconnectMsgHandlerFunc = std::function<void (const DisconnectMsg&)>;
     DisconnectMsgHandlerFunc setDisconnectMsgHandler(DisconnectMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PingreqMsg&)> PingreqMsgHandlerFunc;
+    using PingreqMsgHandlerFunc = std::function<void (const PingreqMsg&)>;
     PingreqMsgHandlerFunc setPingreqMsgHandler(PingreqMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PingrespMsg&)> PingrespMsgHandlerFunc;
+    using PingrespMsgHandlerFunc = std::function<void (const PingrespMsg&)>;
     PingrespMsgHandlerFunc setPingrespMsgHandler(PingrespMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PublishMsg&)> PublishMsgHandlerFunc;
+    using PublishMsgHandlerFunc = std::function<void (const PublishMsg&)>;
     PublishMsgHandlerFunc setPublishMsgHandler(PublishMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubackMsg&)> PubackMsgHandlerFunc;
+    using PubackMsgHandlerFunc = std::function<void (const PubackMsg&)>;
     PubackMsgHandlerFunc setPubackMsgHandler(PubackMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubrecMsg&)> PubrecMsgHandlerFunc;
+    using PubrecMsgHandlerFunc = std::function<void (const PubrecMsg&)>;
     PubrecMsgHandlerFunc setPubrecMsgHandler(PubrecMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubrelMsg&)> PubrelMsgHandlerFunc;
+    using PubrelMsgHandlerFunc = std::function<void (const PubrelMsg&)>;
     PubrelMsgHandlerFunc setPubrelMsgHandler(PubrelMsgHandlerFunc&& func);
 
-    typedef std::function<void (const PubcompMsg&)> PubcompMsgHandlerFunc;
+    using PubcompMsgHandlerFunc = std::function<void (const PubcompMsg&)>;
     PubcompMsgHandlerFunc setPubcompMsgHandler(PubcompMsgHandlerFunc&& func);
 
-    typedef std::function<void (const SubscribeMsg&)> SubscribeMsgHandlerFunc;
+    using SubscribeMsgHandlerFunc = std::function<void (const SubscribeMsg&)>;
     SubscribeMsgHandlerFunc setSubscribeMsgHandler(SubscribeMsgHandlerFunc&& func);
 
-    typedef std::function<void (const UnsubscribeMsg&)> UnsubscribeMsgHandlerFunc;
+    using UnsubscribeMsgHandlerFunc = std::function<void (const UnsubscribeMsg&)>;
     UnsubscribeMsgHandlerFunc setUnsubscribeMsgHandler(UnsubscribeMsgHandlerFunc&& func);
 
     using MqttsnBase::handle;
@@ -210,6 +177,7 @@ public:
     virtual void handle(UnsubackMsg_SN& msg) override;
     virtual void handle(WilltopicrespMsg_SN& msg) override;
     virtual void handle(WillmsgrespMsg_SN& msg) override;
+    virtual void handle(FwdMsg_SN& msg) override;
     virtual void handle(TestMqttsnMessage& msg) override;
 
     virtual void handle(ConnectMsg& msg) override;
@@ -282,6 +250,7 @@ public:
         cc_mqttsn::field::QosVal qos,
         bool retain);
     DataBuf prepareClientWillmsgupd(const DataBuf& data);
+    DataBuf prepareClientFwd(std::uint8_t nodeId, const DataBuf& data);
 
     using ConnackResponseCodeVal = ConnackMsg::Field_returnCode::ValueType;
     DataBuf prepareBrokerConnack(ConnackResponseCodeVal rc, bool sessionPresent = false);
@@ -312,8 +281,8 @@ private:
     template <typename TStack, typename TMsg>
     static DataBuf prepareInputInternal(TStack& stack, const TMsg& msg);
 
-    TestMqttsnProtStack m_mqttsnStack;
-    TestMqttProtStack m_mqttStack;
+    TestMqttsnFrame m_mqttsnFrame;
+    TestMqttFrame m_mqttFrame;
 
     GwinfoMsgHandlerFunc m_gwInfoMsgHandler;
     ConnackMsgHandlerFunc m_connackMsgHandler;
@@ -333,6 +302,7 @@ private:
     UnsubackSnMsgHandlerFunc m_unsubackSnMsgHandler;
     WilltopicrespMsgHandlerFunc m_willtopicrespMsgHandler;
     WillmsgrespMsgHandlerFunc m_willmsgrespMsgHandler;
+    FwdMsgHandlerFunc m_fwdMsgHandler;
 
     ConnectMsgHandlerFunc m_connectMsgHandler;
     DisconnectMsgHandlerFunc m_disconnectMsgHandler;

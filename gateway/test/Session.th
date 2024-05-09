@@ -74,6 +74,7 @@ private:
         std::list<bool> m_termRequests;
         std::list<bool> m_brokerReconnectRequests;
         std::list<std::string> m_connectedClients;
+        std::list<cc_mqttsn_gateway::Session*> m_fwdEncSessions; 
     };
 
     struct WillInfo
@@ -166,6 +167,27 @@ private:
                     info.second = *password;
                 }
                 return info;
+            });
+
+        session->setFwdEncSessionCreatedReportCb(
+            [&state](cc_mqttsn_gateway::Session* fwdEncSession)
+            {
+                TS_TRACE("New FWD Encapsulated Session");
+                auto iter = std::find(state.m_fwdEncSessions.begin(), state.m_fwdEncSessions.end(), fwdEncSession);
+                TS_ASSERT_EQUALS(iter, state.m_fwdEncSessions.end());
+
+                state.m_fwdEncSessions.push_back(fwdEncSession);
+                return true;
+            });
+
+        session->setFwdEncSessionDeletedReportCb(
+            [&state](cc_mqttsn_gateway::Session* fwdEncSession)
+            {
+                TS_TRACE("Deleting FWD Encapsulated Session");
+                auto iter = std::find(state.m_fwdEncSessions.begin(), state.m_fwdEncSessions.end(), fwdEncSession);
+                TS_ASSERT_DIFFERS(iter, state.m_fwdEncSessions.end());
+
+                state.m_fwdEncSessions.erase(iter);
             });
 
         handler.setGwinfoMsgHandler(
@@ -274,6 +296,12 @@ private:
             [](const WillmsgrespMsg_SN&)
             {
                 TS_TRACE("(CLIENT) <-- WILLMSGRESP");
+            });
+
+        handler.setFwdMsgHandler(
+            [](const FwdMsg_SN&)
+            {
+                TS_TRACE("(CLIENT) <-- FWD");
             });
 
         handler.setConnectMsgHandler(

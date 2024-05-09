@@ -94,7 +94,7 @@ SessionImpl::SessionImpl()
     m_encapsulateOp = static_cast<decltype(m_encapsulateOp)>(m_ops.back().get());
 
     for (auto& op : m_ops) {
-        startOp(*op);
+        op->start();
     }
 }
 
@@ -220,11 +220,11 @@ bool SessionImpl::setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t 
     return m_state.m_regMgr.setTopicIdAllocationRange(minVal, maxVal);
 }
 
-void SessionImpl::reportFwdEncSessionCreated(Session* session)
+bool SessionImpl::reportFwdEncSessionCreated(Session* session)
 {
     assert(m_fwdEncSessionCreatedReportCb);
     assert(session != nullptr);
-    m_fwdEncSessionCreatedReportCb(session);
+    return m_fwdEncSessionCreatedReportCb(session);
 }
 
 void SessionImpl::reportFwdEncSessionDeleted(Session* session)
@@ -238,6 +238,37 @@ void SessionImpl::sendDataToClient(const std::uint8_t* buf, std::size_t bufLen)
 {
     assert(m_sendToClientCb);
     m_sendToClientCb(buf, bufLen);
+}
+
+void SessionImpl::sendToClient(const MqttsnMessage& msg)
+{
+    sendMessage(msg, m_mqttsnFrame, m_sendToClientCb, m_mqttsnMsgData);
+}
+
+void SessionImpl::sendToBroker(const MqttMessage& msg)
+{
+    sendMessage(msg, m_mqttFrame, m_sendToBrokerCb, m_mqttMsgData);
+}
+
+void SessionImpl::termRequest()
+{
+    if ((!m_termReqCb) || (m_state.m_terminating)) {
+        return;
+    }
+
+    m_state.m_terminating = true;
+}
+
+void SessionImpl::brokerReconnectRequest()
+{
+    if ((!m_brokerReconnectReqCb) ||
+        (m_state.m_reconnectingBroker) ||
+        (m_state.m_terminating)) {
+        return;
+    }
+
+    m_state.m_reconnectingBroker = true;
+    m_brokerReconnectReqCb();
 }
 
 void SessionImpl::handle([[maybe_unused]] SearchgwMsg_SN& msg)
@@ -290,45 +321,6 @@ void SessionImpl::handle(MqttsnMessage& msg)
 void SessionImpl::handle(MqttMessage& msg)
 {
     dispatchToOps(msg);
-}
-
-void SessionImpl::sendToClient(const MqttsnMessage& msg)
-{
-    sendMessage(msg, m_mqttsnFrame, m_sendToClientCb, m_mqttsnMsgData);
-}
-
-void SessionImpl::sendToBroker(const MqttMessage& msg)
-{
-    sendMessage(msg, m_mqttFrame, m_sendToBrokerCb, m_mqttMsgData);
-}
-
-void SessionImpl::startOp(SessionOp& op)
-{
-    op.setSendToClientCb(std::bind(&SessionImpl::sendToClient, this, std::placeholders::_1));
-    op.setSendToBrokerCb(std::bind(&SessionImpl::sendToBroker, this, std::placeholders::_1));
-    op.setSessionTermReqCb(
-        [this]() noexcept
-        {
-            if ((!m_termReqCb) || (m_state.m_terminating)) {
-                return;
-            }
-
-            m_state.m_terminating = true;
-        });
-
-    op.setBrokerReconnectReqCb(
-        [this]()
-        {
-            if ((!m_brokerReconnectReqCb) ||
-                (m_state.m_reconnectingBroker) ||
-                (m_state.m_terminating)) {
-                return;
-            }
-
-            m_state.m_reconnectingBroker = true;
-            m_brokerReconnectReqCb();
-        });
-    op.start();
 }
 
 void SessionImpl::dispatchToOps(MqttsnMessage& msg)
