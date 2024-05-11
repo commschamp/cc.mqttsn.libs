@@ -51,6 +51,7 @@ public:
     void test26();
     void test27();
     void test28();
+    void test29();
 
 private:
     typedef std::unique_ptr<cc_mqttsn_gateway::Session> SessionPtr;
@@ -58,6 +59,7 @@ private:
     using TopicIdTypeVal = cc_mqttsn::field::TopicIdTypeVal;
 
     static const std::uint8_t DefaultGwId = 5;
+    static const std::uint8_t DefaultFwdNodeId = 1;
     static const std::uint16_t DefaultKeepAlivePeriod = 60;
     static const unsigned DefaultRetryPeriod = 15;
     static const unsigned DefaultRetryCount = 3;
@@ -95,7 +97,8 @@ private:
         return stream.str();
     }
 
-    static SessionPtr allocSession(
+    static void prepareSession(
+        cc_mqttsn_gateway::Session& session,
         State& state,
         TestMsgHandler& handler,
         const std::uint8_t gwId = DefaultGwId,
@@ -103,14 +106,12 @@ private:
         const DataBuf* password = nullptr,
         bool connectToBroker = true)
     {
-        SessionPtr session(new cc_mqttsn_gateway::Session);
-
-        session->setNextTickProgramReqCb(
+        session.setNextTickProgramReqCb(
             [&state](unsigned val) {
                 state.m_tickReq.push_back(val);
             });
 
-        session->setCancelTickWaitReqCb(
+        session.setCancelTickWaitReqCb(
             [&state]() -> unsigned
             {
                 if (state.m_elapsed.empty()) {
@@ -124,37 +125,38 @@ private:
                 state.m_elapsed.pop_front();
                 return val;
             });
-        session->setSendDataClientReqCb(
+
+        session.setSendDataClientReqCb(
             [&state](const std::uint8_t* buf, std::size_t bufSize)
             {
                 state.m_sentToClient.emplace_back(buf, buf + bufSize);
             });
 
-        session->setSendDataBrokerReqCb(
+        session.setSendDataBrokerReqCb(
             [&state](const std::uint8_t* buf, std::size_t bufSize)
             {
                 state.m_sentToBroker.emplace_back(buf, buf + bufSize);
             });
 
-        session->setTerminationReqCb(
+        session.setTerminationReqCb(
             [&state]()
             {
                 state.m_termRequests.push_back(true);
             });
 
-        session->setBrokerReconnectReqCb(
+        session.setBrokerReconnectReqCb(
             [&state]()
             {
                 state.m_brokerReconnectRequests.push_back(true);
             });
 
-        session->setClientConnectedReportCb(
+        session.setClientConnectedReportCb(
             [&state](const std::string& clientId)
             {
                 state.m_connectedClients.push_back(clientId);
             });
 
-        session->setAuthInfoReqCb(
+        session.setAuthInfoReqCb(
             [username, password](const std::string&) -> cc_mqttsn_gateway::Session::AuthInfo
             {
                 cc_mqttsn_gateway::Session::AuthInfo info;
@@ -169,18 +171,20 @@ private:
                 return info;
             });
 
-        session->setFwdEncSessionCreatedReportCb(
-            [&state](cc_mqttsn_gateway::Session* fwdEncSession)
+        session.setFwdEncSessionCreatedReportCb(
+            [&state, &handler, gwId, username, password, connectToBroker](cc_mqttsn_gateway::Session* fwdEncSession)
             {
                 TS_TRACE("New FWD Encapsulated Session");
                 auto iter = std::find(state.m_fwdEncSessions.begin(), state.m_fwdEncSessions.end(), fwdEncSession);
                 TS_ASSERT_EQUALS(iter, state.m_fwdEncSessions.end());
 
+                prepareSession(*fwdEncSession, state, handler, gwId, username, password, connectToBroker);
+
                 state.m_fwdEncSessions.push_back(fwdEncSession);
                 return true;
             });
 
-        session->setFwdEncSessionDeletedReportCb(
+        session.setFwdEncSessionDeletedReportCb(
             [&state](cc_mqttsn_gateway::Session* fwdEncSession)
             {
                 TS_TRACE("Deleting FWD Encapsulated Session");
@@ -371,20 +375,33 @@ private:
             });
 
 
-        session->setRetryPeriod(DefaultRetryPeriod);
-        session->setRetryCount(DefaultRetryCount);
-        session->setGatewayId(gwId);
-        session->setTopicIdAllocationRange(DefaultMinTopicId, DefaultMaxTopicId);
-        bool result = session->start();
-        if (connectToBroker) {
-            session->setBrokerConnected(true);
-        }
+        session.setRetryPeriod(DefaultRetryPeriod);
+        session.setRetryCount(DefaultRetryCount);
+        session.setGatewayId(gwId);
+        session.setTopicIdAllocationRange(DefaultMinTopicId, DefaultMaxTopicId);
+        bool result = session.start();
         TS_ASSERT(result);
-        TS_ASSERT(session->isRunning());
+        if (connectToBroker) {
+            session.setBrokerConnected(true);
+        }
+        
+        TS_ASSERT(session.isRunning());
+    }
+
+    static SessionPtr allocSession(
+        State& state,
+        TestMsgHandler& handler,
+        const std::uint8_t gwId = DefaultGwId,
+        const std::string* username = nullptr,
+        const DataBuf* password = nullptr,
+        bool connectToBroker = true)
+    {
+        SessionPtr session(new cc_mqttsn_gateway::Session);
+        prepareSession(*session, state, handler, gwId, username, password, connectToBroker);
         TS_ASSERT(state.m_sentToClient.empty());
         TS_ASSERT(state.m_sentToBroker.empty());
         TS_ASSERT(state.m_tickReq.empty());
-        TS_ASSERT(state.m_elapsed.empty());
+        TS_ASSERT(state.m_elapsed.empty());             
         return session;
     }
 
@@ -403,7 +420,7 @@ private:
         const DataBuf& buf,
         const std::string& msgStr)
     {
-        auto consumed = session.dataFromBroker(&buf[0], buf.size());
+        auto consumed = session.dataFromBroker(buf.data(), buf.size());
         TS_ASSERT_EQUALS(consumed, buf.size());
         TS_TRACE("(BROKER) --> " + msgStr);
 
@@ -452,12 +469,24 @@ private:
     static void verifySentToClient_ConnackMsg(
         State& state,
         TestMsgHandler& handler,
-        cc_mqttsn::field::ReturnCodeVal rc)
+        cc_mqttsn::field::ReturnCodeVal rc,
+        std::uint8_t fwdId = 0)
     {
         if (state.m_sentToClient.empty()) {
             TS_FAIL("No data was sent to client");
             return;
         }
+
+        bool fwdSent = false;
+        auto oldFwCb = 
+            handler.setFwdMsgHandler(
+                [&](const FwdMsg_SN& msg)
+                {
+                    fwdSent = true;
+                    TS_TRACE("(CLIENT) <-- FWD");
+                    TS_ASSERT(!msg.field_nodeId().value().empty());
+                    TS_ASSERT_EQUALS(msg.field_nodeId().value().front(), fwdId);
+                });
 
         bool sent = false;
         auto oldCb =
@@ -471,9 +500,12 @@ private:
 
         handler.processDataForClient(state.m_sentToClient.front());
         TS_ASSERT(sent);
+        TS_ASSERT((fwdId == 0) || (fwdSent));
+        TS_ASSERT((fwdId != 0) || (!fwdSent));
 
         state.m_sentToClient.pop_front();
         handler.setConnackMsgHandler(std::move(oldCb));
+        handler.setFwdMsgHandler(std::move(oldFwCb));
     }
 
     static void verifySentToClient_WilltopicreqMsg(State& state, TestMsgHandler& handler)
@@ -1342,6 +1374,12 @@ private:
         TS_ASSERT_EQUALS(state.m_connectedClients.front(), clientId);
         state.m_connectedClients.pop_front();
     }
+
+    static void verifyFwdSession(State& state, unsigned count = 1U)
+    {
+        TS_TRACE("[Forward sesssions]: " + std::to_string(state.m_fwdEncSessions.size()));
+        TS_ASSERT_EQUALS(state.m_fwdEncSessions.size(), count);
+    }    
 
     static void verifyTermReq(State& state)
     {
@@ -3042,4 +3080,50 @@ void SessionTest::test28()
     verifySentToClient_ConnackMsg(state, handler, cc_mqttsn::field::ReturnCodeVal::Accepted);
     verifyConnectedClient(state, DefaultClientId);
     verifyNoOtherEvent(state, handler);
+}
+
+void SessionTest::test29()
+{
+    TestMsgHandler handler;
+    State state;
+    auto session = allocSession(state, handler, DefaultGwId, nullptr, nullptr, false);
+    verifyNoOtherEvent(state, handler);
+
+    auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, false, true);
+    auto fwdConnectMsg = handler.prepareClientFwd(DefaultFwdNodeId, connectMsg);
+    dataFromClient(*session, fwdConnectMsg, "FWD + CONNECT");
+    verifyFwdSession(state);
+
+    state.m_elapsed.push_back(100);
+    auto* fwdSession = state.m_fwdEncSessions.front();
+
+    static const std::string PredefinedTopic("predefined/topic");
+    static const std::uint16_t PredefinedTopicId = 0x1111;
+    fwdSession->addPredefinedTopic(PredefinedTopic, PredefinedTopicId);
+    fwdSession->setBrokerConnected(true);
+    verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, true);
+
+    state.m_elapsed.push_back(100);
+    using ConnackResponseCodeVal = ConnackMsg::Field_returnCode::ValueType;
+    auto connackMsg = handler.prepareBrokerConnack(ConnackResponseCodeVal::Accepted);
+    dataFromBroker(*fwdSession, connackMsg, "CONNACK");
+    verifySentToClient_ConnackMsg(state, handler, cc_mqttsn::field::ReturnCodeVal::Accepted, DefaultFwdNodeId);
+    verifyConnectedClient(state, DefaultClientId);
+
+    static const auto Qos = cc_mqttsn::field::QosVal::ExactlyOnceDelivery;
+    static const std::uint16_t SubMsgId1 = 0x1234;
+    auto subMsg1 = handler.prepareClientSubscribe(PredefinedTopicId, SubMsgId1, Qos);
+    auto fwdSubMsg1 = handler.prepareClientFwd(DefaultFwdNodeId, subMsg1);
+    dataFromClient(*session, fwdSubMsg1, "FWD+SUBSCRIBE");
+    verifySentToBroker_SubscribeMsg(state, handler, PredefinedTopic, translateQos(Qos), SubMsgId1);
+
+    auto fwdConnectMsg2 = handler.prepareClientFwd(DefaultFwdNodeId + 1, connectMsg);
+    dataFromClient(*session, fwdConnectMsg2, "FWD + CONNECT");
+    verifyFwdSession(state, 2U);
+
+    state.m_elapsed.push_back(100);
+    auto* fwdSession2 = state.m_fwdEncSessions.back();
+
+    fwdSession2->setBrokerConnected(true);
+    verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, true);
 }

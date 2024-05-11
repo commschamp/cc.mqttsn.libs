@@ -349,7 +349,7 @@ private:
                 [state, dataProc](const std::uint8_t* buf, unsigned bufLen, bool broadcast)
                 {
                     if (!state->m_nextOutput.empty()) {
-                        TS_TRACE("ERROR: unconsumed message!!!");
+                        TS_TRACE("ERROR: unconsumed message!");
                         if (dataProc != nullptr) {
                             processOutput(*state, *dataProc, state->m_broadcast);
                         }

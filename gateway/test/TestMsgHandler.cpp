@@ -32,40 +32,47 @@ std::uint16_t shortTopicNameToId(const std::string& topic)
 
 } // namespace
 
-template <typename TStack>
-void TestMsgHandler::processOutputInternal(TStack& stack, const DataBuf& data)
+template <typename TFrame>
+void TestMsgHandler::processOutputInternal(TFrame& frame, const DataBuf& data)
 {
-    typedef typename std::decay<decltype(stack)>::type StackType;
-    typedef typename StackType::MsgPtr MsgPtr;
+    typedef typename std::decay<decltype(frame)>::type FrameType;
+    typedef typename FrameType::MsgPtr MsgPtr;
     typedef typename MsgPtr::element_type MsgType;
 
-    auto iter = comms::readIteratorFor<MsgType>(&data[0]);
-    MsgPtr msg;
+    auto iter = comms::readIteratorFor<MsgType>(data.data());
+    std::size_t consumed = 0U;
+    while (consumed < data.size()) {
+        auto begIter = iter;
+        auto remLen = data.size() - consumed;
+        MsgPtr msg;
 
-    [[maybe_unused]] auto es = stack.read(msg, iter, data.size());
-    if (es != comms::ErrorStatus::Success) {
-        std::cout << "es=" << static_cast<unsigned>(es) << ": Output buffer: " << std::hex;
-        std::copy(data.begin(), data.end(), std::ostream_iterator<unsigned>(std::cout, " "));
-        std::cout << std::dec << std::endl;
+        auto es = frame.read(msg, iter, remLen);
+        if (es != comms::ErrorStatus::Success) {
+            std::cout << "es=" << static_cast<unsigned>(es) << ": Output buffer: " << std::hex;
+            std::copy_n(begIter, remLen, std::ostream_iterator<unsigned>(std::cout, " "));
+            std::cout << std::dec << std::endl;
+        }
+        assert(es == comms::ErrorStatus::Success);
+        assert(msg);
+        msg->dispatch(*this);
+        consumed += static_cast<unsigned>(std::distance(begIter, iter));
     }
-    assert(es == comms::ErrorStatus::Success);
-    assert(msg);
-    assert(static_cast<unsigned>(std::distance(comms::readIteratorFor<MsgType>(&data[0]), iter)) == data.size());
-    msg->dispatch(*this);
+
+    assert(static_cast<unsigned>(std::distance(comms::readIteratorFor<MsgType>(data.data()), iter)) == data.size());
 }
 
 
-template <typename TStack, typename TMsg>
-TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TStack& stack, const TMsg& msg)
+template <typename TFrame, typename TMsg>
+TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TFrame& frame, const TMsg& msg)
 {
-    typedef typename std::decay<decltype(stack)>::type StackType;
-    typedef typename StackType::MsgPtr::element_type MsgType;
+    typedef typename std::decay<decltype(frame)>::type FrameType;
+    typedef typename FrameType::MsgPtr::element_type MsgType;
 
     DataBuf buf;
-    buf.resize(stack.length(msg));
+    buf.resize(frame.length(msg));
 
     auto iter = comms::writeIteratorFor<MsgType>(&buf[0]);
-    [[maybe_unused]] auto es = stack.write(msg, iter, buf.size());
+    [[maybe_unused]] auto es = frame.write(msg, iter, buf.size());
     assert(es == comms::ErrorStatus::Success);
     assert(buf.size() == static_cast<unsigned>(std::distance(comms::writeIteratorFor<MsgType>(&buf[0]), iter)));
     return buf;

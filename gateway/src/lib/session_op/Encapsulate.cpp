@@ -73,7 +73,7 @@ void Encapsulate::handle(FwdMsg_SN& msg)
             break;
         }
 
-        std::tie(iter, std::ignore) = m_sessions.insert(std::make_pair(std::move(nodeId), std::make_unique<Session>()));        
+        std::tie(iter, std::ignore) = m_sessions.insert(std::make_pair(nodeId, std::make_unique<Session>()));        
         assert(iter != m_sessions.end());
         auto sessionPtr = iter->second.get();
 
@@ -83,6 +83,12 @@ void Encapsulate::handle(FwdMsg_SN& msg)
         sessionPtr->setSleepingClientMsgLimit(st.m_sleepPubAccLimit);
         sessionPtr->setDefaultClientId(st.m_defaultClientId);
         sessionPtr->setPubOnlyKeepAlive(st.m_pubOnlyKeepAlive);
+
+        if (!session().reportFwdEncSessionCreated(sessionPtr)) {
+            m_sessions.erase(iter);
+            iter = m_sessions.end();
+            break;
+        }
 
         sessionPtr->setSendDataClientReqCb(
             [this, nodeId](const std::uint8_t* buf, std::size_t bufSize)
@@ -94,13 +100,7 @@ void Encapsulate::handle(FwdMsg_SN& msg)
             [this, sessionPtr]()
             {
                 terminationReqFromSession(sessionPtr);
-            });
-
-        if (!session().reportFwdEncSessionCreated(sessionPtr)) {
-            m_sessions.erase(iter);
-            iter = m_sessions.end();
-            break;
-        }
+            });        
 
         if ((!sessionPtr->isRunning()) && (!sessionPtr->start())) {
             // Error failed to start session;
