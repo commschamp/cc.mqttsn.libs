@@ -81,7 +81,21 @@ public:
     /// @return Authentication information
     using AuthInfoReqCb = std::function<AuthInfo (const std::string& clientId)>;
 
+    /// @brief Type of callback used to notify the application about forwarding encapsulation session being created.
+    /// @details The application is responsible to perform the necessary session configuration
+    ///     as well as set all the callbacks except the one set by the @ref setSendDataClientReqCb()
+    ///     and @ref setTerminationReqCb(). The data sent to the client as well as the session
+    ///     termination are managed by the calling session object. The application is responsible
+    ///     to manage the timer as well as broker connection of the reported session.
+    /// @param[in] session Pointer to the created session object. Owned by the session object invoking the callback,
+    ///     mustn't be deleted by the application.
+    /// @return @b true in case of success, @b false in case of falure.
     using FwdEncSessionCreatedReportCb = std::function<bool (Session* session)>;
+
+    /// @brief Type of callback used to notify the application about forwarding encapsulation session being deleted.
+    /// @details The application is responsible to remove any reference to the session object from its internal data structes.
+    /// @param[in] session Pointer to the created session object. Owned by the session object invoking the callback, 
+    ///     mustn't be deleted by the application.
     using FwdEncSessionDeletedReportCb = std::function<void (Session* session)>;
 
     /// @brief Default constructor
@@ -147,7 +161,15 @@ public:
     /// @param[in] func R-value reference to the callback object
     void setAuthInfoReqCb(AuthInfoReqCb&& func);
 
+    /// @brief Set the callback to be invoked when the forwarding encapsulation session 
+    ///     is detected and to notify application about such session creation.
+    /// @details When not set, the forwarding enapsulation messages will be ignored
+    /// @param[in] func R-value reference to the callback object
     void setFwdEncSessionCreatedReportCb(FwdEncSessionCreatedReportCb&& func);
+
+    /// @brief Set the callback to be invoked when the forwarding encapsulation session 
+    ///     is about to be deleted.
+    /// @param[in] func R-value reference to the callback object
     void setFwdEncSessionDeletedReportCb(FwdEncSessionDeletedReportCb&& func);
 
     /// @brief Set gateway numeric ID to be reported when requested.

@@ -281,6 +281,57 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
         });
 }
 
+void cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionFwdEncSessionCreatedCb cb,
+    void* data)
+{
+    if (session.obj == nullptr) {
+        return;
+    }
+
+    if (cb == nullptr) {
+        reinterpret_cast<Session*>(session.obj)->setFwdEncSessionCreatedReportCb(nullptr);
+        return;
+    }    
+
+    reinterpret_cast<Session*>(session.obj)->setFwdEncSessionCreatedReportCb(
+        [cb, data](cc_mqttsn_gateway::Session* sessionPtr)
+        {
+            CC_MqttsnSessionHandle encSession;
+            encSession.obj = sessionPtr;
+            return cb(data, encSession);
+        });    
+}
+
+void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionFwdEncSessionDeletedCb cb,
+    void* data)
+{
+    if (session.obj == nullptr) {
+        return;
+    }
+
+    if (cb == nullptr) {
+        reinterpret_cast<Session*>(session.obj)->setFwdEncSessionDeletedReportCb(nullptr);
+        return;
+    }    
+
+    reinterpret_cast<Session*>(session.obj)->setFwdEncSessionDeletedReportCb(
+        [cb, data](cc_mqttsn_gateway::Session* sessionPtr)
+        {
+            CC_MqttsnSessionHandle encSession;
+            encSession.obj = sessionPtr;
+            cb(data, encSession);
+        });    
+}
+
+void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionFwdEncSessionDeletedCb cb,
+    void* data);   
+
 void cc_mqttsn_gw_session_set_id(CC_MqttsnSessionHandle session, unsigned char id)
 {
     if (session.obj == nullptr) {

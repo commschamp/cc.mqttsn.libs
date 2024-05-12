@@ -18,6 +18,10 @@
 /// class. The destruction of the object will clean up all acquired resources.
 /// @code
 /// std::unique_ptr<cc_mqttsn_gateway::Session> session(new cc_mqttsn_gateway::Session());
+/// 
+/// // Using raw pointer to force doxygen to propely generate links to the 
+/// // member functions in the code snippets below.
+/// cc_mqttsn_gateway::Session* session = new cc_mqttsn_gateway::Session();
 /// @endcode
 ///
 /// When using @b C interface, the allocation is performed using cc_mqttsn_gw_session_alloc()
@@ -432,7 +436,7 @@
 /// @code
 /// void my_auth_callback(
 ///     void* userData, 
-///     CC_MqttsnSessionHandle session,
+///     CC_MqttsnSessionHandle handle,
 ///     const char* clientId, 
 ///     const char** username, 
 ///     const unsigned char** password, 
@@ -466,7 +470,7 @@
 ///
 /// @b C interface:
 /// @code
-/// void my_client_connect_report(void* userData, CC_MqttsnSessionHandle session, const char* clientId)
+/// void my_client_connect_report(void* userData, CC_MqttsnSessionHandle handle, const char* clientId)
 /// {
 ///     if (!cc_mqttsn_gw_session_add_predefined_topic(handle, "client/specific/predefined/topic", 2222)) {
 ///         ... /* report error */
@@ -519,7 +523,7 @@
 /// session->setPubOnlyKeepAlive(100); // 100 seconds
 /// @endcode
 ///
-/// @b C++ interface:
+/// @b C interface:
 /// @code
 /// cc_mqttsn_gw_session_set_pub_only_keep_alive(handle, 100); /* 100 seconds */
 /// @endcode
@@ -546,4 +550,59 @@
 /// cc_mqttsn_gw_session_set_sleeping_client_msg_limit(handle, 1000); /* no more that 1000 messages */
 /// @endcode
 ///
-
+/// @section cc_mqttsn_gw_session_page_fwd_enc Forwarder Encapsulation Support
+/// In case the gateway need to support forwarder encapsulation functionality there
+/// is a need to set extra two callbacks.
+///
+/// @b C++ interface:
+/// @code
+/// session->setFwdEncSessionCreatedReportCb(
+///     [](cc_mqttsn_gateway::Session* fwdSession) -> bool
+///     {
+///         ... // Perform the session configuration and set all the necessary callbacks
+///         return true;
+///     });
+///
+/// session->setFwdEncSessionDeletedReportCb(
+///     [](cc_mqttsn_gateway::Session* fwdSession) -> bool
+///     {
+///         ... // Remove any reference to fwdSession in the data structures
+///     });
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// bool my_fwd_enc_session_created_report_cb(void* userData, CC_MqttsnSessionHandle handle)
+/// {
+///     ... // Perform the session configuration and set all the necessary callbacks
+///     return true;
+/// });
+///
+/// void my_fwd_enc_session_deleted_report_cb(void* userData, CC_MqttsnSessionHandle handle)
+/// {
+///     ... // Remove any reference to handle in the data structures
+/// });
+///
+/// cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(handle, &my_fwd_enc_session_created_report_cb, someDserData);
+/// cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(handle, &my_fwd_enc_session_deleted_report_cb, someDserData);
+/// @endcode
+///
+/// When the new forward encapsulation session creation is reported, the application is
+/// responsible to perform the necessary session configuration as well as set all
+/// the necessary callbacks, except the @ref cc_mqttsn_gw_session_page_send_client
+/// and the @ref cc_mqttsn_gw_session_page_term. These callbacks will be
+/// set by the reporting session.
+///
+/// The reported forward encapsulation session object is owned by the reporting session
+/// and its deletion will be reported using the deletion report callback.
+///
+/// The gateway application is responsible to manage the connection to the broker
+/// as well as timers of the reported forward encapsulation session.
+///
+/// When the forward encapsulation session is reported, it's not
+/// @ref cc_mqttsn_gw_session_page_start "started" yet. It will be when the
+/// callback function returns. However, the
+/// gateway application is expected to initiate asynchronous connection to the
+/// broker and report the @ref cc_mqttsn_gw_session_page_broker_conn "connectivity"
+/// later on. The @b important part is that broker connectivity must be reported
+/// @b after the callback function returns.

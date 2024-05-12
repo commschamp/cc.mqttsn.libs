@@ -103,8 +103,7 @@ private:
         TestMsgHandler& handler,
         const std::uint8_t gwId = DefaultGwId,
         const std::string* username = nullptr,
-        const DataBuf* password = nullptr,
-        bool connectToBroker = true)
+        const DataBuf* password = nullptr)
     {
         session.setNextTickProgramReqCb(
             [&state](unsigned val) {
@@ -172,13 +171,13 @@ private:
             });
 
         session.setFwdEncSessionCreatedReportCb(
-            [&state, &handler, gwId, username, password, connectToBroker](cc_mqttsn_gateway::Session* fwdEncSession)
+            [&state, &handler, gwId, username, password](cc_mqttsn_gateway::Session* fwdEncSession)
             {
                 TS_TRACE("New FWD Encapsulated Session");
                 auto iter = std::find(state.m_fwdEncSessions.begin(), state.m_fwdEncSessions.end(), fwdEncSession);
                 TS_ASSERT_EQUALS(iter, state.m_fwdEncSessions.end());
 
-                prepareSession(*fwdEncSession, state, handler, gwId, username, password, connectToBroker);
+                prepareSession(*fwdEncSession, state, handler, gwId, username, password);
 
                 state.m_fwdEncSessions.push_back(fwdEncSession);
                 return true;
@@ -379,13 +378,6 @@ private:
         session.setRetryCount(DefaultRetryCount);
         session.setGatewayId(gwId);
         session.setTopicIdAllocationRange(DefaultMinTopicId, DefaultMaxTopicId);
-        bool result = session.start();
-        TS_ASSERT(result);
-        if (connectToBroker) {
-            session.setBrokerConnected(true);
-        }
-        
-        TS_ASSERT(session.isRunning());
     }
 
     static SessionPtr allocSession(
@@ -397,11 +389,18 @@ private:
         bool connectToBroker = true)
     {
         SessionPtr session(new cc_mqttsn_gateway::Session);
-        prepareSession(*session, state, handler, gwId, username, password, connectToBroker);
+        prepareSession(*session, state, handler, gwId, username, password);
         TS_ASSERT(state.m_sentToClient.empty());
         TS_ASSERT(state.m_sentToBroker.empty());
         TS_ASSERT(state.m_tickReq.empty());
-        TS_ASSERT(state.m_elapsed.empty());             
+        TS_ASSERT(state.m_elapsed.empty());     
+        bool result = session->start();
+        TS_ASSERT(result);
+        if (connectToBroker) {
+            session->setBrokerConnected(true);
+        }
+        
+        TS_ASSERT(session->isRunning());                
         return session;
     }
 
@@ -3096,7 +3095,6 @@ void SessionTest::test29()
 
     state.m_elapsed.push_back(100);
     auto* fwdSession = state.m_fwdEncSessions.front();
-
     static const std::string PredefinedTopic("predefined/topic");
     static const std::uint16_t PredefinedTopicId = 0x1111;
     fwdSession->addPredefinedTopic(PredefinedTopic, PredefinedTopicId);

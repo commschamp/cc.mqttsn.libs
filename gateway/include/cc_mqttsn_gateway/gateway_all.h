@@ -164,6 +164,23 @@ typedef void (*CC_MqttsnSessionBrokerReconnectReqCb)(void* userData, CC_MqttsnSe
 /// @param[in] clientId Client ID
 typedef void (*CC_MqttsnSessionClientConnectReportCb)(void* userData, CC_MqttsnSessionHandle session, const char* clientId);
 
+/// @brief Type of callback used to report forwarding encapsulated session creation.
+/// @details The application is responsible to perform the necessary session configuration
+///     as well as set all the callbacks except the one set by the @ref cc_mqttsn_gw_session_set_send_data_to_client_cb()
+///     and @ref cc_mqttsn_gw_session_set_term_req_cb(). The data sent to the client as well as the session
+///     termination are managed by the calling session object. The application is responsible
+///     to manage the timer as well as broker connection of the reported session.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of created session object
+/// @return @b true in case of success, @b false in case of falure.
+typedef bool (*CC_MqttsnSessionFwdEncSessionCreatedCb)(void* userData, CC_MqttsnSessionHandle session);
+
+/// @brief Type of callback used to report forwarding encapsulated session about to be deleted.
+/// @details The application is responsible to remove any reference to the session object from its internal data structes.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session object about to be deleted
+typedef void (*CC_MqttsnSessionFwdEncSessionDeletedCb)(void* userData, CC_MqttsnSessionHandle session);
+
 /// @brief Type of callback used to request authentication information of
 ///     the client that is trying to connect.
 /// @param[in] userData User data passed as the last parameter to the setting function.
@@ -296,6 +313,29 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
     CC_MqttsnSessionHandle session,
     CC_MqttsnSessionAuthInfoReqCb cb,
     void* data);
+
+/// @brief Set the callback to be invoked when the forwarding encapsulation session 
+///     is detected and to notify application about such session creation.
+/// @details When not set, the forwarding enapsulation messages will be ignored
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
+void cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionFwdEncSessionCreatedCb cb,
+    void* data);
+
+/// @brief Set the callback to be invoked when the forwarding encapsulation session 
+///     is about to be deleted.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
+void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionFwdEncSessionDeletedCb cb,
+    void* data);    
 
 /// @brief Set gateway numeric ID to be reported when requested.
 /// @details If not set, default value @b 0 is assumed.
