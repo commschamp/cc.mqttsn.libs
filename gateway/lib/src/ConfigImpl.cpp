@@ -22,7 +22,7 @@ namespace
 
 const char CommentChar = '#';
 const std::string SpaceChars(" \t");
-const std::string GatewayIdKey("cc_mqttsn_gw_id");
+const std::string GatewayIdKey("mqttsn_gw_id");
 const std::string AdvertiseKey("mqttsn_advertise");
 const std::string RetryPeriodKey("mqttsn_retry_period");
 const std::string RetryCountKey("mqttsn_retry_count");

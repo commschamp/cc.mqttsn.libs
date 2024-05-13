@@ -173,7 +173,7 @@
 /// @b C++ interface:
 /// @code
 /// session->setCancelTickWaitReqCb(
-///     []()
+///     []() -> unsigned
 ///     {
 ///         ... // cancel timer
 ///         return ...; // return number of elapsed milliseconds

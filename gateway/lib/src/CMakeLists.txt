@@ -24,6 +24,7 @@ function (lib_mqttsn_gateway)
     )    
     
     add_library (${name} STATIC ${src})
+    add_library (cc::${name} ALIAS ${name})
     
     target_link_libraries(${name} PRIVATE cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
 
@@ -51,7 +52,7 @@ function (lib_mqttsn_gateway)
     )     
 
     include(CMakePackageConfigHelpers)
-    file (READ "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cc_mqttsn_gateway/version.h" version_file)
+    file (READ "${CMAKE_CURRENT_SOURCE_DIR}/../include/cc_mqttsn_gateway/version.h" version_file)
     string (REGEX MATCH "CC_MQTTSN_GW_MAJOR_VERSION ([0-9]*)U*" _ ${version_file})
     set (major_ver ${CMAKE_MATCH_1})
     string (REGEX MATCH "CC_MQTTSN_GW_MINOR_VERSION ([0-9]*)U*" _ ${version_file})
