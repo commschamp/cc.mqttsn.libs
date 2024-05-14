@@ -89,4 +89,9 @@ std::uint16_t Config::brokerTcpHostPort() const
     return m_pImpl->brokerTcpHostPort();
 }
 
+Config::ClientConnectionType Config::clientConnectionType() const
+{
+    return m_pImpl->clientConnectionType();
+}
+
 }  // namespace cc_mqttsn_gateway

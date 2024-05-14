@@ -490,6 +490,13 @@ typedef struct
     const char* password; ///< Password string (from the configuration)
 } CC_MqttsnAuthInfo;
 
+/// @brief Client I/O socket connection type
+typedef enum
+{
+    CC_MqttsnClientConnectionType_Udp, ///< UDP/IP
+    CC_MqttsnClientConnectionType_ValuesLimit ///< Limit to available values, must be last
+} CC_MqttsnClientConnectionType;    
+
 /// @brief Handle for configuration object used in all @b cc_mqttsn_gw_config_* functions.
 typedef struct
 {
@@ -611,6 +618,10 @@ const char* cc_mqttsn_gw_config_broker_address(CC_MqttsnConfigHandle config);
 /// @param[in] config Handle returned by cc_mqttsn_gw_config_alloc() function.
 unsigned short cc_mqttsn_gw_config_broker_port(CC_MqttsnConfigHandle config);
 
+/// @brief Get client I/O socket connection type
+/// @param config Handle returned by cc_mqttsn_gw_config_alloc() function.
+CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_socket_type(CC_MqttsnConfigHandle config);
+
 /// @brief Get number of available configuration values for the provided key
 /// @details The key is the first word in the configuration line, and the
 ///     value is rest of the string until the end of the line.
@@ -623,6 +634,7 @@ unsigned cc_mqttsn_gw_config_values_count(CC_MqttsnConfigHandle config, const ch
 ///     value is rest of the string until the end of the line.
 ///     If the configuration value doesn't exist, @b NULL is returned.
 const char* cc_mqttsn_gw_config_get_value(CC_MqttsnConfigHandle config, const char* key, unsigned idx);
+
 
 #ifdef __cplusplus
 }

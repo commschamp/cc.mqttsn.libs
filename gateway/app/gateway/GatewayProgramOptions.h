@@ -21,16 +21,6 @@ class GatewayProgramOptions
 public:
     using OptDesc = boost::program_options::options_description;
 
-    static constexpr std::uint16_t DefaultPort = 1883U;
-
-    enum ConnectionType
-    {
-        ConnectionType_Udp,
-        ConnectionType_ValuesLimit
-    };
-
-    static const ConnectionType DefaultConnectionType = ConnectionType_Udp;
-
     GatewayProgramOptions();
 
     void printHelp();
@@ -39,7 +29,6 @@ public:
 
     bool helpRequested() const;
     std::string configFile() const;
-    ConnectionType connectionType() const;
 
 
 private:

@@ -7,12 +7,13 @@
 
 #include "ConfigImpl.h"
 
-#include <string>
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <iterator>
 #include <limits>
-#include <cctype>
+#include <map>
+#include <string>
 
 namespace cc_mqttsn_gateway
 {
@@ -33,6 +34,7 @@ const std::string PredefinedTopicKey("mqttsn_predefined_topic");
 const std::string AuthKey("mqttsn_auth");
 const std::string TopicIdAllocRangeKey("mqttsn_topic_id_alloc_range");
 const std::string BrokerKey("mqttsn_broker");
+const std::string ClientSocketKey("mqttsn_client_socket");
 
 const std::uint16_t DefaultAdvertise = 15 * 60;
 const unsigned DefaultRetryPeriod = 10;
@@ -363,6 +365,32 @@ std::uint16_t ConfigImpl::brokerTcpHostPort() const
 
     assert(m_brokerPort != 0);
     return m_brokerPort;
+}
+
+ConfigImpl::ClientConnectionType ConfigImpl::clientConnectionType() const
+{
+    static const std::map<std::string, ClientConnectionType> Map = {
+        {"udp", ClientConnectionType::ClientConnectionType_Udp},
+    };
+
+    ClientConnectionType result = ClientConnectionType::ClientConnectionType_Udp;
+
+    do {
+        auto typeStr = stringValue(ClientSocketKey);
+        if (typeStr.empty()) {
+            break;
+        }
+
+        auto iter = Map.find(typeStr);
+        if (iter == Map.end()) {
+            result = ClientConnectionType::ClientConnectionType_ValuesLimit;
+            break;
+        }
+
+        result = iter->second;       
+    } while (false);
+
+    return result;
 }
 
 const std::string& ConfigImpl::stringValue(

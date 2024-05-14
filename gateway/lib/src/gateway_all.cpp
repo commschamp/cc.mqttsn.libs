@@ -691,6 +691,15 @@ unsigned short cc_mqttsn_gw_config_broker_port(CC_MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->brokerTcpHostPort();
 }
 
+CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_socket_type(CC_MqttsnConfigHandle config)
+{
+    if (config.obj == nullptr) {
+        return CC_MqttsnClientConnectionType_Udp;
+    }    
+
+    return static_cast<CC_MqttsnClientConnectionType>(reinterpret_cast<const Config*>(config.obj)->clientConnectionType());
+}
+
 unsigned cc_mqttsn_gw_config_values_count(CC_MqttsnConfigHandle config, const char* key)
 {
     if (config.obj == nullptr) {

@@ -17,12 +17,13 @@ namespace cc_mqttsn_gateway
 class ConfigImpl
 {
 public:
-    typedef Config::ConfigMap ConfigMap;
-    typedef Config::PredefinedTopicInfo PredefinedTopicInfo;
-    typedef Config::PredefinedTopicsList PredefinedTopicsList;
-    typedef Config::AuthInfo AuthInfo;
-    typedef Config::AuthInfosList AuthInfosList;
-    typedef Config::TopicIdsRange TopicIdsRange;
+    using ConfigMap = Config::ConfigMap;
+    using PredefinedTopicInfo = Config::PredefinedTopicInfo;
+    using PredefinedTopicsList = Config::PredefinedTopicsList;
+    using AuthInfo = Config::AuthInfo;
+    using AuthInfosList = Config::AuthInfosList;
+    using TopicIdsRange = Config::TopicIdsRange;
+    using ClientConnectionType = Config::ClientConnectionType;
 
 
     ConfigImpl() = default;
@@ -56,6 +57,8 @@ public:
 
     const std::string& brokerTcpHostAddress() const;
     std::uint16_t brokerTcpHostPort() const;
+
+    ClientConnectionType clientConnectionType() const;
 
 private:
     template <typename T>

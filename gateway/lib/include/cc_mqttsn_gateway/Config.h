@@ -39,10 +39,10 @@ public:
     ///     value is rest of the string until the end of the line.
     ///     @b NOTE, that the type is @b multimap, which allows multiple
     ///     entries with the same key.
-    typedef std::multimap<std::string, std::string> ConfigMap;
+    using ConfigMap = std::multimap<std::string, std::string>;
 
     /// @brief Type of buffer that contains binary data.
-    typedef std::vector<std::uint8_t> BinaryData;
+    using BinaryData = std::vector<std::uint8_t>;
 
     /// @brief Info about single predefined topic
     struct PredefinedTopicInfo
@@ -53,7 +53,7 @@ public:
     };
 
     /// @brief Type of list containing predefined topics.
-    typedef std::vector<PredefinedTopicInfo> PredefinedTopicsList;
+    using PredefinedTopicsList = std::vector<PredefinedTopicInfo>;
 
     /// @brief Authentication info for single client
     struct AuthInfo
@@ -64,12 +64,19 @@ public:
     };
 
     /// @brief Type of list containing authentication information for multiple clients.
-    typedef std::vector<AuthInfo> AuthInfosList;
+    using AuthInfosList = std::vector<AuthInfo>;
 
     /// @brief Range of topic IDs
     /// @details First element of the pair is minimal ID, and second
     ///     element of the pair is maximal ID.
-    typedef std::pair<std::uint16_t, std::uint16_t> TopicIdsRange;
+    using TopicIdsRange = std::pair<std::uint16_t, std::uint16_t>;
+
+    /// @brief Client I/O socket connection type
+    enum ClientConnectionType
+    {
+        ClientConnectionType_Udp, ///< UDP/IP
+        ClientConnectionType_ValuesLimit ///< Limit to available values, must be last
+    };    
 
     /// @brief Constructor
     Config();
@@ -138,6 +145,9 @@ public:
     /// @brief Get TCP/IP port of the broker.
     /// @details Default value is @b 1883
     std::uint16_t brokerTcpHostPort() const;
+
+    /// @brief Get client side I/O socket connection type
+    ClientConnectionType clientConnectionType() const;
 
 private:
     std::unique_ptr<ConfigImpl> m_pImpl;

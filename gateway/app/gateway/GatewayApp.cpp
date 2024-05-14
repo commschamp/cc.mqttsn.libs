@@ -59,7 +59,7 @@ bool GatewayApp::start(int argc, const char* argv[])
 
     auto configFile = opts.configFile();
     do {
-        if (!configFile.empty()) {
+        if (configFile.empty()) {
             logInfo() << "No configuration file provided, using default configuration." << std::endl;
             break;
         }

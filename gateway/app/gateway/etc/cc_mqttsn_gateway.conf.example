@@ -18,11 +18,11 @@
 # both client / broker directions. Default value is 10 seconds.
 #mqttsn_retry_period 10
 
-# Number of attemts to try to re-send a message, acknowledgement of which needs
+# Number of attempts to try to re-send a message, acknowledgement of which needs
 # to be received. Default value is 3. 
 #mqttsn_retry_count 3
 
-# In some use-cases, with interfaces such as RS-232 and/or bluetooth links, 
+# In some use-cases, with interfaces such as RS-232 and/or some bluetooth links, 
 # there is only one MQTT-SN client that can be connected to the gateway. In this
 # case the client may omit its client ID information in the CONNECT message 
 # to save the amount of traffic. When forwarding the connection request to the
@@ -79,13 +79,21 @@
 #mqttsn_broker 127.0.0.1 1883
 
 # =================================================================
+# Client socket configuration
+# =================================================================
+
+# Use "mqttsn_client_socket" option to specify the type of the I/O link socket
+# to use. Supported values are: "udp" (default)
+# mqttsn_client_socket udp
+
+# =================================================================
 # UDP configuration
 # =================================================================
 
 # Local UDP port the gateway listens to new incomming messages on. Default is
-# 1883.
+# 1883. Applicable only if "mqttsn_client_socket" is "udp".
 #udp_listen_port 1883
 
 # Remote UDP port the gateway broadcasts its ADVERTISE messages to. Default is
-# 1883.
+# 1883. Applicable only if "mqttsn_client_socket" is "udp".
 #udp_broadcast_port 1883 
