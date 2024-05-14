@@ -21,11 +21,6 @@ install (
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install (
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/etc/
-    DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/cc_mqttsn_gateway
-)
-
 ######################################################################
 
 find_package (Doxygen)
