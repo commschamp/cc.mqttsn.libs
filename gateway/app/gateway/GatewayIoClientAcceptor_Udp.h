@@ -8,27 +8,23 @@
 #pragma once
 
 #include "GatewayIoClientAcceptor.h"
-#include "GatewayProgramOptions.h"
-
-#include "cc_mqttsn_gateway/Config.h"
-
-#include <boost/asio.hpp>
 
 namespace cc_mqttsn_gateway_app
 {
 
-class GatewayApp
+class GatewayIoClientAcceptor_Udp : public GatewayIoClientAcceptor
 {
+    using Base = GatewayIoClientAcceptor;
 public:
-    GatewayApp(boost::asio::io_context& io);
-    ~GatewayApp();
+    GatewayIoClientAcceptor_Udp(boost::asio::io_context& io, const cc_mqttsn_gateway::Config& config);
+    virtual ~GatewayIoClientAcceptor_Udp();
 
-    bool start(int argc, const char* argv[]);
+    static Ptr create(boost::asio::io_context& io, const cc_mqttsn_gateway::Config& config);
+
+protected:
+    virtual bool startImpl() override;
 
 private:
-    boost::asio::io_context& m_io; 
-    cc_mqttsn_gateway::Config m_config;
-    GatewayIoClientAcceptorPtr m_acceptor;
 };
 
 } // namespace cc_mqttsn_gateway_app

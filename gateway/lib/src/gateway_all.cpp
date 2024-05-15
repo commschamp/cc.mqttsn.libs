@@ -327,11 +327,6 @@ void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
         });    
 }
 
-void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
-    CC_MqttsnSessionHandle session,
-    CC_MqttsnSessionFwdEncSessionDeletedCb cb,
-    void* data);   
-
 void cc_mqttsn_gw_session_set_id(CC_MqttsnSessionHandle session, unsigned char id)
 {
     if (session.obj == nullptr) {

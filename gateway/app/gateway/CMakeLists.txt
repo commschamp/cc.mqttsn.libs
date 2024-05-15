@@ -4,6 +4,9 @@ function (bin_cc_mqttsn_gateway_app)
     set (src
         main.cpp
         GatewayApp.cpp
+        GatewayIoClientAcceptor.cpp
+        GatewayIoClientAcceptor_Udp.cpp
+        GatewayIoClientSocket.cpp
         GatewayProgramOptions.cpp
     )
     

@@ -74,9 +74,18 @@ bool GatewayApp::start(int argc, const char* argv[])
         m_config.read(stream);
     } while (false);    
 
-    // TODO:
-    logError() << "NYI" << std::endl;
-    return false;
+    m_acceptor = GatewayIoClientAcceptor::create(m_io, m_config);
+    if (!m_acceptor) {
+        logError() << "Unknown / unsupported client socket type" << std::endl;
+        return false;
+    }
+
+    if (!m_acceptor->start()) {
+        logError() << "Failed to start client socket" << std::endl;
+        return false;
+    }    
+
+    return true;
 }
 
 } // namespace cc_mqttsn_gateway_app
