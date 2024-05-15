@@ -58,6 +58,8 @@ public:
     const std::string& brokerTcpHostAddress() const;
     std::uint16_t brokerTcpHostPort() const;
 
+    const std::string& logFile() const;
+
     ClientConnectionType clientConnectionType() const;
 
 private:

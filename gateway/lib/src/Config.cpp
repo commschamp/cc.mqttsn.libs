@@ -89,6 +89,11 @@ std::uint16_t Config::brokerTcpHostPort() const
     return m_pImpl->brokerTcpHostPort();
 }
 
+const std::string& Config::logFile() const
+{
+    return m_pImpl->logFile();
+}
+
 Config::ClientConnectionType Config::clientConnectionType() const
 {
     return m_pImpl->clientConnectionType();

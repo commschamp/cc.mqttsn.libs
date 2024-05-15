@@ -146,6 +146,11 @@ public:
     /// @details Default value is @b 1883
     std::uint16_t brokerTcpHostPort() const;
 
+    /// @brief Get log file.
+    /// @details Expected to be an aboslute file path or one of the special values:
+    ///     "stdout", "stderr". Defaults to "stdout"
+    const std::string& logFile() const;
+
     /// @brief Get client side I/O socket connection type
     ClientConnectionType clientConnectionType() const;
 

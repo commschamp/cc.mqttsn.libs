@@ -618,6 +618,11 @@ const char* cc_mqttsn_gw_config_broker_address(CC_MqttsnConfigHandle config);
 /// @param[in] config Handle returned by cc_mqttsn_gw_config_alloc() function.
 unsigned short cc_mqttsn_gw_config_broker_port(CC_MqttsnConfigHandle config);
 
+/// @brief Get log file.
+/// @details Expected to be an aboslute file path or one of the special values:
+///     "stdout", "stderr". Defaults to "stdout"
+const char* cc_mqttsn_gw_config_log_file(CC_MqttsnConfigHandle config);
+
 /// @brief Get client I/O socket connection type
 /// @param config Handle returned by cc_mqttsn_gw_config_alloc() function.
 CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_socket_type(CC_MqttsnConfigHandle config);

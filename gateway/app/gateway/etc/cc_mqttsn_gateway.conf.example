@@ -78,6 +78,10 @@
 # 127.0.0.1 and 1883 respectively.
 #mqttsn_broker 127.0.0.1 1883
 
+# Log file is expected be either an absolute path or one of the 
+# special values: stdout (default), stderr.
+#mqttsn_log_file stdout
+
 # =================================================================
 # Client socket configuration
 # =================================================================

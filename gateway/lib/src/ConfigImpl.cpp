@@ -34,6 +34,7 @@ const std::string PredefinedTopicKey("mqttsn_predefined_topic");
 const std::string AuthKey("mqttsn_auth");
 const std::string TopicIdAllocRangeKey("mqttsn_topic_id_alloc_range");
 const std::string BrokerKey("mqttsn_broker");
+const std::string LogFileKey("mqttsn_log_file");
 const std::string ClientSocketKey("mqttsn_client_socket");
 
 const std::uint16_t DefaultAdvertise = 15 * 60;
@@ -365,6 +366,12 @@ std::uint16_t ConfigImpl::brokerTcpHostPort() const
 
     assert(m_brokerPort != 0);
     return m_brokerPort;
+}
+
+const std::string& ConfigImpl::logFile() const
+{
+    static const std::string DefaultLogFile("stdout");
+    return stringValue(LogFileKey, DefaultLogFile);
 }
 
 ConfigImpl::ClientConnectionType ConfigImpl::clientConnectionType() const

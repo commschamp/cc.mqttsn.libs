@@ -349,6 +349,28 @@
 /// mqttsn_broker 127.0.0.1 1883
 /// @endcode
 ///
+/// @section cc_mqttsn_gw_config_page_log_file Log File
+/// The gateway application can produce various information and/or error
+/// messages. These messages can be stored in a special log file. To retrieve
+/// the relevant configuration information use the following API functions:
+///
+/// @b C++ interface
+/// @code
+/// const std::string& logFile = config.logFile();
+/// @endcode
+///
+/// @b C interface
+/// @code
+/// const char* logFile = cc_mqttsn_gw_config_log_file(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Log file is expected be either an absolute path or one of the
+/// # special values: stdout (default), stderr.
+/// mqttsn_log_file stdout
+/// @endcode
+///
 /// @section cc_mqttsn_gw_config_page_client_socket Client I/O Socket Type
 /// The MQTT-SN gateway application can support multiple client communication I/O
 /// socket types. Below are API function that can retrieve such information.
