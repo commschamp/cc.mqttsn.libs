@@ -8,6 +8,7 @@
 #pragma once
 
 #include "GatewayIoClientSocket.h"
+#include "GatewayLogger.h"
 
 #include "cc_mqttsn_gateway/Config.h"
 
@@ -27,7 +28,7 @@ public:
 
     virtual ~GatewayIoClientAcceptor();
 
-    static Ptr create(boost::asio::io_context& io, const cc_mqttsn_gateway::Config& config);
+    static Ptr create(boost::asio::io_context& io, GatewayLogger& logger, const cc_mqttsn_gateway::Config& config);
 
     bool start();
 
@@ -38,8 +39,9 @@ public:
     }
 
 protected:
-    GatewayIoClientAcceptor(boost::asio::io_context& io) : 
-        m_io(io)
+    GatewayIoClientAcceptor(boost::asio::io_context& io, GatewayLogger& logger) : 
+        m_io(io),
+        m_logger(logger)
     {
     };    
 
@@ -50,10 +52,16 @@ protected:
         return m_io;
     }
 
+    GatewayLogger& logger()
+    {
+        return m_logger;
+    }
+
     void reportNewConnection(GatewayIoClientSocketPtr socket);
 
 private:
     boost::asio::io_context& m_io; 
+    GatewayLogger& m_logger;
     NewConnectionReportCb m_newConnectionReportCb;
 };
 

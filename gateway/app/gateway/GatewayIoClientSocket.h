@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "GatewayLogger.h"
+
 #include "cc_mqttsn_gateway/Config.h"
 
 #include <boost/asio.hpp>
@@ -21,14 +23,20 @@ class GatewayIoClientSocket
 public:
     virtual ~GatewayIoClientSocket();
 
-    bool start()
+    bool start();
+
+    using DataReportCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize)>;
+    
+    template <typename TFunc>
+    void setDataReportCb(TFunc&& func)
     {
-        return startImpl();
+        m_dataReportCb = std::forward<TFunc>(func);
     }
 
 protected:
-    GatewayIoClientSocket(boost::asio::io_context& io) : 
-        m_io(io)
+    GatewayIoClientSocket(boost::asio::io_context& io, GatewayLogger& logger) : 
+        m_io(io),
+        m_logger(logger)
     {
     };    
 
@@ -39,8 +47,20 @@ protected:
         return m_io;
     }
 
+    GatewayLogger& logger()
+    {
+        return m_logger;
+    }
+
+    void reportClientData(const std::uint8_t* buf, std::size_t bufSize)
+    {
+        m_dataReportCb(buf, bufSize);
+    }
+
 private:
     boost::asio::io_context& m_io; 
+    GatewayLogger& m_logger;
+    DataReportCb m_dataReportCb;
 };
 
 using GatewayIoClientSocketPtr = std::unique_ptr<GatewayIoClientSocket>;

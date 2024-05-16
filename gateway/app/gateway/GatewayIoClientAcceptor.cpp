@@ -17,9 +17,12 @@ namespace cc_mqttsn_gateway_app
 
 GatewayIoClientAcceptor::~GatewayIoClientAcceptor() = default;
 
-GatewayIoClientAcceptor::Ptr GatewayIoClientAcceptor::create(boost::asio::io_context& io, const cc_mqttsn_gateway::Config& config)    
+GatewayIoClientAcceptor::Ptr GatewayIoClientAcceptor::create(
+    boost::asio::io_context& io, 
+    GatewayLogger& logger, 
+    const cc_mqttsn_gateway::Config& config)    
 {
-    using CreateFunc = Ptr (*)(boost::asio::io_context&, const cc_mqttsn_gateway::Config&);
+    using CreateFunc = Ptr (*)(boost::asio::io_context&, GatewayLogger&, const cc_mqttsn_gateway::Config&);
     static const CreateFunc Map[] = {
         /* ClientConnectionType_Udp */ &GatewayIoClientAcceptor_Udp::create,
     };
@@ -28,15 +31,16 @@ GatewayIoClientAcceptor::Ptr GatewayIoClientAcceptor::create(boost::asio::io_con
 
     auto idx = static_cast<unsigned>(config.clientConnectionType());
     if (MapSize <= idx) {
+        logger.error() << "Unknown client connection type" << std::endl;
         return Ptr();
     }
 
     auto func = Map[idx];
-    if (func == nullptr) {
-        return Ptr();
-    }
+    // if (func == nullptr) {
+    //     return Ptr();
+    // }
 
-    return func(io, config);
+    return func(io, logger, config);
 }
 
 bool GatewayIoClientAcceptor::start()

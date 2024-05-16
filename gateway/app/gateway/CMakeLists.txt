@@ -7,6 +7,8 @@ function (bin_cc_mqttsn_gateway_app)
         GatewayIoClientAcceptor.cpp
         GatewayIoClientAcceptor_Udp.cpp
         GatewayIoClientSocket.cpp
+        GatewayIoClientSocket_Udp.cpp
+        GatewayLogger.cpp
         GatewayProgramOptions.cpp
     )
     

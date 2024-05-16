@@ -14,5 +14,14 @@ namespace cc_mqttsn_gateway_app
 
 GatewayIoClientSocket::~GatewayIoClientSocket() = default;
 
+bool GatewayIoClientSocket::start()
+{
+    if (!m_dataReportCb) {
+        m_logger.error() << "Not all callbacks are set for GatewayIoClientSocket" << std::endl;
+        return false;
+    }
+
+    return startImpl();
+}
 
 } // namespace cc_mqttsn_gateway_app

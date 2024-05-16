@@ -12,26 +12,6 @@
 
 namespace cc_mqttsn_gateway_app
 {
-
-namespace 
-{
-
-std::ostream& logError()
-{
-    return std::cerr << "ERROR: ";
-}
-
-std::ostream& logInfo()
-{
-    return std::cout << "INFO: ";
-}
-
-std::ostream& logWarning()
-{
-    return std::cout << "WARNING: ";
-}
-
-} // namespace 
     
 
 GatewayApp::GatewayApp(boost::asio::io_context& io) : 
@@ -46,7 +26,7 @@ bool GatewayApp::start(int argc, const char* argv[])
     GatewayProgramOptions opts;
 
     if (!opts.parseArgs(argc, argv)) {
-        logError() << "Failed to parse arguments." << std::endl;
+        m_logger.error() << "Failed to parse arguments." << std::endl;
         return false;
     }
 
@@ -60,13 +40,13 @@ bool GatewayApp::start(int argc, const char* argv[])
     auto configFile = opts.configFile();
     do {
         if (configFile.empty()) {
-            logInfo() << "No configuration file provided, using default configuration." << std::endl;
+            m_logger.info() << "No configuration file provided, using default configuration." << std::endl;
             break;
         }
 
         std::ifstream stream(configFile);
         if (!stream) {
-            logWarning() << "Failed to open configuration file \"" <<
+            m_logger.warning() << "Failed to open configuration file \"" <<
                 configFile << "\", using default configuration." << std::endl;
             break;
         }
@@ -74,14 +54,16 @@ bool GatewayApp::start(int argc, const char* argv[])
         m_config.read(stream);
     } while (false);    
 
-    m_acceptor = GatewayIoClientAcceptor::create(m_io, m_config);
+    m_logger.configure(m_config);
+
+    m_acceptor = GatewayIoClientAcceptor::create(m_io, m_logger, m_config);
     if (!m_acceptor) {
-        logError() << "Unknown / unsupported client socket type" << std::endl;
+        m_logger.error() << "Unknown / unsupported client socket type" << std::endl;
         return false;
     }
 
     if (!m_acceptor->start()) {
-        logError() << "Failed to start client socket" << std::endl;
+        m_logger.error() << "Failed to start client socket" << std::endl;
         return false;
     }    
 

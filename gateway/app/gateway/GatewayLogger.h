@@ -7,30 +7,29 @@
 
 #pragma once
 
-#include "GatewayIoClientAcceptor.h"
-#include "GatewayLogger.h"
-#include "GatewayProgramOptions.h"
-
 #include "cc_mqttsn_gateway/Config.h"
 
-#include <boost/asio.hpp>
+#include <fstream>
+#include <iostream>
+#include <memory>
 
 namespace cc_mqttsn_gateway_app
 {
 
-class GatewayApp
+class GatewayLogger
 {
 public:
-    GatewayApp(boost::asio::io_context& io);
-    ~GatewayApp();
+    GatewayLogger();
 
-    bool start(int argc, const char* argv[]);
+    void configure(const cc_mqttsn_gateway::Config& config);
 
+    std::ostream& error();
+    std::ostream& info();
+    std::ostream& warning();
+    
 private:
-    boost::asio::io_context& m_io; 
-    cc_mqttsn_gateway::Config m_config;
-    GatewayLogger m_logger;
-    GatewayIoClientAcceptorPtr m_acceptor;
+    std::unique_ptr<std::ofstream> m_fstream;
+    std::ostream* m_out = nullptr;
 };
 
 } // namespace cc_mqttsn_gateway_app

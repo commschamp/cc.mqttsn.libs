@@ -99,7 +99,14 @@ void ConfigImpl::read(std::istream& stream)
             continue;
         }
 
-        map.insert(std::make_pair(std::move(key), std::string(str.begin() + valuePos, str.end())));
+        auto valueEndPos = str.size();
+        auto lastValueCharPos = str.find_last_not_of(" \t\r\n");
+        if (lastValueCharPos != std::string::npos) {
+            valueEndPos = lastValueCharPos + 1U;
+            assert(valuePos <= valueEndPos);
+        }
+
+        map.insert(std::make_pair(std::move(key), std::string(str.begin() + valuePos, str.begin() + valueEndPos)));
     }
 
     m_map.swap(map);
