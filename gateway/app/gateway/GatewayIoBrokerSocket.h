@@ -37,6 +37,14 @@ public:
         m_dataReportCb = std::forward<TFunc>(func);
     }
 
+    using ConnectedReportCb = std::function<void ()>;
+
+    template <typename TFunc>
+    void setConnectedReportCb(TFunc&& func)
+    {
+        m_connectedReportCb = std::forward<TFunc>(func);
+    }      
+
     using ErrorReportCb = std::function<void ()>;
     
     template <typename TFunc>
@@ -75,6 +83,11 @@ protected:
         m_dataReportCb(buf, bufSize);
     }
 
+    void reportConnected()
+    {
+        m_connectedReportCb();
+    }    
+
     void reportError()
     {
         m_errorReportCb();
@@ -84,6 +97,7 @@ private:
     boost::asio::io_context& m_io; 
     GatewayLogger& m_logger;
     DataReportCb m_dataReportCb;
+    ConnectedReportCb m_connectedReportCb;
     ErrorReportCb m_errorReportCb;
 };
 

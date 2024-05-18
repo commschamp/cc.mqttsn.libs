@@ -10,10 +10,14 @@
 #include "GatewayIoClientAcceptor.h"
 #include "GatewayLogger.h"
 #include "GatewayProgramOptions.h"
+#include "GatewaySession.h"
+#include "GatewayWrapper.h"
 
 #include "cc_mqttsn_gateway/Config.h"
 
 #include <boost/asio.hpp>
+
+#include <list>
 
 namespace cc_mqttsn_gateway_app
 {
@@ -27,10 +31,14 @@ public:
     bool start(int argc, const char* argv[]);
 
 private:
+    using SessionsList = std::list<GatewaySessionPtr>;
+
     boost::asio::io_context& m_io; 
     cc_mqttsn_gateway::Config m_config;
     GatewayLogger m_logger;
     GatewayIoClientAcceptorPtr m_acceptor;
+    GatewayWrapper m_gwWrapper;
+    SessionsList m_sessions;
 };
 
 } // namespace cc_mqttsn_gateway_app

@@ -15,7 +15,8 @@ namespace cc_mqttsn_gateway_app
     
 
 GatewayApp::GatewayApp(boost::asio::io_context& io) : 
-    m_io(io)
+    m_io(io),
+    m_gwWrapper(io, m_logger)
 {
 }
 
@@ -62,10 +63,53 @@ bool GatewayApp::start(int argc, const char* argv[])
         return false;
     }
 
+    m_acceptor->setNewConnectionReportCb(
+        [this](GatewayIoClientSocketPtr clientSocket)
+        {
+            auto session = std::make_unique<GatewaySession>(m_io, m_logger, m_config, std::move(clientSocket));
+
+            session->setTermpReqCb(
+                [this, sessionPtr = session.get()]()
+                {
+                    auto iter = 
+                        std::find_if(
+                            m_sessions.begin(), m_sessions.end(),
+                            [sessionPtr](auto& ptr)
+                            {
+                                return sessionPtr == ptr.get();
+                            });
+
+                    assert(iter != m_sessions.end());
+                    if (iter == m_sessions.end()) {
+                        return;
+                    }
+
+                    m_sessions.erase(iter);
+                });
+
+            if (!session->start()) {
+                m_logger.error() << "Failed to start session" << std::endl;
+                return;
+            }
+
+            m_sessions.push_back(std::move(session));
+        });    
+
     if (!m_acceptor->start()) {
         m_logger.error() << "Failed to start client socket" << std::endl;
         return false;
-    }    
+    }   
+
+    m_gwWrapper.setBroadcastReqCb(
+        [this](const std::uint8_t* buf, std::size_t bufSize)
+        {
+            assert(m_acceptor);
+            m_acceptor->broadcastData(buf, bufSize);
+        });
+
+    if (!m_gwWrapper.start(m_config)) {
+        return false;
+    }
 
     return true;
 }

@@ -12,6 +12,8 @@ function (bin_cc_mqttsn_gateway_app)
         GatewayIoClientSocket_Udp.cpp
         GatewayLogger.cpp
         GatewayProgramOptions.cpp
+        GatewaySession.cpp
+        GatewayWrapper.cpp
     )
     
     add_executable(${name} ${src})

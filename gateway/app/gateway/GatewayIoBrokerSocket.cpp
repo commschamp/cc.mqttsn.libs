@@ -42,7 +42,8 @@ GatewayIoBrokerSocket::Ptr GatewayIoBrokerSocket::create(boost::asio::io_context
 bool GatewayIoBrokerSocket::start()
 {
     if ((!m_dataReportCb) ||
-        (!m_errorReportCb)) {
+        (!m_errorReportCb) ||
+        (!m_connectedReportCb)) {
         m_logger.error() << "Not all callbacks are set for GatewayIoBrokerSocket" << std::endl;
         return false;
     }

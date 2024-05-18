@@ -37,7 +37,7 @@ public:
     ///     when the requested time expires. The callback is set using
     ///     setNextTickProgramReqCb() member function.
     /// @param[in] ms Number of @b milliseconds to measure.
-    typedef std::function<void (unsigned ms)> NextTickProgramReqCb;
+    using NextTickProgramReqCb = std::function<void (unsigned ms)>;
 
     /// @brief Type of callback used to request send the serialised @b ADVERTISE message.
     /// @details According to MQTT-SN protocol, the @b ADVERTISE message needs
@@ -54,7 +54,7 @@ public:
     /// @param[in] buf Pointer to buffer containing serialised @b ADVERTISE
     ///     message.
     /// @param[in] bufSize Number of bytes in the buffer.
-    typedef std::function<void (const std::uint8_t* buf, std::size_t bufSize)> SendDataReqCb;
+    using SendDataReqCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize)>;
 
     /// @brief Set the callback to be invoked when new time measurement is required.
     /// @details This is a must have callback, without it the object can not

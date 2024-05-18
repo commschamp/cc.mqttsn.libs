@@ -21,6 +21,11 @@ GatewayIoBrokerSocket_Tcp::GatewayIoBrokerSocket_Tcp(boost::asio::io_context& io
 
 GatewayIoBrokerSocket_Tcp::~GatewayIoBrokerSocket_Tcp() = default;
 
+GatewayIoBrokerSocket_Tcp::Ptr GatewayIoBrokerSocket_Tcp::create(boost::asio::io_context& io, GatewayLogger& logger, const cc_mqttsn_gateway::Config& config)
+{
+    return std::make_unique<GatewayIoBrokerSocket_Tcp>(io, logger, config);
+}
+
 bool GatewayIoBrokerSocket_Tcp::startImpl()
 {
     m_resolver.async_resolve(
@@ -61,6 +66,7 @@ bool GatewayIoBrokerSocket_Tcp::startImpl()
                     m_connected = true;
                     doRead();
                     sendPendingWrites();
+                    reportConnected();
                 }
             );
 

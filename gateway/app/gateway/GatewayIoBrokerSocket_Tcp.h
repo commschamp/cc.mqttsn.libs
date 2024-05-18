@@ -23,6 +23,8 @@ public:
 
     virtual ~GatewayIoBrokerSocket_Tcp();
 
+    static Ptr create(boost::asio::io_context& io, GatewayLogger& logger, const cc_mqttsn_gateway::Config& config);
+
 protected:
     
     virtual bool startImpl() override;
