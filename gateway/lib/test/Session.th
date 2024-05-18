@@ -126,7 +126,7 @@ private:
             });
 
         session.setSendDataClientReqCb(
-            [&state](const std::uint8_t* buf, std::size_t bufSize)
+            [&state](const std::uint8_t* buf, std::size_t bufSize, [[maybe_unused]] unsigned broadcastRadius)
             {
                 state.m_sentToClient.emplace_back(buf, buf + bufSize);
             });

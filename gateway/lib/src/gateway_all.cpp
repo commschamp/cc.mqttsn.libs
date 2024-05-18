@@ -162,7 +162,7 @@ void cc_mqttsn_gw_session_set_cancel_tick_cb(
 
 void cc_mqttsn_gw_session_set_send_data_to_client_cb(
     CC_MqttsnSessionHandle session,
-    CC_MqttsnSessionSendDataReqCb cb,
+    CC_MqttsnSessionClientSendDataReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {
@@ -170,16 +170,16 @@ void cc_mqttsn_gw_session_set_send_data_to_client_cb(
     }
 
     reinterpret_cast<Session*>(session.obj)->setSendDataClientReqCb(
-        [cb, data, session](const std::uint8_t* buf, std::size_t bufLen)
+        [cb, data, session](const std::uint8_t* buf, std::size_t bufLen, unsigned broadcastRadius)
         {
-            cb(data, session, buf, static_cast<unsigned>(bufLen));
+            cb(data, session, buf, static_cast<unsigned>(bufLen), broadcastRadius);
         });
 }
 
 
 void cc_mqttsn_gw_session_set_send_data_to_broker_cb(
     CC_MqttsnSessionHandle session,
-    CC_MqttsnSessionSendDataReqCb cb,
+    CC_MqttsnSessionBrokerSendDataReqCb cb,
     void* data)
 {
     if ((session.obj == nullptr) || (cb == nullptr)) {

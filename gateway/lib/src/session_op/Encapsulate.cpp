@@ -91,9 +91,9 @@ void Encapsulate::handle(FwdMsg_SN& msg)
         }
 
         sessionPtr->setSendDataClientReqCb(
-            [this, nodeId](const std::uint8_t* buf, std::size_t bufSize)
+            [this, nodeId](const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
             {
-                sendDataClientReqFromSession(nodeId, buf, bufSize);
+                sendDataClientReqFromSession(nodeId, buf, bufSize, broadcastRadius);
             });     
 
         sessionPtr->setTerminationReqCb(
@@ -117,7 +117,11 @@ void Encapsulate::handle(FwdMsg_SN& msg)
     }
 }
 
-void Encapsulate::sendDataClientReqFromSession(const NodeId& nodeId, const std::uint8_t* buf, std::size_t bufSize)
+void Encapsulate::sendDataClientReqFromSession(
+    const NodeId& nodeId, 
+    const std::uint8_t* buf, 
+    std::size_t bufSize, 
+    unsigned broadcastRadius)
 {
     FwdMsg_SN fwdMsg;
     fwdMsg.field_ctrl().field_radius().setValue(3); // TODO: make it configurable
@@ -130,7 +134,7 @@ void Encapsulate::sendDataClientReqFromSession(const NodeId& nodeId, const std::
     [[maybe_unused]] auto es = frame.write(fwdMsg, writeIter, data.size());
     assert(es == comms::ErrorStatus::Success);
     std::copy_n(buf, bufSize, writeIter);
-    session().sendDataToClient(data.data(), data.size());
+    session().sendDataToClient(data.data(), data.size(), broadcastRadius);
 }
 
 void Encapsulate::terminationReqFromSession(Session* sessionPtr)

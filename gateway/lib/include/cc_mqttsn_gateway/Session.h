@@ -52,10 +52,17 @@ public:
     using CancelTickWaitReqCb = std::function<unsigned ()>;
 
     /// @brief Type of callback, used to request delivery of serialised message
-    ///     to the client or broker.
+    ///     to the client.
     /// @param[in] buf Buffer containing serialised message.
     /// @param[in] bufSize Number of bytes in the buffer
-    using SendDataReqCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize)>;
+    /// @param[in] broadcastRadius Broadcast radius. 0 means unitcast
+    using ClientSendDataReqCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)>;
+
+    /// @brief Type of callback, used to request delivery of serialised message
+    ///     to the broker.
+    /// @param[in] buf Buffer containing serialised message.
+    /// @param[in] bufSize Number of bytes in the buffer
+    using BrokerSendDataReqCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize)>;
 
     /// @brief Type of callback, used to request session termination.
     /// @details When the callback is invoked, the driving code must flush
@@ -122,14 +129,14 @@ public:
     /// @details This is a must have callback, without it the object can not
     ///     be started (see start()).
     /// @param[in] func R-value reference to the callback object
-    void setSendDataClientReqCb(SendDataReqCb&& func);
+    void setSendDataClientReqCb(ClientSendDataReqCb&& func);
 
     /// @brief Set the callback to be invoked when new data needs to be sent
     ///     to the broker.
     /// @details This is a must have callback, without it the object can not
     ///     be started (see start()).
     /// @param[in] func R-value reference to the callback object
-    void setSendDataBrokerReqCb(SendDataReqCb&& func);
+    void setSendDataBrokerReqCb(BrokerSendDataReqCb&& func);
 
     /// @brief Set the callback to be invoked when the session needs to be
     ///     terminated and this @ref Session object deleted.

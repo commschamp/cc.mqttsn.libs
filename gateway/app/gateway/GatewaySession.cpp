@@ -181,12 +181,11 @@ bool GatewaySession::startSession()
     );    
 
     m_session.setSendDataClientReqCb(
-        [this](const std::uint8_t* buf, std::size_t bufSize)
+        [this](const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
         {
             assert(m_clientSocket);
-            // TODO: broadcast support
             // m_logger.info() << "!!! (client) <-- " << bufSize << std::endl;
-            m_clientSocket->sendData(buf, bufSize);
+            m_clientSocket->sendData(buf, bufSize, broadcastRadius);
         });  
 
     m_session.setSendDataBrokerReqCb(

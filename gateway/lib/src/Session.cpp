@@ -28,12 +28,12 @@ void Session::setCancelTickWaitReqCb(CancelTickWaitReqCb&& func)
     m_pImpl->setCancelTickWaitReqCb(std::move(func));
 }
 
-void Session::setSendDataClientReqCb(SendDataReqCb&& func)
+void Session::setSendDataClientReqCb(ClientSendDataReqCb&& func)
 {
     m_pImpl->setSendDataClientReqCb(std::move(func));
 }
 
-void Session::setSendDataBrokerReqCb(SendDataReqCb&& func)
+void Session::setSendDataBrokerReqCb(BrokerSendDataReqCb&& func)
 {
     m_pImpl->setSendDataBrokerReqCb(std::move(func));
 }

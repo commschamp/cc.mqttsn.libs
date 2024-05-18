@@ -133,12 +133,21 @@ typedef void (*CC_MqttsnSessionTickReqCb)(void* userData, CC_MqttsnSessionHandle
 typedef unsigned (*CC_MqttsnSessionCancelTickReqCb)(void* userData, CC_MqttsnSessionHandle session);
 
 /// @brief Type of callback, used to request delivery of serialised message
-///     to the client or broker.
+///     to the client.
 /// @param[in] userData User data passed as the last parameter to the setting function.
 /// @param[in] session Handle of session performing the request
 /// @param[in] buf Buffer containing serialised message.
 /// @param[in] bufLen Number of bytes in the buffer
-typedef void (*CC_MqttsnSessionSendDataReqCb)(void* userData, CC_MqttsnSessionHandle session, const unsigned char* buf, unsigned bufLen);
+/// @param[in] broadcastRadius Broadcast radius. 0 means unicast.
+typedef void (*CC_MqttsnSessionClientSendDataReqCb)(void* userData, CC_MqttsnSessionHandle session, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
+
+/// @brief Type of callback, used to request delivery of serialised message
+///     to the broker.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the request
+/// @param[in] buf Buffer containing serialised message.
+/// @param[in] bufLen Number of bytes in the buffer
+typedef void (*CC_MqttsnSessionBrokerSendDataReqCb)(void* userData, CC_MqttsnSessionHandle session, const unsigned char* buf, unsigned bufLen);
 
 /// @brief Type of callback, used to request session termination.
 /// @details When the callback is invoked, the driving code must flush
@@ -244,7 +253,7 @@ void cc_mqttsn_gw_session_set_cancel_tick_cb(
 ///     parameter to the callback.
 void cc_mqttsn_gw_session_set_send_data_to_client_cb(
     CC_MqttsnSessionHandle session,
-    CC_MqttsnSessionSendDataReqCb cb,
+    CC_MqttsnSessionClientSendDataReqCb cb,
     void* data);
 
 /// @brief Set the callback to be invoked when new data needs to be sent
@@ -257,7 +266,7 @@ void cc_mqttsn_gw_session_set_send_data_to_client_cb(
 ///     parameter to the callback.
 void cc_mqttsn_gw_session_set_send_data_to_broker_cb(
     CC_MqttsnSessionHandle session,
-    CC_MqttsnSessionSendDataReqCb cb,
+    CC_MqttsnSessionBrokerSendDataReqCb cb,
     void* data);
 
 /// @brief Set the callback to be invoked when the @b Session needs to be

@@ -29,7 +29,8 @@ class SessionImpl : public MsgHandler
 public:
     using AuthInfo = Session::AuthInfo;
     using NextTickProgramReqCb = Session::NextTickProgramReqCb;
-    using SendDataReqCb = Session::SendDataReqCb;
+    using ClientSendDataReqCb = Session::ClientSendDataReqCb;
+    using BrokerSendDataReqCb = Session::BrokerSendDataReqCb;
     using CancelTickWaitReqCb = Session::CancelTickWaitReqCb;
     using TerminationReqCb = Session::TerminationReqCb;
     using BrokerReconnectReqCb = Session::BrokerReconnectReqCb;
@@ -166,8 +167,8 @@ public:
 
     bool reportFwdEncSessionCreated(Session* session);
     void reportFwdEncSessionDeleted(Session* session);
-    void sendDataToClient(const std::uint8_t* buf, std::size_t bufLen);
-    void sendToClient(const MqttsnMessage& msg);
+    void sendDataToClient(const std::uint8_t* buf, std::size_t bufLen, unsigned brokerRadius);
+    void sendToClient(const MqttsnMessage& msg, unsigned brokerRadius = 0U);
     void sendToBroker(const MqttMessage& msg);
     void termRequest();
     void brokerReconnectRequest();
@@ -185,9 +186,6 @@ private:
     virtual void handle(MqttsnMessage& msg) override;
 
     virtual void handle(MqttMessage& msg) override;
-
-    template <typename TMsg, typename TFrame>
-    void sendMessage(const TMsg& msg, TFrame& frame, SendDataReqCb& func, DataBuf& buf);
 
     template <typename TMsg>
     void dispatchToOpsCommon(TMsg& msg);
@@ -208,8 +206,8 @@ private:
 
     NextTickProgramReqCb m_nextTickProgramCb;
     CancelTickWaitReqCb m_cancelTickCb;
-    SendDataReqCb m_sendToClientCb;
-    SendDataReqCb m_sendToBrokerCb;
+    ClientSendDataReqCb m_sendToClientCb;
+    BrokerSendDataReqCb m_sendToBrokerCb;
     TerminationReqCb m_termReqCb;
     BrokerReconnectReqCb m_brokerReconnectReqCb;
     ClientConnectedReportCb m_clientConnectedCb;

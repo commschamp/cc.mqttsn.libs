@@ -42,7 +42,7 @@ private:
     using Base::handle;
     virtual void handle(FwdMsg_SN& msg) override;
 
-    void sendDataClientReqFromSession(const NodeId& nodeId, const std::uint8_t* buf, std::size_t bufSize);
+    void sendDataClientReqFromSession(const NodeId& nodeId, const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius);
     void terminationReqFromSession(Session* sessionPtr);
 
     SessionMap m_sessions;

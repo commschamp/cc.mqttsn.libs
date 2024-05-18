@@ -34,26 +34,6 @@ const unsigned NoTimeout = std::numeric_limits<unsigned>::max();
 
 }  // namespace
 
-template <typename TMsg, typename TFrame>
-void SessionImpl::sendMessage(const TMsg& msg, TFrame& frame, SendDataReqCb& func, DataBuf& buf)
-{
-    if (!func) {
-        return;
-    }
-
-    typedef typename TFrame::MsgPtr::element_type MsgType;
-
-    buf.resize(std::max(buf.size(), frame.length(msg)));
-    auto iter = comms::writeIteratorFor<MsgType>(&buf[0]);
-    [[maybe_unused]] auto es = frame.write(msg, iter, buf.size());
-    assert(es == comms::ErrorStatus::Success);
-    auto writtenCount =
-        static_cast<std::size_t>(
-            std::distance(comms::writeIteratorFor<MsgType>(&buf[0]), iter));
-
-    func(&buf[0], writtenCount);
-}
-
 template <typename TMsg>
 void SessionImpl::dispatchToOpsCommon(TMsg& msg)
 {
@@ -216,20 +196,44 @@ void SessionImpl::reportFwdEncSessionDeleted(Session* session)
     m_fwdEncSessionDeletedReportCb(session);
 }
 
-void SessionImpl::sendDataToClient(const std::uint8_t* buf, std::size_t bufLen)
+void SessionImpl::sendDataToClient(const std::uint8_t* buf, std::size_t bufLen, unsigned brokerRadius)
 {
     assert(m_sendToClientCb);
-    m_sendToClientCb(buf, bufLen);
+    m_sendToClientCb(buf, bufLen, brokerRadius);
 }
 
-void SessionImpl::sendToClient(const MqttsnMessage& msg)
+void SessionImpl::sendToClient(const MqttsnMessage& msg, unsigned broadcastRadius)
 {
-    sendMessage(msg, m_mqttsnFrame, m_sendToClientCb, m_mqttsnMsgData);
+    if (!m_sendToClientCb) {
+        return;
+    }
+
+    m_mqttsnMsgData.resize(std::max(m_mqttsnMsgData.size(), m_mqttsnFrame.length(msg)));
+    auto iter = comms::writeIteratorFor<MqttsnMessage>(m_mqttsnMsgData.data());
+    [[maybe_unused]] auto es = m_mqttsnFrame.write(msg, iter, m_mqttsnMsgData.size());
+    assert(es == comms::ErrorStatus::Success);
+    auto writtenCount =
+        static_cast<std::size_t>(
+            std::distance(comms::writeIteratorFor<MqttsnMessage>(m_mqttsnMsgData.data()), iter));
+
+    m_sendToClientCb(m_mqttsnMsgData.data(), writtenCount, broadcastRadius);
 }
 
 void SessionImpl::sendToBroker(const MqttMessage& msg)
 {
-    sendMessage(msg, m_mqttFrame, m_sendToBrokerCb, m_mqttMsgData);
+    if (!m_sendToBrokerCb) {
+        return;
+    }
+
+    m_mqttMsgData.resize(std::max(m_mqttMsgData.size(), m_mqttFrame.length(msg)));
+    auto iter = comms::writeIteratorFor<MqttMessage>(m_mqttMsgData.data());
+    [[maybe_unused]] auto es = m_mqttFrame.write(msg, iter, m_mqttMsgData.size());
+    assert(es == comms::ErrorStatus::Success);
+    auto writtenCount =
+        static_cast<std::size_t>(
+            std::distance(comms::writeIteratorFor<MqttMessage>(m_mqttMsgData.data()), iter));
+
+    m_sendToBrokerCb(m_mqttMsgData.data(), writtenCount);
 }
 
 void SessionImpl::termRequest()
@@ -269,13 +273,13 @@ SessionImpl::AuthInfo SessionImpl::authInfoRequest(const std::string& clientId)
     return m_authInfoReqCb(clientId);
 }
 
-void SessionImpl::handle([[maybe_unused]] SearchgwMsg_SN& msg)
+void SessionImpl::handle(SearchgwMsg_SN& msg)
 {
     GwinfoMsg_SN respMsg;
     auto& fields = respMsg.fields();
     auto& gwIdField = std::get<decltype(respMsg)::FieldIdx_gwId>(fields);
     gwIdField.value() = m_state.m_gwId;
-    sendToClient(respMsg);
+    sendToClient(respMsg, msg.field_radius().value());
 
     if (m_state.m_connStatus != ConnectionStatus::Disconnected) {
         sendToBroker(PingreqMsg());
