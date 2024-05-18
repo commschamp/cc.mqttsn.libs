@@ -78,6 +78,13 @@ public:
         ClientConnectionType_ValuesLimit ///< Limit to available values, must be last
     };    
 
+    /// @brief Broker I/O socket connection type
+    enum BrokerConnectionType
+    {
+        BrokerConnectionType_Tcp, ///< TCP/IP
+        BrokerConnectionType_ValuesLimit ///< Limit to available values, must be last
+    };        
+
     /// @brief Constructor
     Config();
 
@@ -152,7 +159,12 @@ public:
     const std::string& logFile() const;
 
     /// @brief Get client side I/O socket connection type
+    /// @details Default value is @ref ClientConnectionType_Udp
     ClientConnectionType clientConnectionType() const;
+
+    /// @brief Get broker side I/O socket connection type
+    /// @details Default value is @ref BrokerConnectionType_Tcp
+    BrokerConnectionType brokerConnectionType() const;    
 
 private:
     std::unique_ptr<ConfigImpl> m_pImpl;

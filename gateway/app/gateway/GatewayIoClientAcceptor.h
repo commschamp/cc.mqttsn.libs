@@ -38,6 +38,11 @@ public:
         m_newConnectionReportCb = std::forward<TFunc>(func);
     }
 
+    void broadcastData(const std::uint8_t* buf, std::size_t bufSize)
+    {
+        broadcastDataImpl(buf, bufSize);
+    }
+
 protected:
     GatewayIoClientAcceptor(boost::asio::io_context& io, GatewayLogger& logger) : 
         m_io(io),
@@ -46,6 +51,7 @@ protected:
     };    
 
     virtual bool startImpl() = 0;
+    virtual void broadcastDataImpl(const std::uint8_t* buf, std::size_t bufSize) = 0;
 
     boost::asio::io_context& io()
     {

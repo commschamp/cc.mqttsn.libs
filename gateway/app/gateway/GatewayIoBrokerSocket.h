@@ -18,10 +18,14 @@
 namespace cc_mqttsn_gateway_app
 {
 
-class GatewayIoClientSocket
+class GatewayIoBrokerSocket
 {
 public:
-    virtual ~GatewayIoClientSocket();
+    using Ptr = std::unique_ptr<GatewayIoBrokerSocket>;
+
+    virtual ~GatewayIoBrokerSocket();
+
+    static Ptr create(boost::asio::io_context& io, GatewayLogger& logger, const cc_mqttsn_gateway::Config& config);
 
     bool start();
 
@@ -33,20 +37,28 @@ public:
         m_dataReportCb = std::forward<TFunc>(func);
     }
 
-    void sendData(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius = 0)
+    using ErrorReportCb = std::function<void ()>;
+    
+    template <typename TFunc>
+    void setErrorReportCb(TFunc&& func)
     {
-        sendDataImpl(buf, bufSize, broadcastRadius);
+        m_errorReportCb = std::forward<TFunc>(func);
+    }    
+
+    void sendData(const std::uint8_t* buf, std::size_t bufSize)
+    {
+        sendDataImpl(buf, bufSize);
     }
 
 protected:
-    GatewayIoClientSocket(boost::asio::io_context& io, GatewayLogger& logger) : 
+    GatewayIoBrokerSocket(boost::asio::io_context& io, GatewayLogger& logger) : 
         m_io(io),
         m_logger(logger)
     {
     };    
 
     virtual bool startImpl() = 0;
-    virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius) = 0;
+    virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize) = 0;
 
     boost::asio::io_context& io()
     {
@@ -63,12 +75,18 @@ protected:
         m_dataReportCb(buf, bufSize);
     }
 
+    void reportError()
+    {
+        m_errorReportCb();
+    }
+
 private:
     boost::asio::io_context& m_io; 
     GatewayLogger& m_logger;
     DataReportCb m_dataReportCb;
+    ErrorReportCb m_errorReportCb;
 };
 
-using GatewayIoClientSocketPtr = std::unique_ptr<GatewayIoClientSocket>;
+using GatewayIoBrokerSocketPtr = GatewayIoBrokerSocket::Ptr;
 
 } // namespace cc_mqttsn_gateway_app

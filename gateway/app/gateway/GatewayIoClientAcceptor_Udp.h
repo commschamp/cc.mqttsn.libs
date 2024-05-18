@@ -18,7 +18,7 @@
 namespace cc_mqttsn_gateway_app
 {
 
-class GatewayIoClientAcceptor_Udp : public GatewayIoClientAcceptor
+class GatewayIoClientAcceptor_Udp final : public GatewayIoClientAcceptor
 {
     using Base = GatewayIoClientAcceptor;
 public:
@@ -29,6 +29,7 @@ public:
 
 protected:
     virtual bool startImpl() override;
+    virtual void broadcastDataImpl(const std::uint8_t* buf, std::size_t bufSize) override;
 
 private:
     using Socket = boost::asio::ip::udp::socket;
@@ -39,16 +40,21 @@ private:
     {
         Endpoint m_endpoint;
         DataBuf m_data;
+        unsigned m_ttl = 0U;
     };
 
     void doAccept();
-    void sendData(const Endpoint& endpoint, const std::uint8_t* buf, std::size_t bufSize);
+    void sendData(const Endpoint& endpoint, const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius);
     void sendPendingWrites();
 
     Socket m_socket;
     Endpoint m_senderEndpoint;
+    Endpoint m_broadcastEndpoint;
     std::uint16_t m_acceptPort = 0U;
     std::uint16_t m_broadcastPort = 0U;
+    std::string m_broadcastAddress;
+    unsigned m_defaultTtl = 128;
+    unsigned m_broadcastTtl = 128;
     std::array<std::uint8_t, 2048> m_inBuf;
     ClientsMap m_clients;
     std::list<WriteInfo> m_pendingWrites;

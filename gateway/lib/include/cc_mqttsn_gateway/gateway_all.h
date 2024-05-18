@@ -497,6 +497,13 @@ typedef enum
     CC_MqttsnClientConnectionType_ValuesLimit ///< Limit to available values, must be last
 } CC_MqttsnClientConnectionType;    
 
+/// @brief Broker I/O socket connection type
+typedef enum
+{
+    CC_MqttsnBrokerConnectionType_Tcp, ///< TCP/IP
+    CC_MqttsnBrokerConnectionType_ValuesLimit ///< Limit to available values, must be last
+} CC_MqttsnBrokerConnectionType;    
+
 /// @brief Handle for configuration object used in all @b cc_mqttsn_gw_config_* functions.
 typedef struct
 {
@@ -625,7 +632,11 @@ const char* cc_mqttsn_gw_config_log_file(CC_MqttsnConfigHandle config);
 
 /// @brief Get client I/O socket connection type
 /// @param config Handle returned by cc_mqttsn_gw_config_alloc() function.
-CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_socket_type(CC_MqttsnConfigHandle config);
+CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_connection_type(CC_MqttsnConfigHandle config);
+
+/// @brief Get broker I/O socket connection type
+/// @param config Handle returned by cc_mqttsn_gw_config_alloc() function.
+CC_MqttsnBrokerConnectionType cc_mqttsn_gw_config_broker_connection_type(CC_MqttsnConfigHandle config);
 
 /// @brief Get number of available configuration values for the provided key
 /// @details The key is the first word in the configuration line, and the

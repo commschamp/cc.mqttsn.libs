@@ -44,6 +44,12 @@ bool GatewayIoClientSocket_Udp::startImpl()
     return true;
 } 
 
+void GatewayIoClientSocket_Udp::sendDataImpl(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
+{
+    assert(m_sendDataCb);
+    m_sendDataCb(m_endpoint, buf, bufSize, broadcastRadius);
+}
+
 void GatewayIoClientSocket_Udp::reportPendingData()
 {
     while (!m_pendingData.empty()) {

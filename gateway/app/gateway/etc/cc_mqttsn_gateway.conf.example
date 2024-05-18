@@ -83,12 +83,16 @@
 #mqttsn_log_file stdout
 
 # =================================================================
-# Client socket configuration
+# Socket configuration
 # =================================================================
 
-# Use "mqttsn_client_socket" option to specify the type of the I/O link socket
+# Use "mqttsn_client_socket" option to specify the type of the client side I/O link socket
 # to use. Supported values are: "udp" (default)
-# mqttsn_client_socket udp
+#mqttsn_client_socket udp
+
+# Use "mqttsn_broker_socket" option to specify the type of the broker side I/O link socket
+# to use. Supported values are: "tcp" (default)
+#mqttsn_broker_socket tcp
 
 # =================================================================
 # UDP configuration
@@ -101,3 +105,11 @@
 # Remote UDP port the gateway broadcasts its ADVERTISE messages to. Default is
 # 1883. Applicable only if "mqttsn_client_socket" is "udp".
 #udp_broadcast_port 1883 
+
+# UDP IPv4 address for broacasting. Default is 255.255.255.255.
+# Applicable only if "mqttsn_client_socket" is "udp".
+#udp_broadcast_address 255.255.255.255
+
+# Default broadcast radius. Defaults to 128.
+# Applicable only if "mqttsn_client_socket" is "udp".
+#udp_broadcast_radius 128

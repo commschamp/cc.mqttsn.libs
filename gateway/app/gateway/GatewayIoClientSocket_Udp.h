@@ -16,7 +16,7 @@
 namespace cc_mqttsn_gateway_app
 {
 
-class GatewayIoClientSocket_Udp : public GatewayIoClientSocket
+class GatewayIoClientSocket_Udp final : public GatewayIoClientSocket
 {
     using Base = GatewayIoClientSocket;
 public:
@@ -32,7 +32,7 @@ public:
 
     void newDataArrived(const std::uint8_t* buf, std::size_t bufSize);
 
-    using SendDataCb = std::function<void (const Endpoint& endpoint, const std::uint8_t* buf, std::size_t bufSize)>;
+    using SendDataCb = std::function<void (const Endpoint& endpoint, const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)>;
     template <typename TFunc>
     void setSendDataCb(TFunc&& func)
     {
@@ -49,6 +49,7 @@ public:
 protected:
     
     virtual bool startImpl() override;
+    virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius) override;
 
 private:
     using DataBuf = std::vector<std::uint8_t>;

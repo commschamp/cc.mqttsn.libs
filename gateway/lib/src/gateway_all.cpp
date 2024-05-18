@@ -695,13 +695,22 @@ const char* cc_mqttsn_gw_config_log_file(CC_MqttsnConfigHandle config)
     return reinterpret_cast<const Config*>(config.obj)->logFile().c_str();
 }
 
-CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_socket_type(CC_MqttsnConfigHandle config)
+CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_connection_type(CC_MqttsnConfigHandle config)
 {
     if (config.obj == nullptr) {
-        return CC_MqttsnClientConnectionType_Udp;
+        return CC_MqttsnClientConnectionType_ValuesLimit;
     }    
 
     return static_cast<CC_MqttsnClientConnectionType>(reinterpret_cast<const Config*>(config.obj)->clientConnectionType());
+}
+
+CC_MqttsnBrokerConnectionType cc_mqttsn_gw_config_broker_connection_type(CC_MqttsnConfigHandle config)
+{
+    if (config.obj == nullptr) {
+        return CC_MqttsnBrokerConnectionType_ValuesLimit;
+    }    
+
+    return static_cast<CC_MqttsnBrokerConnectionType>(reinterpret_cast<const Config*>(config.obj)->brokerConnectionType());
 }
 
 unsigned cc_mqttsn_gw_config_values_count(CC_MqttsnConfigHandle config, const char* key)

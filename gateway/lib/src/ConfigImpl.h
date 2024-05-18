@@ -24,6 +24,7 @@ public:
     using AuthInfosList = Config::AuthInfosList;
     using TopicIdsRange = Config::TopicIdsRange;
     using ClientConnectionType = Config::ClientConnectionType;
+    using BrokerConnectionType = Config::BrokerConnectionType;
 
 
     ConfigImpl() = default;
@@ -61,6 +62,7 @@ public:
     const std::string& logFile() const;
 
     ClientConnectionType clientConnectionType() const;
+    BrokerConnectionType brokerConnectionType() const;
 
 private:
     template <typename T>

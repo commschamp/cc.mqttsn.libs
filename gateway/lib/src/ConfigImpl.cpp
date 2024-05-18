@@ -36,6 +36,7 @@ const std::string TopicIdAllocRangeKey("mqttsn_topic_id_alloc_range");
 const std::string BrokerKey("mqttsn_broker");
 const std::string LogFileKey("mqttsn_log_file");
 const std::string ClientSocketKey("mqttsn_client_socket");
+const std::string BrokerSocketKey("mqttsn_broker_socket");
 
 const std::uint16_t DefaultAdvertise = 15 * 60;
 const unsigned DefaultRetryPeriod = 10;
@@ -398,6 +399,32 @@ ConfigImpl::ClientConnectionType ConfigImpl::clientConnectionType() const
         auto iter = Map.find(typeStr);
         if (iter == Map.end()) {
             result = ClientConnectionType::ClientConnectionType_ValuesLimit;
+            break;
+        }
+
+        result = iter->second;       
+    } while (false);
+
+    return result;
+}
+
+ConfigImpl::BrokerConnectionType ConfigImpl::brokerConnectionType() const
+{
+    static const std::map<std::string, BrokerConnectionType> Map = {
+        {"tcp", BrokerConnectionType::BrokerConnectionType_Tcp},
+    };
+
+    BrokerConnectionType result = BrokerConnectionType::BrokerConnectionType_Tcp;
+
+    do {
+        auto typeStr = stringValue(BrokerSocketKey);
+        if (typeStr.empty()) {
+            break;
+        }
+
+        auto iter = Map.find(typeStr);
+        if (iter == Map.end()) {
+            result = BrokerConnectionType::BrokerConnectionType_ValuesLimit;
             break;
         }
 

@@ -382,13 +382,34 @@
 ///
 /// @b C interface
 /// @code
-/// CC_MqttsnClientConnectionType type = cc_mqttsn_gw_config_client_socket_type(handle);
+/// CC_MqttsnClientConnectionType type = cc_mqttsn_gw_config_client_connection_type(handle);
 /// @endcode
 ///
 /// Applicable configuration file contents:
 /// @code{.unparsed}
-/// # Use "mqttsn_client_socket" option to specify the type of the I/O link socket
+/// # Use "mqttsn_client_socket" option to specify the type of the client side I/O link socket
 /// # to use. Supported values are: "udp" (default)
+/// mqttsn_client_socket udp
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_broker_socket Broker I/O Socket Type
+/// The MQTT-SN gateway application can support multiple broker communication I/O
+/// socket types. Below are API function that can retrieve such information.
+///
+/// @b C++ interface
+/// @code
+/// cc_mqttsn_gateway::Config::BrokerConnectionType type = config.brokerConnectionType();
+/// @endcode
+///
+/// @b C interface
+/// @code
+/// CC_MqttsnBrokerConnectionType type = cc_mqttsn_gw_config_broker_connection_type(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Use "mqttsn_broker_socket" option to specify the type of the broker side I/O link socket
+/// # to use. Supported values are: "tcp" (default)
 /// mqttsn_client_socket udp
 /// @endcode
 ///

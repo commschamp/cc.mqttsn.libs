@@ -99,4 +99,9 @@ Config::ClientConnectionType Config::clientConnectionType() const
     return m_pImpl->clientConnectionType();
 }
 
+Config::BrokerConnectionType Config::brokerConnectionType() const
+{
+    return m_pImpl->brokerConnectionType();
+}
+
 }  // namespace cc_mqttsn_gateway
