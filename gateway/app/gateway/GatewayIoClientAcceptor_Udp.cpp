@@ -230,7 +230,6 @@ void GatewayIoClientAcceptor_Udp::sendPendingWrites()
         logger().error() << "Failed to update outgoing packet TTL: " << ecTmp.message() << std::endl;
     }
 
-    // logger().info() << "!!! (udp) <-- " << info.m_endpoint << " -- " << info.m_data.size() << std::endl;
     m_socket.async_send_to(
         boost::asio::buffer(info.m_data), info.m_endpoint,
         [this, &info](boost::system::error_code ec, std::size_t bytesSent)

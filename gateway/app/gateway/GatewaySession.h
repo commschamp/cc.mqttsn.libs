@@ -19,6 +19,7 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <list>
 #include <vector>
 
 namespace cc_mqttsn_gateway_app
@@ -27,11 +28,21 @@ namespace cc_mqttsn_gateway_app
 class GatewaySession
 {
 public:
+    using Ptr = std::unique_ptr<GatewaySession>;
+
+    // Used by the GatewayApp
     explicit GatewaySession(
         boost::asio::io_context& io, 
         GatewayLogger& logger, 
         const cc_mqttsn_gateway::Config& config, 
         GatewayIoClientSocketPtr clientSocket);
+
+    // Used when forwarding encapsulated session is reported
+    explicit GatewaySession(
+        boost::asio::io_context& io, 
+        GatewayLogger& logger, 
+        const cc_mqttsn_gateway::Config& config, 
+        cc_mqttsn_gateway::Session* session);        
 
     bool start();
 
@@ -61,13 +72,15 @@ private:
     Timer m_timer;
     GatewayIoClientSocketPtr m_clientSocket;
     GatewayIoBrokerSocketPtr m_brokerSocket;
-    cc_mqttsn_gateway::Session m_session;
+    std::unique_ptr<cc_mqttsn_gateway::Session> m_sessionPtr;
+    cc_mqttsn_gateway::Session* m_session = nullptr;
     TermpReqCb m_termReqCb;
     DataBuf m_brokerData;
     Timestamp m_tickReqTs;
+    std::list<Ptr> m_fwdEncSessions;
     bool m_brokerConnected = false;
 };
 
-using GatewaySessionPtr = std::unique_ptr<GatewaySession>;
+using GatewaySessionPtr = GatewaySession::Ptr;
 
 } // namespace cc_mqttsn_gateway_app

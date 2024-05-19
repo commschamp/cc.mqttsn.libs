@@ -65,7 +65,7 @@ IF "%PLATFORM%"=="x86" (
 
 set QTDIR=%QTDIR_PREFIX%/%QT_SUBDIR%%QTDIR_SUFFIX%
 IF NOT EXIST %QTDIR% (
-    echo WARNING: %QTDIR% does not exist!!!
+    echo WARNING: %QTDIR% does not exist!
     set QTDIR=%QTDIR_PREFIX%/msvc2015%QTDIR_SUFFIX%
 )
 

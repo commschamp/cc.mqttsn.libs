@@ -27,9 +27,24 @@ GatewaySession::GatewaySession(
     m_logger(logger),
     m_config(config),
     m_timer(io),
-    m_clientSocket(std::move(clientSocket))
+    m_clientSocket(std::move(clientSocket)),
+    m_sessionPtr(std::make_unique<cc_mqttsn_gateway::Session>()),
+    m_session(m_sessionPtr.get())
 {
 }    
+
+GatewaySession::GatewaySession(
+    boost::asio::io_context& io, 
+    GatewayLogger& logger, 
+    const cc_mqttsn_gateway::Config& config, 
+    cc_mqttsn_gateway::Session* session) : 
+    m_io(io),
+    m_logger(logger),
+    m_config(config),
+    m_timer(io),
+    m_session(session)
+{
+}
 
 bool GatewaySession::start()  
 {
@@ -38,17 +53,19 @@ bool GatewaySession::start()
         return false;
     }
 
-    m_clientSocket->setDataReportCb(
-        [this](const std::uint8_t* buf, std::size_t bufSize)
-        {
-            // m_logger.info() << "!!! (client) --> " << bufSize << std::endl;
-            [[maybe_unused]] auto consumed = m_session.dataFromClient(buf, bufSize);
-        });    
+    if (m_clientSocket) {
+        m_clientSocket->setDataReportCb(
+            [this](const std::uint8_t* buf, std::size_t bufSize)
+            {
+                assert(m_sessionPtr.get() == m_session);
+                [[maybe_unused]] auto consumed = m_session->dataFromClient(buf, bufSize);
+            });    
 
-    if (!m_clientSocket->start()) {
-        m_logger.error() << "Failed to start client socket" << std::endl;
-        return false;
-    }        
+        if (!m_clientSocket->start()) {
+            m_logger.error() << "Failed to start client socket" << std::endl;
+            return false;
+        }      
+    }  
 
     doBrokerConnect();
     return true;
@@ -68,7 +85,7 @@ void GatewaySession::doTerminate()
 void GatewaySession::doBrokerConnect()
 {
     if (m_brokerConnected) {
-        m_session.setBrokerConnected(false);
+        m_session->setBrokerConnected(false);
     }
 
     m_brokerSocket = GatewayIoBrokerSocket::create(m_io, m_logger, m_config);
@@ -81,8 +98,6 @@ void GatewaySession::doBrokerConnect()
     m_brokerSocket->setDataReportCb(
         [this](const std::uint8_t* buf, std::size_t bufSize)
         {
-            // m_logger.info() << "!!! (broker) --> " << bufSize << std::endl;
-
             auto actBuf = buf;
             auto actSize = bufSize;
 
@@ -92,7 +107,7 @@ void GatewaySession::doBrokerConnect()
                 actSize = m_brokerData.size();
             }
 
-            auto consumed = m_session.dataFromBroker(actBuf, actSize);
+            auto consumed = m_session->dataFromBroker(actBuf, actSize);
             if (actSize <= consumed) {
                 m_brokerData.clear();
                 return;
@@ -109,7 +124,7 @@ void GatewaySession::doBrokerConnect()
     m_brokerSocket->setConnectedReportCb(
         [this]()
         {
-            m_session.setBrokerConnected(true);
+            m_session->setBrokerConnected(true);
         }
     );        
 
@@ -117,7 +132,7 @@ void GatewaySession::doBrokerConnect()
         [this]()
         {
             if (m_brokerConnected) {
-                m_session.setBrokerConnected(false);
+                m_session->setBrokerConnected(false);
             }
             
             doBrokerReconnect();
@@ -144,15 +159,15 @@ bool GatewaySession::startSession()
 {
     auto topicIdsAllocRange = m_config.topicIdAllocRange();
 
-    m_session.setGatewayId(m_config.gatewayId());
-    m_session.setRetryPeriod(m_config.retryPeriod());
-    m_session.setRetryCount(m_config.retryCount());
-    m_session.setSleepingClientMsgLimit(m_config.sleepingClientMsgLimit());
-    m_session.setDefaultClientId(m_config.defaultClientId());
-    m_session.setPubOnlyKeepAlive(m_config.pubOnlyKeepAlive());
-    m_session.setTopicIdAllocationRange(topicIdsAllocRange.first, topicIdsAllocRange.second);
+    m_session->setGatewayId(m_config.gatewayId());
+    m_session->setRetryPeriod(m_config.retryPeriod());
+    m_session->setRetryCount(m_config.retryCount());
+    m_session->setSleepingClientMsgLimit(m_config.sleepingClientMsgLimit());
+    m_session->setDefaultClientId(m_config.defaultClientId());
+    m_session->setPubOnlyKeepAlive(m_config.pubOnlyKeepAlive());
+    m_session->setTopicIdAllocationRange(topicIdsAllocRange.first, topicIdsAllocRange.second);
 
-    m_session.setNextTickProgramReqCb(
+    m_session->setNextTickProgramReqCb(
         [this](unsigned ms)
         {
             m_tickReqTs = TimestampClock::now();
@@ -164,11 +179,11 @@ bool GatewaySession::startSession()
                         return;
                     }
 
-                    m_session.tick();
+                    m_session->tick();
                 });
         });
 
-    m_session.setCancelTickWaitReqCb(
+    m_session->setCancelTickWaitReqCb(
         [this]() -> unsigned
         {
             boost::system::error_code ec;
@@ -180,35 +195,21 @@ bool GatewaySession::startSession()
         }
     );    
 
-    m_session.setSendDataClientReqCb(
-        [this](const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
-        {
-            assert(m_clientSocket);
-            // m_logger.info() << "!!! (client) <-- " << bufSize << std::endl;
-            m_clientSocket->sendData(buf, bufSize, broadcastRadius);
-        });  
 
-    m_session.setSendDataBrokerReqCb(
+    m_session->setSendDataBrokerReqCb(
         [this](const std::uint8_t* buf, std::size_t bufSize)
         {
-            // m_logger.info() << "!!! (broker) <-- " << bufSize << std::endl;
             assert(m_brokerSocket);
             m_brokerSocket->sendData(buf, bufSize);
-        });  
+        }); 
 
-    m_session.setTerminationReqCb(
-        [this]()
-        {
-            doTerminate();
-        });
-
-    m_session.setBrokerReconnectReqCb(
+    m_session->setBrokerReconnectReqCb(
         [this]()
         {
             doBrokerReconnect();
         }); 
 
-    m_session.setClientConnectedReportCb(
+    m_session->setClientConnectedReportCb(
         [this](const std::string& clientId)
         {
             auto& predefinedTopics = m_config.predefinedTopics();
@@ -233,7 +234,7 @@ bool GatewaySession::startSession()
                             break;
                         }
 
-                        m_session.addPredefinedTopic(iter->topic, iter->topicId);
+                        m_session->addPredefinedTopic(iter->topic, iter->topicId);
                         ++iter;
                     }
                 };
@@ -242,14 +243,71 @@ bool GatewaySession::startSession()
             applyForClient(WildcardStr);
         });
     
-    m_session.setAuthInfoReqCb(
+    m_session->setAuthInfoReqCb(
         [this](const std::string& clientId)
         {
             return getAuthInfoFor(clientId);
         }
-    );
+    );     
 
-    if (!m_session.start()) {
+    m_session->setFwdEncSessionCreatedReportCb(
+        [this](cc_mqttsn_gateway::Session* fwdEncSession) -> bool
+        {
+            m_fwdEncSessions.push_back(std::make_unique<GatewaySession>(m_io, m_logger, m_config, fwdEncSession));
+            auto& sessionPtr = m_fwdEncSessions.back();
+            if (!sessionPtr->start()) {
+                m_logger.error() << "Failed to start forwarder encapsulated session" << std::endl;
+                return false;
+            }
+
+            return true;
+        }); 
+
+    m_session->setFwdEncSessionDeletedReportCb(
+        [this](cc_mqttsn_gateway::Session* fwdEncSession)
+        {
+            boost::asio::post(
+                m_io,
+                [this, fwdEncSession]()
+                {
+                    auto iter = 
+                        std::find_if(
+                            m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
+                            [fwdEncSession](auto& sPtr)
+                            {
+                                return sPtr->m_session == fwdEncSession;
+                            });
+
+                    assert(iter != m_fwdEncSessions.end());
+                    if (iter == m_fwdEncSessions.end()) {
+                        return;
+                    }            
+
+                    m_fwdEncSessions.erase(iter);
+                });
+        }); 
+
+    if (!m_sessionPtr) {
+        // Forwarder encapsulated session
+        return true;
+    }   
+
+    assert(m_sessionPtr.get() == m_session);
+    m_session->setSendDataClientReqCb(
+        [this](const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
+        {
+            assert(m_clientSocket);
+            m_clientSocket->sendData(buf, bufSize, broadcastRadius);
+        });  
+
+    m_session->setTerminationReqCb(
+        [this]()
+        {
+            doTerminate();
+        });            
+
+
+    if (!m_session->start()) {
         m_logger.error() << "Failed to start client session" << std::endl;
         return false;
     }
@@ -283,7 +341,7 @@ GatewaySession::AuthInfo GatewaySession::getAuthInfoFor(const std::string& clien
         return AuthInfo();
     }
 
-    using BinaryData = decltype(m_session)::BinaryData;
+    using BinaryData = cc_mqttsn_gateway::Session::BinaryData;
     BinaryData data;
     data.reserve(iter->password.size());
 
