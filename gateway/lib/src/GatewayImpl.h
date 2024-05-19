@@ -55,10 +55,20 @@ public:
         refresh();
     }
 
+    std::uint16_t getAdvertisePeriod() const
+    {
+        return m_advertisePeriod;
+    }
+
     void setGatewayId(std::uint8_t value)
     {
         m_gwId = value;
         refresh();
+    }
+
+    std::uint8_t getGatewayId() const
+    {
+        return m_gwId;
     }
 
     bool start();

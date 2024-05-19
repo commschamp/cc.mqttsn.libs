@@ -73,9 +73,19 @@ void Session::setGatewayId(std::uint8_t value)
     m_pImpl->setGatewayId(value);
 }
 
+std::uint8_t Session::getGatewayId() const
+{
+    return m_pImpl->getGatewayId();
+}
+
 void Session::setRetryPeriod(unsigned value)
 {
     m_pImpl->setRetryPeriod(value);
+}
+
+unsigned Session::getRetryPeriod() const
+{
+    return m_pImpl->getRetryPeriod();
 }
 
 void Session::setRetryCount(unsigned value)
@@ -83,9 +93,19 @@ void Session::setRetryCount(unsigned value)
     m_pImpl->setRetryCount(value);
 }
 
+unsigned Session::getRetryCount() const
+{
+    return m_pImpl->getRetryCount();
+}
+
 void Session::setSleepingClientMsgLimit(std::size_t value)
 {
     m_pImpl->setSleepingClientMsgLimit(value);
+}
+
+std::size_t Session::getSleepingClientMsgLimit() const
+{
+    return m_pImpl->getSleepingClientMsgLimit();
 }
 
 void Session::setDefaultClientId(const std::string& value)
@@ -93,9 +113,19 @@ void Session::setDefaultClientId(const std::string& value)
     m_pImpl->setDefaultClientId(value);
 }
 
+const std::string& Session::getDefaultClientId() const
+{
+    return m_pImpl->getDefaultClientId();
+}
+
 void Session::setPubOnlyKeepAlive(std::uint16_t value)
 {
     m_pImpl->setPubOnlyKeepAlive(value);
+}
+
+std::uint16_t Session::getPubOnlyKeepAlive() const
+{
+    return m_pImpl->getPubOnlyKeepAlive();
 }
 
 bool Session::start()
@@ -131,6 +161,11 @@ std::size_t Session::dataFromBroker(const std::uint8_t* buf, std::size_t len)
 void Session::setBrokerConnected(bool connected)
 {
     m_pImpl->setBrokerConnected(connected);
+}
+
+bool Session::getBrokerConnected() const
+{
+    return m_pImpl->getBrokerConnected();
 }
 
 bool Session::addPredefinedTopic(const std::string& topic, std::uint16_t topicId)

@@ -75,10 +75,16 @@ public:
     /// @param[in] value Advertise period in @b seconds.
     void setAdvertisePeriod(std::uint16_t value);
 
+    /// @brief Get current configuration of the @b ADVERTISE message period.
+    std::uint16_t getAdvertisePeriod() const;
+
     /// @brief Set gateway numeric ID to be advertised.
     /// @details If not set, default value 0 is assumed.
     /// @param[in] value Gateway numeric ID.
     void setGatewayId(std::uint8_t value);
+
+    /// @brief Get current gateway numeric ID configuration
+    std::uint8_t getGatewayId() const;
 
     /// @brief Start the operation of the object
     /// @details The function will check whether all callbacks as well as

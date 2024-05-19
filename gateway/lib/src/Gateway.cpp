@@ -34,9 +34,19 @@ void Gateway::setAdvertisePeriod(std::uint16_t value)
     m_pImpl->setAdvertisePeriod(value);
 }
 
+std::uint16_t Gateway::getAdvertisePeriod() const
+{
+    return m_pImpl->getAdvertisePeriod();
+}
+
 void Gateway::setGatewayId(std::uint8_t value)
 {
     m_pImpl->setGatewayId(value);
+}
+
+std::uint8_t Gateway::getGatewayId() const
+{
+    return m_pImpl->getGatewayId();
 }
 
 bool Gateway::start()

@@ -277,6 +277,18 @@
 /// cc_mqttsn_gw_session_set_id(handle, 5);
 /// @endcode
 ///
+/// It is also possible to retrieve the current configuration:
+///
+/// @b C++ interface:
+/// @code
+/// std::uint8_t id = session->getGatewayId();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned char id = cc_mqttsn_gw_session_get_id(gw);
+/// @endcode
+///
 /// @section cc_mqttsn_gw_session_page_retry Retry Attempts
 /// There are cases when the communication to either client or broker is 
 /// driven by the @b Session object itself. Such communication may involve
@@ -297,6 +309,20 @@
 /// cc_mqttsn_gw_session_set_retry_count(handle, 4U); /* up to 4 attempts to resend the same message */
 /// @endcode
 /// If not configured, the default values of @b 10 seconds and @b 3 attempts apply.
+///
+/// It is also possible to retrieve the current configuration:
+///
+/// @b C++ interface:
+/// @code
+/// unsigned retryPeriod = session->getRetryPeriod();
+/// unsigned retryCount = session->getRetryCount();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned retryPeriod = cc_mqttsn_gw_session_get_retry_period(gw);
+/// unsigned retryCount = cc_mqttsn_gw_session_get_retry_count(gw);
+/// @endcode
 ///
 /// @section cc_mqttsn_gw_session_page_predefined_topics Predefined Topics
 /// The messages in MQTT-SN protocol are published with numeric topic IDs
@@ -403,7 +429,7 @@
 ///
 /// @b C interface:
 /// @code
-/// cc_mqttsn_gw_session_broker_connected(handle, true); // Reports broker being connected
+/// cc_mqttsn_gw_session_set_broker_connected(handle, true); // Reports broker being connected
 /// @endcode
 /// When issuing broker re-connection request (see @ref cc_mqttsn_gw_session_page_broker_reconnect),
 /// the @b Session object expects this call to happen twice: the first one for disconnection
@@ -412,6 +438,18 @@
 /// The driving code also responsible to detect unsolicited disconnects of
 /// TCP/IP link to the broker and report it to the @b Session object using the
 /// same function call.
+///
+/// It is also possible to retrieve the current status:
+///
+/// @b C++ interface:
+/// @code
+/// bool brokerConnected = session->getBrokerConnected();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// bool brokerConnected = cc_mqttsn_gw_session_get_broker_connected(handle);
+/// @endcode
 ///
 /// @section cc_mqttsn_gw_session_page_client_auth Client Authentication
 /// The @b MQTT protocol supports client authentication, where the @b CONNECT
@@ -508,6 +546,18 @@
 /// reported client ID <b>if and only if</b> the client ID @b is empty and
 /// configured default client ID is @b NOT.
 ///
+/// It is also possible to retrieve the current configuration:
+///
+/// @b C++ interface:
+/// @code
+/// const std::string& defaultClientId = session->getDefaultClientId();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// const char* defaultClientId = cc_mqttsn_gw_session_get_default_client_id(handle);
+/// @endcode
+///
 /// @section cc_mqttsn_gw_session_page_publish_only Publish Only Client
 /// The MQTT-SN protocol allows "publish only" clients, which don't make
 /// an attempt to connect to the gateway/broker, but allowed to 
@@ -530,6 +580,18 @@
 /// If such configuration is not provided, the default value of @b 60 seconds
 /// is assumed.
 ///
+/// It is also possible to retrieve the current configuration:
+///
+/// @b C++ interface:
+/// @code
+/// std::uint16_t pubOnlyKeepAlive = session->getPubOnlyKeepAlive();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned pubOnlyKeepAlive = cc_mqttsn_gw_session_get_pub_only_keep_alive(handle);
+/// @endcode
+///
 /// @section cc_mqttsn_gw_session_page_sleep Sleeping Client
 /// The @b Session object supports client entering the @b SLEEP mode without any
 /// extra configuration. It will send the @b PINGREQ messages on behalf of 
@@ -548,6 +610,18 @@
 /// @b C++ interface:
 /// @code
 /// cc_mqttsn_gw_session_set_sleeping_client_msg_limit(handle, 1000); /* no more that 1000 messages */
+/// @endcode
+///
+/// It is also possible to retrieve the current configuration:
+///
+/// @b C++ interface:
+/// @code
+/// std::size_t limit = session->getSleepingClientMsgLimit();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned long long limit = cc_mqttsn_gw_session_get_sleeping_client_msg_limit(handle);
 /// @endcode
 ///
 /// @section cc_mqttsn_gw_session_page_fwd_enc Forwarder Encapsulation Support

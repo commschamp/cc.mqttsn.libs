@@ -102,6 +102,18 @@
 /// cc_mqttsn_gw_set_advertise_period(gw, 900); /* The advertise period is in seconds */
 /// @endcode
 ///
+/// It is also possible to retrieve the current configuration:
+///
+/// @b C++ interface:
+/// @code
+/// std::uint16_t period = gw.getAdvertisePeriod();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned short period = cc_mqttsn_gw_get_advertise_period(gw);
+/// @endcode
+///
 /// @section cc_mqttsn_gw_gateway_page_gw Gateway ID
 /// The @b ADVERTISE message also contain 1 byte of numeric gateway ID. If the
 /// actual gateway ID differs from default value @b 0. It must be provided
@@ -115,6 +127,18 @@
 /// @b C interface:
 /// @code
 /// cc_mqttsn_gw_set_id(gw, 5); 
+/// @endcode
+///
+/// It is also possible to retrieve the current configuration:
+///
+/// @b C++ interface:
+/// @code
+/// std::uint8_t id = gw.getGatewayId();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned char id = cc_mqttsn_gw_get_id(gw);
 /// @endcode
 ///
 /// @section cc_mqttsn_gw_gateway_page_start Start Operation

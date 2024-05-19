@@ -48,6 +48,15 @@ void cc_mqttsn_gw_set_advertise_period(
     reinterpret_cast<Gateway*>(gw.obj)->setAdvertisePeriod(value);
 }
 
+unsigned short cc_mqttsn_gw_get_advertise_period(CC_MqttsnGatewayHandle gw)
+{
+    if (gw.obj == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<Gateway*>(gw.obj)->getAdvertisePeriod();    
+}
+
 void cc_mqttsn_gw_set_id(CC_MqttsnGatewayHandle gw, unsigned char id)
 {
     if (gw.obj == nullptr) {
@@ -55,6 +64,15 @@ void cc_mqttsn_gw_set_id(CC_MqttsnGatewayHandle gw, unsigned char id)
     }
 
     reinterpret_cast<Gateway*>(gw.obj)->setGatewayId(id);
+}
+
+unsigned char cc_mqttsn_gw_get_id(CC_MqttsnGatewayHandle gw)
+{
+    if (gw.obj == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<Gateway*>(gw.obj)->getGatewayId();    
 }
 
 void cc_mqttsn_gw_set_tick_req_cb(CC_MqttsnGatewayHandle gw, CC_MqttsnGwTickReqCb cb, void* data)
@@ -336,6 +354,15 @@ void cc_mqttsn_gw_session_set_id(CC_MqttsnSessionHandle session, unsigned char i
     reinterpret_cast<Session*>(session.obj)->setGatewayId(id);
 }
 
+unsigned char cc_mqttsn_gw_session_get_id(CC_MqttsnSessionHandle session)
+{
+    if (session.obj == nullptr) {
+        return 0;
+    }
+
+    return reinterpret_cast<Session*>(session.obj)->getGatewayId();    
+}
+
 void cc_mqttsn_gw_session_set_retry_period(CC_MqttsnSessionHandle session, unsigned value)
 {
     if (session.obj == nullptr) {
@@ -343,6 +370,15 @@ void cc_mqttsn_gw_session_set_retry_period(CC_MqttsnSessionHandle session, unsig
     }
 
     reinterpret_cast<Session*>(session.obj)->setRetryPeriod(value);
+}
+
+unsigned cc_mqttsn_gw_session_get_retry_period(CC_MqttsnSessionHandle session)
+{
+    if (session.obj == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<Session*>(session.obj)->getRetryPeriod();    
 }
 
 void cc_mqttsn_gw_session_set_retry_count(CC_MqttsnSessionHandle session, unsigned value)
@@ -354,6 +390,15 @@ void cc_mqttsn_gw_session_set_retry_count(CC_MqttsnSessionHandle session, unsign
     reinterpret_cast<Session*>(session.obj)->setRetryCount(value);
 }
 
+unsigned cc_mqttsn_gw_session_get_retry_count(CC_MqttsnSessionHandle session)
+{
+    if (session.obj == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<Session*>(session.obj)->getRetryCount();    
+}
+
 void cc_mqttsn_gw_session_set_sleeping_client_msg_limit(
     CC_MqttsnSessionHandle session,
     unsigned value)
@@ -362,7 +407,16 @@ void cc_mqttsn_gw_session_set_sleeping_client_msg_limit(
         return;
     }
 
-    reinterpret_cast<Session*>(session.obj)->setSleepingClientMsgLimit(value);
+    reinterpret_cast<Session*>(session.obj)->setSleepingClientMsgLimit(static_cast<std::size_t>(value));
+}
+
+unsigned long long cc_mqttsn_gw_session_get_sleeping_client_msg_limit(CC_MqttsnSessionHandle session)
+{
+    if (session.obj == nullptr) {
+        return 0U;
+    }
+
+    return static_cast<unsigned long long>(reinterpret_cast<Session*>(session.obj)->getSleepingClientMsgLimit());    
 }
 
 void cc_mqttsn_gw_session_set_default_client_id(CC_MqttsnSessionHandle session, const char* clientId)
@@ -374,6 +428,15 @@ void cc_mqttsn_gw_session_set_default_client_id(CC_MqttsnSessionHandle session, 
     reinterpret_cast<Session*>(session.obj)->setDefaultClientId(clientId);
 }
 
+const char* cc_mqttsn_gw_session_get_default_client_id(CC_MqttsnSessionHandle session)
+{
+    if (session.obj == nullptr) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<Session*>(session.obj)->getDefaultClientId().c_str();    
+}
+
 void cc_mqttsn_gw_session_set_pub_only_keep_alive(
     CC_MqttsnSessionHandle session,
     unsigned value)
@@ -383,6 +446,15 @@ void cc_mqttsn_gw_session_set_pub_only_keep_alive(
     }
 
     reinterpret_cast<Session*>(session.obj)->setPubOnlyKeepAlive(static_cast<std::uint16_t>(value));
+}
+
+unsigned cc_mqttsn_gw_session_get_pub_only_keep_alive(CC_MqttsnSessionHandle session)
+{
+    if (session.obj == nullptr) {
+        return 0U;
+    }
+
+    return reinterpret_cast<Session*>(session.obj)->getPubOnlyKeepAlive();    
 }
 
 bool cc_mqttsn_gw_session_start(CC_MqttsnSessionHandle session)
@@ -440,13 +512,22 @@ unsigned cc_mqttsn_gw_session_data_from_broker(
 
 }
 
-void cc_mqttsn_gw_session_broker_connected(CC_MqttsnSessionHandle session, bool connected)
+void cc_mqttsn_gw_session_set_broker_connected(CC_MqttsnSessionHandle session, bool connected)
 {
     if (session.obj == nullptr) {
         return;
     }
 
     reinterpret_cast<Session*>(session.obj)->setBrokerConnected(connected);
+}
+
+bool cc_mqttsn_gw_session_get_broker_connected(CC_MqttsnSessionHandle session)
+{
+    if (session.obj == nullptr) {
+        return false;
+    }
+
+    return reinterpret_cast<Session*>(session.obj)->getBrokerConnected();    
 }
 
 bool cc_mqttsn_gw_session_add_predefined_topic(

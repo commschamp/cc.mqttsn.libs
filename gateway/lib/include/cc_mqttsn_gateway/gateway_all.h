@@ -64,10 +64,18 @@ void cc_mqttsn_gw_free(CC_MqttsnGatewayHandle gw);
 /// @param[in] value Advertise period in @b seconds.
 void cc_mqttsn_gw_set_advertise_period(CC_MqttsnGatewayHandle gw, unsigned short value);
 
+/// @brief Get current configuration of the advertise period
+/// @param[in] gw Handle returned by cc_mqttsn_gw_alloc() function.
+unsigned short cc_mqttsn_gw_get_advertise_period(CC_MqttsnGatewayHandle gw);
+
 /// @brief Set the numeric gateway ID.
 /// @param[in] gw Handle returned by cc_mqttsn_gw_alloc() function.
 /// @param[in] id Numeric gateway ID.
 void cc_mqttsn_gw_set_id(CC_MqttsnGatewayHandle gw, unsigned char id);
+
+/// @brief Get current configuration of the numeric gateway id
+/// @param[in] gw Handle returned by cc_mqttsn_gw_alloc() function.
+unsigned char cc_mqttsn_gw_get_id(CC_MqttsnGatewayHandle gw);
 
 /// @brief Set callback that requests to perform time measurement.
 /// @details The @b Gateway object will invoke the callback to request time
@@ -352,6 +360,10 @@ void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
 /// @param[in] id Gateway numeric ID.
 void cc_mqttsn_gw_session_set_id(CC_MqttsnSessionHandle session, unsigned char id);
 
+/// @brief Get current gateway numeric ID configuration.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+unsigned char cc_mqttsn_gw_session_get_id(CC_MqttsnSessionHandle session);
+
 /// @brief Set retry period to wait between resending unacknowledged message
 ///     to the client and/or broker.
 /// @details Some messages, may require acknowledgement by
@@ -362,6 +374,10 @@ void cc_mqttsn_gw_session_set_id(CC_MqttsnSessionHandle session, unsigned char i
 /// @param[in] value Number of @b seconds to wait before making an attempt to resend.
 void cc_mqttsn_gw_session_set_retry_period(CC_MqttsnSessionHandle session, unsigned value);
 
+/// @brief Get the current configuration of the retry period.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+unsigned cc_mqttsn_gw_session_get_retry_period(CC_MqttsnSessionHandle session);
+
 /// @brief Set number of retry attempts to perform before abandoning attempt
 ///     to send unacknowledged message.
 /// @details Some messages, may require acknowledgement by
@@ -371,6 +387,10 @@ void cc_mqttsn_gw_session_set_retry_period(CC_MqttsnSessionHandle session, unsig
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] value Number of retry attempts.
 void cc_mqttsn_gw_session_set_retry_count(CC_MqttsnSessionHandle session, unsigned value);
+
+/// @brief Get the current configuration of the retry count.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+unsigned cc_mqttsn_gw_session_get_retry_count(CC_MqttsnSessionHandle session);
 
 /// @brief Provide limit to number pending messages being accumulated for
 ///     the sleeping client.
@@ -383,13 +403,21 @@ void cc_mqttsn_gw_session_set_retry_count(CC_MqttsnSessionHandle session, unsign
 /// @param[in] value Max number of pending messages.
 void cc_mqttsn_gw_session_set_sleeping_client_msg_limit(
     CC_MqttsnSessionHandle session,
-    unsigned value);
+    unsigned long long value);
+
+/// @brief Get currenly configured limit to pending messages being accumulated for the sleeping client.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+unsigned long long cc_mqttsn_gw_session_get_sleeping_client_msg_limit(CC_MqttsnSessionHandle session);
 
 /// @brief Provide default client ID for clients that report empty one
 ///     in their attempt to connect.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] clientId Default client ID string.
 void cc_mqttsn_gw_session_set_default_client_id(CC_MqttsnSessionHandle session, const char* clientId);
+
+/// @brief Get current default client ID configuration.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+const char* cc_mqttsn_gw_session_get_default_client_id(CC_MqttsnSessionHandle session);
 
 /// @brief Provide default "keep alive" period for "publish only" clients,
 ///     that do not make an attempt to connect to the gateway.
@@ -402,7 +430,12 @@ void cc_mqttsn_gw_session_set_default_client_id(CC_MqttsnSessionHandle session, 
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] value Max number of seconds between messages the "publish only"
 ///     client is going to send.
+/// @pre The provided value mustn't exceed 65535.
 void cc_mqttsn_gw_session_set_pub_only_keep_alive(CC_MqttsnSessionHandle session, unsigned value);
+
+/// @brief Get current configuration of the default "keep alive" period for "publish only" clients.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+unsigned cc_mqttsn_gw_session_get_pub_only_keep_alive(CC_MqttsnSessionHandle session);
 
 /// @brief Start the @b Session's object's operation.
 /// @details The function will check whether all necessary callbacks have been
@@ -459,7 +492,11 @@ unsigned cc_mqttsn_gw_session_data_from_broker(
 ///     ignored.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] connected Connection status - @b true means connected, @b false disconnected.
-void cc_mqttsn_gw_session_broker_connected(CC_MqttsnSessionHandle session, bool connected);
+void cc_mqttsn_gw_session_set_broker_connected(CC_MqttsnSessionHandle session, bool connected);
+
+/// @brief Get currently recorded broker connection status.
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+bool cc_mqttsn_gw_session_get_broker_connected(CC_MqttsnSessionHandle session);
 
 /// @brief Add predefined topic string and ID information.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.

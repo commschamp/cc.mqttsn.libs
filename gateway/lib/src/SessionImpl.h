@@ -108,9 +108,19 @@ public:
         m_state.m_gwId = value;
     }
 
+    std::uint8_t getGatewayId() const
+    {
+        return m_state.m_gwId;
+    }
+
     void setRetryPeriod(unsigned value)
     {
         m_state.m_retryPeriod = std::min(std::numeric_limits<unsigned>::max() / 1000, value) * 1000;
+    }
+
+    unsigned getRetryPeriod() const
+    {
+        return m_state.m_retryPeriod;
     }
 
     void setRetryCount(unsigned value)
@@ -118,9 +128,19 @@ public:
         m_state.m_retryCount = value;
     }
 
+    unsigned getRetryCount() const
+    {
+        return m_state.m_retryCount;
+    }    
+
     void setSleepingClientMsgLimit(std::size_t value)
     {
         m_state.m_sleepPubAccLimit = std::min(m_state.m_brokerPubs.max_size(), value);
+    }
+
+    std::size_t getSleepingClientMsgLimit() const
+    {
+        return m_state.m_sleepPubAccLimit;
     }
 
     void setDefaultClientId(const std::string& value)
@@ -128,9 +148,19 @@ public:
         m_state.m_defaultClientId = value;
     }
 
+    const std::string& getDefaultClientId() const
+    {
+        return m_state.m_defaultClientId;
+    }
+
     void setPubOnlyKeepAlive(std::uint16_t value)
     {
         m_state.m_pubOnlyKeepAlive = value;
+    }
+
+    std::uint16_t getPubOnlyKeepAlive() const
+    {
+        return m_state.m_pubOnlyKeepAlive;
     }
 
     bool start();
@@ -151,6 +181,12 @@ public:
     std::size_t dataFromBroker(const std::uint8_t* buf, std::size_t len);
 
     void setBrokerConnected(bool connected);
+
+    bool getBrokerConnected() const
+    {
+        return m_state.m_brokerConnected;    
+    }
+
     bool addPredefinedTopic(const std::string& topic, std::uint16_t topicId);
     bool setTopicIdAllocationRange(std::uint16_t minVal, std::uint16_t maxVal);
 

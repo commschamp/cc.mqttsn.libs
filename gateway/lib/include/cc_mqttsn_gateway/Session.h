@@ -184,6 +184,9 @@ public:
     /// @param[in] value Gateway numeric ID.
     void setGatewayId(std::uint8_t value);
 
+    /// @brief Get configured gateway numeric ID to be reported when requested.
+    std::uint8_t getGatewayId() const;
+
     /// @brief Set retry period to wait between resending unacknowledged message
     ///     to the client and/or broker.
     /// @details Some messages, may require acknowledgement by
@@ -193,6 +196,9 @@ public:
     /// @param[in] value Number of @b seconds to wait before making an attempt to resend.
     void setRetryPeriod(unsigned value);
 
+    /// @brief Get the current configuration of the retry period.
+    unsigned getRetryPeriod() const;
+
     /// @brief Set number of retry attempts to perform before abandoning attempt
     ///     to send unacknowledged message.
     /// @details Some messages, may require acknowledgement by
@@ -201,6 +207,9 @@ public:
     ///     using this function. The default value is @b 3.
     /// @param[in] value Number of retry attempts.
     void setRetryCount(unsigned value);
+
+    /// @brief Get the current configuration of the retry count.
+    unsigned getRetryCount() const;
 
     /// @brief Provide limit to number pending messages being accumulated for
     ///     the sleeping client.
@@ -212,10 +221,16 @@ public:
     /// @param[in] value Max number of pending messages.
     void setSleepingClientMsgLimit(std::size_t value);
 
+    /// @brief Get currenly configured limit to pending messages being accumulated for the sleeping client.
+    std::size_t getSleepingClientMsgLimit() const;
+
     /// @brief Provide default client ID for clients that report empty one
     ///     in their attempt to connect.
     /// @param[in] value Default client ID string.
     void setDefaultClientId(const std::string& value);
+
+    /// @brief Get current default client id configuration.
+    const std::string& getDefaultClientId() const;
 
     /// @brief Provide default "keep alive" period for "publish only" clients,
     ///     that do not make an attempt to connect to the gateway.
@@ -228,6 +243,9 @@ public:
     /// @param[in] value Max number of seconds between messages the "publish only"
     ///     client is going to send.
     void setPubOnlyKeepAlive(std::uint16_t value);
+
+    /// @brief Get current configuration of the default "keep alive" period for "publish only" clients.
+    std::uint16_t getPubOnlyKeepAlive() const;
 
     /// @brief Start this object's operation.
     /// @details The function will check whether all necessary callbacks have been
@@ -277,6 +295,9 @@ public:
     ///     ignored.
     /// @param[in] connected Connection status - @b true means connected, @b false disconnected.
     void setBrokerConnected(bool connected);
+
+    /// @brief Get currently recorded broker connection status.
+    bool getBrokerConnected() const;
 
     /// @brief Add predefined topic string and ID information.
     /// @param[in] topic Topic string
