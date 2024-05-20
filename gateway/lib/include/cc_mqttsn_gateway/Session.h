@@ -88,6 +88,10 @@ public:
     /// @return Authentication information
     using AuthInfoReqCb = std::function<AuthInfo (const std::string& clientId)>;
 
+    /// @brief Type of the callback used to report detected errors.
+    /// @param[in] msg Error message
+    using ErrorReportCb = std::function<void (const char* msg)>;
+
     /// @brief Type of callback used to notify the application about forwarding encapsulation session being created.
     /// @details The application is responsible to perform the necessary session configuration
     ///     as well as set all the callbacks except the one set by the @ref setSendDataClientReqCb()
@@ -167,6 +171,10 @@ public:
     ///     specific clients.
     /// @param[in] func R-value reference to the callback object
     void setAuthInfoReqCb(AuthInfoReqCb&& func);
+
+    /// @brief Set the callback to be used to report detected errors
+    /// @param[in] func R-value reference to the callback object
+    void setErrorReportCb(ErrorReportCb&& func);
 
     /// @brief Set the callback to be invoked when the forwarding encapsulation session 
     ///     is detected and to notify application about such session creation.

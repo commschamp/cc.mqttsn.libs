@@ -58,6 +58,11 @@ void Session::setAuthInfoReqCb(AuthInfoReqCb&& func)
     m_pImpl->setAuthInfoReqCb(std::move(func));
 }
 
+void Session::setErrorReportCb(ErrorReportCb&& func)
+{
+    m_pImpl->setErrorReportCb(std::move(func));
+}
+
 void Session::setFwdEncSessionCreatedReportCb(FwdEncSessionCreatedReportCb&& func)
 {
     m_pImpl->setFwdEncSessionCreatedReportCb(std::move(func));

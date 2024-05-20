@@ -7,10 +7,14 @@
 
 #include "Forward.h"
 
+#include "SessionImpl.h"
+
+#include "comms/util/ScopeGuard.h"
+#include "comms/util/assign.h"
+
 #include <cassert>
 #include <algorithm>
 
-#include "comms/util/ScopeGuard.h"
 
 namespace cc_mqttsn_gateway
 {
@@ -49,6 +53,7 @@ void Forward::handle(PublishMsg_SN& msg)
     } while (false);
 
     if (st.m_connStatus != ConnectionStatus::Connected) {
+        session().reportError("PUBLISH from client when not connected");
         sendPubackToClient(
             msg.field_topicId().value(),
             msg.field_msgId().value(),
@@ -66,6 +71,7 @@ void Forward::handle(PublishMsg_SN& msg)
 
     auto& topic = st.m_regMgr.mapTopicId(msg.field_topicId().value());
     if (topic.empty()) {
+        session().reportError("Invalid topic ID in PUBLISH");
         sendPubackToClient(
             msg.field_topicId().value(),
             msg.field_msgId().value(),
@@ -87,7 +93,7 @@ void Forward::handle(PublishMsg_SN& msg)
     fwdMsg.field_topic().value() = topic;
     fwdMsg.field_packetId().field().value() = msg.field_msgId().value();
     auto& data = msg.field_data().value();
-    fwdMsg.field_payload().value().assign(data.begin(), data.end());
+    comms::util::assign(fwdMsg.field_payload().value(), data.begin(), data.end());
     fwdMsg.doRefresh();
     sendToBroker(fwdMsg);
 }
@@ -128,6 +134,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
         };
 
     if (state().m_connStatus != ConnectionStatus::Connected) {
+        session().reportError("SUBSCRIBE from client when not connected");
         sendSubackFunc(ReturnCodeVal::NotSupported);
         return;
     }
@@ -140,9 +147,10 @@ void Forward::handle(SubscribeMsg_SN& msg)
             assert(msg.field_topicId().isMissing());
             assert(msg.field_flags().field_topicIdType().value() == TopicIdTypeVal::Normal);
             auto& topicStorage = msg.field_topicName().field().value();
-            topic.assign(topicStorage.begin(), topicStorage.end());
+            comms::util::assign(topic, topicStorage.begin(), topicStorage.end());
 
             if (topic.empty()) {
+                session().reportError("Empty topic in the SUBSCRIBE message from the client");
                 sendSubackFunc(ReturnCodeVal::NotSupported);
                 sendToBroker(PingreqMsg());
                 return;
@@ -174,6 +182,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
         }
 
         if (msg.field_flags().field_topicIdType().value() != TopicIdTypeVal::PredefinedTopicId) {
+            session().reportError("Unknown topic type in SUBSCRIBE message from the client");
             sendSubackFunc(ReturnCodeVal::NotSupported);
             sendToBroker(PingreqMsg());
             return;
@@ -189,6 +198,7 @@ void Forward::handle(SubscribeMsg_SN& msg)
             break;
         }
 
+        session().reportError("Invalid topic topic ID in SUBSCRIBE message from the client");
         sendSubackFunc(ReturnCodeVal::InvalidTopicId);
         sendToBroker(PingreqMsg());
         return;

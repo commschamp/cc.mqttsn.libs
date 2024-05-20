@@ -7,6 +7,8 @@
 
 #include "PubSend.h"
 
+#include "comms/util/assign.h"
+
 #include <cassert>
 #include <algorithm>
 
@@ -241,11 +243,8 @@ void PubSend::doSend()
     }
 
     if (!m_currPub->m_msg.empty()) {
-        auto& dataStorage = msg.field_data().value();
-        using DataStorageType = typename std::decay<decltype(dataStorage)>::type;
-        dataStorage = DataStorageType(&(*m_currPub->m_msg.begin()), m_currPub->m_msg.size());
+        comms::util::assign(msg.field_data().value(), m_currPub->m_msg.begin(), m_currPub->m_msg.end());
     }
-    //msg.field_data().value().assign(m_currPub->m_msg.begin(), m_currPub->m_msg.end());
     sendToClient(msg);
 
     if (m_currPub->m_qos == QoS_AtMostOnceDelivery) {

@@ -7,6 +7,8 @@
 
 #include "WillUpdate.h"
 
+#include "SessionImpl.h"
+
 #include <cassert>
 #include <algorithm>
 
@@ -65,6 +67,7 @@ void WillUpdate::handle([[maybe_unused]] DisconnectMsg_SN& msg)
 void WillUpdate::handle(WilltopicupdMsg_SN& msg)
 {
     if (state().m_connStatus != ConnectionStatus::Connected) {
+        session().reportError("WILLTOPICUPD message from the client when not connected");
         sendTopicResp(ReturnCodeVal::NotSupported);
         return;
     }
@@ -103,6 +106,7 @@ void WillUpdate::handle(WilltopicupdMsg_SN& msg)
 void WillUpdate::handle(WillmsgupdMsg_SN& msg)
 {
     if (state().m_connStatus != ConnectionStatus::Connected) {
+        session().reportError("WILLMSGUPD message from the client when not connected");
         sendMsgResp(ReturnCodeVal::NotSupported);
         return;
     }

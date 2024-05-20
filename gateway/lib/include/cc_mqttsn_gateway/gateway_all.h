@@ -181,6 +181,28 @@ typedef void (*CC_MqttsnSessionBrokerReconnectReqCb)(void* userData, CC_MqttsnSe
 /// @param[in] clientId Client ID
 typedef void (*CC_MqttsnSessionClientConnectReportCb)(void* userData, CC_MqttsnSessionHandle session, const char* clientId);
 
+/// @brief Type of callback used to request authentication information of
+///     the client that is trying to connect.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the request
+/// @param[in] clientId Client ID
+/// @param[out] username Username string
+/// @param[out] password Binary password buffer
+/// @param[out] passwordLen Length of the binary password
+typedef void (*CC_MqttsnSessionAuthInfoReqCb)(
+    void* userData,
+    CC_MqttsnSessionHandle session,
+    const char* clientId,
+    const char** username,
+    const unsigned char** password,
+    unsigned* passwordLen);
+
+/// @brief Type of callback used to report error messages detected by the session.
+/// @param[in] userData User data passed as the last parameter to the setting function.
+/// @param[in] session Handle of session performing the request
+/// @param[in] msg Error message
+typedef void (*CC_MqttsnSessionErrorReportCb)(void* userData, CC_MqttsnSessionHandle session, const char* msg);    
+
 /// @brief Type of callback used to report forwarding encapsulated session creation.
 /// @details The application is responsible to perform the necessary session configuration
 ///     as well as set all the callbacks except the one set by the @ref cc_mqttsn_gw_session_set_send_data_to_client_cb()
@@ -197,22 +219,6 @@ typedef bool (*CC_MqttsnSessionFwdEncSessionCreatedCb)(void* userData, CC_Mqttsn
 /// @param[in] userData User data passed as the last parameter to the setting function.
 /// @param[in] session Handle of session object about to be deleted
 typedef void (*CC_MqttsnSessionFwdEncSessionDeletedCb)(void* userData, CC_MqttsnSessionHandle session);
-
-/// @brief Type of callback used to request authentication information of
-///     the client that is trying to connect.
-/// @param[in] userData User data passed as the last parameter to the setting function.
-/// @param[in] session Handle of session performing the request
-/// @param[in] clientId Client ID
-/// @param[out] username Username string
-/// @param[out] password Binary password buffer
-/// @param[out] passwordLen Length of the binary password
-typedef void (*CC_MqttsnSessionAuthInfoReqCb)(
-    void* userData,
-    CC_MqttsnSessionHandle session,
-    const char* clientId,
-    const char** username,
-    const unsigned char** password,
-    unsigned* passwordLen);
 
 /// @brief Allocate @b Session object.
 /// @details The returned handle need to be passed as first parameter
@@ -330,6 +336,17 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
     CC_MqttsnSessionHandle session,
     CC_MqttsnSessionAuthInfoReqCb cb,
     void* data);
+
+/// @brief Set the callback to be used to report error messages detected by the session.
+/// @details This is an optional callback. 
+/// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
+/// @param[in] cb Pointer to callback function
+/// @param[in] data Pointer to any user data, will be passed back as first
+///     parameter to the callback.
+void cc_mqttsn_gw_session_set_error_report_cb(
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionErrorReportCb cb,
+    void* data);    
 
 /// @brief Set the callback to be invoked when the forwarding encapsulation session 
 ///     is detected and to notify application about such session creation.

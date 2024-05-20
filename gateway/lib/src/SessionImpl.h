@@ -36,6 +36,7 @@ public:
     using BrokerReconnectReqCb = Session::BrokerReconnectReqCb;
     using ClientConnectedReportCb = Session::ClientConnectedReportCb;
     using AuthInfoReqCb = Session::AuthInfoReqCb;
+    using ErrorReportCb = Session::ErrorReportCb;
     using FwdEncSessionCreatedReportCb = Session::FwdEncSessionCreatedReportCb;
     using FwdEncSessionDeletedReportCb = Session::FwdEncSessionDeletedReportCb;
 
@@ -89,6 +90,12 @@ public:
     void setAuthInfoReqCb(TFunc&& func)
     {
         m_authInfoReqCb = std::forward<TFunc>(func);
+    }
+
+    template <typename TFunc>
+    void setErrorReportCb(TFunc&& func)
+    {
+        m_errorReportCb = std::forward<TFunc>(func);
     }
 
     template <typename TFunc>
@@ -210,6 +217,7 @@ public:
     void brokerReconnectRequest();
     void clientConnectedReport(const std::string& clientId);
     AuthInfo authInfoRequest(const std::string& clientId);
+    void reportError(const char* str);
 
 private:
 
@@ -248,6 +256,7 @@ private:
     BrokerReconnectReqCb m_brokerReconnectReqCb;
     ClientConnectedReportCb m_clientConnectedCb;
     AuthInfoReqCb m_authInfoReqCb;
+    ErrorReportCb m_errorReportCb;
     FwdEncSessionCreatedReportCb m_fwdEncSessionCreatedReportCb;
     FwdEncSessionDeletedReportCb m_fwdEncSessionDeletedReportCb;
 

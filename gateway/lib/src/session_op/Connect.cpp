@@ -55,6 +55,7 @@ void Connect::handle(ConnectMsg_SN& msg)
 
     if ((st.m_connStatus != ConnectionStatus::Disconnected) &&
         (reqClientId != st.m_clientId)) {
+        session().reportError("Different client id reconnection in the same session");
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
         termRequest();

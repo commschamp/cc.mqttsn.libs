@@ -680,3 +680,28 @@
 /// broker and report the @ref cc_mqttsn_gw_session_page_broker_conn "connectivity"
 /// later on. The @b important part is that broker connectivity must be reported
 /// @b after the callback function returns.
+///
+/// @section cc_mqttsn_gw_session_page_error_report Errors Report
+/// The gateway library can detect and report some unexpected behavior from the
+/// application, client, and/or broker. The @b Session object reports such
+/// errors via callback:
+///
+/// @b C++ interface
+/// @code
+/// session->setErrorReportCb(
+///     [](const char* msg)
+///     {
+///         std::cerr << "ERROR: " << msg << std::endl;
+///     });
+/// @endcode
+///
+/// @b C interface
+/// @code
+/// void my_error_report(void* userData, CC_MqttsnSessionHandle session, const char* msg)
+/// {
+///     printf("ERROR: %s\n", msg);
+/// }
+///
+/// cc_mqttsn_gw_session_set_error_report_cb(handle, &my_error_report, someUserData);
+/// @endcode
+///

@@ -69,10 +69,12 @@ bool SessionImpl::start()
         (!m_sendToBrokerCb) ||
         (!m_termReqCb) ||
         (!m_brokerReconnectReqCb)) {
+        reportError("Not all \"must have\" callbacks have been set");
         return false;
     }
 
     if (static_cast<bool>(m_fwdEncSessionCreatedReportCb) != static_cast<bool>(m_fwdEncSessionDeletedReportCb)) {
+        reportError("Not all forward encapsulated session management callbacks have been set");
         return false;
     }
 
@@ -127,8 +129,8 @@ std::size_t SessionImpl::dataFromClient(const std::uint8_t* buf, std::size_t len
         }
 
         if (es == comms::ErrorStatus::ProtocolError) {
-            ++bufTmp;
-            continue;
+            reportError("Protocol error from the client side is detected");
+            return len;
         }
 
         if (es == comms::ErrorStatus::Success) {
@@ -271,6 +273,15 @@ SessionImpl::AuthInfo SessionImpl::authInfoRequest(const std::string& clientId)
     }
 
     return m_authInfoReqCb(clientId);
+}
+
+void SessionImpl::reportError(const char* str)
+{
+    if (!m_errorReportCb) {
+        return;
+    }
+
+    m_errorReportCb(str);
 }
 
 void SessionImpl::handle(SearchgwMsg_SN& msg)

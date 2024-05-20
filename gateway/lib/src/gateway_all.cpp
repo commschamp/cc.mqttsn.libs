@@ -299,6 +299,22 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
         });
 }
 
+void cc_mqttsn_gw_session_set_error_report_cb(
+    CC_MqttsnSessionHandle session,
+    CC_MqttsnSessionErrorReportCb cb,
+    void* data)
+{
+    if (session.obj == nullptr) {
+        return;
+    }    
+
+    reinterpret_cast<Session*>(session.obj)->setErrorReportCb(
+        [cb, data, session](const char* msg)
+        {
+            cb(data, session, msg);
+        });    
+}
+
 void cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(
     CC_MqttsnSessionHandle session,
     CC_MqttsnSessionFwdEncSessionCreatedCb cb,

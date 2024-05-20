@@ -287,6 +287,12 @@ bool GatewaySession::startSession()
                 });
         }); 
 
+    m_session->setErrorReportCb(
+        [this](const char* msg)
+        {
+            m_logger.error() << msg << std::endl;
+        });
+
     if (!m_sessionPtr) {
         // Forwarder encapsulated session
         return true;
