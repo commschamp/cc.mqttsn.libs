@@ -20,11 +20,11 @@ extern "C" {
 
 /*===================== Gateway Object ======================*/
 
+/// @brief Declaration of the struct for the @ref CC_MqttsnGatewayHandle definition.
+struct CC_MqttsnGateway;
+
 /// @brief Handle for gateway object used in all @b cc_mqttsn_gw_* functions.
-typedef struct
-{
-    void* obj;
-} CC_MqttsnGatewayHandle;
+typedef struct CC_MqttsnGateway* CC_MqttsnGatewayHandle;
 
 /// @brief Type of callback function, to be used to request time measurement for
 ///     the @b Gateway object.
@@ -116,11 +116,11 @@ void cc_mqttsn_gw_tick(CC_MqttsnGatewayHandle gw);
 
 /*===================== Session Object ======================*/
 
+/// @brief Declaration of the struct for the @ref CC_MqttsnSessionHandle definition.
+struct CC_MqttsnSession;
+
 /// @brief Handle for session object used in all @b cc_mqttsn_gw_session_* functions.
-typedef struct
-{
-    void* obj;
-} CC_MqttsnSessionHandle;
+typedef struct CC_MqttsnSession* CC_MqttsnSessionHandle;
 
 /// @brief Type of callback, used to request new time measurement.
 /// @details When the requested time is due, the driving code is expected
@@ -567,11 +567,11 @@ typedef enum
     CC_MqttsnBrokerConnectionType_ValuesLimit ///< Limit to available values, must be last
 } CC_MqttsnBrokerConnectionType;    
 
-/// @brief Handle for configuration object used in all @b cc_mqttsn_gw_config_* functions.
-typedef struct
-{
-    void* obj;
-} CC_MqttsnConfigHandle;
+/// @brief Declaration of the struct for the @ref CC_MqttsnConfigHandle definition.
+struct CC_MqttsnConfig;
+
+/// @brief Handle for session object used in all @b cc_mqttsn_gw_config_* functions.
+typedef struct CC_MqttsnConfig* CC_MqttsnConfigHandle;
 
 /// @brief Allocate @b Config object.
 /// @details The returned handle need to be passed as first parameter
