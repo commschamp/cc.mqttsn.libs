@@ -1,0 +1,35 @@
+//
+// Copyright 2016 - 2024 (C). Alex Robenko. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+/// @file
+/// @brief Functions of MQTT-SN client library.
+
+#pragma once
+
+#include "cc_mqttsn_client/common.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif // #ifdef __cplusplus
+
+/// @brief Allocate new client.
+/// @details When work with the client is complete, @ref cc_mqttsn_##NAME##client_free()
+///     function must be invoked.
+/// @return Handle to allocated client object. This handle needs to be passed
+///     as first parameter to all other API functions.
+CC_MqttsnClientHandle cc_mqttsn_##NAME##client_new();
+
+/// @brief Free previously allocated client.
+/// @details When used communication channel to the gateway is no longer
+///     needed, the client data structes allocated with 
+///     cc_mqttsn_##NAME##client_new() must be released using this function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client);
+
+#ifdef __cplusplus
+}
+#endif

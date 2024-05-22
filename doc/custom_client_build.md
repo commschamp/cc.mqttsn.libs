@@ -198,12 +198,12 @@ void mqttsn_bare_metal_client_free(CC_MqttsnClientHandle client);
 
 void mqttsn_bare_metal_client_set_next_tick_program_callback(
     CC_MqttsnClientHandle client,
-    CC_MqttsnNextTickProgramFn fn,
+    CC_MqttsnNextTickProgramCb fn,
     void* data);
     
 void mqttsn_bare_metal_client_set_cancel_next_tick_wait_callback(
     CC_MqttsnClientHandle client,
-    CC_MqttsnCancelNextTickWaitFn fn,
+    CC_MqttsnCancelNextTickWaitCb fn,
     void* data);
 
 ...

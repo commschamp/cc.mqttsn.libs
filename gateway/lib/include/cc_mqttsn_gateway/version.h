@@ -11,13 +11,13 @@
 #pragma once
 
 /// @brief Major verion of the library
-#define CC_MQTTSN_GW_MAJOR_VERSION 1U
+#define CC_MQTTSN_GW_MAJOR_VERSION 2U
 
 /// @brief Minor verion of the library
 #define CC_MQTTSN_GW_MINOR_VERSION 0U
 
 /// @brief Patch level of the library
-#define CC_MQTTSN_GW_PATCH_VERSION 9U
+#define CC_MQTTSN_GW_PATCH_VERSION 0U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define CC_MQTTSN_GW_MAKE_VERSION(major_, minor_, patch_) \

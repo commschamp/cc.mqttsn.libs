@@ -17,13 +17,13 @@ extern "C" {
 #endif // #ifdef __cplusplus
 
 /// @brief Major verion of the library
-#define CC_MQTTSN_CLIENT_MAJOR_VERSION 1U
+#define CC_MQTTSN_CLIENT_MAJOR_VERSION 2U
 
 /// @brief Minor verion of the library
 #define CC_MQTTSN_CLIENT_MINOR_VERSION 0U
 
 /// @brief Patch level of the library
-#define CC_MQTTSN_CLIENT_PATCH_VERSION 9U
+#define CC_MQTTSN_CLIENT_PATCH_VERSION 0U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define CC_MQTTSN_CLIENT_MAKE_VERSION(major_, minor_, patch_) \
@@ -77,12 +77,12 @@ typedef enum
     CC_MqttsnAsyncOpStatus_Aborted, ///< The operation was cancelled using cc_mqttsn_client_cancel() call.
 } CC_MqttsnAsyncOpStatus;
 
+/// @brief Declaration of struct for the @ref CC_MqttsnClientHandle;
+struct CC_MqttsnClient;
+
 /// @brief Handler used to access client specific data structures.
 /// @details Returned by cc_mqttsn_client_new() function.
-typedef struct 
-{
-    void* m_ptr;
-} CC_MqttsnClientHandle;
+typedef struct CC_MqttsnClient* CC_MqttsnClientHandle;
 
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
@@ -115,7 +115,7 @@ typedef struct
 ///     cc_mqttsn_client_set_next_tick_program_callback() function.
 /// @param[in] duration Time duration in @b milliseconds. After the requested
 ///     time expires, the cc_mqttsn_client_tick() function is expected to be invoked.
-typedef void (*CC_MqttsnNextTickProgramFn)(void* data, unsigned duration);
+typedef void (*CC_MqttsnNextTickProgramCb)(void* data, unsigned duration);
 
 /// @brief Callback used to request termination of existing time measurement.
 /// @details The callback is set using
@@ -123,7 +123,7 @@ typedef void (*CC_MqttsnNextTickProgramFn)(void* data, unsigned duration);
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_cancel_next_tick_wait_callback() function.
 /// @return Number of elapsed milliseconds since last time measurement request.
-typedef unsigned (*CC_MqttsnCancelNextTickWaitFn)(void* data);
+typedef unsigned (*CC_MqttsnCancelNextTickWaitCb)(void* data);
 
 /// @brief Callback used to request to send data to the gateway.
 /// @details The callback is set using
@@ -138,7 +138,7 @@ typedef unsigned (*CC_MqttsnCancelNextTickWaitFn)(void* data);
 /// @param[in] bufLen Number of bytes to send
 /// @param[in] broadcast Indication whether data needs to be broadcasted or
 ///     sent directly to the gateway.
-typedef void (*CC_MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
+typedef void (*CC_MqttsnSendOutputDataCb)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
 
 /// @brief Callback used to report gateway status.
 /// @details The callback is set using
@@ -147,25 +147,25 @@ typedef void (*CC_MqttsnSendOutputDataFn)(void* data, const unsigned char* buf, 
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
 /// @param[in] gwId ID of the gateway.
 /// @param[in] status Status of the gateway.
-typedef void (*CC_MqttsnGwStatusReportFn)(void* data, unsigned char gwId, CC_MqttsnGwStatus status);
+typedef void (*CC_MqttsnGwStatusReportCb)(void* data, unsigned char gwId, CC_MqttsnGwStatus status);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
-typedef void (*CC_MqttsnGwDisconnectReportFn)(void* data);
+typedef void (*CC_MqttsnGwDisconnectReportCb)(void* data);
 
 /// @brief Callback used to report completion of the asynchronous operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
 /// @param[in] status Status of the asynchronous operation.
-typedef void (*CC_MqttsnAsyncOpCompleteReportFn)(void* data, CC_MqttsnAsyncOpStatus status);
+typedef void (*CC_MqttsnAsyncOpCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status);
 
 /// @brief Callback used to report completion of the subscribe operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the subscribe request.
 /// @param[in] status Status of the subscribe operation.
 /// @param[in] qos Maximal level of quality of service, the gateway/broker is going to use to publish incoming messages.
-typedef void (*CC_MqttsnSubscribeCompleteReportFn)(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
+typedef void (*CC_MqttsnSubscribeCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
 
 /// @brief Callback used to report incoming messages.
 /// @details The callback is set using
@@ -175,7 +175,9 @@ typedef void (*CC_MqttsnSubscribeCompleteReportFn)(void* data, CC_MqttsnAsyncOpS
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_message_report_callback() function.
 /// @param[in] msgInfo Information about incoming message.
-typedef void (*CC_MqttsnMessageReportFn)(void* data, const CC_MqttsnMessageInfo* msgInfo);
+typedef void (*CC_MqttsnMessageReportCb)(void* data, const CC_MqttsnMessageInfo* msgInfo);
+
+typedef void (*CC_MqttsnErrorLogCb)(void* data, const char* msg);
 
 #ifdef __cplusplus
 }

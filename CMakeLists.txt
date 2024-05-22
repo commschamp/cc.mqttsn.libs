@@ -14,7 +14,6 @@ option (CC_MQTTSN_WITH_SANITIZERS "Build with sanitizers" OFF)
 # Extra variables
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
 # CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
-# CC_MQTTSN_SANITIZERS - List of sanitizing options
 
 ##########################################################################
 
@@ -24,30 +23,8 @@ endif ()
 
 find_package(LibComms REQUIRED)
 
-set (compile_opts)
-if (CC_MQTTSN_USE_CCACHE)
-    list (APPEND compile_opts USE_CCACHE)
-endif ()
-
-if (CC_MQTTSN_WARN_AS_ERR)
-    list (APPEND compile_opts WARN_AS_ERR)
-endif ()
-
-if (CC_MQTTSN_WITH_SANITIZERS)
-    list (APPEND compile_opts DEFAULT_SANITIZERS)
-
-    if (CMAKE_COMPILER_IS_GNUCC)
-        # gcc gives false pasitive on vptr sanitizer
-        list (APPEND compile_opts EXTRA -fno-sanitize=vptr)
-    endif ()
-endif ()
-
-if (EXISTS ${LibComms_DIR}/CC_Compile.cmake)
-    include (${LibComms_DIR}/CC_Compile.cmake)
-    cc_compile(${compile_opts})
-else ()
-    message (WARNING "Unexpected COMMS cmake scripts installation path, cannot reuse compilation options")
-endif ()
+include (${PROJECT_SOURCE_DIR}/cmake/Compile.cmake)
+cc_mqttsn_compile ()
 
 set (EXTERNALS_DIR "${PROJECT_SOURCE_DIR}/externals")
 

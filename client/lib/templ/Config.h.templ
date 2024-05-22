@@ -1,0 +1,38 @@
+#pragma once
+
+namespace cc_mqttsn_client
+{
+
+struct Config
+{
+    static constexpr bool HasDynMemAlloc = ##CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC_CPP##;
+    static constexpr unsigned ClientAllocLimit = ##CC_MQTTSN_CLIENT_ALLOC_LIMIT##;    
+//    static constexpr unsigned StringFieldFixedLen = ##CC_MQTTSN_CLIENT_STRING_FIELD_FIXED_LEN##;
+//    static constexpr unsigned MaxOutputPacketSize = ##CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE##;
+    static constexpr unsigned ReceiveMaxLimit = ##CC_MQTTSN_CLIENT_RECEIVE_MAX_LIMIT##;
+    static constexpr unsigned SendMaxLimit = ##CC_MQTTSN_CLIENT_SEND_MAX_LIMIT##;
+    static constexpr unsigned SubscribeOpsLimit = ##CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT##;
+    static constexpr unsigned UnsubscribeOpsLimit = ##CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT##;
+    static constexpr bool HasErrorLog = ##CC_MQTTSN_CLIENT_HAS_ERROR_LOG_CPP##;
+    static constexpr bool HasTopicFormatVerification = ##CC_MQTTSN_CLIENT_HAS_TOPIC_FORMAT_VERIFICATION_CPP##;
+    static constexpr bool HasSubTopicVerification = ##CC_MQTTSN_CLIENT_HAS_SUB_TOPIC_VERIFICATION_CPP##;
+//    static constexpr unsigned SubFiltersLimit = ##CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT##;
+    static constexpr unsigned MaxQos = ##CC_MQTTSN_CLIENT_MAX_QOS##;
+
+    static_assert(HasDynMemAlloc || (ClientAllocLimit > 0U), "Must use CC_MQTTSN_CLIENT_ALLOC_LIMIT in configuration to limit number of clients");
+//    static_assert(HasDynMemAlloc || (StringFieldFixedLen > 0U), "Must use CC_MQTTSN_CLIENT_STRING_FIELD_FIXED_LEN in configuration to limit string field length");
+//    static_assert(HasDynMemAlloc || (MaxOutputPacketSize > 0U), "Must use CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE in configuration to limit packet size");
+//    static_assert(HasDynMemAlloc || (ReceiveMaxLimit > 0U) || (MaxQos < 2), "Must use CC_MQTTSN_CLIENT_RECEIVE_MAX_LIMIT in configuration to limit amount of messages to receive");    
+    static_assert(HasDynMemAlloc || (SendMaxLimit > 0U), "Must use CC_MQTTSN_CLIENT_SEND_MAX_LIMIT in configuration to limit amount of messages to send");    
+    static_assert(HasDynMemAlloc || (SubscribeOpsLimit > 0U), "Must use CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT in configuration to limit amount of unfinished subscribes.");    
+    static_assert(HasDynMemAlloc || (UnsubscribeOpsLimit > 0U), "Must use CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT in configuration to limit amount of unfinished unsubscribes.");    
+    //static_assert(HasDynMemAlloc || (!HasSubTopicVerification) || (SubFiltersLimit > 0U), "Must use CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT in configuration to limit amount of subscribe filters");    
+
+    static_assert(MaxQos <= 2, "Not supported QoS value");
+};
+
+} // namespace cc_mqttsn_client
+
+#ifndef CC_MQTTSN_CLIENT_MAX_QOS
+#define CC_MQTTSN_CLIENT_MAX_QOS ##CC_MQTTSN_CLIENT_MAX_QOS##
+#endif
