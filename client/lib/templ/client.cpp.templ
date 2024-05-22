@@ -9,7 +9,8 @@
 #include "ClientAllocator.h"
 #include "ExtConfig.h"
 
-#include "comms/util/ScopeGuard.h"
+#include "comms/Assert.h"
+//#include "comms/util/ScopeGuard.h"
 
 struct CC_MqttsnClient {};
 
@@ -43,4 +44,94 @@ CC_MqttsnClientHandle cc_mqttsn_##NAME##client_new()
 void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle handle)
 {
     getClientAllocator().free(clientFromHandle(handle));
+}
+
+void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnNextTickProgramCb cb,
+    void* data)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->setNextTickProgramCallback(cb, data);
+}
+
+void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnCancelNextTickWaitCb cb,
+    void* data)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->setCancelNextTickWaitCallback(cb, data);
+}
+
+void cc_mqttsn_##NAME##client_set_send_output_data_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnSendOutputDataCb cb,
+    void* data)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->setSendOutputDataCallback(cb, data);
+}
+
+void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwStatusReportCb cb,
+    void* data)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->setGatewayStatusReportCallback(cb, data);
+}
+
+void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwDisconnectedReportCb cb,
+    void* data)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->setGatewayDisconnectedReportCallback(cb, data);
+}
+
+void cc_mqttsn_##NAME##client_set_message_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnMessageReportCb cb,
+    void* data)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->setMessageReceivedCallback(cb, data);
+}
+
+void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->tick(ms);
+}
+
+void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->processData(buf, bufLen);    
+}
+
+void cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->configState().m_responseTimeoutMs = value;
+}
+
+unsigned cc_mqttsn_##NAME##client_get_retry_period(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->configState().m_responseTimeoutMs;    
+}
+
+void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->configState().m_retryCount = value;    
+}
+
+unsigned cc_mqttsn_##NAME##client_get_retry_count(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->configState().m_retryCount;      
 }

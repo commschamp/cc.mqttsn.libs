@@ -8,7 +8,7 @@
 #pragma once
 
 // #include "ClientState.h"
-// #include "ConfigState.h"
+#include "ConfigState.h"
 #include "ExtConfig.h"
 #include "ObjAllocator.h"
 #include "ObjListType.h"
@@ -63,7 +63,7 @@ public:
 
     // -------------------- API Calls -----------------------------
     void tick(unsigned ms);
-    unsigned processData(const std::uint8_t* iter, unsigned len);
+    void processData(const std::uint8_t* iter, unsigned len);
     // void notifyNetworkDisconnected();
     // bool isNetworkDisconnected() const;
 
@@ -78,45 +78,53 @@ public:
     //     return m_sendOps.size();
     // }
 
-    // void setNextTickProgramCallback(CC_MqttsnNextTickProgramCb cb, void* data)
-    // {
-    //     if (cb != nullptr) {
-    //         m_nextTickProgramCb = cb;
-    //         m_nextTickProgramData = data;
-    //     }
-    // }
+    void setNextTickProgramCallback(CC_MqttsnNextTickProgramCb cb, void* data)
+    {
+        if (cb != nullptr) {
+            m_nextTickProgramCb = cb;
+            m_nextTickProgramData = data;
+        }
+    }
 
-    // void setCancelNextTickWaitCallback(CC_MqttsnCancelNextTickWaitCb cb, void* data)
-    // {
-    //     if (cb != nullptr) {
-    //         m_cancelNextTickWaitCb = cb;
-    //         m_cancelNextTickWaitData = data;
-    //     }
-    // }
+    void setCancelNextTickWaitCallback(CC_MqttsnCancelNextTickWaitCb cb, void* data)
+    {
+        if (cb != nullptr) {
+            m_cancelNextTickWaitCb = cb;
+            m_cancelNextTickWaitData = data;
+        }
+    }
 
-    // void setSendOutputDataCallback(CC_MqttsnSendOutputDataCb cb, void* data)
-    // {
-    //     if (cb != nullptr) {
-    //         m_sendOutputDataCb = cb;
-    //         m_sendOutputDataData = data;
-    //     }
-    // }
+    void setSendOutputDataCallback(CC_MqttsnSendOutputDataCb cb, void* data)
+    {
+        if (cb != nullptr) {
+            m_sendOutputDataCb = cb;
+            m_sendOutputDataData = data;
+        }
+    }
 
-    // void setBrokerDisconnectReportCallback(CC_MqttsnBrokerDisconnectReportCb cb, void* data)
-    // {
-    //     if (cb != nullptr) {
-    //         m_brokerDisconnectReportCb = cb;
-    //         m_brokerDisconnectReportData = data;
-    //     }
-    // }
+    void setGatewayStatusReportCallback(CC_MqttsnGwStatusReportCb cb, void* data)
+    {
+        if (cb != nullptr) {
+            m_gatewayStatusReportCb = cb;
+            m_gatewayStatusReportData = data;
+        }
+    }
 
-    // void setMessageReceivedCallback(CC_MqttsnMessageReceivedReportCb cb, void* data)
-    // {
-    //     if (cb != nullptr) {
-    //         m_messageReceivedReportCb = cb;
-    //         m_messageReceivedReportData = data;            
-    //     }
-    // }
+    void setGatewayDisconnectedReportCallback(CC_MqttsnGwDisconnectedReportCb cb, void* data)
+    {
+        if (cb != nullptr) {
+            m_gatewayDisconnectedReportCb = cb;
+            m_gatewayDisconnectedReportData = data;
+        }
+    }    
+
+    void setMessageReceivedCallback(CC_MqttsnMessageReportCb cb, void* data)
+    {
+        if (cb != nullptr) {
+            m_messageReceivedReportCb = cb;
+            m_messageReceivedReportData = data;            
+        }
+    }
 
     void setErrorLogCallback(CC_MqttsnErrorLogCb cb, void* data)
     {
@@ -159,15 +167,15 @@ public:
         return m_timerMgr;
     }
 
-    // ConfigState& configState()
-    // {
-    //     return m_configState;
-    // }
+    ConfigState& configState()
+    {
+        return m_configState;
+    }
 
-    // const ConfigState& configState() const
-    // {
-    //     return m_configState;
-    // }
+    const ConfigState& configState() const
+    {
+        return m_configState;
+    }
 
     // ClientState& clientState()
     // {
@@ -268,19 +276,22 @@ private:
     CC_MqttsnCancelNextTickWaitCb m_cancelNextTickWaitCb = nullptr;
     void* m_cancelNextTickWaitData = nullptr;
 
-    // CC_MqttsnSendOutputDataCb m_sendOutputDataCb = nullptr;
-    // void* m_sendOutputDataData = nullptr;
+    CC_MqttsnSendOutputDataCb m_sendOutputDataCb = nullptr;
+    void* m_sendOutputDataData = nullptr;
 
-    // CC_MqttsnBrokerDisconnectReportCb m_brokerDisconnectReportCb = nullptr;
-    // void* m_brokerDisconnectReportData = nullptr;
+    CC_MqttsnGwStatusReportCb m_gatewayStatusReportCb = nullptr;
+    void* m_gatewayStatusReportData = nullptr;
 
-    // CC_MqttsnMessageReceivedReportCb m_messageReceivedReportCb = nullptr;
-    // void* m_messageReceivedReportData = nullptr;      
+    CC_MqttsnGwDisconnectedReportCb m_gatewayDisconnectedReportCb = nullptr;
+    void* m_gatewayDisconnectedReportData = nullptr;
+
+    CC_MqttsnMessageReportCb m_messageReceivedReportCb = nullptr;
+    void* m_messageReceivedReportData = nullptr;      
 
     CC_MqttsnErrorLogCb m_errorLogCb = nullptr;
     void* m_errorLogData = nullptr;
 
-    // ConfigState m_configState;
+    ConfigState m_configState;
     // ClientState m_clientState;
     // SessionState m_sessionState;
     // ReuseState m_reuseState;
@@ -314,8 +325,8 @@ private:
     // SendOpsList m_sendOps;
 
     // OpPtrsList m_ops;
-    bool m_opsDeleted = false;
-    bool m_preparationLocked = false;
+    // bool m_opsDeleted = false;
+    // bool m_preparationLocked = false;
 };
 
 } // namespace cc_mqttsn_client

@@ -46,14 +46,21 @@ typedef enum
 /// @brief Error code returned by various API functions.
 typedef enum
 {
-    CC_MqttsnErrorCode_Success, ///< The requested operation was successfully started.
-    CC_MqttsnErrorCode_AlreadyStarted, ///< Returned by cc_mqttsn_client_start() function if invoked twice.
-    CC_MqttsnErrorCode_NotStarted, ///< Returned by various operations if issued prior to successful start using cc_mqttsn_client_start().
-    CC_MqttsnErrorCode_Busy, ///< The client library is in the middle of previous operation, cannot start a new one.
-    CC_MqttsnErrorCode_AlreadyConnected, ///< The client library is already connected to the gateway. Returned when cc_mqttsn_client_connect() invoked second time.
-    CC_MqttsnErrorCode_NotConnected, ///< The client library is not connected to the gateway. Returned by operations that require connection to the gateway.
-    CC_MqttsnErrorCode_NotSleeping, ///< The client is not in ASLEEP mode.
-    CC_MqttsnErrorCode_BadParam, ///< Bad parameter is passed to the function.
+    CC_MqttsnErrorCode_Success = 0, ///< The requested operation was successfully started.
+    CC_MqttsnErrorCode_InternalError = 1, ///< Internal library error, please submit bug report    
+    CC_MqttsnErrorCode_NotIntitialized = 2, ///< The allocated client hasn't been initialized.
+    CC_MqttsnErrorCode_Busy = 3, ///< The client library is in the middle of previous operation(s), cannot start a new one.
+    CC_MqttsnErrorCode_NotConnected = 4, ///< The client library is not connected to the gateway. Returned by operations that require connection to the gateway.
+    CC_MqttsnErrorCode_AlreadyConnected = 5, ///< The client library is already connected to the gateway. Returned when cc_mqttsn_client_connect() invoked second time.
+    CC_MqttsnErrorCode_BadParam = 6, ///< Bad parameter is passed to the function.
+    CC_MqttsnErrorCode_InsufficientConfig = 7, ///< The required configuration hasn't been performed.
+    CC_MqttsnErrorCode_OutOfMemory = 8, ///< Memory allocation failed.
+    CC_MqttsnErrorCode_BufferOverflow = 9, ///< Output buffer is too short
+    CC_MqttsnErrorCode_NotSupported = 10, ///< Feature is not supported
+    CC_MqttsnErrorCode_RetryLater = 11, ///< Retry in next event loop iteration.
+    CC_MqttsnErrorCode_Disconnecting = 12, ///< The client is in "disconnecting" state, (re)connect is required in the next iteration loop.
+    CC_MqttsnErrorCode_NotSleeping = 13, ///< The client is not in ASLEEP mode.
+    CC_MqttsnErrorCode_PreparationLocked = 14, ///< Another operation is being prepared, cannot create a new one without performing "send" or "cancel".
 } CC_MqttsnErrorCode;
 
 /// @brief Status of the gateway
@@ -70,12 +77,21 @@ typedef enum
 {
     CC_MqttsnAsyncOpStatus_Invalid, ///< Invalid value, should never be used
     CC_MqttsnAsyncOpStatus_Successful, ///< The operation was successful
-    CC_MqttsnAsyncOpStatus_Congestion, ///< The gateway/broker was busy and could not handle the request, try again
+    CC_MqttsnAsyncOpStatus_Congestion, ///< The gateway/gateway was busy and could not handle the request, try again
     CC_MqttsnAsyncOpStatus_InvalidId, ///< Publish message used invalid topic ID.
     CC_MqttsnAsyncOpStatus_NotSupported, ///< The issued request is not supported by the gateway.
-    CC_MqttsnAsyncOpStatus_NoResponse, ///< The gateway/broker didn't respond the the request
+    CC_MqttsnAsyncOpStatus_NoResponse, ///< The gateway/gateway didn't respond the the request
     CC_MqttsnAsyncOpStatus_Aborted, ///< The operation was cancelled using cc_mqttsn_client_cancel() call.
 } CC_MqttsnAsyncOpStatus;
+
+/// @brief Reason for reporting unsolicited gateway disconnection
+/// @ingroup global
+typedef enum
+{
+    CC_MqttsnGatewayDisconnectReason_DisconnectMsg = 0, ///< Gateway sent @b DISCONNECT message.
+    CC_MqttsnGatewayDisconnectReason_NoGatewayResponse = 0, ///< No messages from the gateway and no response to @b PINGREQ.
+    CC_MqttsnGatewayDisconnectReason_ValuesLimit ///< Limit for the values
+} CC_MqttsnGatewayDisconnectReason;
 
 /// @brief Declaration of struct for the @ref CC_MqttsnClientHandle;
 struct CC_MqttsnClient;
@@ -108,6 +124,13 @@ typedef struct
     bool retain; ///< Retain flag of the message.
 } CC_MqttsnMessageInfo;
 
+/// @brief Gateway information
+typedef struct
+{
+   unsigned char gwId; ///< Gateway ID
+   CC_MqttsnGwStatus status; ///< Gateway status
+} CC_MqttsnGatewayInfo;
+
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
 ///     cc_mqttsn_client_set_next_tick_program_callback() function.
@@ -136,23 +159,22 @@ typedef unsigned (*CC_MqttsnCancelNextTickWaitCb)(void* data);
 ///     cc_mqttsn_client_set_send_output_data_callback() function.
 /// @param[in] buf Pointer to the buffer containing data to send
 /// @param[in] bufLen Number of bytes to send
-/// @param[in] broadcast Indication whether data needs to be broadcasted or
-///     sent directly to the gateway.
-typedef void (*CC_MqttsnSendOutputDataCb)(void* data, const unsigned char* buf, unsigned bufLen, bool broadcast);
+/// @param[in] broadcastRadius Broadcast radius. When @b 0, means unicast to the connected gateway.
+typedef void (*CC_MqttsnSendOutputDataCb)(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
 
 /// @brief Callback used to report gateway status.
 /// @details The callback is set using
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
-/// @param[in] gwId ID of the gateway.
-/// @param[in] status Status of the gateway.
-typedef void (*CC_MqttsnGwStatusReportCb)(void* data, unsigned char gwId, CC_MqttsnGwStatus status);
+/// @param[in] info Gateway status info.
+typedef void (*CC_MqttsnGwStatusReportCb)(void* data, const CC_MqttsnGatewayInfo* info);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
-typedef void (*CC_MqttsnGwDisconnectReportCb)(void* data);
+/// @param[in] reason Reason of the disconnection.
+typedef void (*CC_MqttsnGwDisconnectedReportCb)(void* data, CC_MqttsnGatewayDisconnectReason reason);
 
 /// @brief Callback used to report completion of the asynchronous operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
@@ -164,7 +186,7 @@ typedef void (*CC_MqttsnAsyncOpCompleteReportCb)(void* data, CC_MqttsnAsyncOpSta
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the subscribe request.
 /// @param[in] status Status of the subscribe operation.
-/// @param[in] qos Maximal level of quality of service, the gateway/broker is going to use to publish incoming messages.
+/// @param[in] qos Maximal level of quality of service, the gateway/gateway is going to use to publish incoming messages.
 typedef void (*CC_MqttsnSubscribeCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
 
 /// @brief Callback used to report incoming messages.

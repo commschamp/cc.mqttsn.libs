@@ -68,86 +68,17 @@ void ClientImpl::tick(unsigned ms)
     doApiExit();
 }
 
-// unsigned ClientImpl::processData(const std::uint8_t* iter, unsigned len)
-// {
-//     auto guard = apiEnter();
-//     COMMS_ASSERT(!m_clientState.m_networkDisconnected);
-    
-//     if (m_clientState.m_networkDisconnected) {
-//         errorLog("Incoming data when network is disconnected");
-//         return 0U;
-//     }
+void ClientImpl::processData(const std::uint8_t* iter, unsigned len)
+{
+    auto guard = apiEnter();
 
-//     auto disconnectOnExitGuard = 
-//         comms::util::makeScopeGuard(
-//             [this]()
-//             {
-//                 brokerDisconnected(CC_MqttsnBrokerDisconnectReason_ProtocolError, CC_MqttsnAsyncOpStatus_ProtocolError);
-//             });
-
-//     unsigned consumed = 0;
-//     while (consumed < len) {
-//         auto remLen = len - consumed;
-//         auto* iterTmp = iter;
-
-//         using IdAndFlagsField = ProtFrame::Layer_idAndFlags::Field;
-//         static_assert(IdAndFlagsField::minLength() == IdAndFlagsField::maxLength());
-
-//         if (remLen <= IdAndFlagsField::minLength()) {
-//             // Size info is not available
-//             break;
-//         }
-
-//         using SizeField = ProtFrame::Layer_size::Field;
-//         SizeField sizeField;
-//         std::advance(iterTmp, IdAndFlagsField::minLength());
-//         auto es = sizeField.read(iterTmp, remLen - IdAndFlagsField::minLength());
-//         if (es == comms::ErrorStatus::NotEnoughData) {
-//             break;
-//         }
-
-//         if (es != comms::ErrorStatus::Success) {
-//             return len; // Disconnect
-//         }        
-
-//         iterTmp = iter;
-//         ProtFrame::MsgPtr msg;
-//         es = m_frame.read(msg, iterTmp, remLen);
-//         if (es == comms::ErrorStatus::NotEnoughData) {
-//             break;
-//         }
-
-//         if (es != comms::ErrorStatus::Success) {
-//             errorLog("Unexpected error in framing / payload parsing");
-//             return len;
-//         }
-
-//         COMMS_ASSERT(msg);
-//         msg->dispatch(*this);
-//         consumed += static_cast<unsigned>(std::distance(iter, iterTmp));
-//         iter = iterTmp;
-//     }
-
-//     disconnectOnExitGuard.release();
-//     return consumed;    
-// }
-
-// void ClientImpl::notifyNetworkDisconnected()
-// {
-//     auto guard = apiEnter();
-//     m_clientState.m_networkDisconnected = true;
-//     if (m_sessionState.m_disconnecting) {
-//         return; // No need to go through broker disconnection
-//     }
-    
-//     brokerDisconnected();
-// }
-
-// bool ClientImpl::isNetworkDisconnected() const
-// {
-//     return m_clientState.m_networkDisconnected;
-// }
-
+    ProtFrame::MsgPtr msgPtr;
+    auto es = comms::processSingleWithDispatch(iter, len, m_frame, msgPtr, *this);
+    if (es != comms::ErrorStatus::Success) {
+        errorLog("Failed to decode the received message");
+        return;
+    }
+}
 
 // op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
 // {

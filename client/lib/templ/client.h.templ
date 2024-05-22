@@ -30,6 +30,139 @@ CC_MqttsnClientHandle cc_mqttsn_##NAME##client_new();
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client);
 
+/// @brief Notify client about requested time expiry.
+/// @details The reported amount of milliseconds needs to be from the 
+///     last request to program timer via callback (set by
+///     cc_mqttsn_##NAME##client_set_next_tick_program_callback()).
+///     It can be less than actually requested via the callback. If this
+///     function is called, the library assumes that previously requested
+///     timeout measurement is not in progress any more, and will request
+///     new measurement if needed.
+///     This call may cause invocation of some other callbacks, such as a request
+///     to send new data to the gateway.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] ms Number of elapsed @b milliseconds.
+void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms);
+
+/// @brief Provide data, received over I/O link, to the library for processing.
+/// @details This call may cause invocation of some callbacks, such as 
+///     request to cancel the currently running time measurement, send some messages to
+///     the gateway, report incoming application message, and (re)start time
+///     measurement.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] buf Pointer to the buffer of data to process.
+/// @param[in] bufLen Number of bytes in the data buffer.
+/// @note According to the MQTT-SN specification every message should be sent in a separate
+///     single datagram packet. This function assumes such behaviour and "consumes"
+///     all the provided data discarding any additional bytes after the message (if exist).
+void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen);
+
+/// @brief Set retry period to wait between resending unacknowledged message to the gateway (@b Tretry from spec).
+/// @details Some messages, sent to the gateway, may require acknowledgement by 
+///     the latter. The delay (in seconds) between such attempts to resend the
+///     message may be specified using this function. The default value is
+///     @b 10 seconds.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] value Number of @b seconds to wait before making an attempt to resend.
+void cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value);
+
+/// @brief Set configured retry period to wait between resending unacknowledged message to the gateway (@b Tretry from spec).
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @see @ref cc_mqttsn_##NAME##client_set_retry_period().
+unsigned cc_mqttsn_##NAME##client_get_retry_period(CC_MqttsnClientHandle client);
+
+/// @brief Set number of retry attempts to perform before reporting unsuccessful result of the operation (@b Nretry from spec).
+/// @details Some messages, sent to the gateway, may require acknowledgement by 
+///     the latter. The amount of retry attempts before reporting unsuccessful result
+///     of the operation may be specified using this function. The default value
+///     is @b 3.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] value Number of retry attempts.
+void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value);
+
+/// @brief Get configured number of retry attempts to perform before reporting unsuccessful result of the operation (@b Nretry from spec).
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @see @ref cc_mqttsn_##NAME##client_set_retry_count()
+unsigned cc_mqttsn_##NAME##client_get_retry_count(CC_MqttsnClientHandle client);
+
+// --------------------- Callbacks ---------------------
+
+/// @brief Set callback to call when time measurement is required.
+/// @details The MQTT-SN client may require to measure time. When such 
+///     measurement is required, the provided callback will be invoked with
+///     the timeout duration in milliseconds. After requested time expires,
+///     the @ref cc_mqttsn_##NAME##client_tick() function must be invoked.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] cb Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnNextTickProgramCb cb,
+    void* data);
+    
+/// @brief Set callback to terminate current time measurement.
+/// @details The client may request termination of currently running time 
+///     measurement, previously requested via callback, which was set using
+///     @ref cc_mqttsn_##NAME##client_set_next_tick_program_callback() function. This function
+///     sets appropriate callback. When invoked, it must return number of
+///     elapsed milliseconds since previoius time measurement request.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] cb Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnCancelNextTickWaitCb cb,
+    void* data);
+
+/// @brief Set callback to send raw data over I/O link.
+/// @details The callback is invoked when there is a need to send data
+///     to the gateway. The callback is invoked for every single message
+///     that need to be sent as a single datagram. 
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] cb Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+void cc_mqttsn_##NAME##client_set_send_output_data_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnSendOutputDataCb cb,
+    void* data);  
+
+/// @brief Set callback to report status of the gateway.
+/// @details The callback is invoked when gateway status has changed.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] cb Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwStatusReportCb cb,
+    void* data);  
+
+/// @brief Set callback to report unsolicited disconnection of the gateway.
+/// @details The callback will be invoked when gateway sends unsolicited 
+///     @b DISCONNECT message or does not reply to @b PINGREQ message.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] cb Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwDisconnectedReportCb cb,
+    void* data); 
+
+/// @brief Set callback to report incoming messages.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] cb Callback function.
+/// @param[in] data Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+void cc_mqttsn_##NAME##client_set_message_report_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnMessageReportCb cb,
+    void* data);   
+            
+
 #ifdef __cplusplus
 }
 #endif
