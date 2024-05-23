@@ -40,8 +40,11 @@ CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES(, Msg, ProtMessage, ProtocolOptions)
 
 using ProtInputMessages =
     std::tuple<
+#if CC_MQTTSN_HAS_GATEWAY_DISCOVERY    
         cc_mqttsn::message::Advertise<ProtMessage, ProtocolOptions>,
+        cc_mqttsn::message::Searchgw<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Gwinfo<ProtMessage, ProtocolOptions>,
+#endif // CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
         cc_mqttsn::message::Connack<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Willtopicreq<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Willmsgreq<ProtMessage, ProtocolOptions>,

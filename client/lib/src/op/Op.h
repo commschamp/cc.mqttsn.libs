@@ -28,6 +28,7 @@ class Op : public ProtMsgHandler
 public:
     enum Type
     {
+        Type_Search,
         // Type_Connect,
         // Type_KeepAlive,
         // Type_Disconnect,
@@ -60,7 +61,17 @@ public:
     void setResponseTimeout(unsigned ms)
     {
         m_responseTimeoutMs = ms;
-    }    
+    }   
+
+    unsigned getRetryCount() const
+    {
+        return m_retryCount;
+    }
+
+    void setRetryCount(unsigned value)
+    {
+        m_retryCount = value;
+    }        
 
     inline 
     static bool verifyQosValid(Qos qos)
@@ -74,10 +85,11 @@ protected:
     virtual Type typeImpl() const = 0;
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status);
 
-    void sendMessage(const ProtMessage& msg, unsigned broadcastRadius = 0U);
+    CC_MqttsnErrorCode sendMessage(const ProtMessage& msg, unsigned broadcastRadius = 0U);
     void opComplete();
-    // std::uint16_t allocPacketId();
-    // void releasePacketId(std::uint16_t id);
+    std::uint16_t allocPacketId();
+    void releasePacketId(std::uint16_t id);
+    void decRetryCount();
 
     ClientImpl& client()
     {

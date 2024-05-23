@@ -75,13 +75,13 @@ typedef enum
 /// @brief Status of the asynchronous operation
 typedef enum
 {
-    CC_MqttsnAsyncOpStatus_Invalid, ///< Invalid value, should never be used
-    CC_MqttsnAsyncOpStatus_Successful, ///< The operation was successful
-    CC_MqttsnAsyncOpStatus_Congestion, ///< The gateway/gateway was busy and could not handle the request, try again
-    CC_MqttsnAsyncOpStatus_InvalidId, ///< Publish message used invalid topic ID.
-    CC_MqttsnAsyncOpStatus_NotSupported, ///< The issued request is not supported by the gateway.
-    CC_MqttsnAsyncOpStatus_NoResponse, ///< The gateway/gateway didn't respond the the request
-    CC_MqttsnAsyncOpStatus_Aborted, ///< The operation was cancelled using cc_mqttsn_client_cancel() call.
+    CC_MqttsnAsyncOpStatus_Complete = 0, ///< The requested operation has been completed, refer to reported extra details for information
+    CC_MqttsnAsyncOpStatus_InternalError = 1, ///< Internal library error, please submit bug report    
+    CC_MqttsnAsyncOpStatus_Timeout = 2, ///< The required response from broker hasn't been received in time
+    CC_MqttsnAsyncOpStatus_Aborted = 3, ///< The operation has been aborted before completion due to client's side operation.
+    CC_MqttsnAsyncOpStatus_OutOfMemory = 4, ///< The client library wasn't able to allocate necessary memory.
+    CC_MqttsnAsyncOpStatus_BadParam = 5, ///< Bad value has been returned from the relevant callback.
+    CC_MqttsnAsyncOpStatus_ValuesLimit ///< Limit for the values
 } CC_MqttsnAsyncOpStatus;
 
 /// @brief Reason for reporting unsolicited gateway disconnection
@@ -124,13 +124,19 @@ typedef struct
     bool retain; ///< Retain flag of the message.
 } CC_MqttsnMessageInfo;
 
+/// @brief Tracked gateway status information
+typedef struct
+{
+   unsigned char m_gwId; ///< Gateway ID
+   CC_MqttsnGwStatus m_status; ///< Gateway status
+} CC_MqttsnGatewayStatusInfo;
+
 /// @brief Gateway information
 typedef struct
 {
-   unsigned char gwId; ///< Gateway ID
-   CC_MqttsnGwStatus status; ///< Gateway status
-   const unsigned char* m_addr; ///< Gateway address, NULL if not known
-   unsigned m_addrLen; ///< Length of the gateway address, 0 if not known.
+   unsigned char m_gwId; ///< Gateway ID
+   const unsigned char* m_addr; ///< Address of the gateway if known, NULL if not.
+   unsigned m_addrLen; ///< Length of the address
 } CC_MqttsnGatewayInfo;
 
 /// @brief Callback used to request time measurement.
@@ -170,7 +176,7 @@ typedef void (*CC_MqttsnSendOutputDataCb)(void* data, const unsigned char* buf, 
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
 /// @param[in] info Gateway status info.
-typedef void (*CC_MqttsnGwStatusReportCb)(void* data, const CC_MqttsnGatewayInfo* info);
+typedef void (*CC_MqttsnGwStatusReportCb)(void* data, const CC_MqttsnGatewayStatusInfo* info);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
@@ -182,7 +188,8 @@ typedef void (*CC_MqttsnGwDisconnectedReportCb)(void* data, CC_MqttsnGatewayDisc
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
 /// @param[in] status Status of the asynchronous operation.
-typedef void (*CC_MqttsnAsyncOpCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status);
+/// @param[in] info Discovered gateway information. Not NULL if and only if @b status is @ref CC_MqttsnAsyncOpStatus_Complete.
+typedef void (*CC_MqttsnSearchCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
 
 /// @brief Callback used to report completion of the subscribe operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to

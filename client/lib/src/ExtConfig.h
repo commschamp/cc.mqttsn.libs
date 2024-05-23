@@ -16,8 +16,11 @@ namespace cc_mqttsn_client
 
 struct ExtConfig : public Config
 {
-    static constexpr unsigned ConnectOpsLimit = HasDynMemAlloc ? 0 : 1U;
     static constexpr unsigned KeepAliveOpsLimit = HasDynMemAlloc ? 0 : 1U;
+    static constexpr unsigned AdvertiseTimers = 1U;
+    static constexpr unsigned SearchOpsLimit = HasDynMemAlloc ? 0 : 1U;
+    static constexpr unsigned SearchOpTimers = 1U;
+    static constexpr unsigned ConnectOpsLimit = HasDynMemAlloc ? 0 : 1U;
     static constexpr unsigned ConnectOpTimers = 1U;
     static constexpr unsigned KeepAliveOpTimers = 3U;
     static constexpr unsigned DisconnectOpsLimit = HasDynMemAlloc ? 0 : 1U;
@@ -29,6 +32,7 @@ struct ExtConfig : public Config
     static constexpr unsigned SendOpsLimit = SendMaxLimit == 0U ? 0U : SendMaxLimit + 1U;
     static constexpr unsigned SendOpTimers = 1U;    
     static constexpr bool HasOpsLimit = 
+        (SearchOpsLimit > 0U) && 
         (ConnectOpsLimit > 0U) && 
         (KeepAliveOpsLimit > 0U) &&
         (DisconnectOpsLimit > 0U) &&
@@ -36,7 +40,9 @@ struct ExtConfig : public Config
         (UnsubscribeOpsLimit > 0U) &&
         (RecvOpsLimit > 0U) &&
         (SendOpsLimit > 0U);
-    static constexpr unsigned MaxTimersLimit = 
+    static constexpr unsigned MaxTimersLimit =
+        (AdvertiseTimers) +  
+        (SearchOpsLimit * SearchOpTimers) + 
         (ConnectOpsLimit * ConnectOpTimers) + 
         (KeepAliveOpsLimit * KeepAliveOpTimers) + 
         (DisconnectOpsLimit * DisconnectOpTimers) + 

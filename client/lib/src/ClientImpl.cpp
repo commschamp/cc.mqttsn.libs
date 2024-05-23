@@ -10,6 +10,7 @@
 #include "comms/cast.h"
 #include "comms/Assert.h"
 #include "comms/process.h"
+#include "comms/units.h"
 #include "comms/util/ScopeGuard.h"
 
 #include <algorithm>
@@ -21,37 +22,42 @@ namespace cc_mqttsn_client
 namespace 
 {
 
-// template <typename TList>
-// unsigned eraseFromList(const op::Op* op, TList& list)
-// {
-//     auto iter = 
-//         std::find_if(
-//             list.begin(), list.end(),
-//             [op](auto& opPtr)
-//             {
-//                 return op == opPtr.get();
-//             });
+template <typename TList>
+unsigned eraseFromList(const op::Op* op, TList& list)
+{
+    auto iter = 
+        std::find_if(
+            list.begin(), list.end(),
+            [op](auto& opPtr)
+            {
+                return op == opPtr.get();
+            });
 
-//     auto result = static_cast<unsigned>(std::distance(list.begin(), iter));
+    auto result = static_cast<unsigned>(std::distance(list.begin(), iter));
 
-//     COMMS_ASSERT(iter != list.end());
-//     if (iter != list.end()) {
-//         list.erase(iter);
-//     }
+    COMMS_ASSERT(iter != list.end());
+    if (iter != list.end()) {
+        list.erase(iter);
+    }
 
-//     return result;
-// }
+    return result;
+}
 
-// void updateEc(CC_MqttsnErrorCode* ec, CC_MqttsnErrorCode val)
-// {
-//     if (ec != nullptr) {
-//         *ec = val;
-//     }
-// }
+void updateEc(CC_MqttsnErrorCode* ec, CC_MqttsnErrorCode val)
+{
+    if (ec != nullptr) {
+        *ec = val;
+    }
+}
 
 } // namespace 
 
-ClientImpl::ClientImpl() = default;
+ClientImpl::ClientImpl() : 
+    m_gwDiscoveryTimer(m_timerMgr.allocTimer())
+{
+    // TODO: check validity of timer in during intialization
+    static_cast<void>(m_searchOpAlloc);
+}
 
 ClientImpl::~ClientImpl()
 {
@@ -64,6 +70,7 @@ void ClientImpl::tick(unsigned ms)
 {
     COMMS_ASSERT(m_apiEnterCount == 0U);
     ++m_apiEnterCount;
+    m_clientState.m_timestamp += ms;
     m_timerMgr.tick(ms);
     doApiExit();
 }
@@ -77,6 +84,67 @@ void ClientImpl::processData(const std::uint8_t* iter, unsigned len)
     if (es != comms::ErrorStatus::Success) {
         errorLog("Failed to decode the received message");
         return;
+    }
+}
+
+op::SearchOp* ClientImpl::searchPrepare(CC_MqttsnErrorCode* ec)
+{
+    if constexpr (Config::HasGatewayDiscovery) {
+        op::SearchOp* op = nullptr;
+        do {
+            if (!m_clientState.m_initialized) {
+                if (m_apiEnterCount > 0U) {
+                    errorLog("Cannot prepare search from within callback");
+                    updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+                    break;
+                }
+
+                auto initEc = initInternal();
+                if (initEc != CC_MqttsnErrorCode_Success) {
+                    updateEc(ec, initEc);
+                    break;
+                }
+            }
+                    
+            if (!m_searchOps.empty()) {
+                // Already allocated
+                errorLog("Another search operation is in progress.");
+                updateEc(ec, CC_MqttsnErrorCode_Busy);
+                break;
+            }
+
+            if (m_ops.max_size() <= m_ops.size()) {
+                errorLog("Cannot start search operation, retry in next event loop iteration.");
+                updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+                break;
+            }
+
+            if (m_preparationLocked) {
+                errorLog("Another operation is being prepared, cannot prepare \"search\" without \"send\" or \"cancel\" of the previous.");
+                updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+                break;
+            }
+
+            auto ptr = m_searchOpAlloc.alloc(*this);
+            if (!ptr) {
+                errorLog("Cannot allocate new search operation.");
+                updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
+                break;
+            }
+
+            m_preparationLocked = true;
+            m_ops.push_back(ptr.get());
+            m_searchOps.push_back(std::move(ptr));
+            op = m_searchOps.back().get();
+            updateEc(ec, CC_MqttsnErrorCode_Success);
+        } while (false);
+
+        return op;
+    }
+    else {
+        errorLog("Gateway discovery support for excluded from compilation");
+        updateEc(ec, CC_MqttsnErrorCode_NotSupported);
+        return nullptr;
     }
 }
 
@@ -369,6 +437,104 @@ void ClientImpl::processData(const std::uint8_t* iter, unsigned len)
 //     return CC_MqttsnErrorCode_Success;
 // }
 
+#if CC_MQTTSN_HAS_GATEWAY_DISCOVERY
+void ClientImpl::handle(AdvertiseMsg& msg)
+{
+    static_assert(Config::HasGatewayDiscovery);
+    
+    m_gwDiscoveryTimer.cancel();
+
+    auto onExit =
+        comms::util::makeScopeGuard( 
+            [this]()
+            {
+                monitorGatewayExpiry();
+            });
+
+    auto iter = 
+        std::find_if(
+            m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
+            [&msg](auto& info)
+            {
+                return msg.field_gwId().value() == info.m_gwId;
+            });
+
+    if (iter != m_clientState.m_gwInfos.end()) {
+        iter->m_expiryTimestamp = m_clientState.m_timestamp + comms::units::getMilliseconds<unsigned>(msg.field_duration());
+        return;
+    }    
+
+    if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
+        // Ignore new gateways if they cannot be stored
+        return;
+    }
+
+    m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
+    auto& info = m_clientState.m_gwInfos.back();
+    info.m_gwId = msg.field_gwId().value();
+    info.m_expiryTimestamp = m_clientState.m_timestamp + comms::units::getMilliseconds<unsigned>(msg.field_duration());
+
+    if (m_gatewayStatusReportCb != nullptr) {
+        auto cbInfo = CC_MqttsnGatewayStatusInfo();
+        cbInfo.m_gwId = info.m_gwId;
+        cbInfo.m_status = CC_MqttsnGwStatus_Available;
+        m_gatewayStatusReportCb(m_gatewayStatusReportData, &cbInfo);
+    }    
+}
+
+void ClientImpl::handle(GwinfoMsg& msg)
+{
+    auto onExit =
+        comms::util::makeScopeGuard( 
+            [this, &msg]()
+            {
+                for (auto& op : m_searchOps) {
+                    COMMS_ASSERT(op);
+                    op->handle(msg);
+                }
+            });
+
+    auto iter = 
+        std::find_if(
+            m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
+            [&msg](auto& info)
+            {
+                return msg.field_gwId().value() == info.m_gwId;
+            });
+
+    if (iter != m_clientState.m_gwInfos.end()) {
+        auto& addr = msg.field_gwAdd().value();
+        if (addr.empty()) {
+            return;
+        }
+
+        if (iter->m_addr.max_size() < addr.size()) {
+            iter->m_addr.clear();
+            return;
+        }
+
+        iter->m_addr.assign(addr.begin(), addr.end());
+        return;
+    }
+
+    auto& addr = msg.field_gwAdd().value();
+    if (addr.empty()) {
+        return;
+    }    
+
+    if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
+        // Not enough space
+        return;
+    }
+
+    m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
+    auto& info = m_clientState.m_gwInfos.back();
+    info.m_gwId = msg.field_gwId().value();
+    info.m_addr.assign(addr.begin(), addr.end());
+    // TODO: report gateway discovery
+}
+#endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
+
 // void ClientImpl::handle(PublishMsg& msg)
 // {
 //     if (m_sessionState.m_disconnecting) {
@@ -564,6 +730,7 @@ void ClientImpl::opComplete(const op::Op* op)
 
     using ExtraCompleteFunc = void (ClientImpl::*)(const op::Op*);
     static const ExtraCompleteFunc Map[] = {
+        /* Type_Search */ &ClientImpl::opComplete_Search,
         // /* Type_Connect */ &ClientImpl::opComplete_Connect,
         // /* Type_KeepAlive */ &ClientImpl::opComplete_KeepAlive,
         // /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
@@ -705,11 +872,11 @@ void ClientImpl::opComplete(const op::Op* op)
 //     return false;
 // }
 
-// void ClientImpl::allowNextPrepare()
-// {
-//     COMMS_ASSERT(m_preparationLocked);
-//     m_preparationLocked = false;
-// }
+void ClientImpl::allowNextPrepare()
+{
+    COMMS_ASSERT(m_preparationLocked);
+    m_preparationLocked = false;
+}
 
 void ClientImpl::doApiEnter()
 {
@@ -724,6 +891,7 @@ void ClientImpl::doApiEnter()
     }
 
     auto elapsed = m_cancelNextTickWaitCb(m_cancelNextTickWaitData);
+    m_clientState.m_timestamp += elapsed;
     m_timerMgr.tick(elapsed);
 }
 
@@ -813,36 +981,37 @@ void ClientImpl::errorLogInternal(const char* msg)
     }
 }
 
-// CC_MqttsnErrorCode ClientImpl::initInternal()
-// {
-//     auto guard = apiEnter();
-//     if ((m_sendOutputDataCb == nullptr) ||
-//         (m_brokerDisconnectReportCb == nullptr) ||
-//         (m_messageReceivedReportCb == nullptr)) {
-//         errorLog("Hasn't set all must have callbacks");
-//         return CC_MqttsnErrorCode_NotIntitialized;
-//     }
+CC_MqttsnErrorCode ClientImpl::initInternal()
+{
+    auto guard = apiEnter();
 
-//     bool hasTimerCallbacks = 
-//         (m_nextTickProgramCb != nullptr) ||
-//         (m_cancelNextTickWaitCb != nullptr);
+    if ((m_sendOutputDataCb == nullptr) ||
+        (m_messageReceivedReportCb == nullptr)) {
+        errorLog("Hasn't set all must have callbacks");
+        return CC_MqttsnErrorCode_NotIntitialized;
+    }
 
-//     if (hasTimerCallbacks) {
-//         bool hasAllTimerCallbacks = 
-//             (m_nextTickProgramCb != nullptr) &&
-//             (m_cancelNextTickWaitCb != nullptr);
+    bool hasTimerCallbacks = 
+        (m_nextTickProgramCb != nullptr) ||
+        (m_cancelNextTickWaitCb != nullptr);
 
-//         if (!hasAllTimerCallbacks) {
-//             errorLog("Hasn't set all timer management callbacks callbacks");
-//             return CC_MqttsnErrorCode_NotIntitialized;
-//         }
-//     }
+    if (hasTimerCallbacks) {
+        bool hasAllTimerCallbacks = 
+            (m_nextTickProgramCb != nullptr) &&
+            (m_cancelNextTickWaitCb != nullptr);
 
-//     terminateOps(CC_MqttsnAsyncOpStatus_Aborted, TerminateMode_KeepSendRecvOps);
-//     m_sessionState = SessionState();
-//     m_clientState.m_initialized = true;
-//     return CC_MqttsnErrorCode_Success;
-// }
+        if (!hasAllTimerCallbacks) {
+            errorLog("Hasn't set all timer management callbacks callbacks");
+            return CC_MqttsnErrorCode_NotIntitialized;
+        }
+    }
+
+    // TODO:
+    // terminateOps(CC_MqttsnAsyncOpStatus_Aborted, TerminateMode_KeepSendRecvOps);
+    // m_sessionState = SessionState();
+    m_clientState.m_initialized = true;
+    return CC_MqttsnErrorCode_Success;
+}
 
 // void ClientImpl::resumeSendOpsSince(unsigned idx)
 // {
@@ -947,6 +1116,11 @@ void ClientImpl::errorLogInternal(const char* msg)
 //     return true;
 // }
 
+void ClientImpl::opComplete_Search(const op::Op* op)
+{
+    eraseFromList(op, m_searchOps);
+}
+
 // void ClientImpl::opComplete_Connect(const op::Op* op)
 // {
 //     eraseFromList(op, m_connectOps);
@@ -986,5 +1160,66 @@ void ClientImpl::errorLogInternal(const char* msg)
 
 //     resumeSendOpsSince(idx);
 // }
+
+void ClientImpl::monitorGatewayExpiry()
+{
+    if constexpr (Config::HasGatewayDiscovery) {
+        auto iter = 
+            std::min_element(
+                m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
+                [](const auto& first, const auto& second)
+                {
+                    if (first.m_expiryTimestamp == 0) {
+                        return false;
+                    }
+
+                    return first.m_expiryTimestamp < second.m_expiryTimestamp;
+                });
+
+        if ((iter == m_clientState.m_gwInfos.end()) ||
+            (iter->m_expiryTimestamp == 0U)) {
+            return;
+        }
+
+        COMMS_ASSERT(m_clientState.m_timestamp < iter->m_expiryTimestamp);
+        m_gwDiscoveryTimer.wait(iter->m_expiryTimestamp - m_clientState.m_timestamp, &ClientImpl::gwExpiryTimeoutCb, this);
+    }
+}
+
+void ClientImpl::gwExpiryTimeout()
+{
+    if constexpr (Config::HasGatewayDiscovery) {
+        for (auto& info : m_clientState.m_gwInfos) {
+            if (m_clientState.m_timestamp < info.m_expiryTimestamp) {
+                continue;
+            }
+
+            if (m_gatewayStatusReportCb != nullptr) {
+                auto cbInfo = CC_MqttsnGatewayStatusInfo();
+                cbInfo.m_gwId = info.m_gwId;
+                cbInfo.m_status = CC_MqttsnGwStatus_TimedOut;
+                m_gatewayStatusReportCb(m_gatewayStatusReportData, &cbInfo);
+            }
+        }
+
+        m_clientState.m_gwInfos.erase(
+            std::remove_if(
+                m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
+                [this](auto& info)
+                {
+                    return (info.m_expiryTimestamp <= m_clientState.m_timestamp);
+                }),
+            m_clientState.m_gwInfos.end());
+
+        monitorGatewayExpiry();
+    }
+}
+
+void ClientImpl::gwExpiryTimeoutCb(void* data)
+{
+    if constexpr (Config::HasGatewayDiscovery) {
+        reinterpret_cast<ClientImpl*>(data)->gwExpiryTimeout();
+    }
+}
 
 } // namespace cc_mqttsn_client

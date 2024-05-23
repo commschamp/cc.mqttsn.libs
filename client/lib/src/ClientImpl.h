@@ -7,7 +7,7 @@
 
 #pragma once
 
-// #include "ClientState.h"
+#include "ClientState.h"
 #include "ConfigState.h"
 #include "ExtConfig.h"
 #include "ObjAllocator.h"
@@ -22,6 +22,7 @@
 // #include "op/KeepAliveOp.h"
 #include "op/Op.h"
 // #include "op/RecvOp.h"
+#include "op/SearchOp.h"
 // #include "op/SendOp.h"
 // #include "op/SubscribeOp.h"
 // #include "op/UnsubscribeOp.h"
@@ -67,6 +68,7 @@ public:
     // void notifyNetworkDisconnected();
     // bool isNetworkDisconnected() const;
 
+    op::SearchOp* searchPrepare(CC_MqttsnErrorCode* ec);
     // op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);
     // op::DisconnectOp* disconnectPrepare(CC_MqttsnErrorCode* ec);
     // op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
@@ -140,7 +142,11 @@ public:
 
     // -------------------- Message Handling -----------------------------
 
-//     using Base::handle;
+    using Base::handle;
+#if CC_MQTTSN_HAS_GATEWAY_DISCOVERY
+    virtual void handle(AdvertiseMsg& msg) override;
+    virtual void handle(GwinfoMsg& msg) override;
+#endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
 //     virtual void handle(PublishMsg& msg) override;
 
 // #if CC_MQTTSN_CLIENT_MAX_QOS >= 1    
@@ -166,7 +172,7 @@ public:
     // void reportMsgInfo(const CC_MqttsnMessageInfo& info);
     // bool hasPausedSendsBefore(const op::SendOp* sendOp) const;
     // bool hasHigherQosSendsBefore(const op::SendOp* sendOp, op::Op::Qos qos) const;
-    // void allowNextPrepare();
+    void allowNextPrepare();
 
     TimerMgr& timerMgr()
     {
@@ -183,15 +189,15 @@ public:
         return m_configState;
     }
 
-    // ClientState& clientState()
-    // {
-    //     return m_clientState;
-    // }    
+    ClientState& clientState()
+    {
+        return m_clientState;
+    }    
 
-    // const ClientState& clientState() const
-    // {
-    //     return m_clientState;
-    // }       
+    const ClientState& clientState() const
+    {
+        return m_clientState;
+    }       
 
     // SessionState& sessionState()
     // {
@@ -221,6 +227,9 @@ public:
     // }    
     
 private:
+    using SearchOpAlloc = ObjAllocator<op::SearchOp, ExtConfig::SearchOpsLimit>;
+    using SearchOpsList = ObjListType<SearchOpAlloc::Ptr, ExtConfig::SearchOpsLimit>;
+
     // using ConnectOpAlloc = ObjAllocator<op::ConnectOp, ExtConfig::ConnectOpsLimit>;
     // using ConnectOpsList = ObjListType<ConnectOpAlloc::Ptr, ExtConfig::ConnectOpsLimit>;
 
@@ -259,13 +268,14 @@ private:
     // void terminateOps(CC_MqttsnAsyncOpStatus status, TerminateMode mode);
     void cleanOps();
     void errorLogInternal(const char* msg);
-    // CC_MqttsnErrorCode initInternal();
+    CC_MqttsnErrorCode initInternal();
     // void resumeSendOpsSince(unsigned idx);
     // op::SendOp* findSendOp(std::uint16_t packetId);
     // bool isLegitSendAck(const op::SendOp* sendOp, bool pubcompAck = false) const;
     // void resendAllUntil(op::SendOp* sendOp);
     // bool processPublishAckMsg(ProtMessage& msg, std::uint16_t packetId, bool pubcompAck = false);
 
+    void opComplete_Search(const op::Op* op);
     // void opComplete_Connect(const op::Op* op);
     // void opComplete_KeepAlive(const op::Op* op);
     // void opComplete_Disconnect(const op::Op* op);
@@ -273,6 +283,10 @@ private:
     // void opComplete_Unsubscribe(const op::Op* op);
     // void opComplete_Recv(const op::Op* op);
     // void opComplete_Send(const op::Op* op);
+
+    void monitorGatewayExpiry();
+    void gwExpiryTimeout();
+    static void gwExpiryTimeoutCb(void* data);
 
     friend class ApiEnterGuard;
 
@@ -301,16 +315,20 @@ private:
     void* m_gwinfoDelayReqData = nullptr;
 
     ConfigState m_configState;
-    // ClientState m_clientState;
+    ClientState m_clientState;
     // SessionState m_sessionState;
     // ReuseState m_reuseState;
 
     TimerMgr m_timerMgr;
+    TimerMgr::Timer m_gwDiscoveryTimer;  
     unsigned m_apiEnterCount = 0U;
 
     OutputBuf m_buf;
 
     ProtFrame m_frame;
+
+    SearchOpAlloc m_searchOpAlloc;
+    SearchOpsList m_searchOps;    
 
     // ConnectOpAlloc m_connectOpAlloc;
     // ConnectOpsList m_connectOps;
@@ -335,7 +353,7 @@ private:
 
     OpPtrsList m_ops;
     bool m_opsDeleted = false;
-    // bool m_preparationLocked = false;
+    bool m_preparationLocked = false;
 };
 
 } // namespace cc_mqttsn_client
