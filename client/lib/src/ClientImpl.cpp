@@ -523,67 +523,67 @@ void ClientImpl::processData(const std::uint8_t* iter, unsigned len)
 //     }
 // }
 
-// CC_MqttsnErrorCode ClientImpl::sendMessage(const ProtMessage& msg)
-// {
-//     auto len = m_frame.length(msg);
+CC_MqttsnErrorCode ClientImpl::sendMessage(const ProtMessage& msg, unsigned broadcastRadius)
+{
+    auto len = m_frame.length(msg);
 
-//     if (m_buf.max_size() < len) {
-//         errorLog("Output buffer overflow.");
-//         return CC_MqttsnErrorCode_BufferOverflow;
-//     }
+    if (m_buf.max_size() < len) {
+        errorLog("Output buffer overflow.");
+        return CC_MqttsnErrorCode_BufferOverflow;
+    }
 
-//     m_buf.resize(len);
-//     auto writeIter = comms::writeIteratorFor<ProtMessage>(&m_buf[0]);
-//     auto es = m_frame.write(msg, writeIter, len);
-//     COMMS_ASSERT(es == comms::ErrorStatus::Success);
-//     if (es != comms::ErrorStatus::Success) {
-//         errorLog("Failed to serialize output message.");
-//         return CC_MqttsnErrorCode_InternalError;
-//     }
+    m_buf.resize(len);
+    auto writeIter = comms::writeIteratorFor<ProtMessage>(&m_buf[0]);
+    auto es = m_frame.write(msg, writeIter, len);
+    COMMS_ASSERT(es == comms::ErrorStatus::Success);
+    if (es != comms::ErrorStatus::Success) {
+        errorLog("Failed to serialize output message.");
+        return CC_MqttsnErrorCode_InternalError;
+    }
 
-//     COMMS_ASSERT(m_sendOutputDataCb != nullptr);
-//     m_sendOutputDataCb(m_sendOutputDataData, &m_buf[0], static_cast<unsigned>(len));
+    COMMS_ASSERT(m_sendOutputDataCb != nullptr);
+    m_sendOutputDataCb(m_sendOutputDataData, &m_buf[0], static_cast<unsigned>(len), broadcastRadius);
 
-//     for (auto& opPtr : m_keepAliveOps) {
-//         opPtr->messageSent();
-//     }
+    // for (auto& opPtr : m_keepAliveOps) {
+    //     opPtr->messageSent();
+    // }
 
-//     return CC_MqttsnErrorCode_Success;
-// }
+    return CC_MqttsnErrorCode_Success;
+}
 
-// void ClientImpl::opComplete(const op::Op* op)
-// {
-//     auto iter = std::find(m_ops.begin(), m_ops.end(), op);
-//     COMMS_ASSERT(iter != m_ops.end());
-//     if (iter == m_ops.end()) {
-//         return;
-//     }
+void ClientImpl::opComplete(const op::Op* op)
+{
+    auto iter = std::find(m_ops.begin(), m_ops.end(), op);
+    COMMS_ASSERT(iter != m_ops.end());
+    if (iter == m_ops.end()) {
+        return;
+    }
 
-//     *iter = nullptr;
-//     m_opsDeleted = true;
+    *iter = nullptr;
+    m_opsDeleted = true;
 
-//     using ExtraCompleteFunc = void (ClientImpl::*)(const op::Op*);
-//     static const ExtraCompleteFunc Map[] = {
-//         /* Type_Connect */ &ClientImpl::opComplete_Connect,
-//         /* Type_KeepAlive */ &ClientImpl::opComplete_KeepAlive,
-//         /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
-//         /* Type_Subscribe */ &ClientImpl::opComplete_Subscribe,
-//         /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
-//         /* Type_Recv */ &ClientImpl::opComplete_Recv,
-//         /* Type_Send */ &ClientImpl::opComplete_Send,
-//     };
-//     static const std::size_t MapSize = std::extent<decltype(Map)>::value;
-//     static_assert(MapSize == op::Op::Type_NumOfValues);
+    using ExtraCompleteFunc = void (ClientImpl::*)(const op::Op*);
+    static const ExtraCompleteFunc Map[] = {
+        // /* Type_Connect */ &ClientImpl::opComplete_Connect,
+        // /* Type_KeepAlive */ &ClientImpl::opComplete_KeepAlive,
+        // /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
+        // /* Type_Subscribe */ &ClientImpl::opComplete_Subscribe,
+        // /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
+        // /* Type_Recv */ &ClientImpl::opComplete_Recv,
+        // /* Type_Send */ &ClientImpl::opComplete_Send,
+    };
+    static const std::size_t MapSize = std::extent<decltype(Map)>::value;
+    static_assert(MapSize == op::Op::Type_NumOfValues);
 
-//     auto idx = static_cast<unsigned>(op->type());
-//     COMMS_ASSERT(idx < MapSize);
-//     if (MapSize <= idx) {
-//         return;
-//     }
+    auto idx = static_cast<unsigned>(op->type());
+    COMMS_ASSERT(idx < MapSize);
+    if (MapSize <= idx) {
+        return;
+    }
 
-//     auto func = Map[idx];
-//     (this->*func)(op);
-// }
+    auto func = Map[idx];
+    (this->*func)(op);
+}
 
 // void ClientImpl::brokerConnected(bool sessionPresent)
 // {

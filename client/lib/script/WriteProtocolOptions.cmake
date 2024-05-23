@@ -44,7 +44,7 @@ endmacro()
 #set_default_opt (MESSAGE_SUBSCRIBE_FIELDS_LIST)
 #set_default_opt (MESSAGE_UNSUBSCRIBE_FIELDS_LIST)
 
-#set_default_opt (MAX_PACKET_SIZE)
+set_default_opt (MAX_PACKET_SIZE)
 #set_default_opt (MSG_ALLOC_OPT)
 
 #########################################
@@ -64,9 +64,9 @@ endif ()
 #    set (FIELD_STRING "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_STRING_FIELD_FIXED_LEN}>")
 #endif ()
 
-#if (NOT ${CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE} EQUAL 0)
-#    set (MAX_PACKET_SIZE "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE}>")
-#endif ()
+if (NOT ${CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE} EQUAL 0)
+    set (MAX_PACKET_SIZE "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE}>")
+endif ()
 
 #if (NOT ${CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN} EQUAL 0)
 #    set (MESSAGE_CONNECT_FIELDS_CLIENT_ID "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN}>")

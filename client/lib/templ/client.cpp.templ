@@ -12,6 +12,8 @@
 #include "comms/Assert.h"
 //#include "comms/util/ScopeGuard.h"
 
+#include <limits>
+
 struct CC_MqttsnClient {};
 
 namespace
@@ -45,6 +47,76 @@ void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle handle)
 {
     getClientAllocator().free(clientFromHandle(handle));
 }
+
+void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->tick(ms);
+}
+
+void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->processData(buf, bufLen);    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value)
+{
+    COMMS_ASSERT(client != nullptr);
+    static const unsigned MaxValue = std::numeric_limits<decltype(cc_mqttsn_client::ConfigState::m_responseTimeoutMs)>::max() / 1000U;
+    if (MaxValue < value) {
+        clientFromHandle(client)->errorLog("The retry period value is too high");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    clientFromHandle(client)->configState().m_responseTimeoutMs = value * 1000U;
+    return CC_MqttsnErrorCode_Success;
+}
+
+unsigned cc_mqttsn_##NAME##client_get_retry_period(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->configState().m_responseTimeoutMs;    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value)
+{
+    COMMS_ASSERT(client != nullptr);
+    if (value < 1U) {
+        clientFromHandle(client)->errorLog("The retry count setting must be greater than zero.");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->configState().m_retryCount = value;    
+    return CC_MqttsnErrorCode_Success;
+}
+
+unsigned cc_mqttsn_##NAME##client_get_retry_count(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->configState().m_retryCount;      
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned value)
+{
+    COMMS_ASSERT(client != nullptr);
+    if (cc_mqttsn_client::ConfigState::MaxBroadcastRadius < value) {
+        clientFromHandle(client)->errorLog("The broadcast radius is too high");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    clientFromHandle(client)->configState().m_broadcastRadius = value;
+    return CC_MqttsnErrorCode_Success;
+}
+
+unsigned cc_mqttsn_##NAME##client_get_broadcast_radius(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->configState().m_broadcastRadius;
+}
+
+// --------------------- Callbacks ---------------------
 
 void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
     CC_MqttsnClientHandle client,
@@ -100,38 +172,11 @@ void cc_mqttsn_##NAME##client_set_message_report_callback(
     clientFromHandle(client)->setMessageReceivedCallback(cb, data);
 }
 
-void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms)
+void cc_mqttsn_##NAME##client_set_gwinfo_delay_request_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwinfoDelayRequestCb cb,
+    void* data)
 {
     COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->tick(ms);
-}
-
-void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen)
-{
-    COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->processData(buf, bufLen);    
-}
-
-void cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value)
-{
-    COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->configState().m_responseTimeoutMs = value;
-}
-
-unsigned cc_mqttsn_##NAME##client_get_retry_period(CC_MqttsnClientHandle client)
-{
-    COMMS_ASSERT(client != nullptr);
-    return clientFromHandle(client)->configState().m_responseTimeoutMs;    
-}
-
-void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value)
-{
-    COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->configState().m_retryCount = value;    
-}
-
-unsigned cc_mqttsn_##NAME##client_get_retry_count(CC_MqttsnClientHandle client)
-{
-    COMMS_ASSERT(client != nullptr);
-    return clientFromHandle(client)->configState().m_retryCount;      
+    clientFromHandle(client)->setGwinfoDelayReqCb(cb, data);
 }

@@ -64,7 +64,7 @@ void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const u
 ///     @b 10 seconds.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] value Number of @b seconds to wait before making an attempt to resend.
-void cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value);
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_retry_period(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Set configured retry period to wait between resending unacknowledged message to the gateway (@b Tretry from spec).
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
@@ -78,12 +78,26 @@ unsigned cc_mqttsn_##NAME##client_get_retry_period(CC_MqttsnClientHandle client)
 ///     is @b 3.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] value Number of retry attempts.
-void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value);
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Get configured number of retry attempts to perform before reporting unsuccessful result of the operation (@b Nretry from spec).
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @see @ref cc_mqttsn_##NAME##client_set_retry_count()
 unsigned cc_mqttsn_##NAME##client_get_retry_count(CC_MqttsnClientHandle client);
+
+/// @brief Set broadcast radius.
+/// @details When searching for gateways, the client library broadcasts @b SEARCHGW
+///     messages. It contains the broadcast radius value. This value can be
+///     set using this function. Default radius value is @b 3.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @param[in] value Broadcast radius. 
+/// @pre The broadcast value cannot exceed 255.
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned value);
+
+/// @brief Get current broadcast radius configuration.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
+/// @see @ref cc_mqttsn_##NAME##client_set_broadcast_radius()
+unsigned cc_mqttsn_##NAME##client_get_broadcast_radius(CC_MqttsnClientHandle client);
 
 // --------------------- Callbacks ---------------------
 
@@ -162,6 +176,14 @@ void cc_mqttsn_##NAME##client_set_message_report_callback(
     CC_MqttsnMessageReportCb cb,
     void* data);   
             
+/// @brief Set callback to request a random timeout to send @b GWINFO as a response to the @b SEARCHGW from other client.
+/// @details According to the MQTT-SN specification, the client can send @b GWINFO message on behalf of a gateway
+///     after some randrom amount of time. Use this function to allow the library to 
+///     request such timeout. If not set, sending @b GWINFO on behalf of the gateway is @b disabled.
+void cc_mqttsn_##NAME##client_set_gwinfo_delay_request_callback(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnGwinfoDelayRequestCb cb,
+    void* data);
 
 #ifdef __cplusplus
 }

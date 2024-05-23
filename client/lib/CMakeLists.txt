@@ -140,6 +140,7 @@ function (gen_lib_mqttsn_client config_file)
     
     message (STATUS "Defining library ${lib_name}") 
     set (src
+        src/op/Op.cpp
         src/ClientImpl.cpp
         src/TimerMgr.cpp
     )

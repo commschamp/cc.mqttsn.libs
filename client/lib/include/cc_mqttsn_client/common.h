@@ -129,6 +129,8 @@ typedef struct
 {
    unsigned char gwId; ///< Gateway ID
    CC_MqttsnGwStatus status; ///< Gateway status
+   const unsigned char* m_addr; ///< Gateway address, NULL if not known
+   unsigned m_addrLen; ///< Length of the gateway address, 0 if not known.
 } CC_MqttsnGatewayInfo;
 
 /// @brief Callback used to request time measurement.
@@ -199,7 +201,18 @@ typedef void (*CC_MqttsnSubscribeCompleteReportCb)(void* data, CC_MqttsnAsyncOpS
 /// @param[in] msgInfo Information about incoming message.
 typedef void (*CC_MqttsnMessageReportCb)(void* data, const CC_MqttsnMessageInfo* msgInfo);
 
+/// @brief Callback used to report discovered errors.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] msg Error log message.
+/// @ingroup client
 typedef void (*CC_MqttsnErrorLogCb)(void* data, const char* msg);
+
+/// @brief Callback used to request delay (in ms) to wait before 
+///     responding with @b GWINFO message on behalf of a gateway.
+/// @details In case function return 0U, the response on behalf of the gateway is disabled.
+/// @return Number of milliseconds to wait for another @b GWINFO to cancel the intended send of @b GWINFO on behalf of the gateway.
+typedef unsigned (*CC_MqttsnGwinfoDelayRequestCb)(void* data);
 
 #ifdef __cplusplus
 }

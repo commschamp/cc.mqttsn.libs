@@ -20,7 +20,7 @@
 // #include "op/ConnectOp.h"
 // #include "op/DisconnectOp.h"
 // #include "op/KeepAliveOp.h"
-// #include "op/Op.h"
+#include "op/Op.h"
 // #include "op/RecvOp.h"
 // #include "op/SendOp.h"
 // #include "op/SubscribeOp.h"
@@ -132,6 +132,12 @@ public:
         m_errorLogData = data;
     }
 
+    void setGwinfoDelayReqCb(CC_MqttsnGwinfoDelayRequestCb cb, void* data)
+    {
+        m_gwinfoDelayReqCb = cb;
+        m_gwinfoDelayReqData = data;
+    }
+
     // -------------------- Message Handling -----------------------------
 
 //     using Base::handle;
@@ -151,8 +157,8 @@ public:
 
     // -------------------- Ops Access API -----------------------------
 
-    // CC_MqttsnErrorCode sendMessage(const ProtMessage& msg);
-    // void opComplete(const op::Op* op);
+    CC_MqttsnErrorCode sendMessage(const ProtMessage& msg, unsigned broadcastRadius = 0);
+    void opComplete(const op::Op* op);
     // void brokerConnected(bool sessionPresent);
     // void brokerDisconnected(
     //     CC_MqttsnBrokerDisconnectReason reason = CC_MqttsnBrokerDisconnectReason_ValuesLimit,  
@@ -236,9 +242,9 @@ private:
     // using SendOpAlloc = ObjAllocator<op::SendOp, ExtConfig::SendOpsLimit>;
     // using SendOpsList = ObjListType<SendOpAlloc::Ptr, ExtConfig::SendOpsLimit>;
 
-    // using OpPtrsList = ObjListType<op::Op*, ExtConfig::OpsLimit>;
+    using OpPtrsList = ObjListType<op::Op*, ExtConfig::OpsLimit>;
     // using OpToDeletePtrsList = ObjListType<const op::Op*, ExtConfig::OpsLimit>;
-    // using OutputBuf = ObjListType<std::uint8_t, ExtConfig::MaxOutputPacketSize>;
+    using OutputBuf = ObjListType<std::uint8_t, ExtConfig::MaxOutputPacketSize>;
 
     // enum TerminateMode
     // {
@@ -291,6 +297,9 @@ private:
     CC_MqttsnErrorLogCb m_errorLogCb = nullptr;
     void* m_errorLogData = nullptr;
 
+    CC_MqttsnGwinfoDelayRequestCb m_gwinfoDelayReqCb = nullptr;
+    void* m_gwinfoDelayReqData = nullptr;
+
     ConfigState m_configState;
     // ClientState m_clientState;
     // SessionState m_sessionState;
@@ -299,7 +308,7 @@ private:
     TimerMgr m_timerMgr;
     unsigned m_apiEnterCount = 0U;
 
-    // OutputBuf m_buf;
+    OutputBuf m_buf;
 
     ProtFrame m_frame;
 
@@ -324,8 +333,8 @@ private:
     // SendOpAlloc m_sendOpsAlloc;
     // SendOpsList m_sendOps;
 
-    // OpPtrsList m_ops;
-    // bool m_opsDeleted = false;
+    OpPtrsList m_ops;
+    bool m_opsDeleted = false;
     // bool m_preparationLocked = false;
 };
 
