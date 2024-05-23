@@ -115,11 +115,6 @@ void Forward::handle([[maybe_unused]] PingreqMsg_SN& msg)
     sendToBroker(PingreqMsg());
 }
 
-void Forward::handle([[maybe_unused]] PingrespMsg_SN& msg)
-{
-    sendToBroker(PingrespMsg());
-}
-
 void Forward::handle(SubscribeMsg_SN& msg)
 {
     auto sendSubackFunc =

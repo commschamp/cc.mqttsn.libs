@@ -34,7 +34,6 @@ private:
     virtual void handle(PublishMsg_SN& msg) override;
     virtual void handle(PubrelMsg_SN& msg) override;
     virtual void handle(PingreqMsg_SN& msg) override;
-    virtual void handle(PingrespMsg_SN& msg) override;
     virtual void handle(SubscribeMsg_SN& msg) override;
     virtual void handle(UnsubscribeMsg_SN& msg) override;
 
