@@ -104,6 +104,7 @@ void Encapsulate::handle(FwdMsg_SN& msg)
 
         if ((!sessionPtr->isRunning()) && (!sessionPtr->start())) {
             // Error failed to start session;
+            session().reportError("Failed to start forward encapsulated session");
             session().reportFwdEncSessionDeleted(sessionPtr);
             m_sessions.erase(iter);
             iter = m_sessions.end();

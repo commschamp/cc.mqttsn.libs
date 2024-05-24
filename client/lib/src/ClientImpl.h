@@ -145,6 +145,7 @@ public:
     using Base::handle;
 #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY
     virtual void handle(AdvertiseMsg& msg) override;
+    virtual void handle(SearchgwMsg& msg) override;
     virtual void handle(GwinfoMsg& msg) override;
 #endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
 //     virtual void handle(PublishMsg& msg) override;
@@ -159,7 +160,7 @@ public:
 //     virtual void handle(PubcompMsg& msg) override;
 // #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 
-//     virtual void handle(ProtMessage& msg) override;
+    virtual void handle(ProtMessage& msg) override;
 
     // -------------------- Ops Access API -----------------------------
 
@@ -286,7 +287,11 @@ private:
 
     void monitorGatewayExpiry();
     void gwExpiryTimeout();
+    void reportGwStatus(CC_MqttsnGwStatus status, const ClientState::GwInfo& info);
+    void sendGwinfo();
+
     static void gwExpiryTimeoutCb(void* data);
+    static void sendGwinfoCb(void* data);
 
     friend class ApiEnterGuard;
 
@@ -317,10 +322,10 @@ private:
     ConfigState m_configState;
     ClientState m_clientState;
     // SessionState m_sessionState;
-    // ReuseState m_reuseState;
 
     TimerMgr m_timerMgr;
     TimerMgr::Timer m_gwDiscoveryTimer;  
+    TimerMgr::Timer m_sendGwinfoTimer;  
     unsigned m_apiEnterCount = 0U;
 
     OutputBuf m_buf;
@@ -352,6 +357,7 @@ private:
     // SendOpsList m_sendOps;
 
     OpPtrsList m_ops;
+    unsigned m_pendingGwinfoBroadcastRadius = 0U;
     bool m_opsDeleted = false;
     bool m_preparationLocked = false;
 };

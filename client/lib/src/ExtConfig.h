@@ -17,7 +17,7 @@ namespace cc_mqttsn_client
 struct ExtConfig : public Config
 {
     static constexpr unsigned KeepAliveOpsLimit = HasDynMemAlloc ? 0 : 1U;
-    static constexpr unsigned AdvertiseTimers = 1U;
+    static constexpr unsigned DiscoveryTimers = 2U;
     static constexpr unsigned SearchOpsLimit = HasDynMemAlloc ? 0 : 1U;
     static constexpr unsigned SearchOpTimers = 1U;
     static constexpr unsigned ConnectOpsLimit = HasDynMemAlloc ? 0 : 1U;
@@ -41,7 +41,7 @@ struct ExtConfig : public Config
         (RecvOpsLimit > 0U) &&
         (SendOpsLimit > 0U);
     static constexpr unsigned MaxTimersLimit =
-        (AdvertiseTimers) +  
+        (DiscoveryTimers) +  
         (SearchOpsLimit * SearchOpTimers) + 
         (ConnectOpsLimit * ConnectOpTimers) + 
         (KeepAliveOpsLimit * KeepAliveOpTimers) + 

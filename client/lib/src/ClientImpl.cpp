@@ -12,6 +12,7 @@
 #include "comms/process.h"
 #include "comms/units.h"
 #include "comms/util/ScopeGuard.h"
+#include "comms/util/assign.h"
 
 #include <algorithm>
 #include <type_traits>
@@ -53,7 +54,8 @@ void updateEc(CC_MqttsnErrorCode* ec, CC_MqttsnErrorCode val)
 } // namespace 
 
 ClientImpl::ClientImpl() : 
-    m_gwDiscoveryTimer(m_timerMgr.allocTimer())
+    m_gwDiscoveryTimer(m_timerMgr.allocTimer()),
+    m_sendGwinfoTimer(m_timerMgr.allocTimer())
 {
     // TODO: check validity of timer in during intialization
     static_cast<void>(m_searchOpAlloc);
@@ -461,11 +463,13 @@ void ClientImpl::handle(AdvertiseMsg& msg)
 
     if (iter != m_clientState.m_gwInfos.end()) {
         iter->m_expiryTimestamp = m_clientState.m_timestamp + comms::units::getMilliseconds<unsigned>(msg.field_duration());
+        reportGwStatus(CC_MqttsnGwStatus_Alive, *iter);
         return;
     }    
 
     if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
         // Ignore new gateways if they cannot be stored
+        errorLog("Failed to store the new gateway information, due to insufficient storage");
         return;
     }
 
@@ -474,25 +478,38 @@ void ClientImpl::handle(AdvertiseMsg& msg)
     info.m_gwId = msg.field_gwId().value();
     info.m_expiryTimestamp = m_clientState.m_timestamp + comms::units::getMilliseconds<unsigned>(msg.field_duration());
 
-    if (m_gatewayStatusReportCb != nullptr) {
-        auto cbInfo = CC_MqttsnGatewayStatusInfo();
-        cbInfo.m_gwId = info.m_gwId;
-        cbInfo.m_status = CC_MqttsnGwStatus_Available;
-        m_gatewayStatusReportCb(m_gatewayStatusReportData, &cbInfo);
-    }    
+    reportGwStatus(CC_MqttsnGwStatus_AddedByGateway, info);
+}
+
+void ClientImpl::handle(SearchgwMsg& msg)
+{
+    static_assert(Config::HasGatewayDiscovery);
+    if (m_gwinfoDelayReqCb == nullptr) {
+        // The application didn't provide a callback to inquire about the delay for resonditing to SEARCHGW
+        return;
+    }
+
+    // TODO: check active
+
+    auto delay = m_gwinfoDelayReqCb(m_gwinfoDelayReqData);
+    if (delay == 0U) {
+        // The application rejected sending GWINFO on behalf of gateway
+        return;
+    }
+
+    m_pendingGwinfoBroadcastRadius = msg.field_radius().value();
+    m_sendGwinfoTimer.wait(delay, &ClientImpl::sendGwinfoCb, this);
 }
 
 void ClientImpl::handle(GwinfoMsg& msg)
 {
-    auto onExit =
-        comms::util::makeScopeGuard( 
-            [this, &msg]()
-            {
-                for (auto& op : m_searchOps) {
-                    COMMS_ASSERT(op);
-                    op->handle(msg);
-                }
-            });
+    static_assert(Config::HasGatewayDiscovery);
+    m_sendGwinfoTimer.cancel(); // Do not send GWINFO if pending
+
+    for (auto& op : m_searchOps) {
+        COMMS_ASSERT(op);
+        op->handle(msg);
+    }
 
     auto iter = 
         std::find_if(
@@ -509,21 +526,30 @@ void ClientImpl::handle(GwinfoMsg& msg)
         }
 
         if (iter->m_addr.max_size() < addr.size()) {
-            iter->m_addr.clear();
+            errorLog("The gateway address reported by the client doesn't fit into the dedicated address storage, ignoring");
+            return;
+        }
+
+        if ((addr.size() == iter->m_addr.size()) && 
+            (std::equal(addr.begin(), addr.end(), iter->m_addr.begin()))) {
+            // The address is already recorded.
             return;
         }
 
         iter->m_addr.assign(addr.begin(), addr.end());
+        reportGwStatus(CC_MqttsnGwStatus_UpdatedByClient, *iter);
         return;
     }
 
     auto& addr = msg.field_gwAdd().value();
     if (addr.empty()) {
+        reportGwStatus(CC_MqttsnGwStatus_Alive, *iter);
         return;
     }    
 
     if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
         // Not enough space
+        errorLog("Failed to store the new gateway information, due to insufficient storage");
         return;
     }
 
@@ -531,7 +557,10 @@ void ClientImpl::handle(GwinfoMsg& msg)
     auto& info = m_clientState.m_gwInfos.back();
     info.m_gwId = msg.field_gwId().value();
     info.m_addr.assign(addr.begin(), addr.end());
-    // TODO: report gateway discovery
+    info.m_expiryTimestamp = m_clientState.m_timestamp + m_configState.m_gwAdvTimeoutMs;
+    monitorGatewayExpiry();
+
+    reportGwStatus(CC_MqttsnGwStatus_AddedByClient, info);
 }
 #endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
 
@@ -658,36 +687,37 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
 // #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 
-// void ClientImpl::handle(ProtMessage& msg)
-// {
-//     static_cast<void>(msg);
-//     if (m_sessionState.m_disconnecting) {
-//         return;
-//     }
+void ClientImpl::handle(ProtMessage& msg)
+{
+    static_cast<void>(msg);
+    // if (m_sessionState.m_disconnecting) {
+    //     return;
+    // }
 
-//     // During the dispatch to callbacks can be called and new ops issues,
-//     // the m_ops vector can be resized and iterators invalidated.
-//     // As the result, the iteration needs to be performed using indices 
-//     // instead of iterators.
-//     // Also do not dispatch the message to new ops.
-//     auto count = m_ops.size();
-//     for (auto idx = 0U; idx < count; ++idx) {
-//         auto* op = m_ops[idx];
-//         if (op == nullptr) {
-//             // ops can be deleted, but the pointer will be nullified
-//             // until last api guard.
-//             continue;
-//         }
+    // During the dispatch to callbacks can be called and new ops issues,
+    // the m_ops vector can be resized and iterators invalidated.
+    // As the result, the iteration needs to be performed using indices 
+    // instead of iterators.
+    // Also do not dispatch the message to new ops.
+    auto count = m_ops.size();
+    for (auto idx = 0U; idx < count; ++idx) {
+        auto* op = m_ops[idx];
+        if (op == nullptr) {
+            // ops can be deleted, but the pointer will be nullified
+            // until last api guard.
+            continue;
+        }
 
-//         msg.dispatch(*op);
+        msg.dispatch(*op);
 
-//         // After message dispatching the whole session may be in terminating state
-//         // Don't continue iteration
-//         if (m_sessionState.m_disconnecting) {
-//             break;
-//         }    
-//     }
-// }
+        // After message dispatching the whole session may be in terminating state
+        // Don't continue iteration
+        
+        // if (m_sessionState.m_disconnecting) {
+        //     break;
+        // }    
+    }
+}
 
 CC_MqttsnErrorCode ClientImpl::sendMessage(const ProtMessage& msg, unsigned broadcastRadius)
 {
@@ -1169,15 +1199,13 @@ void ClientImpl::monitorGatewayExpiry()
                 m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
                 [](const auto& first, const auto& second)
                 {
-                    if (first.m_expiryTimestamp == 0) {
-                        return false;
-                    }
+                    COMMS_ASSERT(first.m_expiryTimestamp != 0);
+                    COMMS_ASSERT(second.m_expiryTimestamp != 0);
 
                     return first.m_expiryTimestamp < second.m_expiryTimestamp;
                 });
 
-        if ((iter == m_clientState.m_gwInfos.end()) ||
-            (iter->m_expiryTimestamp == 0U)) {
+        if (iter == m_clientState.m_gwInfos.end()) {
             return;
         }
 
@@ -1194,12 +1222,7 @@ void ClientImpl::gwExpiryTimeout()
                 continue;
             }
 
-            if (m_gatewayStatusReportCb != nullptr) {
-                auto cbInfo = CC_MqttsnGatewayStatusInfo();
-                cbInfo.m_gwId = info.m_gwId;
-                cbInfo.m_status = CC_MqttsnGwStatus_TimedOut;
-                m_gatewayStatusReportCb(m_gatewayStatusReportData, &cbInfo);
-            }
+            reportGwStatus(CC_MqttsnGwStatus_Removed, info);
         }
 
         m_clientState.m_gwInfos.erase(
@@ -1215,10 +1238,71 @@ void ClientImpl::gwExpiryTimeout()
     }
 }
 
+void ClientImpl::reportGwStatus(CC_MqttsnGwStatus status, const ClientState::GwInfo& info)
+{
+    if constexpr (Config::HasGatewayDiscovery) {
+        if (m_gatewayStatusReportCb == nullptr) {
+            return;
+        }
+
+        auto gwInfo = CC_MqttsnGatewayInfo();
+        gwInfo.m_gwId = info.m_gwId;
+        gwInfo.m_addr = info.m_addr.data();
+        comms::cast_assign(gwInfo.m_addrLen) = info.m_addr.size();
+
+        m_gatewayStatusReportCb(m_gatewayStatusReportData, status, &gwInfo);
+    }
+}
+
+void ClientImpl::sendGwinfo()
+{
+    if constexpr (Config::HasGatewayDiscovery) {
+        auto iter = 
+            std::max_element(
+                m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
+                [](auto& first, auto& second)
+                {
+                    if (first.m_addr.empty()) {
+                        // Prefer one with the address
+                        return !second.m_addr.empty();
+                    }
+
+                    if (second.m_addr.empty()) {
+                        return false;
+                    }
+
+                    return first.m_expiryTimestamp < second.m_expiryTimestamp;
+                });
+
+        if ((iter == m_clientState.m_gwInfos.end()) || 
+            (iter->m_addr.empty())) {
+            // None of the gateways have known address
+            return;
+        }
+
+        GwinfoMsg msg;
+        if (msg.field_gwAdd().value().max_size() < iter->m_addr.size()) {
+            errorLog("Cannot fit the known gateway address into the GWINFO message address storage");
+            return;
+        }
+
+        msg.field_gwId().setValue(iter->m_gwId);
+        comms::util::assign(msg.field_gwAdd().value(), iter->m_addr.begin(), iter->m_addr.end());
+        sendMessage(msg, std::max(m_pendingGwinfoBroadcastRadius, 1U));
+    }
+}
+
 void ClientImpl::gwExpiryTimeoutCb(void* data)
 {
     if constexpr (Config::HasGatewayDiscovery) {
         reinterpret_cast<ClientImpl*>(data)->gwExpiryTimeout();
+    }
+}
+
+void ClientImpl::sendGwinfoCb(void* data)
+{
+    if constexpr (Config::HasGatewayDiscovery) {
+        reinterpret_cast<ClientImpl*>(data)->sendGwinfo();
     }
 }
 

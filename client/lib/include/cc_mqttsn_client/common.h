@@ -66,10 +66,11 @@ typedef enum
 /// @brief Status of the gateway
 typedef enum
 {
-    CC_MqttsnGwStatus_Invalid, ///< Invalid value, should never be used
-    CC_MqttsnGwStatus_Available, ///< The gateway is available.
-    CC_MqttsnGwStatus_TimedOut, ///< The gateway hasn't advertised its presence in time, assumed disconnected.
-    CC_MqttsnGwStatus_Discarded ///< The gateway info was discarded using cc_mqttsn_client_discard_gw() or cc_mqttsn_client_discard_all_gw().
+    CC_MqttsnGwStatus_AddedByGateway, ///< Added by the @b ADVERTISE or @b GWINFO sent by the gateway messages
+    CC_MqttsnGwStatus_AddedByClient, ///< Added by the @b GWINFO message sent by another client.
+    CC_MqttsnGwStatus_UpdatedByClient, ///< The gateway's address was updated by another client.
+    CC_MqttsnGwStatus_Alive, ///< The @b ADVERTISE or @b GWINFO message have been received from the gateway indicating it's alive.
+    CC_MqttsnGwStatus_Removed, ///< The gateway hasn't advertised its presence in time, assumed no longer available.
 } CC_MqttsnGwStatus;
 
 /// @brief Status of the asynchronous operation
@@ -124,13 +125,6 @@ typedef struct
     bool retain; ///< Retain flag of the message.
 } CC_MqttsnMessageInfo;
 
-/// @brief Tracked gateway status information
-typedef struct
-{
-   unsigned char m_gwId; ///< Gateway ID
-   CC_MqttsnGwStatus m_status; ///< Gateway status
-} CC_MqttsnGatewayStatusInfo;
-
 /// @brief Gateway information
 typedef struct
 {
@@ -175,8 +169,9 @@ typedef void (*CC_MqttsnSendOutputDataCb)(void* data, const unsigned char* buf, 
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
-/// @param[in] info Gateway status info.
-typedef void (*CC_MqttsnGwStatusReportCb)(void* data, const CC_MqttsnGatewayStatusInfo* info);
+/// @param[in] status Current status of the gateway.
+/// @param[in] info Currently stored gateway information.
+typedef void (*CC_MqttsnGwStatusReportCb)(void* data, CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
