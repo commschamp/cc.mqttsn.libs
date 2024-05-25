@@ -25,7 +25,7 @@ class SearchOp final : public Op
 public:
     explicit SearchOp(ClientImpl& client);
 
-    CC_MqttsnErrorCode send(CC_MqttsnSearchCompleteReportCb cb, void* cbData);
+    CC_MqttsnErrorCode send(CC_MqttsnSearchCompleteCb cb, void* cbData);
     CC_MqttsnErrorCode cancel();
 
     using Base::handle;
@@ -45,7 +45,7 @@ private:
     ConnectMsg m_connectMsg;  
     TimerMgr::Timer m_timer;  
     unsigned m_radius = 0U;
-    CC_MqttsnSearchCompleteReportCb m_cb = nullptr;
+    CC_MqttsnSearchCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;
 
     static_assert(ExtConfig::SearchOpTimers == 1U);

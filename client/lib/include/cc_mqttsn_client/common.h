@@ -66,11 +66,12 @@ typedef enum
 /// @brief Status of the gateway
 typedef enum
 {
-    CC_MqttsnGwStatus_AddedByGateway, ///< Added by the @b ADVERTISE or @b GWINFO sent by the gateway messages
-    CC_MqttsnGwStatus_AddedByClient, ///< Added by the @b GWINFO message sent by another client.
-    CC_MqttsnGwStatus_UpdatedByClient, ///< The gateway's address was updated by another client.
-    CC_MqttsnGwStatus_Alive, ///< The @b ADVERTISE or @b GWINFO message have been received from the gateway indicating it's alive.
-    CC_MqttsnGwStatus_Removed, ///< The gateway hasn't advertised its presence in time, assumed no longer available.
+    CC_MqttsnGwStatus_AddedByGateway = 0, ///< Added by the @b ADVERTISE or @b GWINFO sent by the gateway messages
+    CC_MqttsnGwStatus_AddedByClient = 1, ///< Added by the @b GWINFO message sent by another client.
+    CC_MqttsnGwStatus_UpdatedByClient = 2, ///< The gateway's address was updated by another client.
+    CC_MqttsnGwStatus_Alive = 3, ///< The @b ADVERTISE or @b GWINFO message have been received from the gateway indicating it's alive.
+    CC_MqttsnGwStatus_Removed = 4, ///< The gateway hasn't advertised its presence in time, assumed no longer available.
+    CC_MqttsnGwStatus_ValuesLimit ///< Limit for the values
 } CC_MqttsnGwStatus;
 
 /// @brief Status of the asynchronous operation
@@ -98,8 +99,17 @@ typedef enum
 struct CC_MqttsnClient;
 
 /// @brief Handler used to access client specific data structures.
-/// @details Returned by cc_mqttsn_client_new() function.
+/// @details Returned by cc_mqttsn_client_alloc() function.
 typedef struct CC_MqttsnClient* CC_MqttsnClientHandle;
+
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnSearchHandle
+/// @ingroup search
+struct CC_MqttsnSearch;
+
+/// @brief Handle for "search" operation.
+/// @details Returned by @b cc_mqttsn_client_search_prepare() function.
+/// @ingroup "search".
+typedef struct CC_MqttsnSearch* CC_MqttsnSearchHandle;
 
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
@@ -179,20 +189,6 @@ typedef void (*CC_MqttsnGwStatusReportCb)(void* data, CC_MqttsnGwStatus status, 
 /// @param[in] reason Reason of the disconnection.
 typedef void (*CC_MqttsnGwDisconnectedReportCb)(void* data, CC_MqttsnGatewayDisconnectReason reason);
 
-/// @brief Callback used to report completion of the asynchronous operation.
-/// @param[in] data Pointer to user data object, passed as the last parameter to
-///     the request call.
-/// @param[in] status Status of the asynchronous operation.
-/// @param[in] info Discovered gateway information. Not NULL if and only if @b status is @ref CC_MqttsnAsyncOpStatus_Complete.
-typedef void (*CC_MqttsnSearchCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
-
-/// @brief Callback used to report completion of the subscribe operation.
-/// @param[in] data Pointer to user data object, passed as the last parameter to
-///     the subscribe request.
-/// @param[in] status Status of the subscribe operation.
-/// @param[in] qos Maximal level of quality of service, the gateway/gateway is going to use to publish incoming messages.
-typedef void (*CC_MqttsnSubscribeCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
-
 /// @brief Callback used to report incoming messages.
 /// @details The callback is set using
 ///     cc_mqttsn_client_set_message_report_callback() function. The reported
@@ -215,6 +211,21 @@ typedef void (*CC_MqttsnErrorLogCb)(void* data, const char* msg);
 /// @details In case function return 0U, the response on behalf of the gateway is disabled.
 /// @return Number of milliseconds to wait for another @b GWINFO to cancel the intended send of @b GWINFO on behalf of the gateway.
 typedef unsigned (*CC_MqttsnGwinfoDelayRequestCb)(void* data);
+
+/// @brief Callback used to report completion of the asynchronous operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] status Status of the asynchronous operation.
+/// @param[in] info Discovered gateway information. Not NULL if and only if @b status is @ref CC_MqttsnAsyncOpStatus_Complete.
+typedef void (*CC_MqttsnSearchCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
+
+/// @brief Callback used to report completion of the subscribe operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the subscribe request.
+/// @param[in] status Status of the subscribe operation.
+/// @param[in] qos Maximal level of quality of service, the gateway/gateway is going to use to publish incoming messages.
+typedef void (*CC_MqttsnSubscribeCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
+
 
 #ifdef __cplusplus
 }

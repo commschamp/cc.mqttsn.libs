@@ -506,10 +506,34 @@ void ClientImpl::handle(GwinfoMsg& msg)
     static_assert(Config::HasGatewayDiscovery);
     m_sendGwinfoTimer.cancel(); // Do not send GWINFO if pending
 
-    for (auto& op : m_searchOps) {
-        COMMS_ASSERT(op);
-        op->handle(msg);
-    }
+    CC_MqttsnGwStatus gwStatus = CC_MqttsnGwStatus_ValuesLimit; 
+    const ClientState::GwInfo* gwInfo = nullptr;
+
+    // Reporting the gateway status after 
+    // dispatching to the search operation.
+    auto reportGwStatusOnExit = 
+        comms::util::makeScopeGuard(
+            [this, &gwStatus, &gwInfo]()
+            {
+                if ((gwStatus < CC_MqttsnGwStatus_ValuesLimit) &&
+                    (gwInfo != nullptr)) {
+                    reportGwStatus(gwStatus, *gwInfo);
+                }
+            });
+
+    // Dispatching to the SearchOp after processing and storing
+    // the gateway information in the internal data structures.
+    // It will allow updating of the gateway address by the application
+    // from within the search op callback
+    auto handleSearchOpOnExit = 
+        comms::util::makeScopeGuard(
+            [this, &msg]()
+            {
+                for (auto& op : m_searchOps) {
+                    COMMS_ASSERT(op);
+                    op->handle(msg);
+                }
+            });
 
     auto iter = 
         std::find_if(
@@ -537,14 +561,16 @@ void ClientImpl::handle(GwinfoMsg& msg)
         }
 
         iter->m_addr.assign(addr.begin(), addr.end());
-        reportGwStatus(CC_MqttsnGwStatus_UpdatedByClient, *iter);
-        return;
+        gwStatus = CC_MqttsnGwStatus_UpdatedByClient;
+        gwInfo = &(*iter);
+        return; // Report gateway status on exit
     }
 
     auto& addr = msg.field_gwAdd().value();
     if (addr.empty()) {
-        reportGwStatus(CC_MqttsnGwStatus_Alive, *iter);
-        return;
+        gwStatus = CC_MqttsnGwStatus_Alive;
+        gwInfo = &(*iter);        
+        return; // Report gateway status on exit
     }    
 
     if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
@@ -560,7 +586,9 @@ void ClientImpl::handle(GwinfoMsg& msg)
     info.m_expiryTimestamp = m_clientState.m_timestamp + m_configState.m_gwAdvTimeoutMs;
     monitorGatewayExpiry();
 
-    reportGwStatus(CC_MqttsnGwStatus_AddedByClient, info);
+    gwStatus = CC_MqttsnGwStatus_AddedByClient;
+    gwInfo = &info; 
+    // Report geteway status on exit
 }
 #endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
 

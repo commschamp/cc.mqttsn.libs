@@ -1,0 +1,284 @@
+/// @mainpage MQTT-SN Client Library
+/// @tableofcontents
+/// @section doc_cc_mqttsn_client_overview Overview
+/// The <b>MQTT-SN Client Library</b> from the <a href="https://commschamp.github.io/">CommsChampion Ecosystem</a>
+/// provides simple, asynchronous, non-blocking,
+/// and easy to use interface to operate MQTT-SN client. The library doesn't
+/// make any assumption on the system it is running on, as well as on the type
+/// of I/O link being used to communicate its data to the MQTT-SN gateway.
+///
+/// It is a responsibility of the calling application to manage network connectivity
+/// as well as measure time required for the correct operation of the MQTT-SN protocol.
+///
+/// The library allows the application to have a full control over the raw data for
+/// any extra analysis and/or manipulation, such as encryption or extra framing.
+///
+/// @section doc_cc_mqttsn_client_version Version of the Library
+/// The version is of the library applicable to this documentation is defined in
+/// the @ref common.h "cc_mqttsn_client/common.h" file using the following defines:
+/// @li @ref CC_MQTTSN_CLIENT_MAJOR_VERSION
+/// @li @ref CC_MQTTSN_CLIENT_MINOR_VERSION
+/// @li @ref CC_MQTTSN_CLIENT_PATCH_VERSION
+///
+/// @section cc_mqttsn_client_header Header
+/// To use this <b>MQTT-SN Client Library</b> use the following single include statement:
+/// @code
+/// #include "cc_mqttsn_client/client.h"
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_allocation Client Allocation
+/// The library supports multiple independent MQTT-SN client sessions. The
+/// allocation of data structures relevant to a single client is performed
+/// using @b cc_mqttsn_client_alloc() function.
+/// @code
+/// CC_MqttsnClientHandle client = cc_mqttsn_client_alloc();
+/// @endcode
+/// All other functions are client specific, they receive the returned handle
+/// as their first parameter.
+///
+/// When work with allocated client is complete, it must be freed using
+/// @b cc_mqttsn_client_free() function.
+/// @code
+/// cc_mqttsn_client_free(client);
+/// @endcode
+///
+/// When working with C++ it is advised to use a smart pointer with a custom deleter.
+/// @code
+/// struct MyDeleter
+/// {
+///     void operator()(CC_MqttsnClient* ptr)
+///     {
+///         ::cc_mqttsn_client_free(ptr);
+///     }
+/// };
+///
+/// using MyClientPtr = std::unique_ptr<CC_MqttsnClient, MyDeleter>;
+///
+/// MyClientPtr clientPtr(::cc_mqttsn_client_alloc());
+/// CC_MqttsnClientHandle client = clientPtr.get();
+/// @endcode
+///
+/// @b IMPORTANT: The function @b cc_mqttsn_client_free() must @b NOT
+/// be called from within a callback. Use next event loop iteration.
+///
+/// @section doc_cc_mqttsn_client_callbacks "Must Have" Callbacks Registration
+/// In order to properly function the library requires setting several callbacks.
+///
+/// @subsection doc_cc_mqttsn_client_callbacks_send_data Sending Data To Gateway
+/// To client application must assign a callback for the library to be able to send
+/// binary data out to the connected gateway.
+/// @code
+/// void my_send_data_cb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
+/// {
+///     if (broadcastRadius > 0) {
+///         ... // broadcast the message data
+///     }
+///     else {
+///         ... // unicast the message data to a known gateway address
+///     }
+/// }
+///
+/// cc_mqttsn_client_set_send_output_data_callback(client, &my_send_data_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnSendOutputDataCb callback function definition.
+///
+/// In the invoked callback the application is responsible to send the provided data
+/// over the I/O link. The application can also perform extra data manipulation like
+/// encryption.
+///
+/// The reported data resides in internal data structures of the client library,
+/// which can be updated / deleted right after the callback function returns.
+/// It means the data may need to be copied into some other buffer, which will be
+/// held intact until the send over I/O link operation is complete.
+///
+/// @subsection doc_cc_mqttsn_client_callbacks_message Reporting Received Message
+/// The client application must assign a callback for the library to report
+/// application level messages received from the gateway.
+/// @code
+/// void my_message_received_cb(void* data, const CC_MqttsnMessageInfo* info)
+/// {
+///     ... /* handle the received message */
+/// }
+///
+/// cc_mqttsn_client_set_message_report_callback(client, &my_message_received_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnMessageReportCb callback function definition.
+///
+/// @section doc_cc_mqttsn_client_time Time Measurement
+/// For the correct operation of the MQTT-SN client side of the protocol, the library
+/// requires an ability to measure time. This responsibility is delegated to the
+/// application.
+///
+/// The easiest (although not very efficient or very precise) method is to periodically (say every 20ms - 50ms)
+/// call the @b cc_mqttsn_client_tick() function reporting the amount of elapsed milliseconds:
+/// @code
+/// cc_mqttsn_client_tick(client, 50U);
+/// @endcode
+/// The library will check if some inner timer has expired and may initiate some
+/// response via invocation one of the registered callbacks.
+///
+/// Another (recommended) method is to register a callback so the library
+/// may request the time measurement from the application, and when the
+/// requested time expires, the application is expected to call the
+/// @b cc_mqttsn_client_tick() function reporting amount of elapsed milliseconds.
+/// @code
+/// void my_tick_program_cb(void* data, unsigned ms)
+/// {
+///     ... // program appropriate timer
+/// }
+///
+/// cc_mqttsn_client_set_next_tick_program_callback(client, &my_tick_program_cb, data);
+/// @endcode
+/// It is allowed to invoke the @b cc_mqttsn_client_tick() before the actual requested timeout has
+/// expired, just make sure that the correct amount of elapsed milliseconds is reported. When
+/// the @b cc_mqttsn_client_tick() is invoked, it is assumed that the previously requested tick
+/// programming has been cancelled and the registered callback requesting to re-program
+/// the timer may be invoked again from within the
+/// @b cc_mqttsn_client_tick().
+///
+/// See also the documentation of the @ref CC_MqttsnNextTickProgramCb callback function definition.
+///
+/// In case of callback approach for time measurement is chosen, another callback function
+/// (in addition to requesting the new timer programming) to
+/// allow interruption of the previously programmed timer must also to be registered.
+/// @code
+/// unsigned my_cancel_tick_program_cb(void* data)
+/// {
+///     ...
+///     return ... // return amount of elapsed milliseconds since last tick program
+/// }
+///
+/// cc_mqttsn_client_set_cancel_next_tick_wait_callback(client, &my_cancel_tick_program_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnCancelNextTickWaitCb callback function definition.
+///
+/// Usually the callbacks of canceling the previously programmed tick and programming a new one
+/// will be invoked as a side effect of other events, like report of the incoming data or
+/// client requesting to perform one of the available operations.
+///
+/// @section doc_cc_mqttsn_client_log Error Logging
+/// Sometimes the library may exhibit unexpected behaviour, like rejecting some of the parameters.
+/// To allow getting extra guidance information of what went wrong it is possible to register
+/// optional error logging callback.
+/// @code
+/// void my_error_log_cb(void* data, const char* msg)
+/// {
+///     printf("ERROR: %s\n", msg);
+/// }
+///
+/// cc_mqttsn_client_set_error_log_callback(client, &my_error_log_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnErrorLogCb callback function definition.
+///
+/// @section doc_cc_mqttsn_client_data Reporting Incoming Data
+/// It is the responsibility of the application to receive data from the gateway
+/// and report it to the library. The report is performed using the
+/// @b cc_mqttsn_client_process_data() function.
+/// @code
+/// uint8_t buf[MAX_BUF_SIZE];
+/// ... // Receive data into buffer
+/// unsigned bufLen = ...; // Amount of received bytes in the buffer.
+/// cc_mqttsn_client_process_data(client, buf, bufLen);
+/// @endcode
+/// The application is responsible to maintain the input buffer.
+/// The MQTT-SN protocol assumes datagram packets, where each packets
+/// contains a valid single MQTT-SN message. The client library decodes
+/// and processes the message at the beginning of the reported buffer and
+/// discards any extra bytes that might follow.
+///
+/// When new data chunk is reported the library may invoke several callbacks,
+/// such as reporting received message, sending new data out, as well as canceling
+/// the old and programming new tick timeout.
+///
+/// @section doc_cc_mqttsn_client_concepts Operating Concepts
+/// The library abstracts away multiple MQTT-SN protocol based "operations". Every such operation
+/// has multiple stages:
+/// @li @b prepare - The operation is "allocated" and relevant handle is returned.
+/// @li @b configure - Apply one or multiple configurations to the prepared operation.
+/// @li @b send - Send the configured operation message to the gateway.
+///
+/// During the @b send stage the application is expected to provide the callback to
+/// report to the application when the operation is complete. One of the parameters
+/// of the callback is always "status" of the @ref CC_MqttsnAsyncOpStatus type. It
+/// indicates whether the operation was successfully complete. In addition to the
+/// status it reports some extra information reported by the gateway. The information
+/// from the gateway is available <b>if and only if</b> the status is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// The @b send stage function also returns @ref CC_MqttsnErrorCode value to indicate
+/// whether the @b send was successfully performed. The provided callback will
+/// be invoked <b>if and only if</b> the @b send returns @ref CC_MqttsnErrorCode_Success.
+///
+/// After the @b send stage the handle returned in the @b prepare stage can be discarded
+/// (no explicit de-allocation is needed / supported) regardless of the return code.
+/// After successful @b send the handle still remains valid until the callback invocation and can be used
+/// to @b cancel the operation. Note that in case the appropriate message has already be
+/// @b sent to the gateway, cancelling the outstanding operation can be dangerous. When
+/// gateway sends a response and client is not expecting it any more, unexpected
+/// behaviour may happen.
+///
+/// In case something went wrong during the @b configure stage, it is possible to de-allocate
+/// the prepared operation using the @b cancel request. After performing the @b cancel
+/// stage the allocated handle is no longer valid.
+///
+/// <b>IMPORTANT LIBRARY LIMITATION</b>: Once an operation is @b prepared,
+/// it must be be immediately @b configured and @b sent (or @b cancelled) before
+/// any other other operation can be @b prepared. For example:
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnConnectHandle connect = cc_mqttsn_client_connect_prepare(...);
+/// assert(connect != nullptr);
+///
+/// // The following attempt to prepare the "subscribe" operation will fail because
+/// // previously allocated "connect" hasn't been sent or cancelled yet.
+/// CC_MqttsnSubscribeHandle subscribe = cc_mqttsn_client_subscribe_prepare(...);
+/// assert(subscribe == NULL);
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_retry_period Default Retry Period
+/// After sending any operation request to the gateway, the client library has to allow
+/// some time for the gateway to process the request (@b T<sub>retry</sub> from the spec).
+/// If it takes too much time, the
+/// client must retry it several times (see @ref doc_cc_mqttsn_client_retry_count)
+/// and report that operation has failed via the set callback in case there is no response.
+/// By default the client
+/// library allows @b 10 seconds for such response to arrive. Changing this default value
+/// is possible using the @b cc_mqttsn_client_set_default_retry_period() function,
+/// and retrieving of the currently configured value can be done using the
+/// @b cc_mqttsn_client_get_default_retry_period() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_retry_period(client, 15000 /* in ms */);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_retry_count Default Retry Count
+/// As was mentioned in the @ref doc_cc_mqttsn_client_retry_period section above
+/// the client library retries to send unacknowledged messaged several times
+/// before giving up (@b N<sub>retry</sub> from the spec).
+/// By default the client library allows @b 3 times to re-send the message. Changing this default value
+/// is possible using the @b cc_mqttsn_client_set_default_retry_count() function,
+/// and retrieving of the currently configured value can be done using the
+/// @b cc_mqttsn_client_get_default_retry_count() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_retry_count(client, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_broadcast_radius Default Broadcast Radius
+/// The MQTT-SN protocol defines several messages that are broadcasted. When
+/// requesting to broadcast the message, the client library also specifies the
+/// broadcast radius. The default broadcast radius value is @b 3.
+/// To change the default configuration value
+/// use @b cc_mqttsn_client_set_broadcast_radius() function. To retrieve
+/// the current configuration use @b cc_mqttsn_client_get_broadcast_radius().
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_broadcast_radius(client, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+///

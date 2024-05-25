@@ -39,7 +39,7 @@ SearchOp::SearchOp(ClientImpl& client) :
 {
 }   
 
-CC_MqttsnErrorCode SearchOp::send(CC_MqttsnSearchCompleteReportCb cb, void* cbData) 
+CC_MqttsnErrorCode SearchOp::send(CC_MqttsnSearchCompleteCb cb, void* cbData) 
 {
     client().allowNextPrepare();
     auto completeOnError = 
