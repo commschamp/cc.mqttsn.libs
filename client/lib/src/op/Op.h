@@ -53,14 +53,14 @@ public:
         terminateOpImpl(status);
     }
 
-    unsigned getResponseTimeout() const
+    unsigned getRetryPeriod() const
     {
-        return m_responseTimeoutMs;
+        return m_retryPeriod;
     }
 
-    void setResponseTimeout(unsigned ms)
+    void setRetryPeriod(unsigned ms)
     {
-        m_responseTimeoutMs = ms;
+        m_retryPeriod = ms;
     }   
 
     unsigned getRetryCount() const
@@ -79,6 +79,11 @@ public:
         return (qos <= static_cast<decltype(qos)>(Config::MaxQos));
     }    
 
+    ClientImpl& client()
+    {
+        return m_client;
+    }    
+
 protected:
     explicit Op(ClientImpl& client);
 
@@ -90,11 +95,6 @@ protected:
     std::uint16_t allocPacketId();
     void releasePacketId(std::uint16_t id);
     void decRetryCount();
-
-    ClientImpl& client()
-    {
-        return m_client;
-    }
 
     const ClientImpl& client() const
     {
@@ -139,7 +139,7 @@ private:
     // bool verifyPubTopicInternal(const char* topic, bool outgoing);
 
     ClientImpl& m_client;    
-    unsigned m_responseTimeoutMs = 0U;
+    unsigned m_retryPeriod = 0U;
     unsigned m_retryCount = 0U;
 };
 

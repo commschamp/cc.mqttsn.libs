@@ -17,12 +17,15 @@ extern "C" {
 #endif // #ifdef __cplusplus
 
 /// @brief Major verion of the library
+/// @ingroup global
 #define CC_MQTTSN_CLIENT_MAJOR_VERSION 2U
 
 /// @brief Minor verion of the library
+/// @ingroup global
 #define CC_MQTTSN_CLIENT_MINOR_VERSION 0U
 
 /// @brief Patch level of the library
+/// @ingroup global
 #define CC_MQTTSN_CLIENT_PATCH_VERSION 0U
 
 /// @brief Macro to create numeric version as single unsigned number
@@ -70,7 +73,8 @@ typedef enum
     CC_MqttsnGwStatus_AddedByClient = 1, ///< Added by the @b GWINFO message sent by another client.
     CC_MqttsnGwStatus_UpdatedByClient = 2, ///< The gateway's address was updated by another client.
     CC_MqttsnGwStatus_Alive = 3, ///< The @b ADVERTISE or @b GWINFO message have been received from the gateway indicating it's alive.
-    CC_MqttsnGwStatus_Removed = 4, ///< The gateway hasn't advertised its presence in time, assumed no longer available.
+    CC_MqttsnGwStatus_Tentative = 4, ///< The gateway hasn't advertised its presence in time, assumed packet loss.
+    CC_MqttsnGwStatus_Removed = 5, ///< The gateway hasn't advertised its presence in time, assumed no longer available.
     CC_MqttsnGwStatus_ValuesLimit ///< Limit for the values
 } CC_MqttsnGwStatus;
 
@@ -217,6 +221,7 @@ typedef unsigned (*CC_MqttsnGwinfoDelayRequestCb)(void* data);
 ///     the request call.
 /// @param[in] status Status of the asynchronous operation.
 /// @param[in] info Discovered gateway information. Not NULL if and only if @b status is @ref CC_MqttsnAsyncOpStatus_Complete.
+/// @ingroup search
 typedef void (*CC_MqttsnSearchCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
 
 /// @brief Callback used to report completion of the subscribe operation.

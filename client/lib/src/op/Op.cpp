@@ -34,7 +34,7 @@ namespace
 
 Op::Op(ClientImpl& client) : 
     m_client(client),
-    m_responseTimeoutMs(client.configState().m_responseTimeoutMs),
+    m_retryPeriod(client.configState().m_retryPeriod),
     m_retryCount(client.configState().m_retryCount)
 {
 }    

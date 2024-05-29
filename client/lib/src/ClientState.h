@@ -27,6 +27,8 @@ struct ClientState
     {
         Timestamp m_expiryTimestamp = 0U;
         GwAddr m_addr;
+        unsigned m_duration = 0U;
+        unsigned m_allowedAdvLosses = 0U;
         std::uint8_t m_gwId = 0;
     };
 

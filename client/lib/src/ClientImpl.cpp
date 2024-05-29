@@ -461,8 +461,13 @@ void ClientImpl::handle(AdvertiseMsg& msg)
                 return msg.field_gwId().value() == info.m_gwId;
             });
 
+    auto duration = comms::units::getMilliseconds<unsigned>(msg.field_duration());
+    auto nextExpiryTimestamp = m_clientState.m_timestamp + duration + m_configState.m_retryPeriod;
+
     if (iter != m_clientState.m_gwInfos.end()) {
-        iter->m_expiryTimestamp = m_clientState.m_timestamp + comms::units::getMilliseconds<unsigned>(msg.field_duration());
+        iter->m_expiryTimestamp = nextExpiryTimestamp;
+        iter->m_duration = duration;
+        iter->m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
         reportGwStatus(CC_MqttsnGwStatus_Alive, *iter);
         return;
     }    
@@ -476,7 +481,9 @@ void ClientImpl::handle(AdvertiseMsg& msg)
     m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
     auto& info = m_clientState.m_gwInfos.back();
     info.m_gwId = msg.field_gwId().value();
-    info.m_expiryTimestamp = m_clientState.m_timestamp + comms::units::getMilliseconds<unsigned>(msg.field_duration());
+    info.m_expiryTimestamp = nextExpiryTimestamp;
+    info.m_duration = duration;
+    info.m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
 
     reportGwStatus(CC_MqttsnGwStatus_AddedByGateway, info);
 }
@@ -489,7 +496,10 @@ void ClientImpl::handle(SearchgwMsg& msg)
         return;
     }
 
-    // TODO: check active
+    if (m_clientState.m_gwInfos.empty()) {
+        // No known gateways
+        return;
+    }
 
     auto delay = m_gwinfoDelayReqCb(m_gwinfoDelayReqData);
     if (delay == 0U) {
@@ -546,8 +556,14 @@ void ClientImpl::handle(GwinfoMsg& msg)
     if (iter != m_clientState.m_gwInfos.end()) {
         auto& addr = msg.field_gwAdd().value();
         if (addr.empty()) {
+            // GWINFO by the gateway itself
+            iter->m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
+            gwStatus = CC_MqttsnGwStatus_Alive;
+            gwInfo = &(*iter);
             return;
         }
+
+        // GWINFO by another client
 
         if (iter->m_addr.max_size() < addr.size()) {
             errorLog("The gateway address reported by the client doesn't fit into the dedicated address storage, ignoring");
@@ -566,10 +582,16 @@ void ClientImpl::handle(GwinfoMsg& msg)
         return; // Report gateway status on exit
     }
 
+    m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
+    auto& info = m_clientState.m_gwInfos.back();
+
+    info.m_gwId = msg.field_gwId().value();
+    info.m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
+    gwInfo = &info;
+
     auto& addr = msg.field_gwAdd().value();
     if (addr.empty()) {
         gwStatus = CC_MqttsnGwStatus_Alive;
-        gwInfo = &(*iter);        
         return; // Report gateway status on exit
     }    
 
@@ -579,15 +601,13 @@ void ClientImpl::handle(GwinfoMsg& msg)
         return;
     }
 
-    m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
-    auto& info = m_clientState.m_gwInfos.back();
-    info.m_gwId = msg.field_gwId().value();
+    
     info.m_addr.assign(addr.begin(), addr.end());
-    info.m_expiryTimestamp = m_clientState.m_timestamp + m_configState.m_gwAdvTimeoutMs;
+    info.m_expiryTimestamp = m_clientState.m_timestamp + m_configState.m_gwAdvTimeoutMs + m_configState.m_retryCount;
+    info.m_duration = m_configState.m_gwAdvTimeoutMs;
     monitorGatewayExpiry();
 
     gwStatus = CC_MqttsnGwStatus_AddedByClient;
-    gwInfo = &info; 
     // Report geteway status on exit
 }
 #endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
@@ -1250,7 +1270,14 @@ void ClientImpl::gwExpiryTimeout()
                 continue;
             }
 
-            reportGwStatus(CC_MqttsnGwStatus_Removed, info);
+            if (info.m_allowedAdvLosses == 0U) {
+                reportGwStatus(CC_MqttsnGwStatus_Removed, info);
+                continue;
+            }
+
+            --info.m_allowedAdvLosses;
+            info.m_expiryTimestamp += info.m_duration;
+            reportGwStatus(CC_MqttsnGwStatus_Tentative, info);
         }
 
         m_clientState.m_gwInfos.erase(

@@ -16,11 +16,21 @@
 extern "C" {
 #endif // #ifdef __cplusplus
 
+/// @defgroup global "Global Data Types and Functions"
+/// @defgroup client "Client Data Types and Functions"
+/// @defgroup search "Search Operation Data Types and Functions"
+/// @defgroup connect "Connect Operation Data Types and Functions"
+/// @defgroup disconnect "Disconnect Operation Data Types and Functions"
+/// @defgroup subscribe "Subscribe Operation Data Types and Functions"
+/// @defgroup unsubscribe "Unsubscribe Operation Data Types and Functions"
+/// @defgroup publish "Publish Operation Data Types and Functions"
+
 /// @brief Allocate new client.
 /// @details When work with the client is complete, @ref cc_mqttsn_##NAME##client_free()
 ///     function must be invoked.
 /// @return Handle to allocated client object. This handle needs to be passed
 ///     as first parameter to all other API functions.
+/// @ingroup client
 CC_MqttsnClientHandle cc_mqttsn_##NAME##client_alloc();
 
 /// @brief Free previously allocated client.
@@ -28,6 +38,7 @@ CC_MqttsnClientHandle cc_mqttsn_##NAME##client_alloc();
 ///     needed, the client data structes allocated with 
 ///     cc_mqttsn_##NAME##client_alloc() must be released using this function.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client);
 
 /// @brief Notify client about requested time expiry.
@@ -42,6 +53,7 @@ void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client);
 ///     to send new data to the gateway.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] ms Number of elapsed @b milliseconds.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms);
 
 /// @brief Provide data, received over I/O link, to the library for processing.
@@ -55,6 +67,7 @@ void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms);
 /// @note According to the MQTT-SN specification every message should be sent in a separate
 ///     single datagram packet. This function assumes such behaviour and "consumes"
 ///     all the provided data discarding any additional bytes after the message (if exist).
+/// @ingroup client
 void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen);
 
 /// @brief Set retry period to wait between resending unacknowledged message to the gateway (@b T<sub>retry</sub> from spec).
@@ -64,11 +77,14 @@ void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const u
 ///     @b 10 seconds.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] value Number of @b seconds to wait before making an attempt to resend.
+/// @return Result code of the call.
+/// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_period(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Set configured retry period to wait between resending unacknowledged message to the gateway (@b T<sub>retry</sub> from spec).
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @see @ref cc_mqttsn_##NAME##client_set_default_retry_period().
+/// @ingroup client
 unsigned cc_mqttsn_##NAME##client_get_default_retry_period(CC_MqttsnClientHandle client);
 
 /// @brief Set number of retry attempts to perform before reporting unsuccessful result of the operation (@b N<sub>retry</sub> from spec).
@@ -78,11 +94,14 @@ unsigned cc_mqttsn_##NAME##client_get_default_retry_period(CC_MqttsnClientHandle
 ///     is @b 3.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] value Number of retry attempts.
+/// @return Result code of the call.
+/// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_count(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Get configured number of retry attempts to perform before reporting unsuccessful result of the operation (@b N<sub>retry</sub> from spec).
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @see @ref cc_mqttsn_##NAME##client_set_default_retry_count()
+/// @ingroup client
 unsigned cc_mqttsn_##NAME##client_get_default_retry_count(CC_MqttsnClientHandle client);
 
 /// @brief Set broadcast radius.
@@ -91,13 +110,88 @@ unsigned cc_mqttsn_##NAME##client_get_default_retry_count(CC_MqttsnClientHandle 
 ///     set using this function. Default radius value is @b 3.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] value Broadcast radius. 
+/// @return Result code of the call.
 /// @pre The broadcast value cannot exceed 255.
+/// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Get current broadcast radius configuration.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @see @ref cc_mqttsn_##NAME##client_set_broadcast_radius()
+/// @ingroup client
 unsigned cc_mqttsn_##NAME##client_get_broadcast_radius(CC_MqttsnClientHandle client);
+
+/// @brief Get number of available gateways.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @see @ref cc_mqttsn_##NAME##client_get_available_gateway_info()
+/// @ingroup client
+unsigned cc_mqttsn_##NAME##client_get_available_gateways_count(CC_MqttsnClientHandle client);
+
+/// @brief Retrieve stored available gateway information
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] idx Index of the available gateway information.
+/// @param[out] info Stored gateway information.
+/// @return Result code of the call.
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_MqttsnClientHandle client, unsigned idx, CC_MqttsnGatewayInfo* info);
+
+/// @brief Update stored available gateway information
+/// @details The library will look for the inner data structure for the information
+///     containing the reported @ref CC_MqttsnGatewayInfo::m_gwId "gateway id" and update it 
+///     accordingly. If no such information is present, new entry is going to be added.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] info Updated gateway information.
+/// @return Result code of the call.
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_MqttsnClientHandle client, const CC_MqttsnGatewayInfo* info);
+
+/// @brief Discard stored available gateway information
+/// @details The library will look for the inner data structure for the information
+///     containing the reported @ref CC_MqttsnGatewayInfo::m_gwId "gateway id" and remove it if dound.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] gwId Gateway ID.
+/// @return Result code of the call.
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_discard_available_gateway_info(CC_MqttsnClientHandle client, unsigned char gwId);
+
+/// @brief Discard stored information on all available gateways.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+void cc_mqttsn_##NAME##client_discard_all_gateway_infos(CC_MqttsnClientHandle client);
+
+/// @brief Set default gateway advertise duration.
+/// @details When the client receives @b GWINFO message before @b ADVERTISE, the
+///     gateway is "alive", but its expiry timeout is not known yet. There is 
+///     a need to assume some default value. Use this function to update it.
+///     Defaults to 15 * 60 * 1000 = 15 minutes.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] ms Default advertise duration in milliseconds. 
+/// @return Result code of the call.
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_gw_adv_duration(CC_MqttsnClientHandle client, unsigned ms);
+
+/// @brief Get current default gateway advertise configuration.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @see @ref cc_mqttsn_##NAME##client_set_default_gw_adv_duration()
+/// @ingroup client
+unsigned cc_mqttsn_##NAME##client_get_default_gw_adv_duration(CC_MqttsnClientHandle client);
+
+/// @brief Set number of allowed @b ADVERTISE message misses.
+/// @details When the client doesn't receive @b ADVERTISE message in time, it 
+///     maybe due to packet loss and not necessarily because gateway is offline.
+///     This function configures number of @b ADVERTISE packet losses before the 
+///     gateway is considered to be offline. When set to @b 0, means gateway is
+///     offline if the next expected @b ADVERTISE doesn't arrive in time. When
+///     set to @b 1, means one @b ADVERTISE can be missed and if the second one
+///     doesn't arrive in time the gateway is considered to be offline.
+///     Defaults to @b 1.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] count Number of allowed @b ADVERTISE message losses. 
+/// @return Result code of the call.
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_allowed_adv_losses(CC_MqttsnClientHandle client, unsigned count);
+
+/// @brief Get current configuration of allowed @b ADVERTISE message misses.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @see @ref cc_mqttsn_##NAME##client_set_allowed_adv_losses()
+/// @ingroup client
+unsigned cc_mqttsn_##NAME##client_get_allowed_adv_losses(CC_MqttsnClientHandle client);
 
 /// @brief Prepare "search" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
@@ -105,8 +199,53 @@ unsigned cc_mqttsn_##NAME##client_get_broadcast_radius(CC_MqttsnClientHandle cli
 /// @return Handle of the "search" operation, will be NULL in case of failure. To analyze the reason failure use "ec" output parameter.
 /// @post The "search" operation is allocated, use either @ref cc_mqttsn_##NAME##client_search_send()
 ///     or @ref cc_mqttsn_##NAME##client_search_cancel() to prevent memory leaks.
-/// @ingroup connect
+/// @ingroup search
 CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
+
+/// @brief Configure the retry period for the "search" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
+/// @param[in] ms Retry period in @b milliseconds.
+/// @return Result code of the call.
+/// @ingroup search
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_period(CC_MqttsnSearchHandle handle, unsigned ms);
+
+/// @brief Retrieve the configured retry period for the "search" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
+/// @return Retry period duration in @b milliseconds.
+/// @ingroup search
+unsigned cc_mqttsn_##NAME##client_search_get_retry_period(CC_MqttsnSearchHandle handle);
+
+/// @brief Configure the retry count for the "search" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
+/// @param[in] count Number of retries.
+/// @return Result code of the call.
+/// @ingroup search
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_count(CC_MqttsnSearchHandle handle, unsigned count);
+
+/// @brief Retrieve the configured retry count for the "search" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
+/// @return Number of retries.
+/// @ingroup search
+unsigned cc_mqttsn_##NAME##client_search_get_retry_count(CC_MqttsnSearchHandle handle);
+
+/// @brief Configure the broadcast radius for the "search" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
+/// @param[in] broadcastRadius Broadcast radius.
+/// @return Result code of the call.
+/// @ingroup search
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(CC_MqttsnSearchHandle handle, unsigned broadcastRadius);
+
+/// @brief Retrieve the configured broadcast radius for the "search" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
+/// @return Broadcast radius.
+/// @ingroup search
+unsigned cc_mqttsn_##NAME##client_search_get_broadcast_radius(CC_MqttsnSearchHandle handle);
+
+/// @brief Retrieve the configured retry count for the "search" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
+/// @return Number of retries.
+/// @ingroup search
+unsigned cc_mqttsn_##NAME##client_search_get_retry_count(CC_MqttsnSearchHandle handle);
 
 /// @brief Send the "search" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
@@ -117,7 +256,7 @@ CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(CC_MqttsnClientHan
 /// @post The handle of the "search" operation can be discarded.
 /// @post The provided callback will be invoked when the "search" operation is complete <b> if and only if</b>
 ///     the function returns @ref CC_MqttsnErrorCode_Success.
-/// @ingroup connect
+/// @ingroup search
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(CC_MqttsnSearchHandle handle, CC_MqttsnSearchCompleteCb cb, void* cbData);
 
 /// @brief Cancel the allocated "search" operation
@@ -126,8 +265,24 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(CC_MqttsnSearchHandle ha
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
 /// @return Result code of the call.
 /// @post The handle of the "search" operation is no longer valid and must be discarded.
-/// @ingroup connect
+/// @ingroup search
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel(CC_MqttsnSearchHandle handle);
+
+/// @brief Prepare and send "search" request in one go 
+/// @details Abstracts away sequence of the following functions invocation:
+///     @li @ref cc_mqttsn_##NAME##client_search_prepare()
+///     @li @ref cc_mqttsn_##NAME##client_search_send()
+///
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] cb Callback to be invoked when "search" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @ingroup search
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
+    CC_MqttsnClientHandle handle,
+    CC_MqttsnSearchCompleteCb cb, 
+    void* cbData); 
 
 // --------------------- Callbacks ---------------------
 

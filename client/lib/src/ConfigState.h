@@ -18,13 +18,15 @@ struct ConfigState
     static constexpr unsigned DefaultRetryCount = 3U;
     static constexpr unsigned DefaultBroadcastRadius = 3U;
     static constexpr unsigned DefaultGwAdvTimeoutMs = 15 * 60 * 1000; //
+    static constexpr unsigned DefautlAllowedAdvLosses = 1;
     static constexpr unsigned MaxBroadcastRadius = 255U;
     
 
-    unsigned m_responseTimeoutMs = DefaultResponseTimeoutMs;
+    unsigned m_retryPeriod = DefaultResponseTimeoutMs;
     unsigned m_retryCount = DefaultRetryCount;
     unsigned m_broadcastRadius = DefaultBroadcastRadius;
     unsigned m_gwAdvTimeoutMs = DefaultGwAdvTimeoutMs;
+    unsigned m_allowedAdvLosses = DefautlAllowedAdvLosses;
     // CC_MqttsnPublishOrdering m_publishOrdering = CC_MqttsnPublishOrdering_SameQos;
     // bool m_verifyOutgoingTopic = Config::HasTopicFormatVerification;
     // bool m_verifyIncomingTopic = Config::HasTopicFormatVerification;

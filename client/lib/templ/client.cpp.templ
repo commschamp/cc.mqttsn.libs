@@ -74,20 +74,20 @@ void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const u
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_period(CC_MqttsnClientHandle client, unsigned value)
 {
     COMMS_ASSERT(client != nullptr);
-    static const unsigned MaxValue = std::numeric_limits<decltype(cc_mqttsn_client::ConfigState::m_responseTimeoutMs)>::max() / 1000U;
+    static const unsigned MaxValue = std::numeric_limits<decltype(cc_mqttsn_client::ConfigState::m_retryPeriod)>::max() / 1000U;
     if (MaxValue < value) {
         clientFromHandle(client)->errorLog("The retry period value is too high");
         return CC_MqttsnErrorCode_BadParam;
     }
 
-    clientFromHandle(client)->configState().m_responseTimeoutMs = value * 1000U;
+    clientFromHandle(client)->configState().m_retryPeriod = value * 1000U;
     return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_get_default_retry_period(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
-    return clientFromHandle(client)->configState().m_responseTimeoutMs;    
+    return clientFromHandle(client)->configState().m_retryPeriod;    
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_count(CC_MqttsnClientHandle client, unsigned value)
@@ -127,10 +127,200 @@ unsigned cc_mqttsn_##NAME##client_get_broadcast_radius(CC_MqttsnClientHandle cli
     return clientFromHandle(client)->configState().m_broadcastRadius;
 }
 
+unsigned cc_mqttsn_##NAME##client_get_available_gateways_count(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return static_cast<unsigned>(clientFromHandle(client)->clientState().m_gwInfos.size());
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_MqttsnClientHandle client, unsigned idx, CC_MqttsnGatewayInfo& info)
+{
+    COMMS_ASSERT(client != nullptr);
+    auto& gwInfos = clientFromHandle(client)->clientState().m_gwInfos;
+    if (gwInfos.size() <= idx) {
+        clientFromHandle(client)->errorLog("The gateway info index is too high");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    auto& storedInfo = gwInfos[idx];
+    info = CC_MqttsnGatewayInfo();
+    info.m_gwId = storedInfo.m_gwId;
+    if (!storedInfo.m_addr.empty()) {
+        info.m_addr = storedInfo.m_addr.data();
+        info.m_addrLen = static_cast<decltype(info.m_addrLen)>(storedInfo.m_addr.size());
+    }
+
+    return CC_MqttsnErrorCode_Success;
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_MqttsnClientHandle client, const CC_MqttsnGatewayInfo* info)
+{
+    COMMS_ASSERT(client != nullptr);
+    auto* clientImpl = clientFromHandle(client);
+    if (info == nullptr) {
+        clientImpl->errorLog("The gateway info is not provided");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    auto& gwInfos = clientImpl->clientState().m_gwInfos;
+    auto iter = 
+        std::find_if(
+            gwInfos.begin(), gwInfos.end(),
+            [info](auto& storedInfo)
+            {
+                return storedInfo.m_gwId = info->m_gwId;
+            });
+
+    auto updateFunc = 
+        [clientImpl, info](cc_mqttsn_client::ClientState::GwInfo& storedInfo)
+        {
+            if (storedInfo.m_addr.max_size() < info->m_addrLen) {
+                clientImpl->errorLog("The address cannot be stored");
+                return CC_MqttsnErrorCode_OutOfMemory;
+            }
+
+            storedInfo.m_gwId = info->m_gwId;
+            storedInfo.m_addr.assign(info->m_addr, info->m_addr + info->m_addrLen);
+            return CC_MqttsnErrorCode_Success;
+        };
+
+    if (iter != gwInfos.end()) {
+        return updateFunc(*iter);
+    }
+
+    if (gwInfos.max_size() <= gwInfos.size()) {
+        clientImpl->errorLog("Cannot store any more gateways");
+        return CC_MqttsnErrorCode_OutOfMemory;
+    }
+
+    gwInfos.resize(gwInfos.size() + 1U);
+    auto result = updateFunc(gwInfos.back());
+    if (result != CC_MqttsnErrorCode_Success) {
+        gwInfos.pop_back();
+    }
+
+    return result;
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_discard_available_gateway_info(CC_MqttsnClientHandle client, unsigned char gwId)
+{
+    COMMS_ASSERT(client != nullptr);
+    auto* clientImpl = clientFromHandle(client);
+    auto& gwInfos = clientImpl->clientState().m_gwInfos;
+    auto iter = 
+        std::find_if(
+            gwInfos.begin(), gwInfos.end(),
+            [gwId](auto& storedInfo)
+            {
+                return storedInfo.m_gwId = gwId;
+            });
+
+    if (iter == gwInfos.end()) {
+        clientImpl->errorLog("Uknown gateway ID");
+        return CC_MqttsnErrorCode_BadParam;
+    }            
+
+    gwInfos.erase(iter);
+    return CC_MqttsnErrorCode_Success;
+}
+
+void cc_mqttsn_##NAME##client_discard_all_gateway_infos(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->clientState().m_gwInfos.clear();    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_gw_adv_duration(CC_MqttsnClientHandle client, unsigned ms)
+{
+    COMMS_ASSERT(client != nullptr);
+    auto* clientImpl = clientFromHandle(client);
+    if (ms == 0U) {
+        clientImpl->errorLog("The default gatway advertise duration must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    clientImpl->configState().m_gwAdvTimeoutMs = ms;    
+    return CC_MqttsnErrorCode_Success;    
+}
+
+unsigned cc_mqttsn_##NAME##client_get_default_gw_adv_duration(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->configState().m_gwAdvTimeoutMs;
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_allowed_adv_losses(CC_MqttsnClientHandle client, unsigned count)
+{
+    COMMS_ASSERT(client != nullptr);
+    clientFromHandle(client)->configState().m_allowedAdvLosses = count;
+    return CC_MqttsnErrorCode_Success;
+}
+
+unsigned cc_mqttsn_##NAME##client_get_allowed_adv_losses(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->configState().m_allowedAdvLosses;
+}
+
 CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
 {
     COMMS_ASSERT(client != nullptr);
     return handleFromSearchOp(clientFromHandle(client)->searchPrepare(ec));
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_period(CC_MqttsnSearchHandle handle, unsigned ms)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (ms == 0U) {
+        searchOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    COMMS_ASSERT(handle != nullptr);
+    searchOpFromHandle(handle)->setRetryPeriod(ms);     
+    return CC_MqttsnErrorCode_Success;
+}
+
+unsigned cc_mqttsn_##NAME##client_search_get_retry_period(CC_MqttsnSearchHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return searchOpFromHandle(handle)->getRetryPeriod();    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_count(CC_MqttsnSearchHandle handle, unsigned count)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (count == 0U) {
+        searchOpFromHandle(handle)->client().errorLog("The retry count must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    searchOpFromHandle(handle)->setRetryCount(count);     
+    return CC_MqttsnErrorCode_Success;    
+}
+
+unsigned cc_mqttsn_##NAME##client_search_get_retry_count(CC_MqttsnSearchHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return searchOpFromHandle(handle)->getRetryCount();       
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(CC_MqttsnSearchHandle handle, unsigned broadcastRadius)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (broadcastRadius == 0U) {
+        searchOpFromHandle(handle)->client().errorLog("The broadcast radius must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }    
+    
+    searchOpFromHandle(handle)->setBroadcastRadius(broadcastRadius);     
+    return CC_MqttsnErrorCode_Success;  
+}
+
+unsigned cc_mqttsn_##NAME##client_search_get_broadcastRadius(CC_MqttsnSearchHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return searchOpFromHandle(handle)->getBroadcastRadius();       
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(CC_MqttsnSearchHandle handle, CC_MqttsnSearchCompleteCb cb, void* cbData)
@@ -139,11 +329,26 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(CC_MqttsnSearchHandle ha
     return searchOpFromHandle(handle)->send(cb, cbData);
 }
 
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
+    CC_MqttsnClientHandle handle,
+    CC_MqttsnSearchCompleteCb cb, 
+    void* cbData)
+{
+    auto ec = CC_MqttsnErrorCode_Success;
+    auto search = cc_mqttsn_##NAME##client_search_prepare(handle, &ec);
+    if (search == nullptr) {
+        return ec;
+    }
+
+    return cc_mqttsn_##NAME##client_search_send(search, cb, cbData);    
+}
+
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel(CC_MqttsnSearchHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
     return searchOpFromHandle(handle)->cancel();    
 }
+
 
 // --------------------- Callbacks ---------------------
 

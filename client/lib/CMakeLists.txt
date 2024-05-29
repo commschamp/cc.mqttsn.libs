@@ -142,6 +142,7 @@ function (gen_lib_mqttsn_client config_file)
     set (src
         src/op/Op.cpp
         src/op/SearchOp.cpp
+        src/client.c
         src/ClientImpl.cpp
         src/TimerMgr.cpp
     )

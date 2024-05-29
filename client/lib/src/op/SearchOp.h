@@ -31,6 +31,16 @@ public:
     using Base::handle;
     virtual void handle(GwinfoMsg& msg) override;
 
+    void setBroadcastRadius(unsigned value)
+    {
+        m_radius = value;
+    }
+
+    unsigned getBroadcastRadius() const
+    {
+        return m_radius;
+    }
+
 protected:
     virtual Type typeImpl() const override;    
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status) override;

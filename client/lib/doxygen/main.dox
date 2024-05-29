@@ -226,11 +226,11 @@
 /// any other other operation can be @b prepared. For example:
 /// @code
 /// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
-/// CC_MqttsnConnectHandle connect = cc_mqttsn_client_connect_prepare(...);
+/// CC_MqttsnConnectHandle connect = cc_mqttsn_client_search_prepare(...);
 /// assert(connect != nullptr);
 ///
 /// // The following attempt to prepare the "subscribe" operation will fail because
-/// // previously allocated "connect" hasn't been sent or cancelled yet.
+/// // previously allocated "search" hasn't been sent or cancelled yet.
 /// CC_MqttsnSubscribeHandle subscribe = cc_mqttsn_client_subscribe_prepare(...);
 /// assert(subscribe == NULL);
 /// @endcode
@@ -281,4 +281,252 @@
 ///     ... /* Something went wrong */
 /// }
 /// @endcode
+///
+/// @section doc_cc_mqttsn_client_gateway_discovery Gateway Discovery
+/// The MQTT-SN protocol supports having multiple gateway on the same network
+/// and their discovery. When the application @ref doc_cc_mqttsn_client_allocation "allocates"
+/// the client object, it can either connect directly to the gateway (if such is
+/// known) or initiate gateway discovery by using @ref search "search" operation.
+/// The MQTT-SN specification recommends to wait some time (up to @b T<sub>searchgw</sub>)
+/// to prevent sending broadcast storm of the @b SEARCHGW messages when all
+/// clients start at once. It is up to the application to decide whether and when
+/// to issue the @ref search "search" operation.
+///
+/// @subsection doc_cc_mqttsn_client_search_prepare Preparing "Search" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnSearchHandle search = cc_mqttsn_client_search_prepare(client, &ec);
+/// if (search == NULL) {
+///     printf("ERROR: Search allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_search_retry_period Configuring "Search" Retry Period
+/// When created, the "search" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_search_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_search_set_retry_period(search, 15000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured retry period use the @b cc_mqttsn_client_search_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_search_retry_count Configuring "Search" Retry Count
+/// When created, the "search" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_search_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_search_set_retry_count(search, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured retry count use the @b cc_mqttsn_client_search_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_search_broadcast_radius Configuring "Search" Broadcast Radius
+/// The "search" operation is expected to broadcast the @b SEARCHGW message.
+/// When created, the "search" operation inherits the @ref doc_cc_mqttsn_client_broadcast_radius
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_search_set_broadcast_radius() function.
+/// @code
+/// ec = cc_mqttsn_client_search_set_broadcast_radius(search, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured retry count use the @b cc_mqttsn_client_search_get_broadcast_radius() function.
+///
+/// @subsection doc_cc_mqttsn_client_search_send Sending Search Gateway Request
+/// When all the necessary configurations are performed for the allocated "search"
+/// operation it can actually be sent on the network. To initiate sending
+/// use the @b cc_mqttsn_client_search_send() function.
+/// @code
+/// void my_search_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The search operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze found gateway information.
+/// }
+///
+/// ec = cc_mqttsn_client_search_send(search, &my_search_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send search request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "search" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_search_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_search_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_search_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// When the "search" operation completion callback is invoked the reported
+/// "info" information is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @b NOTE that only single "search" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_search_prepare() will be rejected
+/// until the "search" operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_search_cancel "cancelled".
+///
+/// The "search" operation is complete when the valid @b GWINFO message is received.
+/// Such message can be sent either by the gateway itself or by another client
+/// on behalf of the gateway. When they @b GWINFO message is sent by another
+/// client it specifies the actual address of the gateway
+/// (reported via the @ref CC_MqttsnGatewayInfo::m_addr and @ref CC_MqttsnGatewayInfo::m_addrLen).
+/// When the @b GWINFO message is sent by the gateway itself, the address information
+/// inside the reported @ref CC_MqttsnGatewayInfo structure will be empty.
+///
+/// Upon reception of any new data packet from the I/O link, the application is expected
+/// to detect and save the origin address of the sender. In case the reported
+/// gateway address is empty, the application is expected to use the saved
+/// origin address of the data packet as the one of the gateway.
+/// The application is also expected to update the address info stored by the
+/// library using the @b cc_mqttsn_client_set_available_gateway_info() function.
+/// The details are in the @ref doc_cc_mqttsn_client_gateway_monitoring section below.
+///
+/// @subsection doc_cc_mqttsn_client_search_cancel Cancel the "Search" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_search_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_search_cancel(search);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel search with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_search_send() function was successfully
+/// called before the @b cc_mqttsn_client_search_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_search_simplify Simplifying the "Search" Operation Preparation
+/// In many use cases the "search" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides the @b cc_mqttsn_client_search() wrapper function.
+///
+/// For example:
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_search(client, &my_search_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send search request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper functions do NOT expose the handle returned by the
+/// @b cc_mqttsn_client_search_prepare(). It means that it's not possible to
+/// cancel the "search" operation before its completion.
+///
+/// @section doc_cc_mqttsn_client_gateway_monitoring Monitoring and Managing Available Gateways
+/// The MQTT-SN gateways are also expected to periodically advertise their presence.
+/// The client library keeps track of the discovered gateways on the network. It
+/// is possible to retrieve the information on the available gateways at any time.
+/// @code
+/// unsigned numOfAvailableGateways = cc_mqttsn_client_get_available_gateways_count(client);
+/// for (idx=0; idx < numOfAvailableGateways; ++idx) {
+///     CC_MqttsnGatewayInfo info;
+///     CC_MqttsnErrorCode ec = cc_mqttsn_client_get_available_gateway_info(client, idx, &info);
+///     if (ec != CC_MqttsnErrorCode_Success) {
+///         printf("Something is wrong\n");
+///         continue;
+///     }
+///
+///     ... // Process updated info.
+/// }
+/// @endcode
+///
+/// The application can receive ongoing notifications if a status of any gateway changes.
+/// @code
+/// void my_gw_status_report_cb(void* data, CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info)
+/// {
+///     ...
+/// }
+///
+/// cc_mqttsn_client_set_gw_status_report_callback(client, &my_gw_status_report_cb, data);
+/// @endcode
+/// The @b status parameter to the callback function indicates the status of the
+/// gateway, while @b info reports the currently stored gateway information.
+/// The callback (if registered) is invoked every time the @b ADVERTISE as well as @b GWINFO
+/// messages are received or not received in time. The @ref CC_MqttsnGwStatus "status" value indicates
+/// of whether the gateway information is newly added, updated or the old info is confirmed.
+///
+/// When the expected @b ADVERTISE message doesn't arrive in time, it can be due to
+/// packet loss on the network rather than the gateway itself going offline. The
+/// library allows configuration of allowed losses of the @b ADVERTISE message before
+/// the gateway is reported to be @ref CC_MqttsnGwStatus_Removed and its info removed from
+/// the internal data structures.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_allowed_adv_losses(client, 2);
+/// @endcode
+/// The configured count is how many @b ADVERTISE messages can be @b lost, i.e. when
+/// configured to be @b 0, the gateway info is removed on the first missing @b ADVERTISE packet.
+/// When configured to be @b 1 (or greater), the reported gateway status will
+/// be @ref CC_MqttsnGwStatus_Tentative when the expected advertising packet doesn't
+/// arrive in time until the inner count of allowed losses goes to @b 0 and then
+/// the gateway status is reported to be @ref CC_MqttsnGwStatus_Removed. The default
+/// allowed count of the @b ADVERTISE losses is @b 1. The current configuration
+/// can be retrieved using @b cc_mqttsn_client_get_allowed_adv_losses(). When
+/// the @b ADVERTISE or @b GWINFO from the gateway message arrive, the library reports
+/// @ref CC_MqttsnGwStatus_Alive as the status gateway.
+///
+/// Upon reception of the @b ADVERTISE or @b GWINFO from the gateway, the address information
+/// may be missing (or wrong). The application is expected to record the origin of
+/// the recent message and this information can be used to update the recorded information.
+/// The application can invoke the @b cc_mqttsn_client_set_available_gateway_info()
+/// function at any time to update / override the stored address information about the
+/// gateway. It is also applicable to the @ref doc_cc_mqttsn_client_search_send "search"
+/// operation. The @b cc_mqttsn_client_set_available_gateway_info() can be called
+/// from withing the operation completion callback to update the stored gateway address.
+/// @code
+/// CC_MqttsnGatewayInfo info;
+/// info.m_gwId = ...;
+/// info.m_addr = ...;
+/// info.m_addrLen = ...;
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_available_gateway_info(client, info);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+///
+/// The application can force the library to discard the available gateway information
+/// by issuing the @b cc_mqttsn_client_discard_available_gateway_info() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_discard_available_gateway_info(client, 1 /* gateway id */);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+///
+/// It is possible to discard information on all the gateways in one go:
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_discard_all_gateway_infos(client);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+///
+/// When the client receives @b GWINFO message before @b ADVERTISE, the
+/// advertising period of the gateway is not known yet. For the gateway tracking
+/// and management functionality there is a need to assume some kind of default
+/// duration. The default value is <b>15 minutes</b>. To update it use
+/// @b cc_mqttsn_client_set_default_gw_adv_duration() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_gw_adv_duration(client, 20 * 60 * 1000 /* 20 minutes in milliseconds */);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+/// To retrieve the current configuration use @b cc_mqttsn_client_get_default_gw_adv_duration() function.
 ///

@@ -115,7 +115,7 @@ void SearchOp::completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_Mqttsn
 
 void SearchOp::restartTimer()
 {
-    m_timer.wait(getResponseTimeout(), &SearchOp::opTimeoutCb, this);
+    m_timer.wait(getRetryPeriod(), &SearchOp::opTimeoutCb, this);
 }
 
 CC_MqttsnErrorCode SearchOp::sendInternal()
