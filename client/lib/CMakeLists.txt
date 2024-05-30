@@ -8,6 +8,7 @@ endif ()
 
 set (HEADER_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.h.templ)
 set (SRC_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.cpp.templ)
+set (C_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.c.templ)
 set (CONFIG_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/Config.h.templ)
 set (PROT_OPTS_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/ProtocolOptions.h.templ)
 set (TEMPL_PROCESS_SCRIPT ${PROJECT_SOURCE_DIR}/cmake/ProcessTemplate.cmake)
@@ -39,6 +40,7 @@ function (gen_lib_mqttsn_client config_file)
 
     set (header_output ${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}client.h)
     set (src_output ${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}client.cpp)
+    set (c_output ${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}client.c)
     set (config_output ${CMAKE_CURRENT_BINARY_DIR}/${dir}/Config.h)
     set (prot_opts_output ${CMAKE_CURRENT_BINARY_DIR}/${dir}/ProtocolOptions.h)
 
@@ -89,6 +91,29 @@ function (gen_lib_mqttsn_client config_file)
     )
 
     # ---------------------------------
+
+    add_custom_command(
+        OUTPUT "${c_output}"
+        COMMAND ${CMAKE_COMMAND} 
+            -DIN_FILE="${C_TEMPL}"
+            -DOUT_FILE="${c_output}"
+            -DNAME="${name}"
+            -P ${TEMPL_PROCESS_SCRIPT}
+        DEPENDS ${C_TEMPL} ${TEMPL_PROCESS_SCRIPT}
+    )
+    
+    set_source_files_properties(
+        ${c_output}
+        PROPERTIES GENERATED TRUE
+    )
+    
+    set (c_tgt_name "${name}client.c.tgt") 
+    add_custom_target(
+        ${c_tgt_name}
+        DEPENDS "${c_output}" ${C_TEMPL} ${TEMPL_PROCESS_SCRIPT}
+    )
+
+    # ---------------------------------    
 
     add_custom_command(
         OUTPUT "${config_output}"
@@ -142,11 +167,10 @@ function (gen_lib_mqttsn_client config_file)
     set (src
         src/op/Op.cpp
         src/op/SearchOp.cpp
-        src/client.c
         src/ClientImpl.cpp
         src/TimerMgr.cpp
     )
-    add_library (${lib_name} ${src} ${src_output})
+    add_library (${lib_name} ${src} ${src_output} ${c_output})
     add_library (cc::${lib_name} ALIAS ${lib_name})
     target_link_libraries(${lib_name} PRIVATE cc::cc_mqttsn cc::comms)
     target_include_directories(
@@ -162,7 +186,7 @@ function (gen_lib_mqttsn_client config_file)
         ${lib_name} PROPERTIES 
         INTERFACE_LINK_LIBRARIES ""
     )
-    add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name} ${config_tgt_name} ${prot_opts_tgt_name})
+    add_dependencies(${lib_name} ${header_tgt_name} ${src_tgt_name} ${c_tgt_name} ${config_tgt_name} ${prot_opts_tgt_name})
 
     if (CC_MQTTSN_CLIENT_LIB_FORCE_PIC)
         set_property(TARGET ${lib_name} PROPERTY POSITION_INDEPENDENT_CODE ON)

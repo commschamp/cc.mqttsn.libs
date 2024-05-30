@@ -241,12 +241,6 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(CC_Mqtts
 /// @ingroup search
 unsigned cc_mqttsn_##NAME##client_search_get_broadcast_radius(CC_MqttsnSearchHandle handle);
 
-/// @brief Retrieve the configured retry count for the "search" operation.
-/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
-/// @return Number of retries.
-/// @ingroup search
-unsigned cc_mqttsn_##NAME##client_search_get_retry_count(CC_MqttsnSearchHandle handle);
-
 /// @brief Send the "search" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
 /// @param[in] cb Callback to be invoked when "search" operation is complete.
