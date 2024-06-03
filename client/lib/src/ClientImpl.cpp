@@ -453,6 +453,9 @@ void ClientImpl::handle(AdvertiseMsg& msg)
                 monitorGatewayExpiry();
             });
 
+    // TODO: when advertise arrives before GWINFO and the search is present, 
+    // report search completion            
+
     auto iter = 
         std::find_if(
             m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
@@ -584,6 +587,8 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
     m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
     auto& info = m_clientState.m_gwInfos.back();
+    info.m_expiryTimestamp = m_clientState.m_timestamp + m_configState.m_gwAdvTimeoutMs + m_configState.m_retryPeriod;
+    info.m_duration = m_configState.m_gwAdvTimeoutMs;
 
     info.m_gwId = msg.field_gwId().value();
     info.m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
@@ -591,7 +596,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
     auto& addr = msg.field_gwAdd().value();
     if (addr.empty()) {
-        gwStatus = CC_MqttsnGwStatus_Alive;
+        gwStatus = CC_MqttsnGwStatus_AddedByGateway;
         return; // Report gateway status on exit
     }    
 
@@ -601,10 +606,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
         return;
     }
 
-    
     info.m_addr.assign(addr.begin(), addr.end());
-    info.m_expiryTimestamp = m_clientState.m_timestamp + m_configState.m_gwAdvTimeoutMs + m_configState.m_retryCount;
-    info.m_duration = m_configState.m_gwAdvTimeoutMs;
     monitorGatewayExpiry();
 
     gwStatus = CC_MqttsnGwStatus_AddedByClient;

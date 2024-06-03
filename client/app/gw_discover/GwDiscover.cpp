@@ -104,6 +104,10 @@ void GwDiscover::gwStatusReportInternal(CC_MqttsnGwStatus status, const CC_Mqtts
 
     std::cout << prefixSuffixInfo.first << ' ' << static_cast<unsigned>(infoTmp.m_gwId) << 
         ": " << addrToString(infoTmp) << prefixSuffixInfo.second << std::endl;
+
+    if (opts().discoverExitOnFirst()) {
+        doTerminate(0);
+    }
 }
 
 void GwDiscover::searchCompleteInternal(CC_MqttsnAsyncOpStatus status, [[maybe_unused]] const CC_MqttsnGatewayInfo* info)

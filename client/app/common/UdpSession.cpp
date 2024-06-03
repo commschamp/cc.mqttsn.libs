@@ -8,7 +8,6 @@
 #include "UdpSession.h"
 
 #include <cassert>
-#include <iostream> // TODO: remove
 
 namespace cc_mqttsn_client_app
 {

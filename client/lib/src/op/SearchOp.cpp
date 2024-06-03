@@ -88,8 +88,6 @@ void SearchOp::handle(GwinfoMsg& msg)
         comms::cast_assign(info.m_addrLen) = addr.size();
     }
 
-    // TODO: store gateway info
-
     completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
 }
 

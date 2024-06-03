@@ -168,7 +168,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_Mqttsn
             gwInfos.begin(), gwInfos.end(),
             [info](auto& storedInfo)
             {
-                return storedInfo.m_gwId = info->m_gwId;
+                return storedInfo.m_gwId == info->m_gwId;
             });
 
     auto updateFunc = 

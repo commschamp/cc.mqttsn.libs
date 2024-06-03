@@ -38,6 +38,7 @@ bool GatewayIoClientSocket_Udp::startImpl()
     boost::asio::post(io(),
         [this]()
         {
+            m_started = true;
             reportPendingData();
         });
 
