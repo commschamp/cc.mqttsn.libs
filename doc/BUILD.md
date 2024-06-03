@@ -61,7 +61,7 @@ See [custom_client_build.md](custom_client_build.md)
 for details on custom build configuration
 ```
 $> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
-    -DCC_MQTTSN_BUILD_GATEWAY=OFF \
+    -DCC_MQTTSN_GATEWAY=OFF \
     -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES=config1.cmake\;config2.cmake \
     -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install
 ```

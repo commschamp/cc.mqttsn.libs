@@ -1,4 +1,4 @@
-if (NOT CC_MQTTSN_BUILD_GATEWAY)
+if (NOT CC_MQTTSN_GATEWAY)
     return ()
 endif ()
 

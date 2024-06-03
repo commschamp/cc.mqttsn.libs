@@ -64,6 +64,7 @@ typedef enum
     CC_MqttsnErrorCode_Disconnecting = 12, ///< The client is in "disconnecting" state, (re)connect is required in the next iteration loop.
     CC_MqttsnErrorCode_NotSleeping = 13, ///< The client is not in ASLEEP mode.
     CC_MqttsnErrorCode_PreparationLocked = 14, ///< Another operation is being prepared, cannot create a new one without performing "send" or "cancel".
+    CC_MqttsnErrorCode_ValuesLimit ///< Upper limit of the values
 } CC_MqttsnErrorCode;
 
 /// @brief Status of the gateway

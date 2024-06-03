@@ -178,7 +178,7 @@ jobs:
         cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
           -DBoost_USE_STATIC_LIBS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
-          -DCC_MQTTSN_BUILD_CLIENT_APPS=OFF -DCC_MQTTSN_BUILD_GATEWAY_APPS=ON
+          -DCC_MQTTSN_CLIENT_APPS=OFF -DCC_MQTTSN_GATEWAY_APPS=ON
 
     - name: Build Target 
       working-directory: ${{runner.workspace}}/build
@@ -235,7 +235,7 @@ jobs:
         cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
           -DBoost_USE_STATIC_LIBS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
-          -DCC_MQTTSN_BUILD_CLIENT_APPS=OFF -DCC_MQTTSN_BUILD_GATEWAY_APPS=${{env.HAS_BOOST}}
+          -DCC_MQTTSN_CLIENT_APPS=OFF -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}}
       env:
         HAS_BOOST: "${{ matrix.arch == 'x64' && 'ON' || 'OFF' }}"          
 
