@@ -446,15 +446,29 @@ void ClientImpl::handle(AdvertiseMsg& msg)
     
     m_gwDiscoveryTimer.cancel();
 
+    CC_MqttsnGwStatus gwStatus = CC_MqttsnGwStatus_ValuesLimit; 
+    const ClientState::GwInfo* gwInfo = nullptr;
     auto onExit =
         comms::util::makeScopeGuard( 
-            [this]()
+            [this, &gwStatus, &gwInfo, &msg]()
             {
+                // When advertise arrives before GWINFO and the search is present, 
+                // report search completion     
+                for (auto& searchOp : m_searchOps) {
+                    COMMS_ASSERT(searchOp);
+                    searchOp->handle(msg);
+                }
+                                
+                // Reporting the gateway status after 
+                // dispatching to the search operation.
+                                
+                if ((gwStatus < CC_MqttsnGwStatus_ValuesLimit) &&
+                    (gwInfo != nullptr)) {
+                    reportGwStatus(gwStatus, *gwInfo);
+                }
+
                 monitorGatewayExpiry();
             });
-
-    // TODO: when advertise arrives before GWINFO and the search is present, 
-    // report search completion            
 
     auto iter = 
         std::find_if(
@@ -471,8 +485,9 @@ void ClientImpl::handle(AdvertiseMsg& msg)
         iter->m_expiryTimestamp = nextExpiryTimestamp;
         iter->m_duration = duration;
         iter->m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
-        reportGwStatus(CC_MqttsnGwStatus_Alive, *iter);
-        return;
+        gwStatus = CC_MqttsnGwStatus_Alive;
+        gwInfo = &(*iter);
+        return; // Geport gateway status on exit
     }    
 
     if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
@@ -488,7 +503,9 @@ void ClientImpl::handle(AdvertiseMsg& msg)
     info.m_duration = duration;
     info.m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
 
-    reportGwStatus(CC_MqttsnGwStatus_AddedByGateway, info);
+    gwStatus = CC_MqttsnGwStatus_AddedByGateway;
+    gwInfo = &info;    
+    // Geport gateway status on exit
 }
 
 void ClientImpl::handle(SearchgwMsg& msg)

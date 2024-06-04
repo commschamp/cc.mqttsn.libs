@@ -13,6 +13,62 @@ class ProtocolOptions : public cc_mqttsn::options::ClientDefaultOptions
     using BaseImpl = cc_mqttsn::options::ClientDefaultOptions;
 
 public:
+    struct field : public BaseImpl::field
+    {
+        /* using ClientId =
+            std::tuple<
+                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
+                BasImpl::field::ClientId
+            >;*/
+
+        /* using Data =
+            std::tuple<
+                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
+                BasImpl::field::Data
+            >; */
+
+        using GwAdd =
+            std::tuple<
+                ##FIELD_GW_ADD##,
+                BaseImpl::field::GwAdd
+            >;
+
+        /* using TopicName =
+            std::tuple<
+                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
+                BasImpl::field::TopicName
+            >; */
+
+        /* using WillMsg =
+            std::tuple<
+                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
+                BasImpl::field::WillMsg
+            >; */
+
+        /* using WillTopic =
+            std::tuple<
+                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
+                BasImpl::field::WillTopic
+            >; */
+    }; // struct field
+
+    struct frame : public BaseImpl::frame
+    {
+        struct FrameLayers : public BaseImpl::frame::FrameLayers
+        {
+            using Data =
+                std::tuple<
+                    ##MAX_PACKET_SIZE##,
+                    BaseImpl::frame::FrameLayers::Data
+                >;
+
+            using Id =
+                std::tuple<
+                    ##MSG_ALLOC_OPT##,
+                    BaseImpl::frame::FrameLayers::Id
+                >;
+        }; // struct FrameLayers
+    }; // struct frame    
 };
 
 } // namespace cc_mqttsn_client

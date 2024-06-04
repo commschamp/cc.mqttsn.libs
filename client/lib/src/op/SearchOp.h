@@ -29,6 +29,7 @@ public:
     CC_MqttsnErrorCode cancel();
 
     using Base::handle;
+    virtual void handle(AdvertiseMsg& msg) override;
     virtual void handle(GwinfoMsg& msg) override;
 
     void setBroadcastRadius(unsigned value)

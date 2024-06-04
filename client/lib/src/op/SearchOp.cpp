@@ -76,6 +76,15 @@ CC_MqttsnErrorCode SearchOp::cancel()
     return CC_MqttsnErrorCode_Success;
 }
 
+void SearchOp::handle(AdvertiseMsg& msg)
+{
+    m_timer.cancel();
+
+    auto info = CC_MqttsnGatewayInfo();
+    info.m_gwId = msg.field_gwId().value();
+    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
+}
+
 void SearchOp::handle(GwinfoMsg& msg)
 {
     m_timer.cancel();
