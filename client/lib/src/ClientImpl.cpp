@@ -150,6 +150,60 @@ op::SearchOp* ClientImpl::searchPrepare(CC_MqttsnErrorCode* ec)
     }
 }
 
+op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
+{
+    op::ConnectOp* op = nullptr;
+    do {
+        if (!m_clientState.m_initialized) {
+            if (m_apiEnterCount > 0U) {
+                errorLog("Cannot prepare connect from within callback");
+                updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+                break;
+            }
+
+            auto initEc = initInternal();
+            if (initEc != CC_MqttsnErrorCode_Success) {
+                updateEc(ec, initEc);
+                break;
+            }
+        }
+                
+        if (!m_connectOps.empty()) {
+            // Already allocated
+            errorLog("Another connect operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }
+
+        if (m_ops.max_size() <= m_ops.size()) {
+            errorLog("Cannot start connect operation, retry in next event loop iteration.");
+            updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+            break;
+        }
+
+        if (m_preparationLocked) {
+            errorLog("Another operation is being prepared, cannot prepare \"connect\" without \"send\" or \"cancel\" of the previous.");
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            break;
+        }
+
+        auto ptr = m_connectOpAlloc.alloc(*this);
+        if (!ptr) {
+            errorLog("Cannot allocate new connect operation.");
+            updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
+            break;
+        }
+
+        m_preparationLocked = true;
+        m_ops.push_back(ptr.get());
+        m_connectOps.push_back(std::move(ptr));
+        op = m_connectOps.back().get();
+        updateEc(ec, CC_MqttsnErrorCode_Success);
+    } while (false);
+
+    return op;
+}
+
 // op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
 // {
 //     op::ConnectOp* connectOp = nullptr;
@@ -828,7 +882,7 @@ void ClientImpl::opComplete(const op::Op* op)
     using ExtraCompleteFunc = void (ClientImpl::*)(const op::Op*);
     static const ExtraCompleteFunc Map[] = {
         /* Type_Search */ &ClientImpl::opComplete_Search,
-        // /* Type_Connect */ &ClientImpl::opComplete_Connect,
+        /* Type_Connect */ &ClientImpl::opComplete_Connect,
         // /* Type_KeepAlive */ &ClientImpl::opComplete_KeepAlive,
         // /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
         // /* Type_Subscribe */ &ClientImpl::opComplete_Subscribe,
@@ -1218,10 +1272,10 @@ void ClientImpl::opComplete_Search(const op::Op* op)
     eraseFromList(op, m_searchOps);
 }
 
-// void ClientImpl::opComplete_Connect(const op::Op* op)
-// {
-//     eraseFromList(op, m_connectOps);
-// }
+void ClientImpl::opComplete_Connect(const op::Op* op)
+{
+    eraseFromList(op, m_connectOps);
+}
 
 // void ClientImpl::opComplete_KeepAlive(const op::Op* op)
 // {

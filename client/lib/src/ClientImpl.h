@@ -17,7 +17,7 @@
 // #include "SessionState.h"
 #include "TimerMgr.h"
 
-// #include "op/ConnectOp.h"
+#include "op/ConnectOp.h"
 // #include "op/DisconnectOp.h"
 // #include "op/KeepAliveOp.h"
 #include "op/Op.h"
@@ -69,7 +69,7 @@ public:
     // bool isNetworkDisconnected() const;
 
     op::SearchOp* searchPrepare(CC_MqttsnErrorCode* ec);
-    // op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);
+    op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);
     // op::DisconnectOp* disconnectPrepare(CC_MqttsnErrorCode* ec);
     // op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
     // op::UnsubscribeOp* unsubscribePrepare(CC_MqttsnErrorCode* ec);
@@ -231,8 +231,8 @@ private:
     using SearchOpAlloc = ObjAllocator<op::SearchOp, ExtConfig::SearchOpsLimit>;
     using SearchOpsList = ObjListType<SearchOpAlloc::Ptr, ExtConfig::SearchOpsLimit>;
 
-    // using ConnectOpAlloc = ObjAllocator<op::ConnectOp, ExtConfig::ConnectOpsLimit>;
-    // using ConnectOpsList = ObjListType<ConnectOpAlloc::Ptr, ExtConfig::ConnectOpsLimit>;
+    using ConnectOpAlloc = ObjAllocator<op::ConnectOp, ExtConfig::ConnectOpsLimit>;
+    using ConnectOpsList = ObjListType<ConnectOpAlloc::Ptr, ExtConfig::ConnectOpsLimit>;
 
     // using KeepAliveOpAlloc = ObjAllocator<op::KeepAliveOp, ExtConfig::KeepAliveOpsLimit>;
     // using KeepAliveOpsList = ObjListType<KeepAliveOpAlloc::Ptr, ExtConfig::KeepAliveOpsLimit>;
@@ -277,7 +277,7 @@ private:
     // bool processPublishAckMsg(ProtMessage& msg, std::uint16_t packetId, bool pubcompAck = false);
 
     void opComplete_Search(const op::Op* op);
-    // void opComplete_Connect(const op::Op* op);
+    void opComplete_Connect(const op::Op* op);
     // void opComplete_KeepAlive(const op::Op* op);
     // void opComplete_Disconnect(const op::Op* op);
     // void opComplete_Subscribe(const op::Op* op);
@@ -335,8 +335,8 @@ private:
     SearchOpAlloc m_searchOpAlloc;
     SearchOpsList m_searchOps;    
 
-    // ConnectOpAlloc m_connectOpAlloc;
-    // ConnectOpsList m_connectOps;
+    ConnectOpAlloc m_connectOpAlloc;
+    ConnectOpsList m_connectOps;
 
     // KeepAliveOpAlloc m_keepAliveOpsAlloc;
     // KeepAliveOpsList m_keepAliveOps;

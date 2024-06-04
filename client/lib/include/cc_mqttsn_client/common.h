@@ -38,6 +38,7 @@ extern "C" {
 #define CC_MQTTSN_CLIENT_VERSION CC_MQTTSN_CLIENT_MAKE_VERSION(CC_MQTTSN_CLIENT_MAJOR_VERSION, CC_MQTTSN_CLIENT_MINOR_VERSION, CC_MQTTSN_CLIENT_PATCH_VERSION)
 
 /// @brief Quality of Service
+/// @ingroup client
 typedef enum
 {
     CC_MqttsnQoS_NoGwPublish = -1, ///< QoS=-1. No gateway publish, used by publish only clients.
@@ -47,6 +48,7 @@ typedef enum
 } CC_MqttsnQoS;
 
 /// @brief Error code returned by various API functions.
+/// @ingroup client
 typedef enum
 {
     CC_MqttsnErrorCode_Success = 0, ///< The requested operation was successfully started.
@@ -68,6 +70,7 @@ typedef enum
 } CC_MqttsnErrorCode;
 
 /// @brief Status of the gateway
+/// @ingroup client
 typedef enum
 {
     CC_MqttsnGwStatus_AddedByGateway = 0, ///< Added by the @b ADVERTISE or @b GWINFO sent by the gateway messages
@@ -80,6 +83,7 @@ typedef enum
 } CC_MqttsnGwStatus;
 
 /// @brief Status of the asynchronous operation
+/// @ingroup client
 typedef enum
 {
     CC_MqttsnAsyncOpStatus_Complete = 0, ///< The requested operation has been completed, refer to reported extra details for information
@@ -100,6 +104,17 @@ typedef enum
     CC_MqttsnGatewayDisconnectReason_ValuesLimit ///< Limit for the values
 } CC_MqttsnGatewayDisconnectReason;
 
+/// @brief Return code as per MQTT-SN specification
+/// @ingroup client
+typedef enum
+{
+    CC_MqttsnReturnCode_Accepted = 0, ///< Accepted
+    CC_MqttsnReturnCode_Conjestion = 1, ///< Rejected due to conjesion
+    CC_MqttsnReturnCode_InvalidTopicId = 2, ///< Rejected due to invalid topic ID
+    CC_MqttsnReturnCode_NotSupported = 3, ///< Rejected as not supported
+    CC_MqttsnReturnCode_ValuesLimit ///< Limit for the values
+} CC_MqttsnReturnCode;
+
 /// @brief Declaration of struct for the @ref CC_MqttsnClientHandle;
 struct CC_MqttsnClient;
 
@@ -115,6 +130,16 @@ struct CC_MqttsnSearch;
 /// @details Returned by @b cc_mqttsn_client_search_prepare() function.
 /// @ingroup "search".
 typedef struct CC_MqttsnSearch* CC_MqttsnSearchHandle;
+
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnConnectHandle
+/// @ingroup connect
+struct CC_MqttsnConnect;
+
+/// @brief Handle for "connect" operation.
+/// @details Returned by @b cc_mqttsn_client_connect_prepare() function.
+/// @ingroup "connect".
+typedef struct CC_MqttsnConnect* CC_MqttsnConnectHandle;
+
 
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
@@ -141,12 +166,20 @@ typedef struct
 } CC_MqttsnMessageInfo;
 
 /// @brief Gateway information
+/// @ingroup client
 typedef struct
 {
-   unsigned char m_gwId; ///< Gateway ID
-   const unsigned char* m_addr; ///< Address of the gateway if known, NULL if not.
-   unsigned m_addrLen; ///< Length of the address
+    unsigned char m_gwId; ///< Gateway ID
+    const unsigned char* m_addr; ///< Address of the gateway if known, NULL if not.
+    unsigned m_addrLen; ///< Length of the address
 } CC_MqttsnGatewayInfo;
+
+/// @brief Information on the "connect" operation completion
+/// @ingroup connect
+typedef struct
+{
+    CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b CONNACK message
+} CC_MqttsnConnectInfo;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
@@ -225,12 +258,15 @@ typedef unsigned (*CC_MqttsnGwinfoDelayRequestCb)(void* data);
 /// @ingroup search
 typedef void (*CC_MqttsnSearchCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
 
-/// @brief Callback used to report completion of the subscribe operation.
+/// @brief Callback used to report completion of the connect operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
-///     the subscribe request.
-/// @param[in] status Status of the subscribe operation.
-/// @param[in] qos Maximal level of quality of service, the gateway/gateway is going to use to publish incoming messages.
-typedef void (*CC_MqttsnSubscribeCompleteReportCb)(void* data, CC_MqttsnAsyncOpStatus status, CC_MqttsnQoS qos);
+///     the request call.
+/// @param[in] status Status of the "connect" operation.
+/// @param[in] info Information about op completion. Not-NULL is reported <b>if and onfly if</b>
+///     the "status" is equal to @ref CC_MqttsnAsyncOpStatus_Complete.
+/// @post The data members of the reported response can NOT be accessed after the function returns.
+/// @ingroup connect
+typedef void (*CC_MqttsnConnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
 
 
 #ifdef __cplusplus

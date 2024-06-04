@@ -29,7 +29,7 @@ public:
     enum Type
     {
         Type_Search,
-        // Type_Connect,
+        Type_Connect,
         // Type_KeepAlive,
         // Type_Disconnect,
         // Type_Subscribe,

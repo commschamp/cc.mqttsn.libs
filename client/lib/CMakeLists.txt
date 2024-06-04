@@ -165,6 +165,7 @@ function (gen_lib_mqttsn_client config_file)
     
     message (STATUS "Defining library ${lib_name}") 
     set (src
+        src/op/ConnectOp.cpp
         src/op/Op.cpp
         src/op/SearchOp.cpp
         src/ClientImpl.cpp

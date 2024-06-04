@@ -16,6 +16,7 @@
 
 struct CC_MqttsnClient {};
 struct CC_MqttsnSearch {};
+struct CC_MqttsnConnect {};
 
 namespace
 {
@@ -44,6 +45,16 @@ inline cc_mqttsn_client::op::SearchOp* searchOpFromHandle(CC_MqttsnSearchHandle 
 inline CC_MqttsnSearchHandle handleFromSearchOp(cc_mqttsn_client::op::SearchOp* op)
 {
     return reinterpret_cast<CC_MqttsnSearchHandle>(op);
+}
+
+inline cc_mqttsn_client::op::ConnectOp* connectOpFromHandle(CC_MqttsnConnectHandle handle)
+{
+    return reinterpret_cast<cc_mqttsn_client::op::ConnectOp*>(handle);
+}
+
+inline CC_MqttsnConnectHandle handleFromConnectOp(cc_mqttsn_client::op::ConnectOp* op)
+{
+    return reinterpret_cast<CC_MqttsnConnectHandle>(op);
 }
 
 }  // namespace
@@ -349,6 +360,48 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel(CC_MqttsnSearchHandle 
     return searchOpFromHandle(handle)->cancel();    
 }
 
+CC_MqttsnConnectHandle cc_mqttsn_##NAME##client_connect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
+{
+    COMMS_ASSERT(client != nullptr);
+    return handleFromConnectOp(clientFromHandle(client)->connectPrepare(ec));
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_period(CC_MqttsnConnectHandle handle, unsigned ms)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (ms == 0U) {
+        connectOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    COMMS_ASSERT(handle != nullptr);
+    connectOpFromHandle(handle)->setRetryPeriod(ms);     
+    return CC_MqttsnErrorCode_Success;
+}
+
+unsigned cc_mqttsn_##NAME##client_connect_get_retry_period(CC_MqttsnConnectHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return connectOpFromHandle(handle)->getRetryPeriod();    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_count(CC_MqttsnConnectHandle handle, unsigned count)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (count == 0U) {
+        connectOpFromHandle(handle)->client().errorLog("The retry count must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    connectOpFromHandle(handle)->setRetryCount(count);     
+    return CC_MqttsnErrorCode_Success;  
+}
+
+unsigned cc_mqttsn_##NAME##client_connect_get_retry_count(CC_MqttsnConnectHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return connectOpFromHandle(handle)->getRetryCount();     
+}
 
 // --------------------- Callbacks ---------------------
 

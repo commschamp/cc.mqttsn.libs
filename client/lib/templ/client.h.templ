@@ -276,7 +276,43 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel(CC_MqttsnSearchHandle 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
     CC_MqttsnClientHandle handle,
     CC_MqttsnSearchCompleteCb cb, 
-    void* cbData); 
+    void* cbData);
+
+/// @brief Prepare "connect" operation.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[out] ec Error code reporting result of the operation. Can be NULL.
+/// @return Handle of the "connect" operation, will be NULL in case of failure. To analyze the reason failure use "ec" output parameter.
+/// @post The "connect" operation is allocated, use either @ref cc_mqttsn_##NAME##client_connect_send()
+///     or @ref cc_mqttsn_##NAME##client_connect_cancel() to prevent memory leaks.
+/// @ingroup connect
+CC_MqttsnConnectHandle cc_mqttsn_##NAME##client_connect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+
+/// @brief Configure the retry period for the "connect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @param[in] ms Retry period in @b milliseconds.
+/// @return Result code of the call.
+/// @ingroup connect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_period(CC_MqttsnConnectHandle handle, unsigned ms);
+
+/// @brief Retrieve the configured retry period for the "connect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @return Retry period duration in @b milliseconds.
+/// @ingroup connect
+unsigned cc_mqttsn_##NAME##client_connect_get_retry_period(CC_MqttsnConnectHandle handle);
+
+/// @brief Configure the retry count for the "connect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @param[in] count Number of retries.
+/// @return Result code of the call.
+/// @ingroup connect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_count(CC_MqttsnConnectHandle handle, unsigned count);
+
+/// @brief Retrieve the configured retry count for the "connect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @return Number of retries.
+/// @ingroup connect
+unsigned cc_mqttsn_##NAME##client_connect_get_retry_count(CC_MqttsnConnectHandle handle);
+
 
 // --------------------- Callbacks ---------------------
 
