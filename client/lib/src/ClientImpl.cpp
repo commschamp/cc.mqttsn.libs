@@ -493,7 +493,7 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
 //     return CC_MqttsnErrorCode_Success;
 // }
 
-#if CC_MQTTSN_HAS_GATEWAY_DISCOVERY
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 void ClientImpl::handle(AdvertiseMsg& msg)
 {
     static_assert(Config::HasGatewayDiscovery);
@@ -683,7 +683,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
     gwStatus = CC_MqttsnGwStatus_AddedByClient;
     // Report geteway status on exit
 }
-#endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
 
 // void ClientImpl::handle(PublishMsg& msg)
 // {

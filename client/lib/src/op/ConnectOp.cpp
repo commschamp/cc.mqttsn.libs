@@ -54,8 +54,9 @@ CC_MqttsnErrorCode ConnectOp::config(const CC_MqttsnConnectConfig* config)
     return CC_MqttsnErrorCode_Success;
 }
 
-CC_MqttsnErrorCode ConnectOp::willConfig(const CC_MqttsnWillConfig* config)
+CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillConfig* config)
 {
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL    
     if (config == nullptr) {
         errorLog("Will configuration is not provided.");
         return CC_MqttsnErrorCode_BadParam;
@@ -89,6 +90,10 @@ CC_MqttsnErrorCode ConnectOp::willConfig(const CC_MqttsnWillConfig* config)
         comms::util::assign(m_willmsgMsg.field_willMsg().value(), config->m_data, config->m_data + config->m_dataLen);
     }
     return CC_MqttsnErrorCode_Success;
+#else // #ifdef CC_MQTTSN_CLIENT_HAS_WILL
+    errorLog("Will configuration is not supported");
+    return CC_MqttsnErrorCode_NotSupported;
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL    
 }
 
 CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData) 
@@ -135,6 +140,7 @@ CC_MqttsnErrorCode ConnectOp::cancel()
     return CC_MqttsnErrorCode_Success;
 }
 
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL
 void ConnectOp::handle([[maybe_unused]] WilltopicreqMsg& msg)
 {
     if (!m_connectMsg.field_flags().field_mid().getBitValue_Will()) {
@@ -168,17 +174,20 @@ void ConnectOp::handle([[maybe_unused]] WillmsgreqMsg& msg)
         return;
     }
 }
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL
 
 void ConnectOp::handle(ConnackMsg& msg)
 {
     auto info = CC_MqttsnConnectInfo();
     comms::cast_assign(info.m_returnCode) = msg.field_returnCode().value();
 
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL
     if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) && 
         (m_stage < Stage_willMsg) && 
         (m_connectMsg.field_flags().field_mid().getBitValue_Will())) {
         errorLog("Connection accepted without full will inquiry");
     }
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL    
 
     completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
 }
@@ -213,8 +222,10 @@ CC_MqttsnErrorCode ConnectOp::sendInternal()
     using GetMsgFunc = const ProtMessage& (ConnectOp::*)() const;
     static const GetMsgFunc Map[] = {
         /* Stage_connect */ &ConnectOp::getConnectMsg,
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL        
         /* Stage_willTopic */ &ConnectOp::getWilltopicMsg,
         /* Stage_willMsg */ &ConnectOp::getWillmsgMsg,        
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL        
     };
     static const std::size_t MapSize = std::extent<decltype(Map)>::value;
     static_assert(MapSize == Stage_valuesLimit);
@@ -254,6 +265,7 @@ const ProtMessage& ConnectOp::getConnectMsg() const
     return m_connectMsg;
 }
 
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL
 const ProtMessage& ConnectOp::getWilltopicMsg() const
 {
     return m_willtopicMsg;
@@ -263,6 +275,7 @@ const ProtMessage& ConnectOp::getWillmsgMsg() const
 {
     return m_willmsgMsg;
 }
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL
 
 void ConnectOp::opTimeoutCb(void* data)
 {

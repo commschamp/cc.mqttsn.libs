@@ -31,8 +31,10 @@ public:
     CC_MqttsnErrorCode cancel();
 
     using Base::handle;
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL    
     void handle(WilltopicreqMsg& msg) override;
     void handle(WillmsgreqMsg& msg) override;
+#endif    
     void handle(ConnackMsg& msg) override;
 
 protected:
@@ -43,8 +45,10 @@ private:
     enum Stage : unsigned
     {
         Stage_connect,
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL        
         Stage_willTopic,
         Stage_willMsg,
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL        
         Stage_valuesLimit
     };
 
@@ -53,19 +57,25 @@ private:
     CC_MqttsnErrorCode sendInternal();
     void timeoutInternal();
     const ProtMessage& getConnectMsg() const;
+
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL
     const ProtMessage& getWilltopicMsg() const;
     const ProtMessage& getWillmsgMsg() const;
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL    
 
     static void opTimeoutCb(void* data);
 
-    ConnectMsg m_connectMsg;  
-    WilltopicMsg m_willtopicMsg;
-    WillmsgMsg m_willmsgMsg;
+    ConnectMsg m_connectMsg;
     TimerMgr::Timer m_timer;  
     unsigned m_stage = Stage_connect;
     unsigned m_origRetryCount = 0U;
     CC_MqttsnConnectCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;
+
+#ifdef CC_MQTTSN_CLIENT_HAS_WILL      
+    WilltopicMsg m_willtopicMsg;
+    WillmsgMsg m_willmsgMsg;
+#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL       
 
     static_assert(ExtConfig::ConnectOpTimers == 1U);
 };

@@ -143,11 +143,11 @@ public:
     // -------------------- Message Handling -----------------------------
 
     using Base::handle;
-#if CC_MQTTSN_HAS_GATEWAY_DISCOVERY
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     virtual void handle(AdvertiseMsg& msg) override;
     virtual void handle(SearchgwMsg& msg) override;
     virtual void handle(GwinfoMsg& msg) override;
-#endif // #if CC_MQTTSN_HAS_GATEWAY_DISCOVERY        
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
 //     virtual void handle(PublishMsg& msg) override;
 
 // #if CC_MQTTSN_CLIENT_MAX_QOS >= 1    
