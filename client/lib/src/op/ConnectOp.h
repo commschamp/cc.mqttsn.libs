@@ -25,24 +25,45 @@ class ConnectOp final : public Op
 public:
     explicit ConnectOp(ClientImpl& client);
 
+    CC_MqttsnErrorCode config(const CC_MqttsnConnectConfig* config);
+    CC_MqttsnErrorCode willConfig(const CC_MqttsnWillConfig* config);
     CC_MqttsnErrorCode send(CC_MqttsnConnectCompleteCb cb, void* cbData);
     CC_MqttsnErrorCode cancel();
 
     using Base::handle;
+    void handle(WilltopicreqMsg& msg) override;
+    void handle(WillmsgreqMsg& msg) override;
+    void handle(ConnackMsg& msg) override;
 
 protected:
     virtual Type typeImpl() const override;    
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status) override;
 
 private:
+    enum Stage : unsigned
+    {
+        Stage_connect,
+        Stage_willTopic,
+        Stage_willMsg,
+        Stage_valuesLimit
+    };
+
     void completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info = nullptr);
     void restartTimer();
     CC_MqttsnErrorCode sendInternal();
+    void timeoutInternal();
+    const ProtMessage& getConnectMsg() const;
+    const ProtMessage& getWilltopicMsg() const;
+    const ProtMessage& getWillmsgMsg() const;
 
     static void opTimeoutCb(void* data);
 
     ConnectMsg m_connectMsg;  
+    WilltopicMsg m_willtopicMsg;
+    WillmsgMsg m_willmsgMsg;
     TimerMgr::Timer m_timer;  
+    unsigned m_stage = Stage_connect;
+    unsigned m_origRetryCount = 0U;
     CC_MqttsnConnectCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;
 

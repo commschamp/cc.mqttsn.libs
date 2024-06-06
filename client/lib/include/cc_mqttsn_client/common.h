@@ -42,9 +42,9 @@ extern "C" {
 typedef enum
 {
     CC_MqttsnQoS_NoGwPublish = -1, ///< QoS=-1. No gateway publish, used by publish only clients.
-    CC_MqttsnQoS_AtMostOnceDelivery, ///< QoS=0. At most once delivery.
-    CC_MqttsnQoS_AtLeastOnceDelivery, ///< QoS=1. At least once delivery.
-    CC_MqttsnQoS_ExactlyOnceDelivery ///< QoS=2. Exactly once delivery.
+    CC_MqttsnQoS_AtMostOnceDelivery = 0, ///< QoS=0. At most once delivery.
+    CC_MqttsnQoS_AtLeastOnceDelivery = 1, ///< QoS=1. At least once delivery.
+    CC_MqttsnQoS_ExactlyOnceDelivery = 2 ///< QoS=2. Exactly once delivery.
 } CC_MqttsnQoS;
 
 /// @brief Error code returned by various API functions.
@@ -180,6 +180,26 @@ typedef struct
 {
     CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b CONNACK message
 } CC_MqttsnConnectInfo;
+
+/// @brief Configuration the "connect" operation
+/// @ingroup connect
+typedef struct
+{
+    const char* m_clientId; ///< Client ID
+    unsigned m_duration; ///< Duration (Keep alive) configuration in seconds. Defaults to 60 when initialized.
+    bool m_cleanSession; ///< Clean session configuration
+} CC_MqttsnConnectConfig;
+
+/// @brief Configuration the will for "connect" and "will" operations
+/// @ingroup connect
+typedef struct
+{
+    const char* m_topic; ///< Client ID
+    const unsigned char* m_data;
+    unsigned m_dataLen;
+    CC_MqttsnQoS m_qos;
+    bool m_retain;
+} CC_MqttsnWillConfig;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using

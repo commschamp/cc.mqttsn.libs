@@ -62,9 +62,11 @@ CC_MqttsnErrorCode SearchOp::send(CC_MqttsnSearchCompleteCb cb, void* cbData)
     m_cb = cb;
     m_cbData = cbData;
     
+    m_searchgwMsg.field_radius().setValue(m_radius);
     auto ec = sendInternal();
     if (ec == CC_MqttsnErrorCode_Success) {
         completeOnError.release();
+        restartTimer();
     }
     
     return ec;
@@ -132,17 +134,28 @@ void SearchOp::restartTimer()
 
 CC_MqttsnErrorCode SearchOp::sendInternal()
 {
+    auto ec = sendMessage(m_searchgwMsg, m_radius);
+    if (ec == CC_MqttsnErrorCode_Success) {
+        COMMS_ASSERT(0U < getRetryCount());
+        decRetryCount();
+        restartTimer();
+    }
+    return ec;    
+}
+
+void SearchOp::timeoutInternal()
+{
     if (getRetryCount() == 0U) {
         errorLog("All retries of the search operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
-        return CC_MqttsnErrorCode_InternalError;
+        return;
     }
 
-    decRetryCount();
-
-    SearchgwMsg msg;
-    msg.field_radius().setValue(m_radius);
-    return sendMessage(msg, m_radius);
+    auto ec = sendInternal();
+    if (ec != CC_MqttsnErrorCode_Success) {
+        completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
+        return;
+    }      
 }
 
 void SearchOp::opTimeoutCb(void* data)

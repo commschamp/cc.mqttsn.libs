@@ -15,16 +15,16 @@ class ProtocolOptions : public cc_mqttsn::options::ClientDefaultOptions
 public:
     struct field : public BaseImpl::field
     {
-        /* using ClientId =
+        using ClientId =
             std::tuple<
-                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
-                BasImpl::field::ClientId
-            >;*/
+                ##FIELD_CLIENT_ID##,
+                BaseImpl::field::ClientId
+            >;
 
         /* using Data =
             std::tuple<
                 comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
-                BasImpl::field::Data
+                BaseImpl::field::Data
             >; */
 
         using GwAdd =
@@ -36,20 +36,20 @@ public:
         /* using TopicName =
             std::tuple<
                 comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
-                BasImpl::field::TopicName
+                BaseImpl::field::TopicName
             >; */
 
-        /* using WillMsg =
+        using WillMsg =
             std::tuple<
-                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
-                BasImpl::field::WillMsg
-            >; */
+                ##FIELD_WILL_DATA##,
+                BaseImpl::field::WillMsg
+            >; 
 
-        /* using WillTopic =
+        using WillTopic =
             std::tuple<
-                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
-                BasImpl::field::WillTopic
-            >; */
+                ##FIELD_WILL_TOPIC##,
+                BaseImpl::field::WillTopic
+            >; 
     }; // struct field
 
     struct frame : public BaseImpl::frame

@@ -14,7 +14,7 @@
 #include "ObjListType.h"
 #include "ProtocolDefs.h"
 // #include "ReuseState.h"
-// #include "SessionState.h"
+#include "SessionState.h"
 #include "TimerMgr.h"
 
 #include "op/ConnectOp.h"
@@ -200,15 +200,15 @@ public:
         return m_clientState;
     }       
 
-    // SessionState& sessionState()
-    // {
-    //     return m_sessionState;
-    // }
+    SessionState& sessionState()
+    {
+        return m_sessionState;
+    }
 
-    // const SessionState& sessionState() const
-    // {
-    //     return m_sessionState;
-    // }    
+    const SessionState& sessionState() const
+    {
+        return m_sessionState;
+    }    
 
     // ReuseState& reuseState()
     // {
@@ -321,7 +321,7 @@ private:
 
     ConfigState m_configState;
     ClientState m_clientState;
-    // SessionState m_sessionState;
+    SessionState m_sessionState;
 
     TimerMgr m_timerMgr;
     TimerMgr::Timer m_gwDiscoveryTimer;  

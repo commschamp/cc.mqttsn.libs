@@ -44,6 +44,37 @@ void Op::terminateOpImpl([[maybe_unused]] CC_MqttsnAsyncOpStatus status)
     opComplete();
 }
 
+CC_MqttsnAsyncOpStatus Op::translateErrorCodeToAsyncOpStatus(CC_MqttsnErrorCode ec)
+{
+    static const CC_MqttsnAsyncOpStatus Map[] = {
+        /* CC_MqttsnErrorCode_Success */ CC_MqttsnAsyncOpStatus_Complete,
+        /* CC_MqttsnErrorCode_InternalError */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_NotIntitialized */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_Busy */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_NotConnected */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_AlreadyConnected */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_BadParam */ CC_MqttsnAsyncOpStatus_BadParam,
+        /* CC_MqttsnErrorCode_InsufficientConfig */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_OutOfMemory */ CC_MqttsnAsyncOpStatus_OutOfMemory,
+        /* CC_MqttsnErrorCode_BufferOverflow */ CC_MqttsnAsyncOpStatus_OutOfMemory,
+        /* CC_MqttsnErrorCode_NotSupported */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_RetryLater */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_Disconnecting */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_NotSleeping */ CC_MqttsnAsyncOpStatus_InternalError,
+        /* CC_MqttsnErrorCode_PreparationLocked */ CC_MqttsnAsyncOpStatus_InternalError,
+    };
+    static const std::size_t MapSize = std::extent<decltype(Map)>::value;
+    static_assert(MapSize == CC_MqttsnErrorCode_ValuesLimit);
+
+    auto idx = static_cast<unsigned>(ec);
+    if (MapSize <= idx) {
+        COMMS_ASSERT(false); // Should not happen
+        return CC_MqttsnAsyncOpStatus_InternalError;
+    }
+
+    return Map[idx];
+}
+
 CC_MqttsnErrorCode Op::sendMessage(const ProtMessage& msg, unsigned broadcastRadius)
 {
     return m_client.sendMessage(msg, broadcastRadius);

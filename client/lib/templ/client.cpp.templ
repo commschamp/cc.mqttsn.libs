@@ -10,7 +10,7 @@
 #include "ExtConfig.h"
 
 #include "comms/Assert.h"
-//#include "comms/util/ScopeGuard.h"
+#include "comms/util/ScopeGuard.h"
 
 #include <limits>
 
@@ -401,6 +401,81 @@ unsigned cc_mqttsn_##NAME##client_connect_get_retry_count(CC_MqttsnConnectHandle
 {
     COMMS_ASSERT(handle != nullptr);
     return connectOpFromHandle(handle)->getRetryCount();     
+}
+
+void cc_mqttsn_##NAME##client_connect_init_config(CC_MqttsnConnectConfig* config)
+{
+    COMMS_ASSERT(config != nullptr);
+    *config = CC_MqttsnConnectConfig();
+    config->m_duration = cc_mqttsn_client::ClientState::DefaultKeepAlive;
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_config(CC_MqttsnConnectHandle handle, const CC_MqttsnConnectConfig* config)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return connectOpFromHandle(handle)->config(config);
+}
+
+void cc_mqttsn_##NAME##client_connect_init_config_will(CC_MqttsnWillConfig* config)
+{
+    COMMS_ASSERT(config != nullptr);
+    *config = CC_MqttsnWillConfig();    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_config_will(CC_MqttsnConnectHandle handle, const CC_MqttsnWillConfig* config)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return connectOpFromHandle(handle)->willConfig(config);    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_send(CC_MqttsnConnectHandle handle, CC_MqttsnConnectCompleteCb cb, void* cbData)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return connectOpFromHandle(handle)->send(cb, cbData);
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return connectOpFromHandle(handle)->cancel();    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
+    CC_MqttsnClientHandle handle,
+    CC_MqttsnConnectConfig* config,
+    CC_MqttsnWillConfig* willConfig,
+    CC_MqttsnConnectCompleteCb cb, 
+    void* cbData)
+{
+    auto ec = CC_MqttsnErrorCode_Success;
+    auto connect = cc_mqttsn_##NAME##client_connect_prepare(handle, &ec);
+    if (connect == nullptr) {
+        return ec;
+    }
+
+    auto cancelOnExitGuard = 
+        comms::util::makeScopeGuard(
+            [connect]()
+            {
+                [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_connect_cancel(connect);
+            });    
+
+    if (config != nullptr) {
+        ec = cc_mqttsn_##NAME##client_connect_config(connect, config);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            return ec;
+        }
+    }
+
+    if (willConfig != nullptr) {
+        ec = cc_mqttsn_##NAME##client_connect_config_will(connect, willConfig);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            return ec;
+        }        
+    }
+
+    cancelOnExitGuard.release();
+    return cc_mqttsn_##NAME##client_connect_send(connect, cb, cbData);    
 }
 
 // --------------------- Callbacks ---------------------

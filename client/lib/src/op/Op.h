@@ -90,6 +90,7 @@ protected:
     virtual Type typeImpl() const = 0;
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status);
 
+    static CC_MqttsnAsyncOpStatus translateErrorCodeToAsyncOpStatus(CC_MqttsnErrorCode ec);
     CC_MqttsnErrorCode sendMessage(const ProtMessage& msg, unsigned broadcastRadius = 0U);
     void opComplete();
     std::uint16_t allocPacketId();

@@ -50,9 +50,11 @@ private:
     void completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info = nullptr);
     void restartTimer();
     CC_MqttsnErrorCode sendInternal();
+    void timeoutInternal();
 
     static void opTimeoutCb(void* data);
 
+    SearchgwMsg m_searchgwMsg;
     TimerMgr::Timer m_timer;  
     unsigned m_radius = 0U;
     CC_MqttsnSearchCompleteCb m_cb = nullptr;

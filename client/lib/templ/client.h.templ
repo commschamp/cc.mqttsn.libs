@@ -313,6 +313,72 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_count(CC_MqttsnCon
 /// @ingroup connect
 unsigned cc_mqttsn_##NAME##client_connect_get_retry_count(CC_MqttsnConnectHandle handle);
 
+/// @brief Intialize the @ref CC_MqttsnConnectConfig configuration structure.
+/// @param[out] config Configuration structure. Must not be NULL.
+/// @ingroup connect
+void cc_mqttsn_##NAME##client_connect_init_config(CC_MqttsnConnectConfig* config);
+
+/// @brief Perform configuration of the "connect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @param[in] config Configuration structure. Must NOT be NULL. Does not need to be preserved after invocation.
+/// @return Result code of the call.
+/// @ingroup connect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_config(CC_MqttsnConnectHandle handle, const CC_MqttsnConnectConfig* config);
+
+/// @brief Intialize the @ref CC_MqttsnWillConfig configuration structure.
+/// @param[out] config Configuration structure. Must not be NULL.
+/// @ingroup connect
+void cc_mqttsn_##NAME##client_connect_init_config_will(CC_MqttsnWillConfig* config);
+
+/// @brief Perform will configuration of the "connect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @param[in] config Configuration structure. Must NOT be NULL. Does not need to be preserved after invocation.
+/// @return Result code of the call.
+/// @ingroup connect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_config_will(CC_MqttsnConnectHandle handle, const CC_MqttsnWillConfig* config);
+
+/// @brief Send the "connect" operation
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @param[in] cb Callback to be invoked when "connect" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @post The handle of the "connect" operation can be discarded.
+/// @post The provided callback will be invoked when the "connect" operation is complete <b> if and only if</b>
+///     the function returns @ref CC_MqttsnErrorCode_Success.
+/// @ingroup connect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_send(CC_MqttsnConnectHandle handle, CC_MqttsnConnectCompleteCb cb, void* cbData);
+
+/// @brief Cancel the allocated "connect" operation
+/// @details In case the @ref cc_mqttsn_##NAME##client_connect_send() function was successfully called before,
+///     the operation is cancelled @b without callback invocation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
+/// @return Result code of the call.
+/// @post The handle of the "connect" operation is no longer valid and must be discarded.
+/// @ingroup connect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandle handle);
+
+/// @brief Prepare and send "connect" request in one go 
+/// @details Abstracts away sequence of the following functions invocation:
+///     @li @ref cc_mqttsn_##NAME##client_connect_prepare()
+///     @li @ref cc_mqttsn_##NAME##client_connect_config()
+///     @li @ref cc_mqttsn_##NAME##client_connect_config_will()
+///     @li @ref cc_mqttsn_##NAME##client_connect_send()
+///
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] config Connection configuration. Can be NULL.
+/// @param[in] willConfig Will configuration. Can be NULL.
+/// @param[in] cb Callback to be invoked when "connect" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @ingroup connect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
+    CC_MqttsnClientHandle handle,
+    CC_MqttsnConnectConfig* config,
+    CC_MqttsnWillConfig* willConfig,
+    CC_MqttsnConnectCompleteCb cb, 
+    void* cbData);
 
 // --------------------- Callbacks ---------------------
 
