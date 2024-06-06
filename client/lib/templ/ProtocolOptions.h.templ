@@ -21,11 +21,11 @@ public:
                 BaseImpl::field::ClientId
             >;
 
-        /* using Data =
+        using Data =
             std::tuple<
-                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
+                ##FIELD_DATA##,
                 BaseImpl::field::Data
-            >; */
+            >; 
 
         using GwAdd =
             std::tuple<
@@ -33,11 +33,11 @@ public:
                 BaseImpl::field::GwAdd
             >;
 
-        /* using TopicName =
+        using TopicName =
             std::tuple<
-                comms::option::app::FixedSizeStorage<DEFAULT_SEQ_FIXED_STORAGE_SIZE>,
+                ##FIELD_TOPIC##,
                 BaseImpl::field::TopicName
-            >; */
+            >; 
 
         using WillMsg =
             std::tuple<
