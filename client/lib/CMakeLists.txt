@@ -252,7 +252,7 @@ function (gen_lib_mqttsn_client config_file)
         execute_process(
             COMMAND ${CMAKE_COMMAND} -E make_directory ${interface_doc_dir})
 
-        set (doc_tgt_name "doc_mqttsn_client")
+        set (doc_tgt_name "doc_cc_mqttsn_client")
         if (NOT "${CC_MQTTSN_CLIENT_CUSTOM_NAME}" STREQUAL "")
             set (doc_tgt_name "doc_cc_mqttsn_${CC_MQTTSN_CLIENT_CUSTOM_NAME}_client")
         endif ()           

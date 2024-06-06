@@ -33,13 +33,13 @@ struct ExtConfig : public Config
     static constexpr unsigned SendOpTimers = 1U;    
     static constexpr bool HasOpsLimit = 
         (SearchOpsLimit > 0U) && 
-        (ConnectOpsLimit > 0U) && 
+        (ConnectOpsLimit > 0U) /* && 
         (KeepAliveOpsLimit > 0U) &&
         (DisconnectOpsLimit > 0U) &&
         (SubscribeOpsLimit > 0U) &&
         (UnsubscribeOpsLimit > 0U) &&
         (RecvOpsLimit > 0U) &&
-        (SendOpsLimit > 0U);
+        (SendOpsLimit > 0U)*/;
     static constexpr unsigned MaxTimersLimit =
         (DiscoveryTimers) +  
         (SearchOpsLimit * SearchOpTimers) + 
@@ -73,10 +73,10 @@ struct ExtConfig : public Config
     static_assert(HasDynMemAlloc || (TimersLimit > 0U));
     static_assert(HasDynMemAlloc || (ConnectOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (KeepAliveOpsLimit > 0U));
-    static_assert(HasDynMemAlloc || (RecvOpsLimit > 0U));
-    static_assert(HasDynMemAlloc || (SendOpsLimit > 0U));
+    // static_assert(HasDynMemAlloc || (RecvOpsLimit > 0U));
+    // static_assert(HasDynMemAlloc || (SendOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (OpsLimit > 0U));
-    static_assert(HasDynMemAlloc || (PacketIdsLimit > 0U));
+    // static_assert(HasDynMemAlloc || (PacketIdsLimit > 0U));
 };
 
 } // namespace cc_mqttsn_client

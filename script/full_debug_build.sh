@@ -18,7 +18,9 @@ ${SCRIPT_DIR}/prepare_externals.sh
 cd ${BUILD_DIR}
 cmake .. -DCMAKE_INSTALL_PREFIX=${COMMON_INSTALL_DIR} -DCMAKE_BUILD_TYPE=Debug \
     -DCC_MQTTSN_USE_CCACHE=ON \
-    -DCC_MQTTSN_WITH_SANITIZERS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON "$@"
+    -DCC_MQTTSN_WITH_SANITIZERS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON \
+    -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="${ROOT_DIR}/client/lib/script/BareMetalTestConfig.cmake" \
+    "$@"
 
 procs=$(nproc)
 if [ -n "${procs}" ]; then

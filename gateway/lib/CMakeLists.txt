@@ -37,7 +37,7 @@ if (DOXYGEN_FOUND)
     string (REGEX REPLACE "${match_str}" "${replacement_str}" modified_config_text "${config_text}")
     file (WRITE "${output_file}" "${modified_config_text}")
 
-    add_custom_target ("doc_mqttsn_gateway"
+    add_custom_target ("doc_cc_mqttsn_gateway"
             COMMAND ${DOXYGEN_EXECUTABLE} ${output_file}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
