@@ -41,7 +41,6 @@ extern "C" {
 /// @ingroup client
 typedef enum
 {
-    CC_MqttsnQoS_NoGwPublish = -1, ///< QoS=-1. No gateway publish, used by publish only clients.
     CC_MqttsnQoS_AtMostOnceDelivery = 0, ///< QoS=0. At most once delivery.
     CC_MqttsnQoS_AtLeastOnceDelivery = 1, ///< QoS=1. At least once delivery.
     CC_MqttsnQoS_ExactlyOnceDelivery = 2 ///< QoS=2. Exactly once delivery.

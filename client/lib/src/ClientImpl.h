@@ -228,8 +228,10 @@ public:
     // }    
     
 private:
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     using SearchOpAlloc = ObjAllocator<op::SearchOp, ExtConfig::SearchOpsLimit>;
     using SearchOpsList = ObjListType<SearchOpAlloc::Ptr, ExtConfig::SearchOpsLimit>;
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 
     using ConnectOpAlloc = ObjAllocator<op::ConnectOp, ExtConfig::ConnectOpsLimit>;
     using ConnectOpsList = ObjListType<ConnectOpAlloc::Ptr, ExtConfig::ConnectOpsLimit>;
@@ -332,8 +334,10 @@ private:
 
     ProtFrame m_frame;
 
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     SearchOpAlloc m_searchOpAlloc;
     SearchOpsList m_searchOps;    
+#endif
 
     ConnectOpAlloc m_connectOpAlloc;
     ConnectOpsList m_connectOps;

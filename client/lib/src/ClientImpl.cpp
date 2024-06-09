@@ -58,7 +58,6 @@ ClientImpl::ClientImpl() :
     m_sendGwinfoTimer(m_timerMgr.allocTimer())
 {
     // TODO: check validity of timer in during intialization
-    static_cast<void>(m_searchOpAlloc);
 }
 
 ClientImpl::~ClientImpl()
@@ -89,66 +88,61 @@ void ClientImpl::processData(const std::uint8_t* iter, unsigned len)
     }
 }
 
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 op::SearchOp* ClientImpl::searchPrepare(CC_MqttsnErrorCode* ec)
 {
-    if constexpr (Config::HasGatewayDiscovery) {
-        op::SearchOp* op = nullptr;
-        do {
-            if (!m_clientState.m_initialized) {
-                if (m_apiEnterCount > 0U) {
-                    errorLog("Cannot prepare search from within callback");
-                    updateEc(ec, CC_MqttsnErrorCode_RetryLater);
-                    break;
-                }
-
-                auto initEc = initInternal();
-                if (initEc != CC_MqttsnErrorCode_Success) {
-                    updateEc(ec, initEc);
-                    break;
-                }
-            }
-                    
-            if (!m_searchOps.empty()) {
-                // Already allocated
-                errorLog("Another search operation is in progress.");
-                updateEc(ec, CC_MqttsnErrorCode_Busy);
-                break;
-            }
-
-            if (m_ops.max_size() <= m_ops.size()) {
-                errorLog("Cannot start search operation, retry in next event loop iteration.");
+    op::SearchOp* op = nullptr;
+    do {
+        if (!m_clientState.m_initialized) {
+            if (m_apiEnterCount > 0U) {
+                errorLog("Cannot prepare search from within callback");
                 updateEc(ec, CC_MqttsnErrorCode_RetryLater);
                 break;
             }
 
-            if (m_preparationLocked) {
-                errorLog("Another operation is being prepared, cannot prepare \"search\" without \"send\" or \"cancel\" of the previous.");
-                updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            auto initEc = initInternal();
+            if (initEc != CC_MqttsnErrorCode_Success) {
+                updateEc(ec, initEc);
                 break;
             }
+        }
+                
+        if (!m_searchOps.empty()) {
+            // Already allocated
+            errorLog("Another search operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }
 
-            auto ptr = m_searchOpAlloc.alloc(*this);
-            if (!ptr) {
-                errorLog("Cannot allocate new search operation.");
-                updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
-                break;
-            }
+        if (m_ops.max_size() <= m_ops.size()) {
+            errorLog("Cannot start search operation, retry in next event loop iteration.");
+            updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+            break;
+        }
 
-            m_preparationLocked = true;
-            m_ops.push_back(ptr.get());
-            m_searchOps.push_back(std::move(ptr));
-            op = m_searchOps.back().get();
-            updateEc(ec, CC_MqttsnErrorCode_Success);
-        } while (false);
+        if (m_preparationLocked) {
+            errorLog("Another operation is being prepared, cannot prepare \"search\" without \"send\" or \"cancel\" of the previous.");
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            break;
+        }
 
-        return op;
-    }
-    else {
-        errorLog("Gateway discovery support for excluded from compilation");
-        updateEc(ec, CC_MqttsnErrorCode_NotSupported);
-        return nullptr;
-    }
+        auto ptr = m_searchOpAlloc.alloc(*this);
+        if (!ptr) {
+            errorLog("Cannot allocate new search operation.");
+            updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
+            break;
+        }
+
+        m_preparationLocked = true;
+        m_ops.push_back(ptr.get());
+        m_searchOps.push_back(std::move(ptr));
+        op = m_searchOps.back().get();
+        updateEc(ec, CC_MqttsnErrorCode_Success);
+    } while (false);
+
+    return op;
 }
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
 
 op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
 {
@@ -1267,9 +1261,11 @@ CC_MqttsnErrorCode ClientImpl::initInternal()
 //     return true;
 // }
 
-void ClientImpl::opComplete_Search(const op::Op* op)
+void ClientImpl::opComplete_Search([[maybe_unused]] const op::Op* op)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     eraseFromList(op, m_searchOps);
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
 }
 
 void ClientImpl::opComplete_Connect(const op::Op* op)

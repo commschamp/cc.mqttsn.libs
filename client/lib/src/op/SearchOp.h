@@ -19,6 +19,9 @@ namespace cc_mqttsn_client
 namespace op
 {
 
+class SearchOp;
+
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 class SearchOp final : public Op
 {
     using Base = Op;
@@ -62,8 +65,9 @@ private:
 
     static_assert(ExtConfig::SearchOpTimers == 1U);
 };
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 
 } // namespace op
 
-
 } // namespace cc_mqttsn_client
+

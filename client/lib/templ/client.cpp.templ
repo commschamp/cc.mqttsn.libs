@@ -37,10 +37,12 @@ inline CC_MqttsnClientHandle handleFromClient(cc_mqttsn_client::ClientImpl* clie
     return reinterpret_cast<CC_MqttsnClientHandle>(client);
 }
 
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 inline cc_mqttsn_client::op::SearchOp* searchOpFromHandle(CC_MqttsnSearchHandle handle)
 {
     return reinterpret_cast<cc_mqttsn_client::op::SearchOp*>(handle);
 }
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 
 inline CC_MqttsnSearchHandle handleFromSearchOp(cc_mqttsn_client::op::SearchOp* op)
 {
@@ -273,14 +275,28 @@ unsigned cc_mqttsn_##NAME##client_get_allowed_adv_losses(CC_MqttsnClientHandle c
     return clientFromHandle(client)->configState().m_allowedAdvLosses;
 }
 
-CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
+CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(
+    [[maybe_unused]] CC_MqttsnClientHandle client, 
+    [[maybe_unused]] CC_MqttsnErrorCode* ec)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY       
     COMMS_ASSERT(client != nullptr);
     return handleFromSearchOp(clientFromHandle(client)->searchPrepare(ec));
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY   
+    clientFromHandle(client)->errorLog("Gateway discovery support for excluded from compilation");
+    if (ec != nullptr) {
+        *ec = CC_MqttsnErrorCode_NotSupported;
+    }
+    return nullptr;
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY   
 }
 
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_period(CC_MqttsnSearchHandle handle, unsigned ms)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_period(
+    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
+    [[maybe_unused]] unsigned ms)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+
     COMMS_ASSERT(handle != nullptr);
     if (ms == 0U) {
         searchOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
@@ -290,16 +306,32 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_period(CC_MqttsnSea
     COMMS_ASSERT(handle != nullptr);
     searchOpFromHandle(handle)->setRetryPeriod(ms);     
     return CC_MqttsnErrorCode_Success;
+
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+
+    return CC_MqttsnErrorCode_NotSupported;
+
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
-unsigned cc_mqttsn_##NAME##client_search_get_retry_period(CC_MqttsnSearchHandle handle)
+unsigned cc_mqttsn_##NAME##client_search_get_retry_period([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
+    
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
     COMMS_ASSERT(handle != nullptr);
     return searchOpFromHandle(handle)->getRetryPeriod();    
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+    COMMS_ASSERT(false); // Should not be called
+    return 0U;
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
 }
 
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_count(CC_MqttsnSearchHandle handle, unsigned count)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_count(
+    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
+    [[maybe_unused]] unsigned count)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
+
     COMMS_ASSERT(handle != nullptr);
     if (count == 0U) {
         searchOpFromHandle(handle)->client().errorLog("The retry count must be greater than 0");
@@ -308,16 +340,31 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_count(CC_MqttsnSear
     
     searchOpFromHandle(handle)->setRetryCount(count);     
     return CC_MqttsnErrorCode_Success;    
+
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+
+    return CC_MqttsnErrorCode_NotSupported;
+
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
 }
 
-unsigned cc_mqttsn_##NAME##client_search_get_retry_count(CC_MqttsnSearchHandle handle)
+unsigned cc_mqttsn_##NAME##client_search_get_retry_count([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
     COMMS_ASSERT(handle != nullptr);
     return searchOpFromHandle(handle)->getRetryCount();       
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+    COMMS_ASSERT(false); // Should not be called
+    return 0U;
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(CC_MqttsnSearchHandle handle, unsigned broadcastRadius)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(
+    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
+    [[maybe_unused]] unsigned broadcastRadius)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+
     COMMS_ASSERT(handle != nullptr);
     if (broadcastRadius == 0U) {
         searchOpFromHandle(handle)->client().errorLog("The broadcast radius must be greater than 0");
@@ -326,18 +373,36 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(CC_Mqtts
     
     searchOpFromHandle(handle)->setBroadcastRadius(broadcastRadius);     
     return CC_MqttsnErrorCode_Success;  
+
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+
+    return CC_MqttsnErrorCode_NotSupported;
+
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
-unsigned cc_mqttsn_##NAME##client_search_get_broadcastRadius(CC_MqttsnSearchHandle handle)
+unsigned cc_mqttsn_##NAME##client_search_get_broadcastRadius([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
     return searchOpFromHandle(handle)->getBroadcastRadius();       
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+    COMMS_ASSERT(false); // Should not be called
+    return 0U;
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(CC_MqttsnSearchHandle handle, CC_MqttsnSearchCompleteCb cb, void* cbData)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(
+    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
+    [[maybe_unused]] CC_MqttsnSearchCompleteCb cb, 
+    [[maybe_unused]] void* cbData)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
     return searchOpFromHandle(handle)->send(cb, cbData);
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+    return CC_MqttsnErrorCode_NotSupported;
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
@@ -354,10 +419,14 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
     return cc_mqttsn_##NAME##client_search_send(search, cb, cbData);    
 }
 
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel(CC_MqttsnSearchHandle handle)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
     COMMS_ASSERT(handle != nullptr);
     return searchOpFromHandle(handle)->cancel();    
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+    return CC_MqttsnErrorCode_NotSupported;
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
 CC_MqttsnConnectHandle cc_mqttsn_##NAME##client_connect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)

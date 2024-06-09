@@ -5,7 +5,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+
 #include "op/SearchOp.h"
+
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 #include "ClientImpl.h"
 
 #include "comms/util/assign.h"
@@ -166,3 +169,5 @@ void SearchOp::opTimeoutCb(void* data)
 } // namespace op
 
 } // namespace cc_mqttsn_client
+
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
