@@ -137,7 +137,7 @@ void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsi
     clientObj->setRetryCount(value);
 }
 
-void cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned char value)
+void cc_mqttsn_##NAME##client_set_default_broadcast_radius(CC_MqttsnClientHandle client, unsigned char value)
 {
     auto* clientObj = reinterpret_cast<MqttsnClient*>(client.m_ptr);
     clientObj->setBroadcastRadius(value);

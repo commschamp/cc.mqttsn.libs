@@ -152,7 +152,7 @@ int main(int argc, const char** argv)
 
     cc_mqttsn_test_bare_metal_client_set_retry_period(client, 10);
     cc_mqttsn_test_bare_metal_client_set_retry_count(client, 3);
-    cc_mqttsn_test_bare_metal_client_set_broadcast_radius(client, 0);
+    cc_mqttsn_test_bare_metal_client_set_default_broadcast_radius(client, 0);
     cc_mqttsn_test_bare_metal_client_set_searchgw_enabled(client, true);
     cc_mqttsn_test_bare_metal_client_search_gw(client);
     cc_mqttsn_test_bare_metal_client_discard_gw(client, 0);

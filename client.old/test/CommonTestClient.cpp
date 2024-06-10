@@ -29,7 +29,7 @@ ClientLibFuncs createDefaultLibFuncs()
     funcs.m_tickFunc = &cc_mqttsn_client_tick;
     funcs.m_setRetryPeriodFunc = &cc_mqttsn_client_set_retry_period;
     funcs.m_setRetryCountFunc = &cc_mqttsn_client_set_retry_count;
-    funcs.m_setBroadcastRadius = &cc_mqttsn_client_set_broadcast_radius;
+    funcs.m_setBroadcastRadius = &cc_mqttsn_client_set_default_broadcast_radius;
     funcs.m_setSearchgwEnabledFunc = &cc_mqttsn_client_set_searchgw_enabled;
     funcs.m_cancelFunc = &cc_mqttsn_client_cancel;
     funcs.m_connectFunc = &cc_mqttsn_client_connect;

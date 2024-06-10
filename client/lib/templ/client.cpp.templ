@@ -122,7 +122,7 @@ unsigned cc_mqttsn_##NAME##client_get_default_retry_count(CC_MqttsnClientHandle 
     return clientFromHandle(client)->configState().m_retryCount;      
 }
 
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned value)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_broadcast_radius(CC_MqttsnClientHandle client, unsigned value)
 {
     COMMS_ASSERT(client != nullptr);
     if (cc_mqttsn_client::ConfigState::MaxBroadcastRadius < value) {
@@ -134,7 +134,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClient
     return CC_MqttsnErrorCode_Success;
 }
 
-unsigned cc_mqttsn_##NAME##client_get_broadcast_radius(CC_MqttsnClientHandle client)
+unsigned cc_mqttsn_##NAME##client_get_default_broadcast_radius(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
     return clientFromHandle(client)->configState().m_broadcastRadius;
@@ -146,21 +146,27 @@ unsigned cc_mqttsn_##NAME##client_get_available_gateways_count(CC_MqttsnClientHa
     return static_cast<unsigned>(clientFromHandle(client)->clientState().m_gwInfos.size());
 }
 
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_MqttsnClientHandle client, unsigned idx, CC_MqttsnGatewayInfo& info)
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_MqttsnClientHandle client, unsigned idx, CC_MqttsnGatewayInfo* info)
 {
     COMMS_ASSERT(client != nullptr);
-    auto& gwInfos = clientFromHandle(client)->clientState().m_gwInfos;
+    auto clientPtr = clientFromHandle(client);
+    if (info == nullptr) {
+        clientPtr->errorLog("The provided gateway info pointer is invalid");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    auto& gwInfos = clientPtr->clientState().m_gwInfos;
     if (gwInfos.size() <= idx) {
-        clientFromHandle(client)->errorLog("The gateway info index is too high");
+        clientPtr->errorLog("The gateway info index is too high");
         return CC_MqttsnErrorCode_BadParam;
     }
 
     auto& storedInfo = gwInfos[idx];
-    info = CC_MqttsnGatewayInfo();
-    info.m_gwId = storedInfo.m_gwId;
+    *info = CC_MqttsnGatewayInfo();
+    info->m_gwId = storedInfo.m_gwId;
     if (!storedInfo.m_addr.empty()) {
-        info.m_addr = storedInfo.m_addr.data();
-        info.m_addrLen = static_cast<decltype(info.m_addrLen)>(storedInfo.m_addr.size());
+        info->m_addr = storedInfo.m_addr.data();
+        info->m_addrLen = static_cast<decltype(info->m_addrLen)>(storedInfo.m_addr.size());
     }
 
     return CC_MqttsnErrorCode_Success;
@@ -381,7 +387,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
-unsigned cc_mqttsn_##NAME##client_search_get_broadcastRadius([[maybe_unused]] CC_MqttsnSearchHandle handle)
+unsigned cc_mqttsn_##NAME##client_search_get_broadcast_radius([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);

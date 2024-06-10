@@ -292,4 +292,4 @@ if (NOT "${CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES}" STREQUAL "")
     endforeach ()
 endif ()
 
-#add_subdirectory(test)
+add_subdirectory(test)

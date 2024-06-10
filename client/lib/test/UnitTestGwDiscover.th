@@ -1,0 +1,71 @@
+#include "UnitTestDefaultBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestGwDiscover : public CxxTest::TestSuite, public UnitTestDefaultBase
+{
+public:
+    void test1();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+};
+
+void UnitTestGwDiscover::test1()
+{
+    // Testing gw advertisement 
+
+    auto clientPtr = unitTestAllocClient();
+    [[maybe_unused]] auto* client = clientPtr.get();
+
+    const std::uint8_t GwId = 1U;
+    const unsigned AdvDurationMin = 10U;
+
+    UnitTestAdvertiseMsg advertiseMsg;
+    advertiseMsg.field_gwId().setValue(GwId);
+    comms::units::setMinutes(advertiseMsg.field_duration(), AdvDurationMin);
+    unitTestClientInputMessage(client, advertiseMsg);
+
+    {
+        auto* gwInfoReport = unitTestGetGwInfoReport();
+        TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
+        TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
+        TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
+        unitTestPopGwInfoReport();
+        TS_ASSERT(!unitTestHasGwInfoReport());
+    }
+
+    auto* tickReq = unitTestTickInfo();
+    TS_ASSERT_LESS_THAN(AdvDurationMin * 60 * 1000, tickReq->m_req); // Extra buffer after expiry is expected
+
+    unitTestTick(client);
+    {
+        auto* gwInfoReport = unitTestGetGwInfoReport();
+        TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_Tentative);
+        TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
+        TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
+        unitTestPopGwInfoReport();
+        TS_ASSERT(!unitTestHasGwInfoReport());
+    }
+
+    unitTestTick(client);
+    {
+        auto* gwInfoReport = unitTestGetGwInfoReport();
+        TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_Removed);
+        TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
+        TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
+        unitTestPopGwInfoReport();
+        TS_ASSERT(!unitTestHasGwInfoReport());
+    }    
+}

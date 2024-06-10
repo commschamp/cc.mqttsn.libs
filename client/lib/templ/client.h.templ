@@ -113,13 +113,13 @@ unsigned cc_mqttsn_##NAME##client_get_default_retry_count(CC_MqttsnClientHandle 
 /// @return Result code of the call.
 /// @pre The broadcast value cannot exceed 255.
 /// @ingroup client
-CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned value);
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_broadcast_radius(CC_MqttsnClientHandle client, unsigned value);
 
 /// @brief Get current broadcast radius configuration.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
-/// @see @ref cc_mqttsn_##NAME##client_set_broadcast_radius()
+/// @see @ref cc_mqttsn_##NAME##client_set_default_broadcast_radius()
 /// @ingroup client
-unsigned cc_mqttsn_##NAME##client_get_broadcast_radius(CC_MqttsnClientHandle client);
+unsigned cc_mqttsn_##NAME##client_get_default_broadcast_radius(CC_MqttsnClientHandle client);
 
 /// @brief Get number of available gateways.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.

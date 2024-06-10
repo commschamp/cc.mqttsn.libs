@@ -172,7 +172,7 @@ void cc_mqttsn_##NAME##client_set_retry_count(CC_MqttsnClientHandle client, unsi
 ///     set using this function. Default radius value is 0.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_new() function.
 /// @param[in] value Broadcast radius.
-void cc_mqttsn_##NAME##client_set_broadcast_radius(CC_MqttsnClientHandle client, unsigned char value);
+void cc_mqttsn_##NAME##client_set_default_broadcast_radius(CC_MqttsnClientHandle client, unsigned char value);
 
 /// @brief Enable/Disable search for gateways.
 /// @details According to @b MQTT-SN protocol specification the client may 

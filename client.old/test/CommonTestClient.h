@@ -31,7 +31,7 @@ typedef decltype(&cc_mqttsn_client_process_data) ProcessDataFunc;
 typedef decltype(&cc_mqttsn_client_tick) TickFunc;
 typedef decltype(&cc_mqttsn_client_set_retry_period) SetRetryPeriodFunc;
 typedef decltype(&cc_mqttsn_client_set_retry_count) SetRetryCountFunc;
-typedef decltype(&cc_mqttsn_client_set_broadcast_radius) SetBroadcastRadiusFunc;
+typedef decltype(&cc_mqttsn_client_set_default_broadcast_radius) SetBroadcastRadiusFunc;
 typedef decltype(&cc_mqttsn_client_set_searchgw_enabled) SetSearchgwEnabledFunc;
 typedef decltype(&cc_mqttsn_client_cancel) CancelFunc;
 typedef decltype(&cc_mqttsn_client_connect) ConnectFunc;

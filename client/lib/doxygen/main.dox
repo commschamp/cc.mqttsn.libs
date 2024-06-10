@@ -273,10 +273,10 @@
 /// requesting to broadcast the message, the client library also specifies the
 /// broadcast radius. The default broadcast radius value is @b 3.
 /// To change the default configuration value
-/// use @b cc_mqttsn_client_set_broadcast_radius() function. To retrieve
-/// the current configuration use @b cc_mqttsn_client_get_broadcast_radius().
+/// use @b cc_mqttsn_client_set_default_broadcast_radius() function. To retrieve
+/// the current configuration use @b cc_mqttsn_client_get_default_broadcast_radius().
 /// @code
-/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_broadcast_radius(client, 5);
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_broadcast_radius(client, 5);
 /// if (ec != CC_MqttsnErrorCode_Success) {
 ///     ... /* Something went wrong */
 /// }
