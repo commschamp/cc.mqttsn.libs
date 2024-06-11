@@ -116,6 +116,7 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
         return CC_MqttsnErrorCode_InternalError;
     }    
 
+    auto guard = client().apiEnter();
     m_cb = cb;
     m_cbData = cbData;
     

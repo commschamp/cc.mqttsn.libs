@@ -650,6 +650,12 @@ void ClientImpl::handle(GwinfoMsg& msg)
         return; // Report gateway status on exit
     }
 
+    if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
+        // Not enough space
+        errorLog("Failed to store the new gateway information, due to insufficient storage");
+        return;
+    }    
+
     m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
     auto& info = m_clientState.m_gwInfos.back();
     info.m_expiryTimestamp = m_clientState.m_timestamp + m_configState.m_gwAdvTimeoutMs + m_configState.m_retryPeriod;
@@ -658,23 +664,15 @@ void ClientImpl::handle(GwinfoMsg& msg)
     info.m_gwId = msg.field_gwId().value();
     info.m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
     gwInfo = &info;
+    gwStatus = CC_MqttsnGwStatus_AddedByGateway;
 
     auto& addr = msg.field_gwAdd().value();
-    if (addr.empty()) {
-        gwStatus = CC_MqttsnGwStatus_AddedByGateway;
-        return; // Report gateway status on exit
+    if (!addr.empty()) {
+        info.m_addr.assign(addr.begin(), addr.end());
+        gwStatus = CC_MqttsnGwStatus_AddedByClient;
     }    
 
-    if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
-        // Not enough space
-        errorLog("Failed to store the new gateway information, due to insufficient storage");
-        return;
-    }
-
-    info.m_addr.assign(addr.begin(), addr.end());
     monitorGatewayExpiry();
-
-    gwStatus = CC_MqttsnGwStatus_AddedByClient;
     // Report geteway status on exit
 }
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        

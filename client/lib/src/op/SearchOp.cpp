@@ -60,8 +60,9 @@ CC_MqttsnErrorCode SearchOp::send(CC_MqttsnSearchCompleteCb cb, void* cbData)
     if (!m_timer.isValid()) {
         errorLog("The library cannot allocate required number of timers.");
         return CC_MqttsnErrorCode_InternalError;
-    }    
+    }  
 
+    auto guard = client().apiEnter();
     m_cb = cb;
     m_cbData = cbData;
     

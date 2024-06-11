@@ -64,6 +64,12 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_set_gwinfo_delay_request_callback != nullptr); 
 }
 
+UnitTestCommonBase::UnitTestOutputDataInfo::UnitTestOutputDataInfo(const std::uint8_t* buf, unsigned bufLen, unsigned broadcastRadius) :
+    m_data(buf, buf + bufLen),
+    m_broadcastRadius(broadcastRadius)
+{
+}
+
 UnitTestCommonBase::UnitTestGwInfo& UnitTestCommonBase::UnitTestGwInfo::operator=(const CC_MqttsnGatewayInfo& info)
 {
     m_gwId = info.m_gwId;
@@ -83,12 +89,21 @@ UnitTestCommonBase::UnitTestGwInfoReport::UnitTestGwInfoReport(CC_MqttsnGwStatus
     }
 }
 
+UnitTestCommonBase::UnitTestSearchCompleteReport::UnitTestSearchCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info) :
+    m_status(status)
+{
+    if (info != nullptr) {
+        m_info = *info;
+    }
+}
+
 void UnitTestCommonBase::unitTestSetUp()
 {
 }
 
 void UnitTestCommonBase::unitTestTearDown()
 {
+    m_data = ClientData();
 }
 
 UnitTestCommonBase::UnitTestClientPtr UnitTestCommonBase::unitTestAllocClient(bool enableLog)
@@ -127,7 +142,7 @@ void UnitTestCommonBase::unitTestClientInputMessage(CC_MqttsnClient* client, con
 
 bool UnitTestCommonBase::unitTestHasTickReq() const
 {
-    return !m_ticks.empty();
+    return !m_data.m_ticks.empty();
 }
 
 const UnitTestCommonBase::UnitTestTickInfo* UnitTestCommonBase::unitTestTickInfo(bool mustExist) const
@@ -137,13 +152,13 @@ const UnitTestCommonBase::UnitTestTickInfo* UnitTestCommonBase::unitTestTickInfo
         return nullptr;
     }
 
-    return &m_ticks.front();
+    return &m_data.m_ticks.front();
 }
 
 void UnitTestCommonBase::unitTestTick(CC_MqttsnClient* client, unsigned ms)
 {
-    test_assert(!m_ticks.empty());
-    auto& info = m_ticks.front();
+    test_assert(!m_data.m_ticks.empty());
+    auto& info = m_data.m_ticks.front();
     if (ms == 0U) {
         ms = info.m_req;
     }
@@ -154,13 +169,74 @@ void UnitTestCommonBase::unitTestTick(CC_MqttsnClient* client, unsigned ms)
     }
 
     auto msToReport = info.m_req;
-    m_ticks.pop_front();
+    m_data.m_ticks.pop_front();
     m_funcs.m_tick(client, msToReport);
+}
+
+bool UnitTestCommonBase::unitTestHasOutputData() const
+{
+    return !m_data.m_outData.empty();
+}
+
+const UnitTestCommonBase::UnitTestOutputDataInfo* UnitTestCommonBase::unitTestOutputDataInfo(bool mustExist) const
+{
+    if (!unitTestHasOutputData()) {
+        test_assert(!mustExist);
+        return nullptr;
+    }
+
+    return &m_data.m_outData.front();
+}
+
+void UnitTestCommonBase::unitTestPopOutputData()
+{
+    test_assert(unitTestHasOutputData());
+    m_data.m_outData.pop_front();
+}
+
+std::vector<UniTestsMsgPtr> UnitTestCommonBase::unitTestPopAllOuputMessages(bool mustExist)
+{
+    std::vector<UniTestsMsgPtr> result;
+    do {
+        if (!unitTestHasOutputData()) {
+            break;
+        }
+
+        auto readPtr = comms::readIteratorFor<UnitTestMessage>(m_data.m_outData.front().m_data.data());
+        auto endPtr = readPtr + m_data.m_outData.front().m_data.size();
+        UnitTestsFrame frame;
+        while (readPtr < endPtr) {
+            UniTestsMsgPtr msg;
+            auto remLen = static_cast<std::size_t>(std::distance(readPtr, endPtr));
+            auto es = frame.read(msg, readPtr, remLen);
+            if (es != comms::ErrorStatus::Success) {
+                break;
+            }
+
+            result.push_back(std::move(msg));
+            // readPtr is advanced in read operation above
+        }
+
+    } while (false);
+
+    test_assert((!mustExist) || (!result.empty()))
+    return result;
+}
+
+UniTestsMsgPtr UnitTestCommonBase::unitTestPopOutputMessage(bool mustExist)
+{
+    auto allMessages = unitTestPopAllOuputMessages(mustExist);
+    if (allMessages.empty()) {
+        return UniTestsMsgPtr();
+    }
+
+    test_assert(allMessages.size() == 1U);
+    return std::move(allMessages.front());
 }
 
 bool UnitTestCommonBase::unitTestHasGwInfoReport() const
 {
-    return !m_gwInfoReports.empty();
+    return !m_data.m_gwInfoReports.empty();
 }
 
 const UnitTestCommonBase::UnitTestGwInfoReport* UnitTestCommonBase::unitTestGetGwInfoReport(bool mustExist) const
@@ -170,13 +246,52 @@ const UnitTestCommonBase::UnitTestGwInfoReport* UnitTestCommonBase::unitTestGetG
         return nullptr;
     }
 
-    return &m_gwInfoReports.front();
+    return &m_data.m_gwInfoReports.front();
 }
 
 void UnitTestCommonBase::unitTestPopGwInfoReport()
 {
-    test_assert(!m_gwInfoReports.empty());
-    m_gwInfoReports.pop_front();
+    test_assert(!m_data.m_gwInfoReports.empty());
+    m_data.m_gwInfoReports.pop_front();
+}
+
+bool UnitTestCommonBase::unitTestHasSearchCompleteReport() const
+{
+    return !m_data.m_searchCompleteReports.empty();
+}
+
+const UnitTestCommonBase::UnitTestSearchCompleteReport* UnitTestCommonBase::unitTestSearchCompleteReport(bool mustExist) const
+{
+    if (!unitTestHasSearchCompleteReport()) {
+        test_assert(!mustExist);
+        return nullptr;
+    }
+
+    return &m_data.m_searchCompleteReports.front();
+}
+
+void UnitTestCommonBase::unitTestPopSearchCompletereport()
+{
+    test_assert(unitTestHasSearchCompleteReport());
+    m_data.m_searchCompleteReports.pop_front();
+}
+
+void UnitTestCommonBase::unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb)
+{
+    if (cb) {
+        m_data.m_searchCompleteCallbacks.push_back(std::move(cb));
+    }
+
+    m_funcs.m_search_send(search, &UnitTestCommonBase::unitTestSearchCompleteCb, this);
+}
+
+void UnitTestCommonBase::unitTestSearch(CC_MqttsnClient* client, UnitTestSearchCompleteCb&& cb)
+{
+    if (cb) {
+        m_data.m_searchCompleteCallbacks.push_back(std::move(cb));
+    }
+
+    m_funcs.m_search(client, &UnitTestCommonBase::unitTestSearchCompleteCb, this);    
 }
 
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
@@ -184,15 +299,20 @@ void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned 
     m_funcs.m_process_data(client, buf, bufLen);
 }
 
+CC_MqttsnSearchHandle UnitTestCommonBase::apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_search_prepare(client, ec);
+}
+
 void UnitTestCommonBase::unitTestTickProgramCb(void* data, unsigned duration)
 {
     auto* thisPtr = asThis(data);
-    if (thisPtr->m_ticks.empty()) {
-        asThis(data)->m_ticks.emplace_back(duration);
+    if (thisPtr->m_data.m_ticks.empty()) {
+        asThis(data)->m_data.m_ticks.emplace_back(duration);
         return;
     }
 
-    auto& info = thisPtr->m_ticks.front(); 
+    auto& info = thisPtr->m_data.m_ticks.front(); 
     test_assert(info.m_req == 0U);
     info.m_req = duration;
 }
@@ -200,25 +320,21 @@ void UnitTestCommonBase::unitTestTickProgramCb(void* data, unsigned duration)
 unsigned UnitTestCommonBase::unitTestCancelTickWaitCb(void* data)
 {
     auto* thisPtr = asThis(data);
-    test_assert(!thisPtr->m_ticks.empty());
-    auto result = thisPtr->m_ticks.front().m_elapsed;
-    thisPtr->m_ticks.pop_front();
+    test_assert(!thisPtr->m_data.m_ticks.empty());
+    auto result = thisPtr->m_data.m_ticks.front().m_elapsed;
+    thisPtr->m_data.m_ticks.pop_front();
     return result;
 }
 
 void UnitTestCommonBase::unitTestSendOutputDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
 {
-    // TODO:
-    static_cast<void>(data);
-    static_cast<void>(buf);
-    static_cast<void>(bufLen);
-    static_cast<void>(broadcastRadius);
-    test_assert(false);
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_outData.emplace_back(buf, bufLen, broadcastRadius);
 }
 
 void UnitTestCommonBase::unitTestGwStatusReportCb(void* data, CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info)
 {
-    asThis(data)->m_gwInfoReports.emplace_back(status, info);
+    asThis(data)->m_data.m_gwInfoReports.emplace_back(status, info);
 }
 
 void UnitTestCommonBase::unitTestGwDisconnectReportCb(void* data, CC_MqttsnGatewayDisconnectReason reason)
@@ -247,4 +363,24 @@ unsigned UnitTestCommonBase::unitTestGwinfoDelayRequestCb(void* data)
 void UnitTestCommonBase::unitTestErrorLogCb([[maybe_unused]] void* data, const char* msg)
 {
     std::cout << "ERROR: " << msg << std::endl;
+}
+
+void UnitTestCommonBase::unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info)
+{
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_searchCompleteReports.emplace_back(status, info);
+
+    if (thisPtr->m_data.m_searchCompleteCallbacks.empty()) {
+        return;
+    }
+
+    auto& func = thisPtr->m_data.m_searchCompleteCallbacks.front();
+    test_assert(func);
+
+    bool popReport = func(thisPtr->m_data.m_searchCompleteReports.back());
+    thisPtr->m_data.m_searchCompleteCallbacks.pop_front();
+
+    if (popReport) {
+        thisPtr->m_data.m_searchCompleteReports.pop_back();
+    }
 }

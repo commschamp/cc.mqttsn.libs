@@ -9,6 +9,8 @@ class UnitTestGwDiscover : public CxxTest::TestSuite, public UnitTestDefaultBase
 {
 public:
     void test1();
+    void test2();
+    void test3();
 
 private:
     virtual void setUp() override
@@ -27,7 +29,7 @@ void UnitTestGwDiscover::test1()
     // Testing gw advertisement 
 
     auto clientPtr = unitTestAllocClient();
-    [[maybe_unused]] auto* client = clientPtr.get();
+    auto* client = clientPtr.get();
 
     const std::uint8_t GwId = 1U;
     const unsigned AdvDurationMin = 10U;
@@ -68,4 +70,84 @@ void UnitTestGwDiscover::test1()
         unitTestPopGwInfoReport();
         TS_ASSERT(!unitTestHasGwInfoReport());
     }    
+}
+
+void UnitTestGwDiscover::test2()
+{
+    // Testing search, response from GW
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    unitTestSearch(client);
+    TS_ASSERT(unitTestHasOutputData());
+    auto broadcastRadius = unitTestOutputDataInfo()->m_broadcastRadius;
+    TS_ASSERT_LESS_THAN(0U, broadcastRadius);
+
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* searchMsg = dynamic_cast<UnitTestSearchgwMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(searchMsg, nullptr);
+    TS_ASSERT_EQUALS(searchMsg->field_radius().value(), broadcastRadius);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    const std::uint8_t GwId = 1U;
+    UnitTestGwinfoMsg gwinfoMsg;
+    gwinfoMsg.field_gwId().setValue(GwId);
+    unitTestClientInputMessage(client, gwinfoMsg);
+
+    TS_ASSERT(unitTestHasSearchCompleteReport());
+    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
+    TS_ASSERT(searchCompleteReport->m_info.m_addr.empty());
+
+    auto* gwInfoReport = unitTestGetGwInfoReport();
+    TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
+    TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
+    TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestGwDiscover::test3()
+{
+    // Testing search, response from another client
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    unitTestSearch(client);
+    TS_ASSERT(unitTestHasOutputData());
+    auto broadcastRadius = unitTestOutputDataInfo()->m_broadcastRadius;
+    TS_ASSERT_LESS_THAN(0U, broadcastRadius);
+
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* searchMsg = dynamic_cast<UnitTestSearchgwMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(searchMsg, nullptr);
+    TS_ASSERT_EQUALS(searchMsg->field_radius().value(), broadcastRadius);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    const std::uint8_t GwId = 1U;
+    const UnitTestData Addr = {0, 1, 2, 3};
+    UnitTestGwinfoMsg gwinfoMsg;
+    gwinfoMsg.field_gwId().setValue(GwId);
+    comms::util::assign(gwinfoMsg.field_gwAdd().value(), Addr.begin(), Addr.end());
+    unitTestClientInputMessage(client, gwinfoMsg);
+
+    TS_ASSERT(unitTestHasSearchCompleteReport());
+    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
+    TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_addr, Addr);
+
+    auto* gwInfoReport = unitTestGetGwInfoReport();
+    TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByClient);
+    TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
+    TS_ASSERT_EQUALS(gwInfoReport->m_info.m_addr, Addr);
+
+    TS_ASSERT(unitTestHasTickReq());
 }

@@ -4,6 +4,7 @@
 
 #include "UnitTestProtocolDefs.h"
 
+#include <functional>
 #include <list>
 
 class UnitTestCommonBase
@@ -83,6 +84,16 @@ public:
 
     using UnitTestTickInfosList = std::list<UnitTestTickInfo>;
 
+    struct UnitTestOutputDataInfo
+    {
+        UnitTestData m_data;
+        unsigned m_broadcastRadius = 0U;
+
+        UnitTestOutputDataInfo(const std::uint8_t* buf, unsigned bufLen, unsigned broadcastRadius);
+    };
+
+    using UnitTestOutputDataInfosList = std::list<UnitTestOutputDataInfo>;
+
     struct UnitTestGwInfo
     {
         unsigned m_gwId = 0U;
@@ -104,6 +115,18 @@ public:
 
     using UnitTestGwInfoReportsList = std::list<UnitTestGwInfoReport>;
 
+    struct UnitTestSearchCompleteReport
+    {
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+        UnitTestGwInfo m_info;
+
+        UnitTestSearchCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
+    };
+    using UnitTestSearchCompleteReportsList = std::list<UnitTestSearchCompleteReport>;
+
+    using UnitTestSearchCompleteCb = std::function<bool (const UnitTestSearchCompleteReport& info)>;
+    using UnitTestSearchCompleteCbList = std::list<UnitTestSearchCompleteCb>;
+
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
     void unitTestSetUp();
@@ -117,16 +140,38 @@ public:
     const UnitTestTickInfo* unitTestTickInfo(bool mustExist = true) const;
     void unitTestTick(CC_MqttsnClient* client, unsigned ms = 0U);
 
+    bool unitTestHasOutputData() const;
+    const UnitTestOutputDataInfo* unitTestOutputDataInfo(bool mustExist = true) const;
+    void unitTestPopOutputData();
+    std::vector<UniTestsMsgPtr> unitTestPopAllOuputMessages(bool mustExist = true);
+    UniTestsMsgPtr unitTestPopOutputMessage(bool mustExist = true);
+
     bool unitTestHasGwInfoReport() const;
     const UnitTestGwInfoReport* unitTestGetGwInfoReport(bool mustExist = true) const;
     void unitTestPopGwInfoReport();
 
+    bool unitTestHasSearchCompleteReport() const;
+    const UnitTestSearchCompleteReport* unitTestSearchCompleteReport(bool mustExist = true) const;
+    void unitTestPopSearchCompletereport();
+
+    void unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
+    void unitTestSearch(CC_MqttsnClient* client, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
+
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
+    CC_MqttsnSearchHandle apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
 
 protected:
     explicit UnitTestCommonBase(const LibFuncs& funcs);
 
 private:
+    struct ClientData
+    {
+        UnitTestTickInfosList m_ticks;
+        UnitTestOutputDataInfosList m_outData;
+        UnitTestGwInfoReportsList m_gwInfoReports;
+        UnitTestSearchCompleteReportsList m_searchCompleteReports;
+        UnitTestSearchCompleteCbList m_searchCompleteCallbacks;
+    };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);
     static unsigned unitTestCancelTickWaitCb(void* data);
@@ -136,8 +181,8 @@ private:
     static void unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo);
     static unsigned unitTestGwinfoDelayRequestCb(void* data);
     static void unitTestErrorLogCb(void* data, const char* msg);
+    static void unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
 
     LibFuncs m_funcs;  
-    UnitTestTickInfosList m_ticks;
-    UnitTestGwInfoReportsList m_gwInfoReports;
+    ClientData m_data;
 };
