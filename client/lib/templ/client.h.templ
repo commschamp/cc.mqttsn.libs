@@ -127,11 +127,16 @@ unsigned cc_mqttsn_##NAME##client_get_default_broadcast_radius(CC_MqttsnClientHa
 /// @ingroup client
 unsigned cc_mqttsn_##NAME##client_get_available_gateways_count(CC_MqttsnClientHandle client);
 
+/// @brief Initialize the @ref CC_MqttsnGatewayInfo structure.
+/// @details Zeroes all the member fields.
+void cc_mqttsn_##NAME##client_init_gateway_info(CC_MqttsnGatewayInfo* info);
+
 /// @brief Retrieve stored available gateway information
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] idx Index of the available gateway information.
 /// @param[out] info Stored gateway information.
 /// @return Result code of the call.
+/// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_MqttsnClientHandle client, unsigned idx, CC_MqttsnGatewayInfo* info);
 
 /// @brief Update stored available gateway information
@@ -141,6 +146,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_Mqttsn
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] info Updated gateway information.
 /// @return Result code of the call.
+/// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_MqttsnClientHandle client, const CC_MqttsnGatewayInfo* info);
 
 /// @brief Discard stored available gateway information

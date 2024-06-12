@@ -35,6 +35,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_set_default_retry_count != nullptr);
     test_assert(m_funcs.m_get_default_retry_count != nullptr);    
     test_assert(m_funcs.m_set_default_broadcast_radius != nullptr); 
+    test_assert(m_funcs.m_init_gateway_info != nullptr);
     test_assert(m_funcs.m_get_available_gateway_info != nullptr);
     test_assert(m_funcs.m_set_available_gateway_info != nullptr);
     test_assert(m_funcs.m_discard_available_gateway_info != nullptr);
@@ -95,6 +96,13 @@ UnitTestCommonBase::UnitTestSearchCompleteReport::UnitTestSearchCompleteReport(C
     if (info != nullptr) {
         m_info = *info;
     }
+}
+
+void UnitTestCommonBase::UnitTestSearchCompleteReport::assignInfo(CC_MqttsnGatewayInfo& info) const
+{
+    info.m_gwId = m_info.m_gwId;
+    info.m_addr = m_info.m_addr.data();
+    info.m_addrLen = static_cast<decltype(info.m_addrLen)>(m_info.m_addr.size());
 }
 
 void UnitTestCommonBase::unitTestSetUp()
@@ -217,6 +225,7 @@ std::vector<UniTestsMsgPtr> UnitTestCommonBase::unitTestPopAllOuputMessages(bool
             // readPtr is advanced in read operation above
         }
 
+        m_data.m_outData.pop_front();
     } while (false);
 
     test_assert((!mustExist) || (!result.empty()))
@@ -270,7 +279,7 @@ const UnitTestCommonBase::UnitTestSearchCompleteReport* UnitTestCommonBase::unit
     return &m_data.m_searchCompleteReports.front();
 }
 
-void UnitTestCommonBase::unitTestPopSearchCompletereport()
+void UnitTestCommonBase::unitTestPopSearchCompleteReport()
 {
     test_assert(unitTestHasSearchCompleteReport());
     m_data.m_searchCompleteReports.pop_front();
@@ -294,14 +303,65 @@ void UnitTestCommonBase::unitTestSearch(CC_MqttsnClient* client, UnitTestSearchC
     m_funcs.m_search(client, &UnitTestCommonBase::unitTestSearchCompleteCb, this);    
 }
 
+void UnitTestCommonBase::unitTestSearchUpdateAddr(CC_MqttsnClient* client, const UnitTestData& addr)
+{
+    unitTestSearch(
+        client,
+        [this, client, addr](const UnitTestSearchCompleteReport& report)
+        {
+            if (report.m_status != CC_MqttsnAsyncOpStatus_Complete) {
+                return false;
+            }
+
+            auto prevCount = m_funcs.m_get_available_gateways_count(client);
+
+            CC_MqttsnGatewayInfo updInfo;
+            m_funcs.m_init_gateway_info(&updInfo);
+            updInfo.m_gwId = report.m_info.m_gwId;
+            updInfo.m_addr = addr.data();
+            updInfo.m_addrLen = static_cast<decltype(updInfo.m_addrLen)>(addr.size());
+            auto ec = m_funcs.m_set_available_gateway_info(client, &updInfo);
+            test_assert(ec == CC_MqttsnErrorCode_Success);
+
+            auto afterUpdateCount = m_funcs.m_get_available_gateways_count(client);
+            test_assert(prevCount == afterUpdateCount); // Mustn't change
+            return false;
+        });
+}
+
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
 {
     m_funcs.m_process_data(client, buf, bufLen);
 }
 
+CC_MqttsnErrorCode UnitTestCommonBase::apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value)
+{
+    return m_funcs.m_set_default_retry_period(client, value);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value)
+{
+    return m_funcs.m_set_default_retry_count(client, value);
+}
+
 CC_MqttsnSearchHandle UnitTestCommonBase::apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
 {
     return m_funcs.m_search_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value)
+{
+    return m_funcs.m_search_set_retry_period(search, value);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSearchSetRetryCount(CC_MqttsnSearchHandle search, unsigned value)
+{
+    return m_funcs.m_search_set_retry_count(search, value);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSearchSetBroadcastRadius(CC_MqttsnSearchHandle search, unsigned value)
+{
+    return m_funcs.m_search_set_broadcast_radius(search, value);
 }
 
 void UnitTestCommonBase::unitTestTickProgramCb(void* data, unsigned duration)

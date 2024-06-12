@@ -25,6 +25,7 @@ public:
         CC_MqttsnErrorCode (*m_set_default_broadcast_radius)(CC_MqttsnClientHandle, unsigned) = nullptr;
         unsigned (*m_get_default_broadcast_radius)(CC_MqttsnClientHandle) = nullptr;        
         unsigned (*m_get_available_gateways_count)(CC_MqttsnClientHandle) = nullptr;
+        void (*m_init_gateway_info)(CC_MqttsnGatewayInfo* info) = nullptr;
         CC_MqttsnErrorCode (*m_get_available_gateway_info)(CC_MqttsnClientHandle, unsigned, CC_MqttsnGatewayInfo*) = nullptr;
         CC_MqttsnErrorCode (*m_set_available_gateway_info)(CC_MqttsnClientHandle, const CC_MqttsnGatewayInfo*) = nullptr;
         CC_MqttsnErrorCode (*m_discard_available_gateway_info)(CC_MqttsnClientHandle, unsigned char) = nullptr;
@@ -96,7 +97,7 @@ public:
 
     struct UnitTestGwInfo
     {
-        unsigned m_gwId = 0U;
+        std::uint8_t m_gwId = 0U;
         UnitTestData m_addr;
         
         UnitTestGwInfo() = default;
@@ -121,6 +122,7 @@ public:
         UnitTestGwInfo m_info;
 
         UnitTestSearchCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
+        void assignInfo(CC_MqttsnGatewayInfo& info) const;
     };
     using UnitTestSearchCompleteReportsList = std::list<UnitTestSearchCompleteReport>;
 
@@ -152,13 +154,20 @@ public:
 
     bool unitTestHasSearchCompleteReport() const;
     const UnitTestSearchCompleteReport* unitTestSearchCompleteReport(bool mustExist = true) const;
-    void unitTestPopSearchCompletereport();
+    void unitTestPopSearchCompleteReport();
 
     void unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
     void unitTestSearch(CC_MqttsnClient* client, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
+    void unitTestSearchUpdateAddr(CC_MqttsnClient* client, const UnitTestData& addr);
 
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
+    CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
+    CC_MqttsnErrorCode apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value);
     CC_MqttsnSearchHandle apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value);
+    CC_MqttsnErrorCode apiSearchSetRetryCount(CC_MqttsnSearchHandle search, unsigned value);
+    CC_MqttsnErrorCode apiSearchSetBroadcastRadius(CC_MqttsnSearchHandle search, unsigned value);
+
 
 protected:
     explicit UnitTestCommonBase(const LibFuncs& funcs);

@@ -146,6 +146,12 @@ unsigned cc_mqttsn_##NAME##client_get_available_gateways_count(CC_MqttsnClientHa
     return static_cast<unsigned>(clientFromHandle(client)->clientState().m_gwInfos.size());
 }
 
+void cc_mqttsn_##NAME##client_init_gateway_info(CC_MqttsnGatewayInfo* info)
+{
+    COMMS_ASSERT(info != nullptr);
+    *info = CC_MqttsnGatewayInfo();
+}
+
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_MqttsnClientHandle client, unsigned idx, CC_MqttsnGatewayInfo* info)
 {
     COMMS_ASSERT(client != nullptr);

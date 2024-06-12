@@ -491,14 +491,18 @@
 /// from withing the operation completion callback to update the stored gateway address.
 /// @code
 /// CC_MqttsnGatewayInfo info;
+/// cc_mqttsn_client_init_gateway_info(&info);
 /// info.m_gwId = ...;
 /// info.m_addr = ...;
 /// info.m_addrLen = ...;
-/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_available_gateway_info(client, info);
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_available_gateway_info(client, &info);
 /// if (ec != CC_MqttsnErrorCode_Success) {
 ///     printf("Something is wrong");
 /// }
 /// @endcode
+/// It is recommended to initialize @ref CC_MqttsnGatewayInfo structure using the
+/// @b cc_mqttsn_client_init_gateway_info() function before update, even though all
+/// the member fields are assigned new values.
 ///
 /// The application can force the library to discard the available gateway information
 /// by issuing the @b cc_mqttsn_client_discard_available_gateway_info() function.

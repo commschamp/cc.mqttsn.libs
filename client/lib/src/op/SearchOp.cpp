@@ -164,7 +164,7 @@ void SearchOp::timeoutInternal()
 
 void SearchOp::opTimeoutCb(void* data)
 {
-    asSearchOp(data)->sendInternal();
+    asSearchOp(data)->timeoutInternal();
 }
 
 } // namespace op

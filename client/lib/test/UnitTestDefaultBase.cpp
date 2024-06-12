@@ -16,6 +16,7 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_set_default_broadcast_radius = &cc_mqttsn_client_set_default_broadcast_radius;
     funcs.m_get_default_broadcast_radius = &cc_mqttsn_client_get_default_broadcast_radius;
     funcs.m_get_available_gateways_count = &cc_mqttsn_client_get_available_gateways_count;
+    funcs.m_init_gateway_info = &cc_mqttsn_client_init_gateway_info;
     funcs.m_get_available_gateway_info = &cc_mqttsn_client_get_available_gateway_info;
     funcs.m_set_available_gateway_info = &cc_mqttsn_client_set_available_gateway_info;
     funcs.m_discard_available_gateway_info = &cc_mqttsn_client_discard_available_gateway_info;

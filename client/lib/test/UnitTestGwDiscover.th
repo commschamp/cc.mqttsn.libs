@@ -11,6 +11,9 @@ public:
     void test1();
     void test2();
     void test3();
+    void test4();
+    void test5();
+    void test6();
 
 private:
     virtual void setUp() override
@@ -114,7 +117,6 @@ void UnitTestGwDiscover::test2()
 void UnitTestGwDiscover::test3()
 {
     // Testing search, response from another client
-
     auto clientPtr = unitTestAllocClient();
     auto* client = clientPtr.get();
 
@@ -150,4 +152,176 @@ void UnitTestGwDiscover::test3()
     TS_ASSERT_EQUALS(gwInfoReport->m_info.m_addr, Addr);
 
     TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestGwDiscover::test4()
+{
+    // Testing search completed by ADVERTISE
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const UnitTestData Addr = {0, 1, 2, 3};
+
+    unitTestSearchUpdateAddr(client, Addr);
+    TS_ASSERT(unitTestHasOutputData());
+    auto broadcastRadius = unitTestOutputDataInfo()->m_broadcastRadius;
+    TS_ASSERT_LESS_THAN(0U, broadcastRadius);
+
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* searchMsg = dynamic_cast<UnitTestSearchgwMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(searchMsg, nullptr);
+    TS_ASSERT_EQUALS(searchMsg->field_radius().value(), broadcastRadius);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    const std::uint8_t GwId = 1U;
+    const unsigned AdvDurationMin = 10U;
+    
+    UnitTestAdvertiseMsg advertiseMsg;
+    advertiseMsg.field_gwId().setValue(GwId);
+    comms::units::setMinutes(advertiseMsg.field_duration(), AdvDurationMin);
+    unitTestClientInputMessage(client, advertiseMsg);
+
+    TS_ASSERT(unitTestHasSearchCompleteReport());
+    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
+    TS_ASSERT(searchCompleteReport->m_info.m_addr.empty());
+
+    auto* gwInfoReport = unitTestGetGwInfoReport();
+    TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
+    TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
+    TS_ASSERT_EQUALS(gwInfoReport->m_info.m_addr, Addr);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestGwDiscover::test5()
+{
+    // Testing search without response
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const unsigned RetryPeriod = 2000;
+    const unsigned BroadcastRadius = 5;
+
+    auto search = apiSearchPrepare(client);
+    TS_ASSERT_DIFFERS(search, nullptr);
+
+    auto ec = apiSearchSetRetryPeriod(search, RetryPeriod);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    ec = apiSearchSetRetryCount(search, 2U);  
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    ec = apiSearchSetBroadcastRadius(search, BroadcastRadius);  
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    unitTestSearchSend(search);
+
+    TS_ASSERT_EQUALS(unitTestOutputDataInfo()->m_broadcastRadius, BroadcastRadius);
+
+    {
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* searchMsg = dynamic_cast<UnitTestSearchgwMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(searchMsg, nullptr);
+        TS_ASSERT_EQUALS(searchMsg->field_radius().value(), BroadcastRadius);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    TS_ASSERT_EQUALS(unitTestTickInfo()->m_req, RetryPeriod);
+    unitTestTick(client);
+
+    TS_ASSERT(!unitTestHasSearchCompleteReport());
+    TS_ASSERT(unitTestHasOutputData());
+
+    {
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* searchMsg = dynamic_cast<UnitTestSearchgwMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(searchMsg, nullptr);
+        TS_ASSERT_EQUALS(searchMsg->field_radius().value(), BroadcastRadius);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    TS_ASSERT_EQUALS(unitTestTickInfo()->m_req, RetryPeriod);
+    unitTestTick(client);
+
+    TS_ASSERT(unitTestHasSearchCompleteReport());
+    auto* report = unitTestSearchCompleteReport();
+    TS_ASSERT_EQUALS(report->m_status, CC_MqttsnAsyncOpStatus_Timeout);
+    unitTestPopSearchCompleteReport();
+
+    TS_ASSERT(!unitTestHasTickReq());
+}
+
+
+void UnitTestGwDiscover::test6()
+{
+    // Testing search with packet loss
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const unsigned RetryPeriod = 2000;
+    const unsigned BroadcastRadius = 5;
+
+    auto search = apiSearchPrepare(client);
+    TS_ASSERT_DIFFERS(search, nullptr);
+
+    auto ec = apiSearchSetRetryPeriod(search, RetryPeriod);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    ec = apiSearchSetRetryCount(search, 2U);  
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    ec = apiSearchSetBroadcastRadius(search, BroadcastRadius);  
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    unitTestSearchSend(search);
+
+    TS_ASSERT_EQUALS(unitTestOutputDataInfo()->m_broadcastRadius, BroadcastRadius);
+
+    {
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* searchMsg = dynamic_cast<UnitTestSearchgwMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(searchMsg, nullptr);
+        TS_ASSERT_EQUALS(searchMsg->field_radius().value(), BroadcastRadius);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    TS_ASSERT_EQUALS(unitTestTickInfo()->m_req, RetryPeriod);
+    unitTestTick(client);
+
+    TS_ASSERT(!unitTestHasSearchCompleteReport());
+    TS_ASSERT(unitTestHasOutputData());
+
+    {
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* searchMsg = dynamic_cast<UnitTestSearchgwMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(searchMsg, nullptr);
+        TS_ASSERT_EQUALS(searchMsg->field_radius().value(), BroadcastRadius);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    TS_ASSERT_EQUALS(unitTestTickInfo()->m_req, RetryPeriod);
+    unitTestTick(client, 100);
+
+
+    const std::uint8_t GwId = 1U;
+    UnitTestGwinfoMsg gwinfoMsg;
+    gwinfoMsg.field_gwId().setValue(GwId);
+    unitTestClientInputMessage(client, gwinfoMsg);
+
+    TS_ASSERT(unitTestHasSearchCompleteReport());
+    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
+    TS_ASSERT(searchCompleteReport->m_info.m_addr.empty());
+
+    auto* gwInfoReport = unitTestGetGwInfoReport();
+    TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
+    TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
+    TS_ASSERT(gwInfoReport->m_info.m_addr.empty());    
+
+    TS_ASSERT(unitTestHasTickReq()); // For the ADVERTISE
 }
