@@ -30,7 +30,7 @@ public:
     {
         Type_Search,
         Type_Connect,
-        // Type_KeepAlive,
+        Type_KeepAlive,
         // Type_Disconnect,
         // Type_Subscribe,
         // Type_Unsubscribe,

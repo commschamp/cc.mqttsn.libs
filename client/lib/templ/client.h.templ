@@ -371,7 +371,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandl
 ///     @li @ref cc_mqttsn_##NAME##client_connect_config_will()
 ///     @li @ref cc_mqttsn_##NAME##client_connect_send()
 ///
-/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] config Connection configuration. Can be NULL.
 /// @param[in] willConfig Will configuration. Can be NULL.
 /// @param[in] cb Callback to be invoked when "connect" operation is complete.
@@ -380,9 +380,9 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandl
 /// @return Result code of the call.
 /// @ingroup connect
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
-    CC_MqttsnClientHandle handle,
-    CC_MqttsnConnectConfig* config,
-    CC_MqttsnWillConfig* willConfig,
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnConnectConfig* config,
+    const CC_MqttsnWillConfig* willConfig,
     CC_MqttsnConnectCompleteCb cb, 
     void* cbData);
 

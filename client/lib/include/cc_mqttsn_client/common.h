@@ -91,6 +91,7 @@ typedef enum
     CC_MqttsnAsyncOpStatus_Aborted = 3, ///< The operation has been aborted before completion due to client's side operation.
     CC_MqttsnAsyncOpStatus_OutOfMemory = 4, ///< The client library wasn't able to allocate necessary memory.
     CC_MqttsnAsyncOpStatus_BadParam = 5, ///< Bad value has been returned from the relevant callback.
+    CC_MqttsnAsyncOpStatus_GatewayDisconnected = 6, ///< Gateway disconnection detected during the operation execution.
     CC_MqttsnAsyncOpStatus_ValuesLimit ///< Limit for the values
 } CC_MqttsnAsyncOpStatus;
 

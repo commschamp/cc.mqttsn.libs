@@ -522,14 +522,14 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandl
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
-    CC_MqttsnClientHandle handle,
-    CC_MqttsnConnectConfig* config,
-    CC_MqttsnWillConfig* willConfig,
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnConnectConfig* config,
+    const CC_MqttsnWillConfig* willConfig,
     CC_MqttsnConnectCompleteCb cb, 
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
-    auto connect = cc_mqttsn_##NAME##client_connect_prepare(handle, &ec);
+    auto connect = cc_mqttsn_##NAME##client_connect_prepare(client, &ec);
     if (connect == nullptr) {
         return ec;
     }

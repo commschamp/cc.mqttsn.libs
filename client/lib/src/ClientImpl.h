@@ -19,7 +19,7 @@
 
 #include "op/ConnectOp.h"
 // #include "op/DisconnectOp.h"
-// #include "op/KeepAliveOp.h"
+#include "op/KeepAliveOp.h"
 #include "op/Op.h"
 // #include "op/RecvOp.h"
 #include "op/SearchOp.h"
@@ -160,16 +160,17 @@ public:
 //     virtual void handle(PubcompMsg& msg) override;
 // #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 
+    virtual void handle(PingreqMsg& msg) override;
     virtual void handle(ProtMessage& msg) override;
 
     // -------------------- Ops Access API -----------------------------
 
     CC_MqttsnErrorCode sendMessage(const ProtMessage& msg, unsigned broadcastRadius = 0);
     void opComplete(const op::Op* op);
-    // void brokerConnected(bool sessionPresent);
-    // void brokerDisconnected(
-    //     CC_MqttsnBrokerDisconnectReason reason = CC_MqttsnBrokerDisconnectReason_ValuesLimit,  
-    //     CC_MqttsnAsyncOpStatus status = CC_MqttsnAsyncOpStatus_BrokerDisconnected);
+    void gatewayConnected();
+    void gatewayDisconnected(
+        CC_MqttsnGatewayDisconnectReason reason = CC_MqttsnGatewayDisconnectReason_ValuesLimit,  
+        CC_MqttsnAsyncOpStatus status = CC_MqttsnAsyncOpStatus_GatewayDisconnected);
     // void reportMsgInfo(const CC_MqttsnMessageInfo& info);
     // bool hasPausedSendsBefore(const op::SendOp* sendOp) const;
     // bool hasHigherQosSendsBefore(const op::SendOp* sendOp, op::Op::Qos qos) const;
@@ -236,8 +237,8 @@ private:
     using ConnectOpAlloc = ObjAllocator<op::ConnectOp, ExtConfig::ConnectOpsLimit>;
     using ConnectOpsList = ObjListType<ConnectOpAlloc::Ptr, ExtConfig::ConnectOpsLimit>;
 
-    // using KeepAliveOpAlloc = ObjAllocator<op::KeepAliveOp, ExtConfig::KeepAliveOpsLimit>;
-    // using KeepAliveOpsList = ObjListType<KeepAliveOpAlloc::Ptr, ExtConfig::KeepAliveOpsLimit>;
+    using KeepAliveOpAlloc = ObjAllocator<op::KeepAliveOp, ExtConfig::KeepAliveOpsLimit>;
+    using KeepAliveOpsList = ObjListType<KeepAliveOpAlloc::Ptr, ExtConfig::KeepAliveOpsLimit>;
 
     // using DisconnectOpAlloc = ObjAllocator<op::DisconnectOp, ExtConfig::DisconnectOpsLimit>;
     // using DisconnectOpsList = ObjListType<DisconnectOpAlloc::Ptr, ExtConfig::DisconnectOpsLimit>;
@@ -267,8 +268,8 @@ private:
 
     void doApiEnter();
     void doApiExit();
-    // void createKeepAliveOpIfNeeded();
-    // void terminateOps(CC_MqttsnAsyncOpStatus status, TerminateMode mode);
+    void createKeepAliveOpIfNeeded();
+    void terminateOps(CC_MqttsnAsyncOpStatus status);
     void cleanOps();
     void errorLogInternal(const char* msg);
     CC_MqttsnErrorCode initInternal();
@@ -280,7 +281,7 @@ private:
 
     void opComplete_Search(const op::Op* op);
     void opComplete_Connect(const op::Op* op);
-    // void opComplete_KeepAlive(const op::Op* op);
+    void opComplete_KeepAlive(const op::Op* op);
     // void opComplete_Disconnect(const op::Op* op);
     // void opComplete_Subscribe(const op::Op* op);
     // void opComplete_Unsubscribe(const op::Op* op);
@@ -342,8 +343,8 @@ private:
     ConnectOpAlloc m_connectOpAlloc;
     ConnectOpsList m_connectOps;
 
-    // KeepAliveOpAlloc m_keepAliveOpsAlloc;
-    // KeepAliveOpsList m_keepAliveOps;
+    KeepAliveOpAlloc m_keepAliveOpsAlloc;
+    KeepAliveOpsList m_keepAliveOps;
 
     // DisconnectOpAlloc m_disconnectOpsAlloc;
     // DisconnectOpsList m_disconnectOps;

@@ -45,6 +45,16 @@ CC_MqttsnErrorCode ConnectOp::config(const CC_MqttsnConnectConfig* config)
         return CC_MqttsnErrorCode_BadParam;
     }
 
+    if (client().clientState().m_firstConnect && (!config->m_cleanSession)) {
+        errorLog("First connect must force clean session");
+        return CC_MqttsnErrorCode_BadParam;
+    }    
+
+    if (config->m_duration == 0U) {
+        errorLog("The connect duration value must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
     if (config->m_clientId != nullptr) {
         m_connectMsg.field_clientId().value() = config->m_clientId;
     }
@@ -109,6 +119,11 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
     if (cb == nullptr) {
         errorLog("Connect completion callback is not provided.");
         return CC_MqttsnErrorCode_BadParam;
+    }
+
+    if (m_connectMsg.field_duration().value() == 0U) {
+        errorLog("The connect operation hasn't been configured properly");
+        return CC_MqttsnErrorCode_InsufficientConfig;
     }
 
     if (!m_timer.isValid()) {
@@ -189,6 +204,11 @@ void ConnectOp::handle(ConnackMsg& msg)
         errorLog("Connection accepted without full will inquiry");
     }
 #endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL    
+
+    if (info.m_returnCode == CC_MqttsnReturnCode_Accepted) {
+        client().sessionState().m_keepAliveMs = comms::units::getMilliseconds<unsigned>(m_connectMsg.field_duration());
+        client().gatewayConnected();
+    }
 
     completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
 }

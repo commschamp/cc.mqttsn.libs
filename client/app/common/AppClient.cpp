@@ -294,6 +294,7 @@ std::string AppClient::toString(CC_MqttsnAsyncOpStatus val)
         /* CC_MqttsnAsyncOpStatus_Aborted */ "Aborted",
         /* CC_MqttsnAsyncOpStatus_OutOfMemory */ "Out of Memory",
         /* CC_MqttsnAsyncOpStatus_BadParam */ "Bad Param",
+        /* CC_MqttsnAsyncOpStatus_GatewayDisconnected */ "Gateway Disconnected",
     };
 
     static constexpr std::size_t MapSize = std::extent<decltype(Map)>::value;

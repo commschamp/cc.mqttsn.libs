@@ -33,8 +33,8 @@ struct ExtConfig : public Config
     static constexpr unsigned SendOpTimers = 1U;    
     static constexpr bool HasOpsLimit = 
         (SearchOpsLimit > 0U) && 
-        (ConnectOpsLimit > 0U) /* && 
-        (KeepAliveOpsLimit > 0U) &&
+        (ConnectOpsLimit > 0U) && 
+        (KeepAliveOpsLimit > 0U) /* &&
         (DisconnectOpsLimit > 0U) &&
         (SubscribeOpsLimit > 0U) &&
         (UnsubscribeOpsLimit > 0U) &&

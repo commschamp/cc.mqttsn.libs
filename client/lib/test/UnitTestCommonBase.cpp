@@ -54,6 +54,18 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_search_send != nullptr);
     test_assert(m_funcs.m_search_cancel != nullptr);
     test_assert(m_funcs.m_search != nullptr);
+    test_assert(m_funcs.m_connect_prepare != nullptr);
+    test_assert(m_funcs.m_connect_set_retry_period != nullptr);
+    test_assert(m_funcs.m_connect_get_retry_period != nullptr);
+    test_assert(m_funcs.m_connect_set_retry_count != nullptr);
+    test_assert(m_funcs.m_connect_get_retry_count != nullptr);
+    test_assert(m_funcs.m_connect_init_config != nullptr);
+    test_assert(m_funcs.m_connect_config != nullptr);
+    test_assert(m_funcs.m_connect_init_config_will != nullptr);
+    test_assert(m_funcs.m_connect_config_will != nullptr);
+    test_assert(m_funcs.m_connect_send != nullptr);
+    test_assert(m_funcs.m_connect_cancel != nullptr);
+    test_assert(m_funcs.m_connect != nullptr);
 
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 

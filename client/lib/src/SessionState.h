@@ -16,8 +16,8 @@ struct SessionState
     static constexpr unsigned DefaultKeepAlive = 60;
 
     unsigned m_keepAliveMs = 0U;
-    // bool m_connected = false;
-    // bool m_disconnecting = false;
+    bool m_connected = false;
+    bool m_disconnecting = false;
 };
 
 } // namespace cc_mqttsn_client
