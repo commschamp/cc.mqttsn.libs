@@ -16,7 +16,7 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class WillUpdate : public SessionOp
+class WillUpdate final : public SessionOp
 {
     typedef SessionOp Base;
 

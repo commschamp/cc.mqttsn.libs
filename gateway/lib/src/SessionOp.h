@@ -42,6 +42,11 @@ public:
         brokerConnectionUpdatedImpl();
     }
 
+    void connStatusUpdated()
+    {
+        connStatusUpdatedImpl();
+    }
+
 protected:
     SessionOp(SessionImpl& session)
       : m_session(session)
@@ -75,6 +80,7 @@ protected:
     virtual void tickImpl();
     virtual void startImpl();
     virtual void brokerConnectionUpdatedImpl();
+    virtual void connStatusUpdatedImpl();
 
 private:
     SessionImpl& m_session;

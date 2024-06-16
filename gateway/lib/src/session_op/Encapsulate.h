@@ -24,7 +24,7 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class Encapsulate : public SessionOp
+class Encapsulate final : public SessionOp
 {
     using Base = SessionOp;
 

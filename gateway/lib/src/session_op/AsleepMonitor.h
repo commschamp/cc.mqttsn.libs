@@ -16,7 +16,7 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class AsleepMonitor : public SessionOp
+class AsleepMonitor final : public SessionOp
 {
     typedef SessionOp Base;
 
@@ -35,7 +35,7 @@ private:
     virtual void handle(MqttMessage& msg) override;
 
     void checkTickRequired();
-    void reqNextTick();
+    void reqNextTickInternal();
 
     Timestamp m_lastPing = 0;
     unsigned m_duration = 0U;

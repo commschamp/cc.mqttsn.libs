@@ -16,31 +16,28 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class Asleep final : public SessionOp
+class Ping final : public SessionOp
 {
     typedef SessionOp Base;
 
 public:
-    explicit Asleep(SessionImpl& session);
-    ~Asleep();
+    explicit Ping(SessionImpl& session);
+    ~Ping();
+
+    void clientConnected();
 
 protected:
     virtual void tickImpl() override;
-    virtual void brokerConnectionUpdatedImpl() override;
+    virtual void connStatusUpdatedImpl() override;
 
 private:
     using Base::handle;
-    virtual void handle(DisconnectMsg_SN& msg) override;
     virtual void handle(MqttsnMessage& msg) override;
-    virtual void handle(PingrespMsg& msg) override;
-    virtual void handle(MqttMessage& msg) override;
 
-    void doPing();
-    void reqNextTick();
+    void sendPing();
+    void restartPingTimer();
 
     unsigned m_attempt = 0;
-    Timestamp m_lastReq = 0;
-    Timestamp m_lastResp = 0;
 };
 
 }  // namespace session_op

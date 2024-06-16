@@ -19,7 +19,7 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class Forward : public SessionOp
+class Forward final : public SessionOp
 {
     typedef SessionOp Base;
 

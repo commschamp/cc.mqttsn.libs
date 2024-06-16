@@ -7,6 +7,8 @@
 
 #include "Asleep.h"
 
+#include "SessionImpl.h"
+
 #include <cassert>
 #include <algorithm>
 
@@ -52,6 +54,7 @@ void Asleep::handle(DisconnectMsg_SN& msg)
 
     sendDisconnectToClient();
     state().m_connStatus = ConnectionStatus::Asleep;
+    session().connStatusUpdated();
     m_attempt = 0;
     doPing();
 }

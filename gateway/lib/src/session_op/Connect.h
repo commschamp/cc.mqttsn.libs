@@ -17,7 +17,7 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class Connect : public SessionOp
+class Connect final : public SessionOp
 {
     using Base = SessionOp;
 

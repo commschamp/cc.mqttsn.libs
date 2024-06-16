@@ -7,6 +7,8 @@
 
 #include "Disconnect.h"
 
+#include "SessionImpl.h"
+
 #include <cassert>
 
 namespace cc_mqttsn_gateway
@@ -57,6 +59,7 @@ void Disconnect::sendDisconnectSn()
 {
     Base::sendDisconnectToClient();
     state().m_connStatus = ConnectionStatus::Disconnected;
+    session().connStatusUpdated();
 }
 
 }  // namespace session_op

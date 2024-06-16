@@ -16,7 +16,7 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class PubRecv : public SessionOp
+class PubRecv final : public SessionOp
 {
     typedef SessionOp Base;
 

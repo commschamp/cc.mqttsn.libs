@@ -46,7 +46,7 @@ void AsleepMonitor::handle(DisconnectMsg_SN& msg)
 
     m_lastPing = state().m_timestamp;
     m_duration = ((static_cast<unsigned>(msg.field_duration().field().value()) * 3000) / 2);
-    reqNextTick();
+    reqNextTickInternal();
 }
 
 void AsleepMonitor::handle([[maybe_unused]] PingreqMsg_SN& msg)
@@ -54,7 +54,7 @@ void AsleepMonitor::handle([[maybe_unused]] PingreqMsg_SN& msg)
     m_lastPing = state().m_timestamp;
     cancelTick();
     if (state().m_connStatus == ConnectionStatus::Asleep) {
-        reqNextTick();
+        reqNextTickInternal();
     }
 }
 
@@ -75,7 +75,7 @@ void AsleepMonitor::checkTickRequired()
     }
 }
 
-void AsleepMonitor::reqNextTick()
+void AsleepMonitor::reqNextTickInternal()
 {
     assert(0 < m_lastPing);
 

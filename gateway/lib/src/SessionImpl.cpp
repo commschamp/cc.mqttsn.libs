@@ -19,6 +19,7 @@
 #include "session_op/Asleep.h"
 #include "session_op/AsleepMonitor.h"
 #include "session_op/Encapsulate.h"
+#include "session_op/Ping.h"
 #include "session_op/PubRecv.h"
 #include "session_op/PubSend.h"
 #include "session_op/Forward.h"
@@ -52,6 +53,7 @@ SessionImpl::SessionImpl()
     m_ops.emplace_back(new session_op::PubSend(*this));
     m_ops.emplace_back(new session_op::Forward(*this));
     m_ops.emplace_back(new session_op::WillUpdate(*this));
+    m_ops.emplace_back(new session_op::Ping(*this));
     m_ops.emplace_back(new session_op::Encapsulate(*this));
     m_encapsulateOp = static_cast<decltype(m_encapsulateOp)>(m_ops.back().get());
 
@@ -263,6 +265,13 @@ void SessionImpl::clientConnectedReport(const std::string& clientId)
 {
     if (m_clientConnectedCb) {
         m_clientConnectedCb(clientId);
+    }
+}
+
+void SessionImpl::connStatusUpdated()
+{
+    for (auto& op : m_ops) {
+        op->connStatusUpdated();
     }
 }
 

@@ -16,7 +16,7 @@ namespace cc_mqttsn_gateway
 namespace session_op
 {
 
-class Disconnect : public SessionOp
+class Disconnect final : public SessionOp
 {
     typedef SessionOp Base;
 

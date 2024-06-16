@@ -81,4 +81,8 @@ void SessionOp::brokerConnectionUpdatedImpl()
 {
 }
 
+void SessionOp::connStatusUpdatedImpl()
+{
+}
+
 }  // namespace cc_mqttsn_gateway

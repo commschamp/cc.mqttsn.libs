@@ -17,6 +17,7 @@
 #include "MsgHandler.h"
 #include "SessionOp.h"
 #include "session_op/Encapsulate.h"
+#include "session_op/Ping.h"
 #include "common.h"
 #include "comms/util/ScopeGuard.h"
 
@@ -216,6 +217,7 @@ public:
     void termRequest();
     void brokerReconnectRequest();
     void clientConnectedReport(const std::string& clientId);
+    void connStatusUpdated();
     AuthInfo authInfoRequest(const std::string& clientId);
     void reportError(const char* str);
 

@@ -58,6 +58,7 @@ void Connect::handle(ConnectMsg_SN& msg)
         session().reportError("Different client id reconnection in the same session");
         sendDisconnectToClient();
         state().m_connStatus = ConnectionStatus::Disconnected;
+        session().connStatusUpdated();
         termRequest();
         return;
     }
@@ -191,6 +192,7 @@ void Connect::doNextStep()
     if (state().m_retryCount <= m_internalState.m_attempt) {
         m_clientId.clear();
         state().m_connStatus = ConnectionStatus::Disconnected;
+        session().connStatusUpdated();
         return;
     }
 
@@ -372,6 +374,7 @@ void Connect::processAck(ConnackMsg::Field_returnCode::ValueType respCode)
     sessionState.m_username = std::move(m_authInfo.first);
     sessionState.m_password = std::move(m_authInfo.second);
     clearInternalState();
+    session().connStatusUpdated();
 
     if (m_clean) {
         sessionState.m_regMgr.clearRegistrations();
@@ -389,6 +392,7 @@ void Connect::clearConnectionInfo(bool clearClientId)
     sessionState.m_connStatus = ConnectionStatus::Disconnected;
     sessionState.m_keepAlive = 0;
     sessionState.m_will = WillInfo();
+    session().connStatusUpdated();
 }
 
 void Connect::clearInternalState()
