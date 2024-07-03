@@ -56,6 +56,7 @@ public:
         CC_MqttsnErrorCode (*m_connect_send)(CC_MqttsnConnectHandle, CC_MqttsnConnectCompleteCb, void*) = nullptr;
         CC_MqttsnErrorCode (*m_connect_cancel)(CC_MqttsnConnectHandle) = nullptr;
         CC_MqttsnErrorCode (*m_connect)(CC_MqttsnClientHandle, const CC_MqttsnConnectConfig*, const CC_MqttsnWillConfig*, CC_MqttsnConnectCompleteCb, void*) = nullptr;
+        bool (*m_is_connected)(CC_MqttsnClientHandle) = nullptr;
 
         void (*m_set_next_tick_program_callback)(CC_MqttsnClientHandle, CC_MqttsnNextTickProgramCb, void*) = nullptr;
         void (*m_set_cancel_next_tick_wait_callback)(CC_MqttsnClientHandle, CC_MqttsnCancelNextTickWaitCb, void*) = nullptr;
@@ -140,6 +141,26 @@ public:
     using UnitTestSearchCompleteCb = std::function<bool (const UnitTestSearchCompleteReport& info)>;
     using UnitTestSearchCompleteCbList = std::list<UnitTestSearchCompleteCb>;
 
+    struct UnitTestConnectInfo
+    {
+        CC_MqttsnReturnCode m_returnCode = CC_MqttsnReturnCode_ValuesLimit;
+        
+        UnitTestConnectInfo() = default;
+        UnitTestConnectInfo(const UnitTestConnectInfo&) = default;
+        UnitTestConnectInfo& operator=(const UnitTestConnectInfo&) = default;
+        UnitTestConnectInfo& operator=(const CC_MqttsnConnectInfo& info);
+    };    
+
+    struct UnitTestConnectCompleteReport
+    {
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+        UnitTestConnectInfo m_info;
+
+        UnitTestConnectCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
+    };
+
+    using UnitTestConnectCompleteReportList = std::list<UnitTestConnectCompleteReport>;    
+
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
     void unitTestSetUp();
@@ -167,9 +188,15 @@ public:
     const UnitTestSearchCompleteReport* unitTestSearchCompleteReport(bool mustExist = true) const;
     void unitTestPopSearchCompleteReport();
 
-    void unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
+    CC_MqttsnErrorCode unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
     void unitTestSearch(CC_MqttsnClient* client, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
     void unitTestSearchUpdateAddr(CC_MqttsnClient* client, const UnitTestData& addr);
+
+    bool unitTestHasConnectCompleteReport() const;
+    const UnitTestConnectCompleteReport* unitTestConnectCompleteReport(bool mustExist = true) const;
+    void unitTestPopConnectCompleteReport();
+
+    CC_MqttsnErrorCode unitTestConnectSend(CC_MqttsnConnectHandle connect);
 
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
@@ -178,7 +205,13 @@ public:
     CC_MqttsnErrorCode apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value);
     CC_MqttsnErrorCode apiSearchSetRetryCount(CC_MqttsnSearchHandle search, unsigned value);
     CC_MqttsnErrorCode apiSearchSetBroadcastRadius(CC_MqttsnSearchHandle search, unsigned value);
-
+    CC_MqttsnConnectHandle apiConnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiConnectSetRetryCount(CC_MqttsnConnectHandle connect, unsigned count);
+    void apiConnectInitConfig(CC_MqttsnConnectConfig* config);
+    void apiConnectInitConfigWill(CC_MqttsnWillConfig* config);
+    CC_MqttsnErrorCode apiConnectConfig(CC_MqttsnConnectHandle connect, const CC_MqttsnConnectConfig* config);
+    CC_MqttsnErrorCode apiConnectConfigWill(CC_MqttsnConnectHandle connect, const CC_MqttsnWillConfig* config);
+    bool apiIsConnected(CC_MqttsnClient* client);
 
 protected:
     explicit UnitTestCommonBase(const LibFuncs& funcs);
@@ -191,6 +224,7 @@ private:
         UnitTestGwInfoReportsList m_gwInfoReports;
         UnitTestSearchCompleteReportsList m_searchCompleteReports;
         UnitTestSearchCompleteCbList m_searchCompleteCallbacks;
+        UnitTestConnectCompleteReportList m_connectCompleteReports;
     };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);
@@ -202,6 +236,7 @@ private:
     static unsigned unitTestGwinfoDelayRequestCb(void* data);
     static void unitTestErrorLogCb(void* data, const char* msg);
     static void unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
+    static void unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
 
     LibFuncs m_funcs;  
     ClientData m_data;

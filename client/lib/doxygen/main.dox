@@ -267,6 +267,12 @@
 ///     ... /* Something went wrong */
 /// }
 /// @endcode
+/// Note that the function specify number of @b retries, i.e. when number of retries is @b 1
+/// the relevant message will be sent twice before reporting failure (in case there is no response of course):
+/// once when the send is explicitly requested and the second time is an actual retry.
+/// Following the same logic, when the configured number of retries is @b 0, the message will be send only
+/// once (when the request is issued) and will not try to re-send it when the
+/// response is not received in time.
 ///
 /// @section doc_cc_mqttsn_client_broadcast_radius Default Broadcast Radius
 /// The MQTT-SN protocol defines several messages that are broadcasted. When

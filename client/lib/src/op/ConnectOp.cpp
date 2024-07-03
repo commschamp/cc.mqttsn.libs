@@ -73,7 +73,7 @@ CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillCon
     }
 
     m_connectMsg.field_flags().field_mid().setBitValue_Will(true);
-    if ((config->m_topic == nullptr) || (config->m_topic[0] != '\0')) {
+    if ((config->m_topic == nullptr) || (config->m_topic[0] == '\0')) {
         if (0U < config->m_dataLen) {
             errorLog("Will configuration contains empty topic and not empty message.");
             return CC_MqttsnErrorCode_BadParam;            
@@ -89,6 +89,7 @@ CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillCon
 
     m_willtopicMsg.field_flags().setExists();
     m_willtopicMsg.field_flags().field().field_qos().setValue(config->m_qos);
+    m_willtopicMsg.field_flags().field().field_mid().setBitValue_Retain(config->m_retain);
     m_willtopicMsg.field_willTopic().value() = config->m_topic;
 
     if (0U < config->m_dataLen) {
@@ -135,13 +136,13 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
     m_cb = cb;
     m_cbData = cbData;
     
+    m_origRetryCount = getRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         return ec;
     }
 
     completeOnError.release();
-    m_origRetryCount = getRetryCount();
     return CC_MqttsnErrorCode_Success;
 }
 
@@ -259,10 +260,9 @@ CC_MqttsnErrorCode ConnectOp::sendInternal()
     auto func = Map[m_stage];
     auto ec = sendMessage((this->*func)());
     if (ec == CC_MqttsnErrorCode_Success) {
-        COMMS_ASSERT(0U < getRetryCount());
-        decRetryCount();
         restartTimer();
     }
+    
     return ec;
 }
 
@@ -279,6 +279,8 @@ void ConnectOp::timeoutInternal()
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }  
+
+    decRetryCount();
 }
 
 const ProtMessage& ConnectOp::getConnectMsg() const

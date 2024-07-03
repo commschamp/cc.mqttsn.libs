@@ -66,6 +66,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_connect_send != nullptr);
     test_assert(m_funcs.m_connect_cancel != nullptr);
     test_assert(m_funcs.m_connect != nullptr);
+    test_assert(m_funcs.m_is_connected != nullptr);
 
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
@@ -115,6 +116,20 @@ void UnitTestCommonBase::UnitTestSearchCompleteReport::assignInfo(CC_MqttsnGatew
     info.m_gwId = m_info.m_gwId;
     info.m_addr = m_info.m_addr.data();
     info.m_addrLen = static_cast<decltype(info.m_addrLen)>(m_info.m_addr.size());
+}
+
+UnitTestCommonBase::UnitTestConnectInfo& UnitTestCommonBase::UnitTestConnectInfo::operator=(const CC_MqttsnConnectInfo& info)
+{
+    m_returnCode = info.m_returnCode;
+    return *this;
+}
+
+UnitTestCommonBase::UnitTestConnectCompleteReport::UnitTestConnectCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info) : 
+    m_status(status)
+{
+    if (info != nullptr) {
+        m_info = *info;
+    }
 }
 
 void UnitTestCommonBase::unitTestSetUp()
@@ -297,13 +312,13 @@ void UnitTestCommonBase::unitTestPopSearchCompleteReport()
     m_data.m_searchCompleteReports.pop_front();
 }
 
-void UnitTestCommonBase::unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb)
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb)
 {
     if (cb) {
         m_data.m_searchCompleteCallbacks.push_back(std::move(cb));
     }
 
-    m_funcs.m_search_send(search, &UnitTestCommonBase::unitTestSearchCompleteCb, this);
+    return m_funcs.m_search_send(search, &UnitTestCommonBase::unitTestSearchCompleteCb, this);
 }
 
 void UnitTestCommonBase::unitTestSearch(CC_MqttsnClient* client, UnitTestSearchCompleteCb&& cb)
@@ -341,6 +356,32 @@ void UnitTestCommonBase::unitTestSearchUpdateAddr(CC_MqttsnClient* client, const
         });
 }
 
+bool UnitTestCommonBase::unitTestHasConnectCompleteReport() const
+{
+    return !m_data.m_connectCompleteReports.empty();
+}
+
+const UnitTestCommonBase::UnitTestConnectCompleteReport* UnitTestCommonBase::unitTestConnectCompleteReport(bool mustExist) const
+{
+    if (!unitTestHasConnectCompleteReport()) {
+        test_assert(!mustExist);
+        return nullptr;
+    }
+
+    return &m_data.m_connectCompleteReports.front();
+}
+
+void UnitTestCommonBase::unitTestPopConnectCompleteReport()
+{
+    test_assert(unitTestHasConnectCompleteReport());
+    m_data.m_connectCompleteReports.pop_front();
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestConnectSend(CC_MqttsnConnectHandle connect)
+{
+    return m_funcs.m_connect_send(connect, &UnitTestCommonBase::unitTestConnectCompleteCb, this);
+}
+
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
 {
     m_funcs.m_process_data(client, buf, bufLen);
@@ -374,6 +415,41 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiSearchSetRetryCount(CC_MqttsnSearchHan
 CC_MqttsnErrorCode UnitTestCommonBase::apiSearchSetBroadcastRadius(CC_MqttsnSearchHandle search, unsigned value)
 {
     return m_funcs.m_search_set_broadcast_radius(search, value);
+}
+
+CC_MqttsnConnectHandle UnitTestCommonBase::apiConnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_connect_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiConnectSetRetryCount(CC_MqttsnConnectHandle connect, unsigned count)
+{
+    return m_funcs.m_connect_set_retry_count(connect, count);
+}
+
+void UnitTestCommonBase::apiConnectInitConfig(CC_MqttsnConnectConfig* config)
+{
+    m_funcs.m_connect_init_config(config);
+}
+
+void UnitTestCommonBase::apiConnectInitConfigWill(CC_MqttsnWillConfig* config)
+{
+    m_funcs.m_connect_init_config_will(config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiConnectConfig(CC_MqttsnConnectHandle connect, const CC_MqttsnConnectConfig* config)
+{
+    return m_funcs.m_connect_config(connect, config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiConnectConfigWill(CC_MqttsnConnectHandle connect, const CC_MqttsnWillConfig* config)
+{
+    return m_funcs.m_connect_config_will(connect, config);
+}
+
+bool UnitTestCommonBase::apiIsConnected(CC_MqttsnClient* client)
+{
+    return m_funcs.m_is_connected(client);
 }
 
 void UnitTestCommonBase::unitTestTickProgramCb(void* data, unsigned duration)
@@ -455,4 +531,10 @@ void UnitTestCommonBase::unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpSt
     if (popReport) {
         thisPtr->m_data.m_searchCompleteReports.pop_back();
     }
+}
+
+void UnitTestCommonBase::unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+{
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_connectCompleteReports.emplace_back(status, info);
 }

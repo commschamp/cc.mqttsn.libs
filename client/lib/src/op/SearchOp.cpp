@@ -140,8 +140,6 @@ CC_MqttsnErrorCode SearchOp::sendInternal()
 {
     auto ec = sendMessage(m_searchgwMsg, m_radius);
     if (ec == CC_MqttsnErrorCode_Success) {
-        COMMS_ASSERT(0U < getRetryCount());
-        decRetryCount();
         restartTimer();
     }
     return ec;    
@@ -159,7 +157,9 @@ void SearchOp::timeoutInternal()
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }      
+    }    
+
+    decRetryCount();  
 }
 
 void SearchOp::opTimeoutCb(void* data)

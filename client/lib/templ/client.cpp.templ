@@ -343,13 +343,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_count(
     [[maybe_unused]] unsigned count)
 {
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
-
     COMMS_ASSERT(handle != nullptr);
-    if (count == 0U) {
-        searchOpFromHandle(handle)->client().errorLog("The retry count must be greater than 0");
-        return CC_MqttsnErrorCode_BadParam;
-    }
-    
     searchOpFromHandle(handle)->setRetryCount(count);     
     return CC_MqttsnErrorCode_Success;    
 
@@ -469,11 +463,6 @@ unsigned cc_mqttsn_##NAME##client_connect_get_retry_period(CC_MqttsnConnectHandl
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_count(CC_MqttsnConnectHandle handle, unsigned count)
 {
     COMMS_ASSERT(handle != nullptr);
-    if (count == 0U) {
-        connectOpFromHandle(handle)->client().errorLog("The retry count must be greater than 0");
-        return CC_MqttsnErrorCode_BadParam;
-    }
-    
     connectOpFromHandle(handle)->setRetryCount(count);     
     return CC_MqttsnErrorCode_Success;  
 }
@@ -557,6 +546,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
 
     cancelOnExitGuard.release();
     return cc_mqttsn_##NAME##client_connect_send(connect, cb, cbData);    
+}
+
+bool cc_mqttsn_##NAME##client_is_connected(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->sessionState().m_connected;
 }
 
 // --------------------- Callbacks ---------------------

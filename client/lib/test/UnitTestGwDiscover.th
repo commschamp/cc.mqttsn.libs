@@ -212,7 +212,7 @@ void UnitTestGwDiscover::test5()
 
     auto ec = apiSearchSetRetryPeriod(search, RetryPeriod);
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
-    ec = apiSearchSetRetryCount(search, 2U);  
+    ec = apiSearchSetRetryCount(search, 1U);  
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
     ec = apiSearchSetBroadcastRadius(search, BroadcastRadius);  
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);

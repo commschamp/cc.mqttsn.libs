@@ -47,6 +47,7 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_connect_send = &cc_mqttsn_client_connect_send;
     funcs.m_connect_cancel = &cc_mqttsn_client_connect_cancel;
     funcs.m_connect = &cc_mqttsn_client_connect;
+    funcs.m_is_connected = &cc_mqttsn_client_is_connected;
 
     funcs.m_set_next_tick_program_callback = &cc_mqttsn_client_set_next_tick_program_callback;
     funcs.m_set_cancel_next_tick_wait_callback = &cc_mqttsn_client_set_cancel_next_tick_wait_callback;
