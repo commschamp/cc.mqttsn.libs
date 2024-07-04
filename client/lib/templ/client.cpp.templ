@@ -17,6 +17,7 @@
 struct CC_MqttsnClient {};
 struct CC_MqttsnSearch {};
 struct CC_MqttsnConnect {};
+struct CC_MqttsnDisconnect {};
 
 namespace
 {
@@ -57,6 +58,16 @@ inline cc_mqttsn_client::op::ConnectOp* connectOpFromHandle(CC_MqttsnConnectHand
 inline CC_MqttsnConnectHandle handleFromConnectOp(cc_mqttsn_client::op::ConnectOp* op)
 {
     return reinterpret_cast<CC_MqttsnConnectHandle>(op);
+}
+
+inline cc_mqttsn_client::op::DisconnectOp* disconnectOpFromHandle(CC_MqttsnDisconnectHandle handle)
+{
+    return reinterpret_cast<cc_mqttsn_client::op::DisconnectOp*>(handle);
+}
+
+inline CC_MqttsnDisconnectHandle handleFromDisconnectOp(cc_mqttsn_client::op::DisconnectOp* op)
+{
+    return reinterpret_cast<CC_MqttsnDisconnectHandle>(op);
 }
 
 }  // namespace
@@ -552,6 +563,70 @@ bool cc_mqttsn_##NAME##client_is_connected(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
     return clientFromHandle(client)->sessionState().m_connected;
+}
+
+CC_MqttsnDisconnectHandle cc_mqttsn_##NAME##client_disconnect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
+{
+    COMMS_ASSERT(client != nullptr);
+    return handleFromDisconnectOp(clientFromHandle(client)->disconnectPrepare(ec));
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_set_retry_period(CC_MqttsnDisconnectHandle handle, unsigned ms)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (ms == 0U) {
+        disconnectOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    COMMS_ASSERT(handle != nullptr);
+    disconnectOpFromHandle(handle)->setRetryPeriod(ms);     
+    return CC_MqttsnErrorCode_Success;
+}
+
+unsigned cc_mqttsn_##NAME##client_disconnect_get_retry_period(CC_MqttsnDisconnectHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return disconnectOpFromHandle(handle)->getRetryPeriod();    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_set_retry_count(CC_MqttsnDisconnectHandle handle, unsigned count)
+{
+    COMMS_ASSERT(handle != nullptr);
+    disconnectOpFromHandle(handle)->setRetryCount(count);     
+    return CC_MqttsnErrorCode_Success;  
+}
+
+unsigned cc_mqttsn_##NAME##client_disconnect_get_retry_count(CC_MqttsnDisconnectHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return disconnectOpFromHandle(handle)->getRetryCount();     
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_send(CC_MqttsnDisconnectHandle handle, CC_MqttsnDisconnectCompleteCb cb, void* cbData)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return disconnectOpFromHandle(handle)->send(cb, cbData);
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_cancel(CC_MqttsnDisconnectHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return disconnectOpFromHandle(handle)->cancel();  
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnDisconnectCompleteCb cb, 
+    void* cbData)
+{
+    auto ec = CC_MqttsnErrorCode_Success;
+    auto disconnect = cc_mqttsn_##NAME##client_disconnect_prepare(client, &ec);
+    if (disconnect == nullptr) {
+        return ec;
+    }
+
+    return cc_mqttsn_##NAME##client_disconnect_send(disconnect, cb, cbData);        
 }
 
 // --------------------- Callbacks ---------------------

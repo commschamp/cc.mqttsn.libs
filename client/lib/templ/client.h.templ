@@ -391,6 +391,78 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
 /// @ingroup connect
 bool cc_mqttsn_##NAME##client_is_connected(CC_MqttsnClientHandle client);    
 
+/// @brief Prepare "disconnect" operation.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[out] ec Error code reporting result of the operation. Can be NULL.
+/// @return Handle of the "disconnect" operation, will be NULL in case of failure. To analyze the reason failure use "ec" output parameter.
+/// @post The "disconnect" operation is allocated, use either @ref cc_mqttsn_##NAME##client_disconnect_send()
+///     or @ref cc_mqttsn_##NAME##client_disconnect_cancel() to prevent memory leaks.
+/// @ingroup disconnect
+CC_MqttsnDisconnectHandle cc_mqttsn_##NAME##client_disconnect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+
+/// @brief Configure the retry period for the "disconnect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
+/// @param[in] ms Retry period in @b milliseconds.
+/// @return Result code of the call.
+/// @ingroup disconnect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_set_retry_period(CC_MqttsnDisconnectHandle handle, unsigned ms);
+
+/// @brief Retrieve the configured retry period for the "disconnect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
+/// @return Retry period duration in @b milliseconds.
+/// @ingroup disconnect
+unsigned cc_mqttsn_##NAME##client_disconnect_get_retry_period(CC_MqttsnDisconnectHandle handle);
+
+/// @brief Configure the retry count for the "disconnect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
+/// @param[in] count Number of retries.
+/// @return Result code of the call.
+/// @ingroup disconnect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_set_retry_count(CC_MqttsnDisconnectHandle handle, unsigned count);
+
+/// @brief Retrieve the configured retry count for the "disconnect" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
+/// @return Number of retries.
+/// @ingroup disconnect
+unsigned cc_mqttsn_##NAME##client_disconnect_get_retry_count(CC_MqttsnDisconnectHandle handle);
+
+/// @brief Send the "disconnect" operation
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
+/// @param[in] cb Callback to be invoked when "disconnect" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @post The handle of the "disconnect" operation can be discarded.
+/// @post The provided callback will be invoked when the "disconnect" operation is complete <b> if and only if</b>
+///     the function returns @ref CC_MqttsnErrorCode_Success.
+/// @ingroup disconnect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_send(CC_MqttsnDisconnectHandle handle, CC_MqttsnDisconnectCompleteCb cb, void* cbData);
+
+/// @brief Cancel the allocated "disconnect" operation
+/// @details In case the @ref cc_mqttsn_##NAME##client_disconnect_send() function was successfully called before,
+///     the operation is cancelled @b without callback invocation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
+/// @return Result code of the call.
+/// @post The handle of the "disconnect" operation is no longer valid and must be discarded.
+/// @ingroup disconnect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_cancel(CC_MqttsnDisconnectHandle handle);
+
+/// @brief Prepare and send "disconnect" request in one go 
+/// @details Abstracts away sequence of the following functions invocation:
+///     @li @ref cc_mqttsn_##NAME##client_disconnect_prepare()
+///     @li @ref cc_mqttsn_##NAME##client_disconnect_send()
+///
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] cb Callback to be invoked when "disconnect" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @ingroup disconnect
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
+    CC_MqttsnClientHandle client,
+    CC_MqttsnDisconnectCompleteCb cb, 
+    void* cbData);
+
 // --------------------- Callbacks ---------------------
 
 /// @brief Set callback to call when time measurement is required.

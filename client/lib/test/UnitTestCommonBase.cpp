@@ -67,6 +67,14 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_connect_cancel != nullptr);
     test_assert(m_funcs.m_connect != nullptr);
     test_assert(m_funcs.m_is_connected != nullptr);
+    test_assert(m_funcs.m_disconnect_prepare != nullptr);
+    test_assert(m_funcs.m_disconnect_set_retry_period != nullptr);
+    test_assert(m_funcs.m_disconnect_get_retry_period != nullptr);
+    test_assert(m_funcs.m_disconnect_set_retry_count != nullptr);
+    test_assert(m_funcs.m_disconnect_get_retry_count != nullptr);
+    test_assert(m_funcs.m_disconnect_send != nullptr);
+    test_assert(m_funcs.m_disconnect_cancel != nullptr);
+    test_assert(m_funcs.m_disconnect != nullptr);    
 
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
@@ -382,6 +390,112 @@ CC_MqttsnErrorCode UnitTestCommonBase::unitTestConnectSend(CC_MqttsnConnectHandl
     return m_funcs.m_connect_send(connect, &UnitTestCommonBase::unitTestConnectCompleteCb, this);
 }
 
+void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_MqttsnConnectConfig* config, const CC_MqttsnWillConfig* willConfig)
+{
+    auto ec = m_funcs.m_connect(client, config, willConfig, &UnitTestCommonBase::unitTestConnectCompleteCb, this);
+    test_assert(ec == CC_MqttsnErrorCode_Success);
+
+    {
+        test_assert(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* connectMsg = dynamic_cast<UnitTestConnectMsg*>(sentMsg.get());
+        test_assert(connectMsg != nullptr);
+        if (config != nullptr) {
+            test_assert(connectMsg->field_clientId().value() == config->m_clientId);
+            test_assert(connectMsg->field_duration().value() == config->m_duration);
+            test_assert(connectMsg->field_flags().field_mid().getBitValue_CleanSession() == config->m_cleanSession);
+        }
+        test_assert(!unitTestHasOutputData());
+    }    
+
+    test_assert(!unitTestHasConnectCompleteReport());
+    test_assert(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    if (willConfig != nullptr) {
+        UnitTestWilltopicreqMsg willtopicreqMsg;
+        unitTestClientInputMessage(client, willtopicreqMsg);
+
+        {
+            test_assert(unitTestHasOutputData());
+            auto sentMsg = unitTestPopOutputMessage();
+            auto* willtopicMsg = dynamic_cast<UnitTestWilltopicMsg*>(sentMsg.get());
+            test_assert(willtopicMsg != nullptr);
+            test_assert(willtopicMsg->field_flags().doesExist());
+            test_assert(static_cast<CC_MqttsnQoS>(willtopicMsg->field_flags().field().field_qos().getValue()) == willConfig->m_qos);
+            test_assert(willtopicMsg->field_flags().field().field_mid().getBitValue_Retain() == willConfig->m_retain);
+            test_assert((willConfig->m_topic == nullptr) || (willtopicMsg->field_willTopic().value() == willConfig->m_topic));
+            test_assert(!unitTestHasOutputData());
+        }    
+
+        test_assert(!unitTestHasConnectCompleteReport());
+        test_assert(unitTestHasTickReq());
+        unitTestTick(client, 100);         
+
+        UnitTestWillmsgreqMsg willmsgreqMsg;
+        unitTestClientInputMessage(client, willmsgreqMsg);
+
+        {
+            test_assert(unitTestHasOutputData());
+            auto sentMsg = unitTestPopOutputMessage();
+            auto* willmsgMsg = dynamic_cast<UnitTestWillmsgMsg*>(sentMsg.get());
+            test_assert(willmsgMsg != nullptr);
+            test_assert((willConfig->m_data == nullptr) || (willmsgMsg->field_willMsg().value() == UnitTestData(willConfig->m_data, willConfig->m_data + willConfig->m_dataLen)));
+        }          
+
+        test_assert(!unitTestHasConnectCompleteReport());
+        test_assert(!apiIsConnected(client));
+        test_assert(unitTestHasTickReq());
+        unitTestTick(client, 100);               
+    }
+
+    UnitTestConnackMsg connackMsg;
+    connackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+    unitTestClientInputMessage(client, connackMsg);    
+
+    test_assert(unitTestHasConnectCompleteReport());
+    auto* connectReport = unitTestConnectCompleteReport();
+    test_assert(connectReport->m_status== CC_MqttsnAsyncOpStatus_Complete)
+    test_assert(connectReport->m_info.m_returnCode == CC_MqttsnReturnCode_Accepted)
+    unitTestPopConnectCompleteReport();    
+    test_assert(apiIsConnected(client));
+}
+
+void UnitTestCommonBase::unitTestDoConnectBasic(CC_MqttsnClient* client, const std::string& clientId, bool cleanSession)
+{
+    CC_MqttsnConnectConfig config;
+    apiConnectInitConfig(&config);
+    config.m_clientId = clientId.c_str();
+    config.m_cleanSession = cleanSession;   
+    unitTestDoConnect(client, &config, nullptr);
+}
+
+bool UnitTestCommonBase::unitTestHasDisconnectCompleteReport() const
+{
+    return !m_data.m_disconnectCompleteReports.empty();
+}
+
+const UnitTestCommonBase::UnitTestDisconnectCompleteReport* UnitTestCommonBase::unitTestDisconnectCompleteReport(bool mustExist) const
+{
+    if (!unitTestHasDisconnectCompleteReport()) {
+        test_assert(!mustExist);
+        return nullptr;
+    }
+
+    return &m_data.m_disconnectCompleteReports.front();
+}
+
+void UnitTestCommonBase::unitTestPopDisconnectCompleteReport()
+{
+    test_assert(unitTestHasDisconnectCompleteReport());
+    m_data.m_disconnectCompleteReports.pop_front();    
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestDisconnectSend(CC_MqttsnDisconnectHandle disconnect)
+{
+    return m_funcs.m_disconnect_send(disconnect, &UnitTestCommonBase::unitTestDisconnectCompleteCb, this);
+}
+
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
 {
     m_funcs.m_process_data(client, buf, bufLen);
@@ -450,6 +564,16 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiConnectConfigWill(CC_MqttsnConnectHand
 bool UnitTestCommonBase::apiIsConnected(CC_MqttsnClient* client)
 {
     return m_funcs.m_is_connected(client);
+}
+
+CC_MqttsnDisconnectHandle UnitTestCommonBase::apiDisconnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_disconnect_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiDisconnectSetRetryCount(CC_MqttsnDisconnectHandle disconnect, unsigned count)
+{
+    return m_funcs.m_disconnect_set_retry_count(disconnect, count);
 }
 
 void UnitTestCommonBase::unitTestTickProgramCb(void* data, unsigned duration)
@@ -537,4 +661,10 @@ void UnitTestCommonBase::unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpS
 {
     auto* thisPtr = asThis(data);
     thisPtr->m_data.m_connectCompleteReports.emplace_back(status, info);
+}
+
+void UnitTestCommonBase::unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status)
+{
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_disconnectCompleteReports.emplace_back(status);
 }

@@ -18,7 +18,7 @@
 #include "TimerMgr.h"
 
 #include "op/ConnectOp.h"
-// #include "op/DisconnectOp.h"
+#include "op/DisconnectOp.h"
 #include "op/KeepAliveOp.h"
 #include "op/Op.h"
 // #include "op/RecvOp.h"
@@ -70,7 +70,7 @@ public:
 
     op::SearchOp* searchPrepare(CC_MqttsnErrorCode* ec);
     op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);
-    // op::DisconnectOp* disconnectPrepare(CC_MqttsnErrorCode* ec);
+    op::DisconnectOp* disconnectPrepare(CC_MqttsnErrorCode* ec);
     // op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
     // op::UnsubscribeOp* unsubscribePrepare(CC_MqttsnErrorCode* ec);
     // op::SendOp* publishPrepare(CC_MqttsnErrorCode* ec);
@@ -240,8 +240,8 @@ private:
     using KeepAliveOpAlloc = ObjAllocator<op::KeepAliveOp, ExtConfig::KeepAliveOpsLimit>;
     using KeepAliveOpsList = ObjListType<KeepAliveOpAlloc::Ptr, ExtConfig::KeepAliveOpsLimit>;
 
-    // using DisconnectOpAlloc = ObjAllocator<op::DisconnectOp, ExtConfig::DisconnectOpsLimit>;
-    // using DisconnectOpsList = ObjListType<DisconnectOpAlloc::Ptr, ExtConfig::DisconnectOpsLimit>;
+    using DisconnectOpAlloc = ObjAllocator<op::DisconnectOp, ExtConfig::DisconnectOpsLimit>;
+    using DisconnectOpsList = ObjListType<DisconnectOpAlloc::Ptr, ExtConfig::DisconnectOpsLimit>;
 
     // using SubscribeOpAlloc = ObjAllocator<op::SubscribeOp, ExtConfig::SubscribeOpsLimit>;
     // using SubscribeOpsList = ObjListType<SubscribeOpAlloc::Ptr, ExtConfig::SubscribeOpsLimit>;
@@ -282,7 +282,7 @@ private:
     void opComplete_Search(const op::Op* op);
     void opComplete_Connect(const op::Op* op);
     void opComplete_KeepAlive(const op::Op* op);
-    // void opComplete_Disconnect(const op::Op* op);
+    void opComplete_Disconnect(const op::Op* op);
     // void opComplete_Subscribe(const op::Op* op);
     // void opComplete_Unsubscribe(const op::Op* op);
     // void opComplete_Recv(const op::Op* op);
@@ -346,8 +346,8 @@ private:
     KeepAliveOpAlloc m_keepAliveOpsAlloc;
     KeepAliveOpsList m_keepAliveOps;
 
-    // DisconnectOpAlloc m_disconnectOpsAlloc;
-    // DisconnectOpsList m_disconnectOps;
+    DisconnectOpAlloc m_disconnectOpsAlloc;
+    DisconnectOpsList m_disconnectOps;
 
     // SubscribeOpAlloc m_subscribeOpsAlloc;
     // SubscribeOpsList m_subscribeOps;

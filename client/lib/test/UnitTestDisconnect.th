@@ -1,0 +1,184 @@
+#include "UnitTestDefaultBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestDisconnect : public CxxTest::TestSuite, public UnitTestDefaultBase
+{
+public:
+    void test1();
+    void test2();
+    void test3();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+};
+
+void UnitTestDisconnect::test1()
+{
+    // Testing basic disconnect
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+    
+    auto disconnect = apiDisconnectPrepare(client);
+    TS_ASSERT_DIFFERS(disconnect, nullptr);
+
+    unitTestDisconnectSend(disconnect);
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* disconnectMsg = dynamic_cast<UnitTestDisconnectMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(disconnectMsg, nullptr);
+        TS_ASSERT(disconnectMsg->field_duration().isMissing());
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestDisconnectMsg disconnectMsg;
+        unitTestClientInputMessage(client, disconnectMsg);
+    }
+
+    TS_ASSERT(unitTestHasDisconnectCompleteReport());
+    auto* disconnectReport = unitTestDisconnectCompleteReport();
+    TS_ASSERT_EQUALS(disconnectReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
+    unitTestPopDisconnectCompleteReport();
+
+    TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
+    TS_ASSERT(!apiIsConnected(client));    
+}
+
+void UnitTestDisconnect::test2()
+{
+    // Testing timeout disconnect
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+    
+    auto disconnect = apiDisconnectPrepare(client);
+    TS_ASSERT_DIFFERS(disconnect, nullptr);
+    auto ec = apiDisconnectSetRetryCount(disconnect, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestDisconnectSend(disconnect);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* disconnectMsg = dynamic_cast<UnitTestDisconnectMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(disconnectMsg, nullptr);
+        TS_ASSERT(disconnectMsg->field_duration().isMissing());
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* disconnectMsg = dynamic_cast<UnitTestDisconnectMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(disconnectMsg, nullptr);
+        TS_ASSERT(disconnectMsg->field_duration().isMissing());
+        TS_ASSERT(!unitTestHasOutputData());
+    } 
+
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout        
+
+    TS_ASSERT(unitTestHasDisconnectCompleteReport());
+    auto* disconnectReport = unitTestDisconnectCompleteReport();
+    TS_ASSERT_EQUALS(disconnectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
+    unitTestPopDisconnectCompleteReport();
+
+    TS_ASSERT(unitTestHasTickReq()); // Still hase keep alive
+    TS_ASSERT(apiIsConnected(client)); // Still connected   
+}
+
+void UnitTestDisconnect::test3()
+{
+    // Testing disconnect with retry
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+    
+    auto disconnect = apiDisconnectPrepare(client);
+    TS_ASSERT_DIFFERS(disconnect, nullptr);
+    auto ec = apiDisconnectSetRetryCount(disconnect, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestDisconnectSend(disconnect);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* disconnectMsg = dynamic_cast<UnitTestDisconnectMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(disconnectMsg, nullptr);
+        TS_ASSERT(disconnectMsg->field_duration().isMissing());
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* disconnectMsg = dynamic_cast<UnitTestDisconnectMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(disconnectMsg, nullptr);
+        TS_ASSERT(disconnectMsg->field_duration().isMissing());
+        TS_ASSERT(!unitTestHasOutputData());
+    } 
+
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestDisconnectMsg disconnectMsg;
+        unitTestClientInputMessage(client, disconnectMsg);
+    }    
+
+    TS_ASSERT(unitTestHasDisconnectCompleteReport());
+    auto* disconnectReport = unitTestDisconnectCompleteReport();
+    TS_ASSERT_EQUALS(disconnectReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
+    unitTestPopDisconnectCompleteReport();
+
+    TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
+    TS_ASSERT(!apiIsConnected(client));    
+}

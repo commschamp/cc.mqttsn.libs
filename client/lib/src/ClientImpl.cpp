@@ -169,6 +169,13 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
             break;
         }
 
+        if (!m_disconnectOps.empty()) {
+            // Already allocated
+            errorLog("Another disconnect operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }        
+
         if (m_sessionState.m_disconnecting) {
             errorLog("Session disconnection is in progress, cannot initiate connection.");
             updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
@@ -210,62 +217,63 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
     return op;
 }
 
-// op::DisconnectOp* ClientImpl::disconnectPrepare(CC_MqttsnErrorCode* ec)
-// {
-//     op::DisconnectOp* disconnectOp = nullptr;
-//     do {
-//         if (!m_sessionState.m_connected) {
-//             errorLog("Client must be connected to allow disconnect.");
-//             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
-//             break;
-//         }
+op::DisconnectOp* ClientImpl::disconnectPrepare(CC_MqttsnErrorCode* ec)
+{
+    op::DisconnectOp* op = nullptr;
+    do {
+        if (!m_sessionState.m_connected) {
+            errorLog("Client must be connected to allow disconnect.");
+            updateEc(ec, CC_MqttsnErrorCode_NotConnected);
+            break;
+        }
 
-//         if (!m_disconnectOps.empty()) {
-//             errorLog("Another disconnect operation is in progress.");
-//             updateEc(ec, CC_MqttsnErrorCode_Busy);
-//             break;
-//         }        
+        if (!m_disconnectOps.empty()) {
+            errorLog("Another disconnect operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }      
 
-//         if (m_sessionState.m_disconnecting) {
-//             errorLog("Session disconnection is in progress, cannot initiate disconnection.");
-//             updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
-//             break;
-//         }
+        if (!m_connectOps.empty()) {
+            // Already allocated
+            errorLog("Another connect operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }          
 
-//         if (m_clientState.m_networkDisconnected) {
-//             errorLog("Network is disconnected.");
-//             updateEc(ec, CC_MqttsnErrorCode_NetworkDisconnected);
-//             break;            
-//         }        
+        if (m_sessionState.m_disconnecting) {
+            errorLog("Session disconnection is in progress, cannot initiate disconnection.");
+            updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
+            break;
+        }
 
-//         if (m_ops.max_size() <= m_ops.size()) {
-//             errorLog("Cannot start disconnect operation, retry in next event loop iteration.");
-//             updateEc(ec, CC_MqttsnErrorCode_RetryLater);
-//             break;
-//         }   
+        if (m_ops.max_size() <= m_ops.size()) {
+            errorLog("Cannot start disconnect operation, retry in next event loop iteration.");
+            updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+            break;
+        }   
 
-//         if (m_preparationLocked) {
-//             errorLog("Another operation is being prepared, cannot prepare \"disconnect\" without \"send\" or \"cancel\" of the previous.");
-//             updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
-//             break;
-//         }            
+        if (m_preparationLocked) {
+            errorLog("Another operation is being prepared, cannot prepare \"disconnect\" without \"send\" or \"cancel\" of the previous.");
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            break;
+        }            
 
-//         auto ptr = m_disconnectOpsAlloc.alloc(*this);
-//         if (!ptr) {
-//             errorLog("Cannot allocate new disconnect operation.");
-//             updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
-//             break;
-//         }
+        auto ptr = m_disconnectOpsAlloc.alloc(*this);
+        if (!ptr) {
+            errorLog("Cannot allocate new disconnect operation.");
+            updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
+            break;
+        }
 
-//         m_preparationLocked = true;
-//         m_ops.push_back(ptr.get());
-//         m_disconnectOps.push_back(std::move(ptr));
-//         disconnectOp = m_disconnectOps.back().get();
-//         updateEc(ec, CC_MqttsnErrorCode_Success);
-//     } while (false);
+        m_preparationLocked = true;
+        m_ops.push_back(ptr.get());
+        m_disconnectOps.push_back(std::move(ptr));
+        op = m_disconnectOps.back().get();
+        updateEc(ec, CC_MqttsnErrorCode_Success);
+    } while (false);
 
-//     return disconnectOp;
-// }
+    return op;
+}
 
 // op::SubscribeOp* ClientImpl::subscribePrepare(CC_MqttsnErrorCode* ec)
 // {
@@ -829,7 +837,7 @@ void ClientImpl::opComplete(const op::Op* op)
         /* Type_Search */ &ClientImpl::opComplete_Search,
         /* Type_Connect */ &ClientImpl::opComplete_Connect,
         /* Type_KeepAlive */ &ClientImpl::opComplete_KeepAlive,
-        // /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
+        /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
         // /* Type_Subscribe */ &ClientImpl::opComplete_Subscribe,
         // /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
         // /* Type_Recv */ &ClientImpl::opComplete_Recv,
@@ -1172,10 +1180,10 @@ void ClientImpl::opComplete_KeepAlive(const op::Op* op)
     eraseFromList(op, m_keepAliveOps);
 }
 
-// void ClientImpl::opComplete_Disconnect(const op::Op* op)
-// {
-//     eraseFromList(op, m_disconnectOps);
-// }
+void ClientImpl::opComplete_Disconnect(const op::Op* op)
+{
+    eraseFromList(op, m_disconnectOps);
+}
 
 // void ClientImpl::opComplete_Subscribe(const op::Op* op)
 // {

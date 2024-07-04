@@ -24,7 +24,7 @@ struct ExtConfig : public Config
     static constexpr unsigned ConnectOpTimers = 1U;
     static constexpr unsigned KeepAliveOpTimers = 3U;
     static constexpr unsigned DisconnectOpsLimit = HasDynMemAlloc ? 0 : 1U;
-    static constexpr unsigned DisconnectOpTimers = 0U;
+    static constexpr unsigned DisconnectOpTimers = 1U;
     static constexpr unsigned SubscribeOpTimers = 1U;    
     static constexpr unsigned UnsubscribeOpTimers = 1U;    
     static constexpr unsigned RecvOpsLimit = MaxQos < 2 ? 1U : (ReceiveMaxLimit == 0U ? 0U : ReceiveMaxLimit + 1U);
@@ -34,8 +34,8 @@ struct ExtConfig : public Config
     static constexpr bool HasOpsLimit = 
         (SearchOpsLimit > 0U) && 
         (ConnectOpsLimit > 0U) && 
-        (KeepAliveOpsLimit > 0U) /* &&
-        (DisconnectOpsLimit > 0U) &&
+        (KeepAliveOpsLimit > 0U) &&
+        (DisconnectOpsLimit > 0U) /* &&
         (SubscribeOpsLimit > 0U) &&
         (UnsubscribeOpsLimit > 0U) &&
         (RecvOpsLimit > 0U) &&
@@ -44,6 +44,7 @@ struct ExtConfig : public Config
         (DiscoveryTimers) +  
         (SearchOpsLimit * SearchOpTimers) + 
         (ConnectOpsLimit * ConnectOpTimers) + 
+        (DisconnectOpsLimit * DisconnectOpTimers) + 
         (KeepAliveOpsLimit * KeepAliveOpTimers) + 
         (DisconnectOpsLimit * DisconnectOpTimers) + 
         (SubscribeOpsLimit * SubscribeOpTimers) +
@@ -73,6 +74,7 @@ struct ExtConfig : public Config
     static_assert(HasDynMemAlloc || (TimersLimit > 0U));
     static_assert(HasDynMemAlloc || (ConnectOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (KeepAliveOpsLimit > 0U));
+    static_assert(HasDynMemAlloc || (DisconnectOpsLimit > 0U));
     // static_assert(HasDynMemAlloc || (RecvOpsLimit > 0U));
     // static_assert(HasDynMemAlloc || (SendOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (OpsLimit > 0U));

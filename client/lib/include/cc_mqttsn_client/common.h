@@ -140,6 +140,15 @@ struct CC_MqttsnConnect;
 /// @ingroup "connect".
 typedef struct CC_MqttsnConnect* CC_MqttsnConnectHandle;
 
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnDisconnectHandle
+/// @ingroup disconnect
+struct CC_MqttsnDisconnect;
+
+/// @brief Handle for "disconnect" operation.
+/// @details Returned by @b cc_mqttsn_client_disconnect_prepare() function.
+/// @ingroup "disconnect".
+typedef struct CC_MqttsnDisconnect* CC_MqttsnDisconnectHandle;
+
 
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
@@ -287,6 +296,14 @@ typedef void (*CC_MqttsnSearchCompleteCb)(void* data, CC_MqttsnAsyncOpStatus sta
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup connect
 typedef void (*CC_MqttsnConnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
+
+/// @brief Callback used to report completion of the disconnect operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] status Status of the "disconnect" operation.
+/// @post The data members of the reported response can NOT be accessed after the function returns.
+/// @ingroup disconnect
+typedef void (*CC_MqttsnDisconnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status);
 
 
 #ifdef __cplusplus

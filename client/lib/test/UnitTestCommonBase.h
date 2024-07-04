@@ -57,6 +57,14 @@ public:
         CC_MqttsnErrorCode (*m_connect_cancel)(CC_MqttsnConnectHandle) = nullptr;
         CC_MqttsnErrorCode (*m_connect)(CC_MqttsnClientHandle, const CC_MqttsnConnectConfig*, const CC_MqttsnWillConfig*, CC_MqttsnConnectCompleteCb, void*) = nullptr;
         bool (*m_is_connected)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnDisconnectHandle (*m_disconnect_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;
+        CC_MqttsnErrorCode (*m_disconnect_set_retry_period)(CC_MqttsnDisconnectHandle, unsigned ms) = nullptr;
+        unsigned (*m_disconnect_get_retry_period)(CC_MqttsnDisconnectHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_disconnect_set_retry_count)(CC_MqttsnDisconnectHandle, unsigned count) = nullptr;
+        unsigned (*m_disconnect_get_retry_count)(CC_MqttsnDisconnectHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_disconnect_send)(CC_MqttsnDisconnectHandle, CC_MqttsnDisconnectCompleteCb, void*) = nullptr;
+        CC_MqttsnErrorCode (*m_disconnect_cancel)(CC_MqttsnDisconnectHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_disconnect)(CC_MqttsnClientHandle, CC_MqttsnDisconnectCompleteCb, void*) = nullptr;
 
         void (*m_set_next_tick_program_callback)(CC_MqttsnClientHandle, CC_MqttsnNextTickProgramCb, void*) = nullptr;
         void (*m_set_cancel_next_tick_wait_callback)(CC_MqttsnClientHandle, CC_MqttsnCancelNextTickWaitCb, void*) = nullptr;
@@ -161,6 +169,15 @@ public:
 
     using UnitTestConnectCompleteReportList = std::list<UnitTestConnectCompleteReport>;    
 
+    struct UnitTestDisconnectCompleteReport
+    {
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+
+        UnitTestDisconnectCompleteReport(CC_MqttsnAsyncOpStatus status) : m_status(status) {};
+    };
+
+    using UnitTestDisconnectCompleteReportList = std::list<UnitTestDisconnectCompleteReport>;    
+
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
     void unitTestSetUp();
@@ -197,6 +214,14 @@ public:
     void unitTestPopConnectCompleteReport();
 
     CC_MqttsnErrorCode unitTestConnectSend(CC_MqttsnConnectHandle connect);
+    void unitTestDoConnect(CC_MqttsnClient* client, const CC_MqttsnConnectConfig* config, const CC_MqttsnWillConfig* willConfig);
+    void unitTestDoConnectBasic(CC_MqttsnClient* client, const std::string& clientId = std::string(), bool cleanSession = true);
+
+    bool unitTestHasDisconnectCompleteReport() const;
+    const UnitTestDisconnectCompleteReport* unitTestDisconnectCompleteReport(bool mustExist = true) const;
+    void unitTestPopDisconnectCompleteReport();
+
+    CC_MqttsnErrorCode unitTestDisconnectSend(CC_MqttsnDisconnectHandle disconnect);
 
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
@@ -205,6 +230,7 @@ public:
     CC_MqttsnErrorCode apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value);
     CC_MqttsnErrorCode apiSearchSetRetryCount(CC_MqttsnSearchHandle search, unsigned value);
     CC_MqttsnErrorCode apiSearchSetBroadcastRadius(CC_MqttsnSearchHandle search, unsigned value);
+
     CC_MqttsnConnectHandle apiConnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
     CC_MqttsnErrorCode apiConnectSetRetryCount(CC_MqttsnConnectHandle connect, unsigned count);
     void apiConnectInitConfig(CC_MqttsnConnectConfig* config);
@@ -212,6 +238,9 @@ public:
     CC_MqttsnErrorCode apiConnectConfig(CC_MqttsnConnectHandle connect, const CC_MqttsnConnectConfig* config);
     CC_MqttsnErrorCode apiConnectConfigWill(CC_MqttsnConnectHandle connect, const CC_MqttsnWillConfig* config);
     bool apiIsConnected(CC_MqttsnClient* client);
+
+    CC_MqttsnDisconnectHandle apiDisconnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiDisconnectSetRetryCount(CC_MqttsnDisconnectHandle disconnect, unsigned count);
 
 protected:
     explicit UnitTestCommonBase(const LibFuncs& funcs);
@@ -225,6 +254,7 @@ private:
         UnitTestSearchCompleteReportsList m_searchCompleteReports;
         UnitTestSearchCompleteCbList m_searchCompleteCallbacks;
         UnitTestConnectCompleteReportList m_connectCompleteReports;
+        UnitTestDisconnectCompleteReportList m_disconnectCompleteReports;
     };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);
@@ -237,6 +267,7 @@ private:
     static void unitTestErrorLogCb(void* data, const char* msg);
     static void unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
     static void unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
+    static void unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
 
     LibFuncs m_funcs;  
     ClientData m_data;
