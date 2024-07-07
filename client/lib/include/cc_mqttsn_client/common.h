@@ -203,11 +203,11 @@ typedef struct
 /// @ingroup connect
 typedef struct
 {
-    const char* m_topic; ///< Client ID
-    const unsigned char* m_data;
-    unsigned m_dataLen;
-    CC_MqttsnQoS m_qos;
-    bool m_retain;
+    const char* m_topic; ///< Will topic.
+    const unsigned char* m_data; ///< Will data (message).
+    unsigned m_dataLen; ///< Will data (message) length.
+    CC_MqttsnQoS m_qos; ///< Will message QoS.
+    bool m_retain; ///< Will message retain configuration.
 } CC_MqttsnWillConfig;
 
 /// @brief Callback used to request time measurement.

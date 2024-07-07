@@ -91,6 +91,22 @@
 /// It means the data may need to be copied into some other buffer, which will be
 /// held intact until the send over I/O link operation is complete.
 ///
+/// @subsection doc_cc_mqttsn_client_callbacks_gateway_disconnect Reporting Unsolicited Gateway Disconnection
+/// The client application must assign a callback for the library to report
+/// discovered gateway disconnection.
+/// @code
+/// void my_gateway_disconnected_cb(void* data, CC_MqttsnGatewayDisconnectReason reason)
+/// {
+///     ... /* handle gatewau disconnection */
+/// }
+///
+/// cc_mqttsn_client_set_gw_disconnect_report_callback(client, &my_gateway_disconnected_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnGwDisconnectedReportCb callback function definition.
+///
+/// See also @ref doc_cc_mqttsn_client_unsolicited_disconnect
+/// below for details.
+///
 /// @subsection doc_cc_mqttsn_client_callbacks_message Reporting Received Message
 /// The client application must assign a callback for the library to report
 /// application level messages received from the gateway.
@@ -540,3 +556,321 @@
 /// @endcode
 /// To retrieve the current configuration use @b cc_mqttsn_client_get_default_gw_adv_duration() function.
 ///
+/// @section doc_cc_mqttsn_client_connect Connecting to Gateway
+/// To connect to gateway use @ref connect "connect" operation.
+///
+/// @subsection doc_cc_mqttsn_client_connect_prepare Preparing "Connect" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnConnectHandle connect = cc_mqttsn_client_connect_prepare(client, &ec);
+/// if (connect == NULL) {
+///     printf("ERROR: Connect allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+/// @b NOTE that the @b cc_mqttsn_client_connect_prepare() cannot be called from within a callback.
+/// For example, if the gateway disconnection is reported via @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "callback"
+/// then the @b cc_mqttsn_client_connect_prepare() cannot be invoked right away.
+/// It needs to be postponed until the next event loop iteration.
+///
+/// @subsection doc_cc_mqttsn_client_connect_retry_period Configuring "Connect" Retry Period
+/// When created, the "connect" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_connect_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_connect_set_retry_period(connect, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_connect_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_connect_retry_count Configuring "Connect" Retry Count
+/// When created, the "connect" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_connect_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_connect_set_retry_count(connect, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_connect_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_connect_basic Configuration of "Connect" Operation
+/// To configure "connect" operation use @b cc_mqttsn_client_connect_config() function.
+/// @code
+/// CC_MqttsnConnectConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_connect_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_clientId = "some_client";
+/// config.m_cleanSession = true;
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_connect_config(connect, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Basic configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// **IMPORTANT**: MQTT-SN specification allows reconnection to the gateway while
+/// requesting previous session restoration (via "clean session" bit). By default,
+/// the client library verifies that the message received from the gateway was
+/// actually subscribed to before reporting the message to the application
+/// (see @ref doc_cc_mqttsn_client_receive for details). To prevent
+/// potential errors of the client and gateway inner states being out of sync, the
+/// @b first "connect" operation requires setting the @ref CC_MqttsnConnectConfig::m_cleanSession
+/// value to @b true. The only exception to this rule is when the subscription
+/// verification on message reception was disabled (described in the
+/// @ref doc_cc_mqttsn_client_receive section below). In case the subscription
+/// verification is still enabled and the @ref CC_MqttsnConnectConfig::m_cleanSession
+/// value is @b NOT set to @b true, the function rejects the configuration
+/// with the @ref CC_MqttsnErrorCode_BadParam error code. Any subsequent reconnection attempts will allow
+/// setting the value to @b false.
+///
+/// See also documentation of the @ref CC_MqttsnConnectConfig structure.
+///
+/// @subsection doc_cc_mqttsn_client_connect_will Will Configuration
+/// To perform will configuration use the @b cc_mqttsn_client_connect_config_will() function.
+/// @code
+/// CC_MqttsnWillConfig willConfig;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_connect_init_config_will(&willConfig);
+///
+/// // Update values if needed
+/// willConfig.m_topic = "some/topic";
+/// willConfig.m_data = ...;
+/// willConfig.m_dataLen = ...;
+/// ...
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_connect_config_will(connect, &willConfig);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Will configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnWillConfig structure.
+///
+/// @subsection doc_cc_mqttsn_client_connect_send Sending Connection Request
+/// When all the necessary configurations are performed for the allocated "connect"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_connect_send() function.
+/// @code
+/// void my_connect_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The connection operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze info values.
+/// }
+///
+/// ec = cc_mqttsn_client_connect_send(connect, &my_connect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send connect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "connect" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_connect_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_connect_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_connect_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// When the "connect" operation completion callback is invoked the reported
+/// "response" information is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @b NOTE that only single "connect" / "disconnect" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_connect_prepare() will be rejected
+/// until the "connect" operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_connect_cancel "cancelled".
+///
+/// When the callback reporting the connection status is invoked, it is responsibility
+/// of the application to check the @ref CC_MqttsnConnectInfo::m_returnCode value.
+/// If it's not @ref CC_MqttsnReturnCode_Accepted, the application
+/// is responsible retry the "connect" operation later. The same should be
+/// done when the "connect" operation is not properly completed, i.e. the
+/// reported status is @b NOT @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @subsection doc_cc_mqttsn_client_connect_cancel Cancel the "Connect" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_connect_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_connect_cancel(connect);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel connect with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_connect_send() function was successfully
+/// called before the @b cc_mqttsn_client_connect_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_connect_simplify Simplifying the "Connect" Operation Preparation.
+/// In many use cases the "connect" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_connect()
+///
+/// For example:
+/// @code
+/// CC_MqttsnConnectConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_connect_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_clientId = "some_client";
+/// config.m_cleanSession = true;
+///
+/// ec = cc_mqttsn_client_connect(client, config, null, &my_connect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send connect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_connect_prepare(). It means that it's not possible to
+/// cancel the "connect" operation before its completion.
+///
+/// @subsection doc_cc_mqttsn_client_connect_check Check The Library Remains Connected
+/// At any time it is possible to check the internal state of the library of
+/// whether it's properly connected to the gateway.
+/// @code
+/// bool isConnected = cc_mqttsn_client_is_connected(client);
+/// @endcode
+///
+///
+/// @section doc_cc_mqttsn_client_disconnect Disconnecting From Gateway
+/// To intentionally disconnect from gateway use @ref disconnect "disconnect" operation. The
+/// unsolicited disconnection from the gateway is described in ref
+/// @ref doc_cc_mqttsn_client_unsolicited_disconnect section below.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_prepare Preparing "Disconnect" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnDisconnectHandle disconnect = cc_mqttsn_client_disconnect_prepare(client, &ec);
+/// if (disconnect == NULL) {
+///     printf("ERROR: Disconnect allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_retry_period Configuring "Disconnect" Retry Period
+/// When created, the "disconnect" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_disconnect_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_disconnect_set_retry_period(connect, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_disconnect_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_retry_count Configuring "Disconnect" Retry Count
+/// When created, the "disconnect" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_disconnect_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_disconnect_set_retry_count(disconnect, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_disconnect_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_send Sending Disconnection Request
+/// When the necessary configuration is performed for the allocated "disconnect"
+/// operation it can be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_disconnect_send() function.
+/// @code
+/// void my_disconnect_complete_cb(void* data, CC_MqttsnAsyncOpStatus status)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The disconnection operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///     ...
+/// }
+///
+/// ec = cc_mqttsn_client_disconnect_send(connect, &my_disconnect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send disconnect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "disconnect" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_disconnect_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_disconnect_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_disconnect_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// @b NOTE that only single "connect" / "disconnect" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_disconnect_prepare() will be rejected
+/// until the "connect" operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_disconnect_cancel "cancelled".
+///
+/// In case there are other asynchronous operations that hasn't been completed yet,
+/// their completion callback is automatically invoked with @ref CC_MqttsnAsyncOpStatus_Aborted
+/// status.
+///
+/// @b IMPORTANT: In case of sending the explicit disconnection request the
+/// @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "registered unsolicited disconnection callback"
+/// is @b NOT invoked.
+///
+/// After the disconnection the application can re-establish network connection
+/// to the gateway (if needed) and perform the @ref doc_cc_mqttsn_client_connect "connect" operation
+/// again.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_cancel Cancel the "Disconnect" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_disconnect_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_disconnect_cancel(disconnect);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel disconnect with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_simplify Simplifying the "Disconnect" Operation Preparation.
+/// In many use cases the "disconnect" operation can be quite simple.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_disconnect()
+///
+/// For example:
+/// @code
+/// ec = cc_mqttsn_client_disconnect(client, &my_disconnect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send disconnect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_receive Receiving Messages
+/// TODO
+///
+/// @section doc_cc_mqttsn_client_unsolicited_disconnect Unsolicited Gateway Disconnection
+/// TODO
