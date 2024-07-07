@@ -136,6 +136,15 @@ public:
 
     using UnitTestGwInfoReportsList = std::list<UnitTestGwInfoReport>;
 
+    struct UnitTestGwDisconnectReport
+    {
+        CC_MqttsnGatewayDisconnectReason m_reason = CC_MqttsnGatewayDisconnectReason_ValuesLimit;
+
+        UnitTestGwDisconnectReport(CC_MqttsnGatewayDisconnectReason reason) : m_reason(reason) {}
+    };    
+
+    using UnitTestGwDisconnectReportsList = std::list<UnitTestGwDisconnectReport>;
+
     struct UnitTestSearchCompleteReport
     {
         CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
@@ -201,6 +210,10 @@ public:
     const UnitTestGwInfoReport* unitTestGetGwInfoReport(bool mustExist = true) const;
     void unitTestPopGwInfoReport();
 
+    bool unitTestHasGwDisconnectReport() const;
+    const UnitTestGwDisconnectReport* unitTestGetGwDisconnectReport(bool mustExist = true) const;
+    void unitTestPopGwDisconnectReport();    
+
     bool unitTestHasSearchCompleteReport() const;
     const UnitTestSearchCompleteReport* unitTestSearchCompleteReport(bool mustExist = true) const;
     void unitTestPopSearchCompleteReport();
@@ -251,6 +264,7 @@ private:
         UnitTestTickInfosList m_ticks;
         UnitTestOutputDataInfosList m_outData;
         UnitTestGwInfoReportsList m_gwInfoReports;
+        UnitTestGwDisconnectReportsList m_gwDisconnectReports;
         UnitTestSearchCompleteReportsList m_searchCompleteReports;
         UnitTestSearchCompleteCbList m_searchCompleteCallbacks;
         UnitTestConnectCompleteReportList m_connectCompleteReports;

@@ -28,6 +28,7 @@ public:
     void messageSent();
 
     using Base::handle;
+    virtual void handle(PingreqMsg& msg) override;
     virtual void handle(PingrespMsg& msg) override;
     virtual void handle(ProtMessage& msg) override;
 

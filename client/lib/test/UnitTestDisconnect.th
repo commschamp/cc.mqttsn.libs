@@ -11,6 +11,8 @@ public:
     void test1();
     void test2();
     void test3();
+    void test4();
+    void test5();
 
 private:
     virtual void setUp() override
@@ -178,6 +180,80 @@ void UnitTestDisconnect::test3()
     auto* disconnectReport = unitTestDisconnectCompleteReport();
     TS_ASSERT_EQUALS(disconnectReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
     unitTestPopDisconnectCompleteReport();
+
+    TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
+    TS_ASSERT(!apiIsConnected(client));    
+}
+
+void UnitTestDisconnect::test4()
+{
+    // Testing unsolicited DISCONNECT message from the gateway
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+    
+    {
+        UnitTestDisconnectMsg disconnectMsg;
+        unitTestClientInputMessage(client, disconnectMsg);
+    }    
+
+    TS_ASSERT(unitTestHasGwDisconnectReport());
+    auto* disconnectReport = unitTestGetGwDisconnectReport();
+    TS_ASSERT_EQUALS(disconnectReport->m_reason, CC_MqttsnGatewayDisconnectReason_DisconnectMsg);
+    unitTestPopGwDisconnectReport();
+
+    TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
+    TS_ASSERT(!apiIsConnected(client));    
+}
+
+void UnitTestDisconnect::test5()
+{
+    // Testing lack of messages from the gateway
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    auto ec = apiSetDefaultRetryCount(client, 1);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); 
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pingreqMsg = dynamic_cast<UnitTestPingreqMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pingreqMsg, nullptr);
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); 
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pingreqMsg = dynamic_cast<UnitTestPingreqMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pingreqMsg, nullptr);
+        TS_ASSERT(!unitTestHasOutputData());
+    }        
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); 
+        
+    TS_ASSERT(unitTestHasGwDisconnectReport());
+    auto* disconnectReport = unitTestGetGwDisconnectReport();
+    TS_ASSERT_EQUALS(disconnectReport->m_reason, CC_MqttsnGatewayDisconnectReason_NoGatewayResponse);
+    unitTestPopGwDisconnectReport();
 
     TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
     TS_ASSERT(!apiIsConnected(client));    

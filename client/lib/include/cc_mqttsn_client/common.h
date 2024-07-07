@@ -100,7 +100,7 @@ typedef enum
 typedef enum
 {
     CC_MqttsnGatewayDisconnectReason_DisconnectMsg = 0, ///< Gateway sent @b DISCONNECT message.
-    CC_MqttsnGatewayDisconnectReason_NoGatewayResponse = 0, ///< No messages from the gateway and no response to @b PINGREQ.
+    CC_MqttsnGatewayDisconnectReason_NoGatewayResponse = 1, ///< No messages from the gateway and no response to @b PINGREQ.
     CC_MqttsnGatewayDisconnectReason_ValuesLimit ///< Limit for the values
 } CC_MqttsnGatewayDisconnectReason;
 

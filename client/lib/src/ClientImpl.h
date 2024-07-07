@@ -161,6 +161,7 @@ public:
 // #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 
     virtual void handle(PingreqMsg& msg) override;
+    virtual void handle(DisconnectMsg& msg) override;
     virtual void handle(ProtMessage& msg) override;
 
     // -------------------- Ops Access API -----------------------------

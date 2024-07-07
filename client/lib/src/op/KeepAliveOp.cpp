@@ -42,6 +42,13 @@ void KeepAliveOp::messageSent()
     restartPingTimer();
 }
 
+void KeepAliveOp::handle([[maybe_unused]] PingreqMsg& msg)
+{
+    PingrespMsg respMsg;
+    sendMessage(respMsg);
+    restartRecvTimer();
+}
+
 void KeepAliveOp::handle([[maybe_unused]] PingrespMsg& msg)
 {
     m_respTimer.cancel();

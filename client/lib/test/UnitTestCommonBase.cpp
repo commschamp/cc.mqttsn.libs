@@ -299,6 +299,26 @@ void UnitTestCommonBase::unitTestPopGwInfoReport()
     m_data.m_gwInfoReports.pop_front();
 }
 
+bool UnitTestCommonBase::unitTestHasGwDisconnectReport() const
+{
+    return !m_data.m_gwDisconnectReports.empty();
+}
+const UnitTestCommonBase::UnitTestGwDisconnectReport* UnitTestCommonBase::unitTestGetGwDisconnectReport(bool mustExist) const
+{
+    if (!unitTestHasGwDisconnectReport()) {
+        test_assert(!mustExist);
+        return nullptr;
+    }
+
+    return &m_data.m_gwDisconnectReports.front();
+}
+
+void UnitTestCommonBase::unitTestPopGwDisconnectReport()
+{
+    test_assert(!m_data.m_gwDisconnectReports.empty());
+    m_data.m_gwDisconnectReports.pop_front();
+}
+
 bool UnitTestCommonBase::unitTestHasSearchCompleteReport() const
 {
     return !m_data.m_searchCompleteReports.empty();
@@ -611,10 +631,7 @@ void UnitTestCommonBase::unitTestGwStatusReportCb(void* data, CC_MqttsnGwStatus 
 
 void UnitTestCommonBase::unitTestGwDisconnectReportCb(void* data, CC_MqttsnGatewayDisconnectReason reason)
 {
-    // TODO:
-    static_cast<void>(data);
-    static_cast<void>(reason);
-    test_assert(false);
+    asThis(data)->m_data.m_gwDisconnectReports.emplace_back(reason);
 }
 
 void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo)

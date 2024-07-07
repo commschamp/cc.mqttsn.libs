@@ -758,8 +758,25 @@ void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
         return;
     }
 
-    PingrespMsg respMsg;
-    sendMessage(respMsg);
+    for (auto& opPtr : m_keepAliveOps) {
+        msg.dispatch(*opPtr);
+    }       
+}
+
+void ClientImpl::handle(DisconnectMsg& msg)
+{
+    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+        return;
+    }   
+
+    if (m_disconnectOps.empty()) {
+        gatewayDisconnected(CC_MqttsnGatewayDisconnectReason_DisconnectMsg);
+        return;
+    }
+
+    for (auto& opPtr : m_disconnectOps) {
+        msg.dispatch(*opPtr);
+    }     
 }
 
 void ClientImpl::handle([[maybe_unused]] ProtMessage& msg)
