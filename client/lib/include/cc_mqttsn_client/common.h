@@ -149,6 +149,15 @@ struct CC_MqttsnDisconnect;
 /// @ingroup "disconnect".
 typedef struct CC_MqttsnDisconnect* CC_MqttsnDisconnectHandle;
 
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnSubscribeHandle
+/// @ingroup subscribe
+struct CC_MqttsnSubscribe;
+
+/// @brief Handle for "subscribe" operation.
+/// @details Returned by @b cc_mqttsn_client_subscribe_prepare() function.
+/// @ingroup "subscribe".
+typedef struct CC_MqttsnSubscribe* CC_MqttsnSubscribeHandle;
+
 
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
@@ -183,13 +192,6 @@ typedef struct
     unsigned m_addrLen; ///< Length of the address
 } CC_MqttsnGatewayInfo;
 
-/// @brief Information on the "connect" operation completion
-/// @ingroup connect
-typedef struct
-{
-    CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b CONNACK message
-} CC_MqttsnConnectInfo;
-
 /// @brief Configuration the "connect" operation
 /// @ingroup connect
 typedef struct
@@ -198,6 +200,13 @@ typedef struct
     unsigned m_duration; ///< Duration (Keep alive) configuration in seconds. Defaults to 60 when initialized.
     bool m_cleanSession; ///< Clean session configuration
 } CC_MqttsnConnectConfig;
+
+/// @brief Information on the "connect" operation completion
+/// @ingroup connect
+typedef struct
+{
+    CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b CONNACK message
+} CC_MqttsnConnectInfo;
 
 /// @brief Configuration the will for "connect" and "will" operations
 /// @ingroup connect
@@ -209,6 +218,24 @@ typedef struct
     CC_MqttsnQoS m_qos; ///< Will message QoS.
     bool m_retain; ///< Will message retain configuration.
 } CC_MqttsnWillConfig;
+
+/// @brief Configuration the "subscribe" operation
+/// @ingroup subscribe
+typedef struct
+{
+    const char* m_topic; ///< Subscription topic, can be NULL when pre-defined topic ID is used.
+    CC_MqttsnTopicId m_topicId; ///< Pre-defined topic ID, should be @b 0 when topic is not NULL.
+    CC_MqttsnQoS m_qos; ///< Max QoS value
+} CC_MqttsnSubscribeConfig;
+
+/// @brief Information on the "subscribe" operation completion
+/// @ingroup subscribe
+typedef struct
+{
+    CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b SUBACK message
+    CC_MqttsnTopicId m_topicId; ///< Granted topic ID (if applicable).
+    CC_MqttsnQoS m_qos; ///< Granted max QoS value
+} CC_MqttsnSubscribeInfo;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
@@ -305,6 +332,15 @@ typedef void (*CC_MqttsnConnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus st
 /// @ingroup disconnect
 typedef void (*CC_MqttsnDisconnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status);
 
+/// @brief Callback used to report completion of the subscribe operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] status Status of the "subscribe" operation.
+/// @param[in] info Information about op completion. Not-NULL is reported <b>if and onfly if</b>
+///     the "status" is equal to @ref CC_MqttsnAsyncOpStatus_Complete.
+/// @post The data members of the reported response can NOT be accessed after the function returns.
+/// @ingroup subscribe
+typedef void (*CC_MqttsnSubscribeCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
 
 #ifdef __cplusplus
 }

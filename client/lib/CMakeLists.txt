@@ -170,6 +170,7 @@ function (gen_lib_mqttsn_client config_file)
         src/op/KeepAliveOp.cpp
         src/op/Op.cpp
         src/op/SearchOp.cpp
+        src/op/SubscribeOp.cpp
         src/ClientImpl.cpp
         src/TimerMgr.cpp
     )

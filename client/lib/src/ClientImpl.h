@@ -13,7 +13,7 @@
 #include "ObjAllocator.h"
 #include "ObjListType.h"
 #include "ProtocolDefs.h"
-// #include "ReuseState.h"
+#include "ReuseState.h"
 #include "SessionState.h"
 #include "TimerMgr.h"
 
@@ -24,7 +24,7 @@
 // #include "op/RecvOp.h"
 #include "op/SearchOp.h"
 // #include "op/SendOp.h"
-// #include "op/SubscribeOp.h"
+#include "op/SubscribeOp.h"
 // #include "op/UnsubscribeOp.h"
 
 #include "cc_mqttsn_client/common.h"
@@ -71,7 +71,7 @@ public:
     op::SearchOp* searchPrepare(CC_MqttsnErrorCode* ec);
     op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);
     op::DisconnectOp* disconnectPrepare(CC_MqttsnErrorCode* ec);
-    // op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
+    op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
     // op::UnsubscribeOp* unsubscribePrepare(CC_MqttsnErrorCode* ec);
     // op::SendOp* publishPrepare(CC_MqttsnErrorCode* ec);
 
@@ -212,10 +212,10 @@ public:
         return m_sessionState;
     }    
 
-    // ReuseState& reuseState()
-    // {
-    //     return m_reuseState;
-    // }    
+    ReuseState& reuseState()
+    {
+        return m_reuseState;
+    }    
 
     inline void errorLog(const char* msg)
     {
@@ -244,8 +244,8 @@ private:
     using DisconnectOpAlloc = ObjAllocator<op::DisconnectOp, ExtConfig::DisconnectOpsLimit>;
     using DisconnectOpsList = ObjListType<DisconnectOpAlloc::Ptr, ExtConfig::DisconnectOpsLimit>;
 
-    // using SubscribeOpAlloc = ObjAllocator<op::SubscribeOp, ExtConfig::SubscribeOpsLimit>;
-    // using SubscribeOpsList = ObjListType<SubscribeOpAlloc::Ptr, ExtConfig::SubscribeOpsLimit>;
+    using SubscribeOpAlloc = ObjAllocator<op::SubscribeOp, ExtConfig::SubscribeOpsLimit>;
+    using SubscribeOpsList = ObjListType<SubscribeOpAlloc::Ptr, ExtConfig::SubscribeOpsLimit>;
 
     // using UnsubscribeOpAlloc = ObjAllocator<op::UnsubscribeOp, ExtConfig::UnsubscribeOpsLimit>;
     // using UnsubscribeOpsList = ObjListType<UnsubscribeOpAlloc::Ptr, ExtConfig::UnsubscribeOpsLimit>;
@@ -284,7 +284,7 @@ private:
     void opComplete_Connect(const op::Op* op);
     void opComplete_KeepAlive(const op::Op* op);
     void opComplete_Disconnect(const op::Op* op);
-    // void opComplete_Subscribe(const op::Op* op);
+    void opComplete_Subscribe(const op::Op* op);
     // void opComplete_Unsubscribe(const op::Op* op);
     // void opComplete_Recv(const op::Op* op);
     // void opComplete_Send(const op::Op* op);
@@ -326,6 +326,7 @@ private:
     ConfigState m_configState;
     ClientState m_clientState;
     SessionState m_sessionState;
+    ReuseState m_reuseState;
 
     TimerMgr m_timerMgr;
     TimerMgr::Timer m_gwDiscoveryTimer;  
@@ -350,8 +351,8 @@ private:
     DisconnectOpAlloc m_disconnectOpsAlloc;
     DisconnectOpsList m_disconnectOps;
 
-    // SubscribeOpAlloc m_subscribeOpsAlloc;
-    // SubscribeOpsList m_subscribeOps;
+    SubscribeOpAlloc m_subscribeOpsAlloc;
+    SubscribeOpsList m_subscribeOps;
 
     // UnsubscribeOpAlloc m_unsubscribeOpsAlloc;
     // UnsubscribeOpsList m_unsubscribeOps;

@@ -35,9 +35,9 @@ struct ExtConfig : public Config
         (SearchOpsLimit > 0U) && 
         (ConnectOpsLimit > 0U) && 
         (KeepAliveOpsLimit > 0U) &&
-        (DisconnectOpsLimit > 0U) /* &&
+        (DisconnectOpsLimit > 0U) &&
         (SubscribeOpsLimit > 0U) &&
-        (UnsubscribeOpsLimit > 0U) &&
+        (UnsubscribeOpsLimit > 0U) /* &&
         (RecvOpsLimit > 0U) &&
         (SendOpsLimit > 0U)*/;
     static constexpr unsigned MaxTimersLimit =
@@ -78,7 +78,7 @@ struct ExtConfig : public Config
     // static_assert(HasDynMemAlloc || (RecvOpsLimit > 0U));
     // static_assert(HasDynMemAlloc || (SendOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (OpsLimit > 0U));
-    // static_assert(HasDynMemAlloc || (PacketIdsLimit > 0U));
+    static_assert(HasDynMemAlloc || (PacketIdsLimit > 0U));
 };
 
 } // namespace cc_mqttsn_client

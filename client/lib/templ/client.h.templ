@@ -24,6 +24,7 @@ extern "C" {
 /// @defgroup subscribe "Subscribe Operation Data Types and Functions"
 /// @defgroup unsubscribe "Unsubscribe Operation Data Types and Functions"
 /// @defgroup publish "Publish Operation Data Types and Functions"
+/// @defgroup will "Will Update Operation Data Types and Functions"
 
 /// @brief Allocate new client.
 /// @details When work with the client is complete, @ref cc_mqttsn_##NAME##client_free()
@@ -198,6 +199,39 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_allowed_adv_losses(CC_MqttsnClie
 /// @see @ref cc_mqttsn_##NAME##client_set_allowed_adv_losses()
 /// @ingroup client
 unsigned cc_mqttsn_##NAME##client_get_allowed_adv_losses(CC_MqttsnClientHandle client);
+
+/// @brief Control outgoing topic format verification
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] enabled @b true to enable topic format verification, @b false to disable.
+/// @return Error code of the operation
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_outgoing_topic_enabled(CC_MqttsnClientHandle client, bool enabled);
+
+/// @brief Retrieve current outgoing topic format verification control
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @return @b true when enabled, @b false when disabled
+/// @ingroup client
+bool cc_mqttsn_##NAME##client_get_verify_outgoing_topic_enabled(CC_MqttsnClientHandle client);
+
+/// @brief Control incoming topic format verification
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] enabled @b true to enable topic format verification, @b false to disable.
+/// @return Error code of the operation
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_incoming_topic_enabled(CC_MqttsnClientHandle client, bool enabled);
+
+/// @brief Retrieve current incoming topic format verification control
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @return @b true when enabled, @b false when disabled
+/// @ingroup client
+bool cc_mqttsn_##NAME##client_get_verify_incoming_topic_enabled(CC_MqttsnClientHandle client);
+
+/// @brief Control verification of the incoming message being correctly subscribed.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] enabled @b true to enable topic format verification, @b false to disable.
+/// @return Error code of the operation
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_incoming_msg_subscribed(CC_MqttsnClientHandle client, bool enabled);
 
 /// @brief Prepare "search" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
@@ -462,6 +496,93 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
     CC_MqttsnClientHandle client,
     CC_MqttsnDisconnectCompleteCb cb, 
     void* cbData);
+
+/// @brief Prepare "subscribe" operation.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[out] ec Error code reporting result of the operation. Can be NULL.
+/// @return Handle of the "subscribe" operation, will be NULL in case of failure. To analyze the reason failure use "ec" output parameter.
+/// @post The "subscribe" operation is allocated, use either @ref cc_mqttsn_##NAME##client_subscribe_send()
+///     or @ref cc_mqttsn_##NAME##client_subscribe_cancel() to prevent memory leaks.
+/// @ingroup subscribe
+CC_MqttsnSubscribeHandle cc_mqttsn_##NAME##client_subscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+
+/// @brief Configure the retry period for the "subscribe" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
+/// @param[in] ms Retry period in @b milliseconds.
+/// @return Result code of the call.
+/// @ingroup subscribe
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_set_retry_period(CC_MqttsnSubscribeHandle handle, unsigned ms);
+
+/// @brief Retrieve the configured retry period for the "subscribe" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
+/// @return Retry period duration in @b milliseconds.
+/// @ingroup subscribe
+unsigned cc_mqttsn_##NAME##client_subscribe_get_retry_period(CC_MqttsnSubscribeHandle handle);
+
+/// @brief Configure the retry count for the "subscribe" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
+/// @param[in] count Number of retries.
+/// @return Result code of the call.
+/// @ingroup subscribe
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_set_retry_count(CC_MqttsnSubscribeHandle handle, unsigned count);
+
+/// @brief Retrieve the configured retry count for the "subscribe" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
+/// @return Number of retries.
+/// @ingroup subscribe
+unsigned cc_mqttsn_##NAME##client_subscribe_get_retry_count(CC_MqttsnSubscribeHandle handle);
+
+/// @brief Intialize the @ref CC_MqttsnSubscribeConfig configuration structure.
+/// @param[out] config Configuration structure. Must not be NULL.
+/// @ingroup subscribe
+void cc_mqttsn_##NAME##client_subscribe_init_config(CC_MqttsnSubscribeConfig* config);
+
+/// @brief Perform configuration of the "subscribe" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
+/// @param[in] config Configuration structure. Must NOT be NULL. Does not need to be preserved after invocation.
+/// @return Result code of the call.
+/// @ingroup subscribe
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_config(CC_MqttsnSubscribeHandle handle, const CC_MqttsnSubscribeConfig* config);
+
+/// @brief Send the "subscribe" operation
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
+/// @param[in] cb Callback to be invoked when "subscribe" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @post The handle of the "subscribe" operation can be discarded.
+/// @post The provided callback will be invoked when the "subscribe" operation is complete <b> if and only if</b>
+///     the function returns @ref CC_MqttsnErrorCode_Success.
+/// @ingroup subscribe
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_send(CC_MqttsnSubscribeHandle handle, CC_MqttsnSubscribeCompleteCb cb, void* cbData);
+
+/// @brief Cancel the allocated "subscribe" operation
+/// @details In case the @ref cc_mqttsn_##NAME##client_subscribe_send() function was successfully called before,
+///     the operation is cancelled @b without callback invocation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
+/// @return Result code of the call.
+/// @post The handle of the "subscribe" operation is no longer valid and must be discarded.
+/// @ingroup subscribe
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_cancel(CC_MqttsnSubscribeHandle handle);
+
+/// @brief Prepare and send "subscribe" request in one go 
+/// @details Abstracts away sequence of the following functions invocation:
+///     @li @ref cc_mqttsn_##NAME##client_subscribe_prepare()
+///     @li @ref cc_mqttsn_##NAME##client_subscribe_config()
+///     @li @ref cc_mqttsn_##NAME##client_subscribe_send()
+///
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] config Subscription configuration.
+/// @param[in] cb Callback to be invoked when "subscribe" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @ingroup subscribe
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnSubscribeConfig* config,
+    CC_MqttsnSubscribeCompleteCb cb, 
+    void* cbData);    
 
 // --------------------- Callbacks ---------------------
 

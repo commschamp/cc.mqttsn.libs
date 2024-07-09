@@ -142,6 +142,11 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
         return ec;
     }
 
+    if (m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) {
+        // Don't wait for acknowledgement, assume state cleared upon send
+        client().reuseState() = ReuseState();
+    }    
+
     completeOnError.release();
     return CC_MqttsnErrorCode_Success;
 }

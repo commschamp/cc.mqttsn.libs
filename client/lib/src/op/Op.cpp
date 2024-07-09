@@ -8,6 +8,7 @@
 #include "op/Op.h"
 
 #include "ClientImpl.h"
+#include "TopicFilterDefs.h"
 
 #include "comms/util/ScopeGuard.h"
 #include "comms/cast.h"
@@ -24,9 +25,20 @@ namespace op
 namespace 
 {
 
-// static constexpr char TopicSep = '/';
-// static constexpr char MultLevelWildcard = '#';
-// static constexpr char SingleLevelWildcard = '+';
+static constexpr char TopicSep = '/';
+static constexpr char MultLevelWildcard = '#';
+static constexpr char SingleLevelWildcard = '+';
+
+template <typename TMap>
+typename TMap::iterator findRegTopicInfo(CC_MqttsnTopicId topicId, TMap& map)
+{
+    return 
+        std::lower_bound(
+            map.begin(), map.end(), topicId,
+            [](auto& info, CC_MqttsnTopicId topicIdParam) {
+                return info.m_topicId < topicIdParam;
+            });
+}
 
 } // namespace 
 
@@ -145,6 +157,35 @@ void Op::decRetryCount()
     --m_retryCount;
 }
 
+void Op::storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
+{
+    auto& map = m_client.reuseState().m_inRegTopics;
+    auto iter = findRegTopicInfo(topicId, map);
+    if ((iter != map.end()) && (iter->m_topicId == topicId)) {
+        iter->m_topic = topic;
+        return;
+    }
+
+    map.insert(iter, RegTopicInfo{topic, topicId});
+}
+
+bool Op::isValidTopicId(CC_MqttsnTopicId id)
+{
+    return (id != 0U) && (id != 0xffff);
+}
+
+bool Op::isShortTopic(const char* topic)
+{
+    COMMS_ASSERT(topic != nullptr);
+    for (auto idx = 0U; idx < sizeof(std::uint16_t); ++idx) {
+        if (topic[idx] == '\0') {
+            return false;
+        }
+    }
+
+    return topic[sizeof(std::uint16_t)] == '\0';
+}
+
 void Op::errorLogInternal(const char* msg)
 {
     if constexpr (Config::HasErrorLog) {
@@ -152,130 +193,130 @@ void Op::errorLogInternal(const char* msg)
     }    
 }
 
-// bool Op::verifySubFilterInternal(const char* filter)
-// {
-//     if (Config::HasTopicFormatVerification) {
-//         if (!m_client.configState().m_verifyOutgoingTopic) {
-//             return true;
-//         }
+bool Op::verifySubFilterInternal(const char* filter)
+{
+    if (Config::HasTopicFormatVerification) {
+        if (!m_client.configState().m_verifyOutgoingTopic) {
+            return true;
+        }
 
-//         COMMS_ASSERT(filter != nullptr);
-//         if (filter[0] == '\0') {
-//             return false;
-//         }
+        COMMS_ASSERT(filter != nullptr);
+        if (filter[0] == '\0') {
+            return false;
+        }
 
-//         auto pos = 0U;
-//         int lastSep = -1;
-//         while (filter[pos] != '\0') {
-//             auto incPosGuard = 
-//                 comms::util::makeScopeGuard(
-//                     [&pos]()
-//                     {
-//                         ++pos;
-//                     });
+        auto pos = 0U;
+        int lastSep = -1;
+        while (filter[pos] != '\0') {
+            auto incPosGuard = 
+                comms::util::makeScopeGuard(
+                    [&pos]()
+                    {
+                        ++pos;
+                    });
 
-//             auto ch = filter[pos];
+            auto ch = filter[pos];
 
-//             if (ch == TopicSep) {
-//                 comms::cast_assign(lastSep) = pos;
-//                 continue;
-//             }   
+            if (ch == TopicSep) {
+                comms::cast_assign(lastSep) = pos;
+                continue;
+            }   
 
-//             if (ch == MultLevelWildcard) {
+            if (ch == MultLevelWildcard) {
                                 
-//                 if (filter[pos + 1] != '\0') {
-//                     errorLog("Multi-level wildcard \'#\' must be last.");
-//                     return false;
-//                 }
+                if (filter[pos + 1] != '\0') {
+                    errorLog("Multi-level wildcard \'#\' must be last.");
+                    return false;
+                }
 
-//                 if (pos == 0U) {
-//                     return true;
-//                 }
+                if (pos == 0U) {
+                    return true;
+                }
 
-//                 if ((lastSep < 0) || (static_cast<decltype(lastSep)>(pos - 1U) != lastSep)) {
-//                     errorLog("Multi-level wildcard \'#\' must follow separator.");
-//                     return false;
-//                 }
+                if ((lastSep < 0) || (static_cast<decltype(lastSep)>(pos - 1U) != lastSep)) {
+                    errorLog("Multi-level wildcard \'#\' must follow separator.");
+                    return false;
+                }
 
-//                 return true;
-//             }
+                return true;
+            }
 
-//             if (ch != SingleLevelWildcard) {
-//                 continue;
-//             }
+            if (ch != SingleLevelWildcard) {
+                continue;
+            }
 
-//             auto nextCh = filter[pos + 1];
-//             if ((nextCh != '\0') && (nextCh != TopicSep)) {
-//                 errorLog("Single-level wildcard \'+\' must be last of followed by /.");
-//                 return false;                
-//             }           
+            auto nextCh = filter[pos + 1];
+            if ((nextCh != '\0') && (nextCh != TopicSep)) {
+                errorLog("Single-level wildcard \'+\' must be last of followed by /.");
+                return false;                
+            }           
 
-//             if (pos == 0U) {
-//                 continue;
-//             }
+            if (pos == 0U) {
+                continue;
+            }
 
-//             if ((lastSep < 0) || (static_cast<decltype(lastSep)>(pos - 1U) != lastSep)) {
-//                 errorLog("Single-level wildcard \'+\' must follow separator.");
-//                 return false;
-//             }            
-//         }
+            if ((lastSep < 0) || (static_cast<decltype(lastSep)>(pos - 1U) != lastSep)) {
+                errorLog("Single-level wildcard \'+\' must follow separator.");
+                return false;
+            }            
+        }
 
-//         return true;
-//     }
-//     else {
-//         [[maybe_unused]] static constexpr bool ShouldNotBeCalled = false;
-//         COMMS_ASSERT(ShouldNotBeCalled);
-//         return false;
-//     }
-// }
+        return true;
+    }
+    else {
+        [[maybe_unused]] static constexpr bool ShouldNotBeCalled = false;
+        COMMS_ASSERT(ShouldNotBeCalled);
+        return false;
+    }
+}
 
-// bool Op::verifyPubTopicInternal(const char* topic, bool outgoing)
-// {
-//     if (Config::HasTopicFormatVerification) {
-//         if (outgoing && (!m_client.configState().m_verifyOutgoingTopic)) {
-//             return true;
-//         }
+bool Op::verifyPubTopicInternal(const char* topic, bool outgoing)
+{
+    if (Config::HasTopicFormatVerification) {
+        if (outgoing && (!m_client.configState().m_verifyOutgoingTopic)) {
+            return true;
+        }
 
-//         if ((!outgoing) && (!m_client.configState().m_verifyIncomingTopic)) {
-//             return true;
-//         }
+        if ((!outgoing) && (!m_client.configState().m_verifyIncomingTopic)) {
+            return true;
+        }
 
-//         COMMS_ASSERT(topic != nullptr);
-//         if (topic[0] == '\0') {
-//             return false;
-//         }
+        COMMS_ASSERT(topic != nullptr);
+        if (topic[0] == '\0') {
+            return false;
+        }
 
-//         if (outgoing && (topic[0] == '$')) {
-//             errorLog("Cannot start topic with \'$\'.");
-//             return false;
-//         }
+        if (outgoing && (topic[0] == '$')) {
+            errorLog("Cannot start topic with \'$\'.");
+            return false;
+        }
 
-//         auto pos = 0U;
-//         while (topic[pos] != '\0') {
-//             auto incPosGuard = 
-//                 comms::util::makeScopeGuard(
-//                     [&pos]()
-//                     {
-//                         ++pos;
-//                     });
+        auto pos = 0U;
+        while (topic[pos] != '\0') {
+            auto incPosGuard = 
+                comms::util::makeScopeGuard(
+                    [&pos]()
+                    {
+                        ++pos;
+                    });
 
-//             auto ch = topic[pos];
+            auto ch = topic[pos];
 
-//             if ((ch == MultLevelWildcard) || 
-//                 (ch == SingleLevelWildcard)) {
-//                 errorLog("Wildcards cannot be used in publish topic");
-//                 return false;
-//             }
-//         }
+            if ((ch == MultLevelWildcard) || 
+                (ch == SingleLevelWildcard)) {
+                errorLog("Wildcards cannot be used in publish topic");
+                return false;
+            }
+        }
 
-//         return true;
-//     }
-//     else {
-//         [[maybe_unused]] static constexpr bool ShouldNotBeCalled = false;
-//         COMMS_ASSERT(ShouldNotBeCalled);
-//         return false;
-//     }
-// }
+        return true;
+    }
+    else {
+        [[maybe_unused]] static constexpr bool ShouldNotBeCalled = false;
+        COMMS_ASSERT(ShouldNotBeCalled);
+        return false;
+    }
+}
 
 } // namespace op
 

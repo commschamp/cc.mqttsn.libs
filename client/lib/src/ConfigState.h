@@ -27,10 +27,9 @@ struct ConfigState
     unsigned m_broadcastRadius = DefaultBroadcastRadius;
     unsigned m_gwAdvTimeoutMs = DefaultGwAdvTimeoutMs;
     unsigned m_allowedAdvLosses = DefautlAllowedAdvLosses;
-    // CC_MqttsnPublishOrdering m_publishOrdering = CC_MqttsnPublishOrdering_SameQos;
-    // bool m_verifyOutgoingTopic = Config::HasTopicFormatVerification;
-    // bool m_verifyIncomingTopic = Config::HasTopicFormatVerification;
-    // bool m_verifySubFilter = Config::HasSubTopicVerification;
+    bool m_verifyOutgoingTopic = Config::HasTopicFormatVerification;
+    bool m_verifyIncomingTopic = Config::HasTopicFormatVerification;
+    bool m_verifySubFilter = Config::HasSubTopicVerification;
 };
 
 } // namespace cc_mqttsn_client

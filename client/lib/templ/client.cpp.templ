@@ -18,6 +18,7 @@ struct CC_MqttsnClient {};
 struct CC_MqttsnSearch {};
 struct CC_MqttsnConnect {};
 struct CC_MqttsnDisconnect {};
+struct CC_MqttsnSubscribe {};
 
 namespace
 {
@@ -68,6 +69,16 @@ inline cc_mqttsn_client::op::DisconnectOp* disconnectOpFromHandle(CC_MqttsnDisco
 inline CC_MqttsnDisconnectHandle handleFromDisconnectOp(cc_mqttsn_client::op::DisconnectOp* op)
 {
     return reinterpret_cast<CC_MqttsnDisconnectHandle>(op);
+}
+
+inline cc_mqttsn_client::op::SubscribeOp* subscribeOpFromHandle(CC_MqttsnSubscribeHandle handle)
+{
+    return reinterpret_cast<cc_mqttsn_client::op::SubscribeOp*>(handle);
+}
+
+inline CC_MqttsnSubscribeHandle handleFromSubscribeOp(cc_mqttsn_client::op::SubscribeOp* op)
+{
+    return reinterpret_cast<CC_MqttsnSubscribeHandle>(op);
 }
 
 }  // namespace
@@ -296,6 +307,75 @@ unsigned cc_mqttsn_##NAME##client_get_allowed_adv_losses(CC_MqttsnClientHandle c
 {
     COMMS_ASSERT(client != nullptr);
     return clientFromHandle(client)->configState().m_allowedAdvLosses;
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_outgoing_topic_enabled(CC_MqttsnClientHandle client, bool enabled)
+{
+    if constexpr (cc_mqttsn_client::Config::HasTopicFormatVerification) {
+        COMMS_ASSERT(client != nullptr);
+        clientFromHandle(client)->configState().m_verifyOutgoingTopic = enabled;
+        return CC_MqttsnErrorCode_Success;
+    }
+    else {
+        return CC_MqttsnErrorCode_NotSupported;
+    }
+}
+
+bool cc_mqttsn_##NAME##client_get_verify_outgoing_topic_enabled(CC_MqttsnClientHandle client)
+{
+    if constexpr (cc_mqttsn_client::Config::HasTopicFormatVerification) {
+        COMMS_ASSERT(client != nullptr);
+        return clientFromHandle(client)->configState().m_verifyOutgoingTopic;
+    }
+    else {
+        return false;
+    }
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_incoming_topic_enabled(CC_MqttsnClientHandle client, bool enabled)
+{
+    if constexpr (cc_mqttsn_client::Config::HasTopicFormatVerification) {
+        COMMS_ASSERT(client != nullptr);
+        clientFromHandle(client)->configState().m_verifyIncomingTopic = enabled;
+        return CC_MqttsnErrorCode_Success;
+    }
+    else {
+        return CC_MqttsnErrorCode_NotSupported;
+    }
+}
+
+bool cc_mqttsn_##NAME##client_get_verify_incoming_topic_enabled(CC_MqttsnClientHandle client)
+{
+    if constexpr (cc_mqttsn_client::Config::HasTopicFormatVerification) {
+        COMMS_ASSERT(client != nullptr);
+        return clientFromHandle(client)->configState().m_verifyIncomingTopic;
+    }
+    else {
+        return false;
+    }
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_incoming_msg_subscribed(CC_MqttsnClientHandle client, bool enabled)
+{
+    if constexpr (cc_mqttsn_client::Config::HasSubTopicVerification) {
+        COMMS_ASSERT(client != nullptr);
+        clientFromHandle(client)->configState().m_verifySubFilter = enabled;
+        return CC_MqttsnErrorCode_Success;
+    }
+    else {
+        return CC_MqttsnErrorCode_NotSupported;
+    }
+}
+
+bool cc_mqttsn_##NAME##client_get_verify_incoming_msg_subscribed(CC_MqttsnClientHandle client)
+{
+    if constexpr (cc_mqttsn_client::Config::HasSubTopicVerification) {
+        COMMS_ASSERT(client != nullptr);
+        return clientFromHandle(client)->configState().m_verifySubFilter;
+    }
+    else {
+        return false;
+    }
 }
 
 CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(
@@ -627,6 +707,99 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
     }
 
     return cc_mqttsn_##NAME##client_disconnect_send(disconnect, cb, cbData);        
+}
+
+CC_MqttsnSubscribeHandle cc_mqttsn_##NAME##client_subscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
+{
+    COMMS_ASSERT(client != nullptr);
+    return handleFromSubscribeOp(clientFromHandle(client)->subscribePrepare(ec));    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_set_retry_period(CC_MqttsnSubscribeHandle handle, unsigned ms)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (ms == 0U) {
+        subscribeOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    COMMS_ASSERT(handle != nullptr);
+    subscribeOpFromHandle(handle)->setRetryPeriod(ms);     
+    return CC_MqttsnErrorCode_Success;    
+}
+
+unsigned cc_mqttsn_##NAME##client_subscribe_get_retry_period(CC_MqttsnSubscribeHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return subscribeOpFromHandle(handle)->getRetryPeriod();      
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_set_retry_count(CC_MqttsnSubscribeHandle handle, unsigned count)
+{
+    COMMS_ASSERT(handle != nullptr);
+    subscribeOpFromHandle(handle)->setRetryCount(count);     
+    return CC_MqttsnErrorCode_Success;  
+}
+
+unsigned cc_mqttsn_##NAME##client_subscribe_get_retry_count(CC_MqttsnSubscribeHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return subscribeOpFromHandle(handle)->getRetryCount();         
+}
+
+void cc_mqttsn_##NAME##client_subscribe_init_config(CC_MqttsnSubscribeConfig* config)
+{
+    COMMS_ASSERT(config != nullptr);
+    *config = CC_MqttsnSubscribeConfig();
+    config->m_qos = static_cast<decltype(config->m_qos)>(cc_mqttsn_client::Config::MaxQos);
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_config(CC_MqttsnSubscribeHandle handle, const CC_MqttsnSubscribeConfig* config)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return subscribeOpFromHandle(handle)->config(config);    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_send(CC_MqttsnSubscribeHandle handle, CC_MqttsnSubscribeCompleteCb cb, void* cbData)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return subscribeOpFromHandle(handle)->send(cb, cbData);       
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_cancel(CC_MqttsnSubscribeHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return subscribeOpFromHandle(handle)->cancel();  
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnSubscribeConfig* config,
+    CC_MqttsnSubscribeCompleteCb cb, 
+    void* cbData)
+{
+    auto ec = CC_MqttsnErrorCode_Success;
+    auto subscribe = cc_mqttsn_##NAME##client_subscribe_prepare(client, &ec);
+    if (subscribe == nullptr) {
+        return ec;
+    }
+
+    auto cancelOnExitGuard = 
+        comms::util::makeScopeGuard(
+            [subscribe]()
+            {
+                [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_subscribe_cancel(subscribe);
+            });    
+
+    if (config != nullptr) {
+        ec = cc_mqttsn_##NAME##client_subscribe_config(subscribe, config);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            return ec;
+        }
+    }
+
+    cancelOnExitGuard.release();
+    return cc_mqttsn_##NAME##client_subscribe_send(subscribe, cb, cbData);     
 }
 
 // --------------------- Callbacks ---------------------

@@ -10,6 +10,7 @@
 #include "ExtConfig.h"
 #include "ObjListType.h"
 #include "ProtocolDefs.h"
+#include "ReuseState.h"
 
 #include "cc_mqttsn_client/common.h"
 
@@ -32,7 +33,7 @@ public:
         Type_Connect,
         Type_KeepAlive,
         Type_Disconnect,
-        // Type_Subscribe,
+        Type_Subscribe,
         // Type_Unsubscribe,
         // Type_Recv,
         // Type_Send,
@@ -96,6 +97,9 @@ protected:
     std::uint16_t allocPacketId();
     void releasePacketId(std::uint16_t id);
     void decRetryCount();
+    void storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
+    static bool isValidTopicId(CC_MqttsnTopicId id);
+    static bool isShortTopic(const char* topic);
 
     const ClientImpl& client() const
     {
@@ -109,25 +113,25 @@ protected:
         }
     }
 
-    // inline bool verifySubFilter(const char* filter)
-    // {
-    //     if (Config::HasTopicFormatVerification) {
-    //         return verifySubFilterInternal(filter);
-    //     }
-    //     else {
-    //         return true;
-    //     }
-    // }    
+    inline bool verifySubFilter(const char* filter)
+    {
+        if constexpr (Config::HasTopicFormatVerification) {
+            return verifySubFilterInternal(filter);
+        }
+        else {
+            return true;
+        }
+    }    
 
-    // inline bool verifyPubTopic(const char* topic, bool outgoing)
-    // {
-    //     if (Config::HasTopicFormatVerification) {
-    //         return verifyPubTopicInternal(topic, outgoing);
-    //     }
-    //     else {
-    //         return true;
-    //     }
-    // }     
+    inline bool verifyPubTopic(const char* topic, bool outgoing)
+    {
+        if (Config::HasTopicFormatVerification) {
+            return verifyPubTopicInternal(topic, outgoing);
+        }
+        else {
+            return true;
+        }
+    }     
 
     static constexpr std::size_t maxStringLen()
     {
@@ -136,8 +140,8 @@ protected:
 
 private:
     void errorLogInternal(const char* msg);
-    // bool verifySubFilterInternal(const char* filter);
-    // bool verifyPubTopicInternal(const char* topic, bool outgoing);
+    bool verifySubFilterInternal(const char* filter);
+    bool verifyPubTopicInternal(const char* topic, bool outgoing);
 
     ClientImpl& m_client;    
     unsigned m_retryPeriod = 0U;
