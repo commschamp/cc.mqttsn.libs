@@ -55,7 +55,17 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_disconnect_get_retry_count = &cc_mqttsn_client_disconnect_get_retry_count;
     funcs.m_disconnect_send = &cc_mqttsn_client_disconnect_send;
     funcs.m_disconnect_cancel = &cc_mqttsn_client_disconnect_cancel;
-    funcs.m_disconnect = &cc_mqttsn_client_disconnect;    
+    funcs.m_disconnect = &cc_mqttsn_client_disconnect;   
+    funcs.m_subscribe_prepare = &cc_mqttsn_client_subscribe_prepare;
+    funcs.m_subscribe_set_retry_period = &cc_mqttsn_client_subscribe_set_retry_period;
+    funcs.m_subscribe_get_retry_period = &cc_mqttsn_client_subscribe_get_retry_period;
+    funcs.m_subscribe_set_retry_count = &cc_mqttsn_client_subscribe_set_retry_count;
+    funcs.m_subscribe_get_retry_count = &cc_mqttsn_client_subscribe_get_retry_count;
+    funcs.m_subscribe_init_config = &cc_mqttsn_client_subscribe_init_config;
+    funcs.m_subscribe_config = &cc_mqttsn_client_subscribe_config;
+    funcs.m_subscribe_send = &cc_mqttsn_client_subscribe_send;
+    funcs.m_subscribe_cancel = &cc_mqttsn_client_subscribe_cancel;
+    funcs.m_subscribe = &cc_mqttsn_client_subscribe;     
 
     funcs.m_set_next_tick_program_callback = &cc_mqttsn_client_set_next_tick_program_callback;
     funcs.m_set_cancel_next_tick_wait_callback = &cc_mqttsn_client_set_cancel_next_tick_wait_callback;

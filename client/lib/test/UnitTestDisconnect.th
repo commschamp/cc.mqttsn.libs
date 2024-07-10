@@ -62,9 +62,8 @@ void UnitTestDisconnect::test1()
     }
 
     TS_ASSERT(unitTestHasDisconnectCompleteReport());
-    auto* disconnectReport = unitTestDisconnectCompleteReport();
+    auto disconnectReport = unitTestDisconnectCompleteReport();
     TS_ASSERT_EQUALS(disconnectReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
-    unitTestPopDisconnectCompleteReport();
 
     TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
     TS_ASSERT(!apiIsConnected(client));    
@@ -117,9 +116,8 @@ void UnitTestDisconnect::test2()
     unitTestTick(client); // timeout        
 
     TS_ASSERT(unitTestHasDisconnectCompleteReport());
-    auto* disconnectReport = unitTestDisconnectCompleteReport();
+    auto disconnectReport = unitTestDisconnectCompleteReport();
     TS_ASSERT_EQUALS(disconnectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
-    unitTestPopDisconnectCompleteReport();
 
     TS_ASSERT(unitTestHasTickReq()); // Still hase keep alive
     TS_ASSERT(apiIsConnected(client)); // Still connected   
@@ -177,9 +175,8 @@ void UnitTestDisconnect::test3()
     }    
 
     TS_ASSERT(unitTestHasDisconnectCompleteReport());
-    auto* disconnectReport = unitTestDisconnectCompleteReport();
+    auto disconnectReport = unitTestDisconnectCompleteReport();
     TS_ASSERT_EQUALS(disconnectReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
-    unitTestPopDisconnectCompleteReport();
 
     TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
     TS_ASSERT(!apiIsConnected(client));    
@@ -204,9 +201,8 @@ void UnitTestDisconnect::test4()
     }    
 
     TS_ASSERT(unitTestHasGwDisconnectReport());
-    auto* disconnectReport = unitTestGetGwDisconnectReport();
+    auto disconnectReport = unitTestGetGwDisconnectReport();
     TS_ASSERT_EQUALS(disconnectReport->m_reason, CC_MqttsnGatewayDisconnectReason_DisconnectMsg);
-    unitTestPopGwDisconnectReport();
 
     TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
     TS_ASSERT(!apiIsConnected(client));    
@@ -251,9 +247,8 @@ void UnitTestDisconnect::test5()
     unitTestTick(client); 
         
     TS_ASSERT(unitTestHasGwDisconnectReport());
-    auto* disconnectReport = unitTestGetGwDisconnectReport();
+    auto disconnectReport = unitTestGetGwDisconnectReport();
     TS_ASSERT_EQUALS(disconnectReport->m_reason, CC_MqttsnGatewayDisconnectReason_NoGatewayResponse);
-    unitTestPopGwDisconnectReport();
 
     TS_ASSERT(!unitTestHasTickReq()); // No more keep alive
     TS_ASSERT(!apiIsConnected(client));    

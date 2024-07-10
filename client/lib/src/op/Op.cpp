@@ -166,6 +166,11 @@ void Op::storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
         return;
     }
 
+    if (topic == nullptr) {
+        map.insert(iter, RegTopicInfo{TopicNameStr(), topicId});    
+        return;
+    }
+
     map.insert(iter, RegTopicInfo{topic, topicId});
 }
 

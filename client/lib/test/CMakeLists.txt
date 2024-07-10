@@ -21,8 +21,8 @@ target_include_directories(
 
 function (cc_mqttsn_client_add_unit_test name test_lib)
     set (src ${CMAKE_CURRENT_SOURCE_DIR}/${name}.th)
-    cc_cxxtest_add_test (NAME unit.${name} SRC ${src})    
-    target_link_libraries(unit.${name} PRIVATE ${test_lib} cxxtest::cxxtest)
+    cc_cxxtest_add_test (NAME cc.mqttsn.client.${name} SRC ${src})    
+    target_link_libraries(cc.mqttsn.client.${name} PRIVATE ${test_lib} cxxtest::cxxtest)
 endfunction ()
 
 ##################################
@@ -44,7 +44,7 @@ if (TARGET cc::cc_mqttsn_client)
     cc_mqttsn_client_add_unit_test(UnitTestDisconnect ${DEFAULT_BASE_LIB_NAME})
 #    cc_mqttsn_client_add_unit_test(UnitTestPublish ${DEFAULT_BASE_LIB_NAME})
 #    cc_mqttsn_client_add_unit_test(UnitTestReceive ${DEFAULT_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestSubscribe ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(UnitTestSubscribe ${DEFAULT_BASE_LIB_NAME})
 #    cc_mqttsn_client_add_unit_test(UnitTestUnsubscribe ${DEFAULT_BASE_LIB_NAME})
 endif ()    
 

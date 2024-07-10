@@ -136,7 +136,11 @@ CC_MqttsnErrorCode SubscribeOp::cancel()
 
 void SubscribeOp::handle(SubackMsg& msg)
 {
-    if (m_suspended || (msg.field_msgId().value() != m_subscribeMsg.field_msgId().value())) {
+    if (m_suspended) {
+        return;
+    }
+
+    if (msg.field_msgId().value() != m_subscribeMsg.field_msgId().value()) {
         errorLog("Unexpected SUBACK message received");
         return;
     }
@@ -148,11 +152,29 @@ void SubscribeOp::handle(SubackMsg& msg)
     info.m_qos = static_cast<decltype(info.m_qos)>(msg.field_flags().field_qos().value());
     info.m_topicId = msg.field_topicId().value();
 
+    do {
+        if (info.m_topicId == 0U) {
+            break;
+        }
+
+        auto& topicStr = m_subscribeMsg.field_topicName().field().value();
+        if (!topicStr.empty()) {
+            storeInRegTopic(topicStr.c_str(), info.m_topicId);    
+            break;
+        }
+
+        if constexpr (Config::HasSubTopicVerification) {
+            storeInRegTopic(nullptr, info.m_topicId);    
+            break;            
+        }
+        
+    } while (false);
+
     if ((info.m_topicId != 0U) && (!m_subscribeMsg.field_topicName().field().value().empty())) {
         storeInRegTopic(m_subscribeMsg.field_topicName().field().value().c_str(), info.m_topicId);
     }
 
-    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete);
+    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
 }
 
 void SubscribeOp::resume()

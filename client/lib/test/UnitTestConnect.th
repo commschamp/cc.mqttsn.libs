@@ -70,10 +70,9 @@ void UnitTestConnect::test1()
     }
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
-    auto* connectReport = unitTestConnectCompleteReport();
+    auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
     TS_ASSERT_EQUALS(connectReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted)
-    unitTestPopConnectCompleteReport();
 
     TS_ASSERT(unitTestHasTickReq()); // For keep alive
     TS_ASSERT(apiIsConnected(client));
@@ -176,10 +175,9 @@ void UnitTestConnect::test2()
     }
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
-    auto* connectReport = unitTestConnectCompleteReport();
+    auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
     TS_ASSERT_EQUALS(connectReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted)
-    unitTestPopConnectCompleteReport();
 
     TS_ASSERT(unitTestHasTickReq()); // For keep alive
     TS_ASSERT(apiIsConnected(client));
@@ -242,9 +240,8 @@ void UnitTestConnect::test3()
     unitTestTick(client);   
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
-    auto* connectReport = unitTestConnectCompleteReport();
+    auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
-    unitTestPopConnectCompleteReport();
 
     TS_ASSERT(!unitTestHasTickReq()); 
     TS_ASSERT(!apiIsConnected(client));
@@ -341,9 +338,8 @@ void UnitTestConnect::test4()
     unitTestTick(client);
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
-    auto* connectReport = unitTestConnectCompleteReport();
+    auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
-    unitTestPopConnectCompleteReport();
 
     TS_ASSERT(!unitTestHasTickReq()); 
     TS_ASSERT(!apiIsConnected(client));
@@ -457,9 +453,8 @@ void UnitTestConnect::test5()
     unitTestTick(client);                   
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
-    auto* connectReport = unitTestConnectCompleteReport();
+    auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
-    unitTestPopConnectCompleteReport();
 
     TS_ASSERT(!unitTestHasTickReq()); 
     TS_ASSERT(!apiIsConnected(client));
@@ -506,9 +501,8 @@ void UnitTestConnect::test6()
     unitTestTick(client);
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
-    auto* connectReport = unitTestConnectCompleteReport();
+    auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
-    unitTestPopConnectCompleteReport();
 
     TS_ASSERT(!unitTestHasTickReq()); 
     TS_ASSERT(!apiIsConnected(client));

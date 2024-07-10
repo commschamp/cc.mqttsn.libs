@@ -8,7 +8,7 @@ macro (cc_mqttsn_compile)
         list (APPEND compile_opts WARN_AS_ERR)
     endif ()
 
-    if (CC_MQTTSN_WITH_DEFAULT_SANITIZERS)
+    if (CC_MQTTSN_WITH_SANITIZERS)
         list (APPEND compile_opts DEFAULT_SANITIZERS)
     endif ()
 

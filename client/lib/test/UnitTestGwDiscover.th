@@ -43,11 +43,10 @@ void UnitTestGwDiscover::test1()
     unitTestClientInputMessage(client, advertiseMsg);
 
     {
-        auto* gwInfoReport = unitTestGetGwInfoReport();
+        auto gwInfoReport = unitTestGetGwInfoReport();
         TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
         TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
         TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
-        unitTestPopGwInfoReport();
         TS_ASSERT(!unitTestHasGwInfoReport());
     }
 
@@ -56,21 +55,19 @@ void UnitTestGwDiscover::test1()
 
     unitTestTick(client);
     {
-        auto* gwInfoReport = unitTestGetGwInfoReport();
+        auto gwInfoReport = unitTestGetGwInfoReport();
         TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_Tentative);
         TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
         TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
-        unitTestPopGwInfoReport();
         TS_ASSERT(!unitTestHasGwInfoReport());
     }
 
     unitTestTick(client);
     {
-        auto* gwInfoReport = unitTestGetGwInfoReport();
+        auto gwInfoReport = unitTestGetGwInfoReport();
         TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_Removed);
         TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
         TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
-        unitTestPopGwInfoReport();
         TS_ASSERT(!unitTestHasGwInfoReport());
     }    
 }
@@ -101,12 +98,12 @@ void UnitTestGwDiscover::test2()
     unitTestClientInputMessage(client, gwinfoMsg);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
-    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    auto searchCompleteReport = unitTestSearchCompleteReport();
     TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
     TS_ASSERT(searchCompleteReport->m_info.m_addr.empty());
 
-    auto* gwInfoReport = unitTestGetGwInfoReport();
+    auto gwInfoReport = unitTestGetGwInfoReport();
     TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
     TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
     TS_ASSERT(gwInfoReport->m_info.m_addr.empty());
@@ -141,12 +138,12 @@ void UnitTestGwDiscover::test3()
     unitTestClientInputMessage(client, gwinfoMsg);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
-    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    auto searchCompleteReport = unitTestSearchCompleteReport();
     TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
     TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_addr, Addr);
 
-    auto* gwInfoReport = unitTestGetGwInfoReport();
+    auto gwInfoReport = unitTestGetGwInfoReport();
     TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByClient);
     TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
     TS_ASSERT_EQUALS(gwInfoReport->m_info.m_addr, Addr);
@@ -184,12 +181,12 @@ void UnitTestGwDiscover::test4()
     unitTestClientInputMessage(client, advertiseMsg);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
-    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    auto searchCompleteReport = unitTestSearchCompleteReport();
     TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
     TS_ASSERT(searchCompleteReport->m_info.m_addr.empty());
 
-    auto* gwInfoReport = unitTestGetGwInfoReport();
+    auto gwInfoReport = unitTestGetGwInfoReport();
     TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
     TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
     TS_ASSERT_EQUALS(gwInfoReport->m_info.m_addr, Addr);
@@ -248,9 +245,8 @@ void UnitTestGwDiscover::test5()
     unitTestTick(client);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
-    auto* report = unitTestSearchCompleteReport();
+    auto report = unitTestSearchCompleteReport();
     TS_ASSERT_EQUALS(report->m_status, CC_MqttsnAsyncOpStatus_Timeout);
-    unitTestPopSearchCompleteReport();
 
     TS_ASSERT(!unitTestHasTickReq());
 }
@@ -313,12 +309,12 @@ void UnitTestGwDiscover::test6()
     unitTestClientInputMessage(client, gwinfoMsg);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
-    auto* searchCompleteReport = unitTestSearchCompleteReport();
+    auto searchCompleteReport = unitTestSearchCompleteReport();
     TS_ASSERT_EQUALS(searchCompleteReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(searchCompleteReport->m_info.m_gwId, GwId);
     TS_ASSERT(searchCompleteReport->m_info.m_addr.empty());
 
-    auto* gwInfoReport = unitTestGetGwInfoReport();
+    auto gwInfoReport = unitTestGetGwInfoReport();
     TS_ASSERT_EQUALS(gwInfoReport->m_status, CC_MqttsnGwStatus_AddedByGateway);
     TS_ASSERT_EQUALS(gwInfoReport->m_info.m_gwId, GwId);
     TS_ASSERT(gwInfoReport->m_info.m_addr.empty());    

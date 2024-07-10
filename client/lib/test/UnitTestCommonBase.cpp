@@ -74,7 +74,17 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_disconnect_get_retry_count != nullptr);
     test_assert(m_funcs.m_disconnect_send != nullptr);
     test_assert(m_funcs.m_disconnect_cancel != nullptr);
-    test_assert(m_funcs.m_disconnect != nullptr);    
+    test_assert(m_funcs.m_disconnect != nullptr);  
+    test_assert(m_funcs.m_subscribe_prepare != nullptr);
+    test_assert(m_funcs.m_subscribe_set_retry_period != nullptr);
+    test_assert(m_funcs.m_subscribe_get_retry_period != nullptr);
+    test_assert(m_funcs.m_subscribe_set_retry_count != nullptr);
+    test_assert(m_funcs.m_subscribe_get_retry_count != nullptr);
+    test_assert(m_funcs.m_subscribe_init_config != nullptr);
+    test_assert(m_funcs.m_subscribe_config != nullptr);
+    test_assert(m_funcs.m_subscribe_send != nullptr);
+    test_assert(m_funcs.m_subscribe_cancel != nullptr);
+    test_assert(m_funcs.m_subscribe != nullptr);      
 
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
@@ -139,6 +149,23 @@ UnitTestCommonBase::UnitTestConnectCompleteReport::UnitTestConnectCompleteReport
         m_info = *info;
     }
 }
+
+UnitTestCommonBase::UnitTestSubscribeInfo& UnitTestCommonBase::UnitTestSubscribeInfo::operator=(const CC_MqttsnSubscribeInfo& info)
+{
+    m_returnCode = info.m_returnCode;
+    m_topicId = info.m_topicId;
+    m_qos = info.m_qos;
+    return *this;
+}
+
+UnitTestCommonBase::UnitTestSubscribeCompleteReport::UnitTestSubscribeCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info) : 
+    m_status(status)
+{
+    if (info != nullptr) {
+        m_info = *info;
+    }
+}
+
 
 void UnitTestCommonBase::unitTestSetUp()
 {
@@ -283,40 +310,33 @@ bool UnitTestCommonBase::unitTestHasGwInfoReport() const
     return !m_data.m_gwInfoReports.empty();
 }
 
-const UnitTestCommonBase::UnitTestGwInfoReport* UnitTestCommonBase::unitTestGetGwInfoReport(bool mustExist) const
+UnitTestCommonBase::UnitTestGwInfoReportPtr UnitTestCommonBase::unitTestGetGwInfoReport(bool mustExist)
 {
     if (!unitTestHasGwInfoReport()) {
         test_assert(!mustExist);
-        return nullptr;
+        return UnitTestGwInfoReportPtr();
     }
 
-    return &m_data.m_gwInfoReports.front();
-}
-
-void UnitTestCommonBase::unitTestPopGwInfoReport()
-{
-    test_assert(!m_data.m_gwInfoReports.empty());
+    auto ptr = std::move(m_data.m_gwInfoReports.front());
     m_data.m_gwInfoReports.pop_front();
+    return ptr;       
 }
 
 bool UnitTestCommonBase::unitTestHasGwDisconnectReport() const
 {
     return !m_data.m_gwDisconnectReports.empty();
 }
-const UnitTestCommonBase::UnitTestGwDisconnectReport* UnitTestCommonBase::unitTestGetGwDisconnectReport(bool mustExist) const
+
+UnitTestCommonBase::UnitTestGwDisconnectReportPtr UnitTestCommonBase::unitTestGetGwDisconnectReport(bool mustExist)
 {
     if (!unitTestHasGwDisconnectReport()) {
         test_assert(!mustExist);
-        return nullptr;
+        return UnitTestGwDisconnectReportPtr();
     }
 
-    return &m_data.m_gwDisconnectReports.front();
-}
-
-void UnitTestCommonBase::unitTestPopGwDisconnectReport()
-{
-    test_assert(!m_data.m_gwDisconnectReports.empty());
+    auto ptr = std::move(m_data.m_gwDisconnectReports.front());
     m_data.m_gwDisconnectReports.pop_front();
+    return ptr;    
 }
 
 bool UnitTestCommonBase::unitTestHasSearchCompleteReport() const
@@ -324,20 +344,16 @@ bool UnitTestCommonBase::unitTestHasSearchCompleteReport() const
     return !m_data.m_searchCompleteReports.empty();
 }
 
-const UnitTestCommonBase::UnitTestSearchCompleteReport* UnitTestCommonBase::unitTestSearchCompleteReport(bool mustExist) const
+UnitTestCommonBase::UnitTestSearchCompleteReportPtr UnitTestCommonBase::unitTestSearchCompleteReport(bool mustExist)
 {
     if (!unitTestHasSearchCompleteReport()) {
         test_assert(!mustExist);
-        return nullptr;
+        return UnitTestSearchCompleteReportPtr();
     }
 
-    return &m_data.m_searchCompleteReports.front();
-}
-
-void UnitTestCommonBase::unitTestPopSearchCompleteReport()
-{
-    test_assert(unitTestHasSearchCompleteReport());
+    auto ptr = std::move(m_data.m_searchCompleteReports.front());
     m_data.m_searchCompleteReports.pop_front();
+    return ptr;      
 }
 
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb)
@@ -389,20 +405,16 @@ bool UnitTestCommonBase::unitTestHasConnectCompleteReport() const
     return !m_data.m_connectCompleteReports.empty();
 }
 
-const UnitTestCommonBase::UnitTestConnectCompleteReport* UnitTestCommonBase::unitTestConnectCompleteReport(bool mustExist) const
+UnitTestCommonBase::UnitTestConnectCompleteReportPtr UnitTestCommonBase::unitTestConnectCompleteReport(bool mustExist)
 {
     if (!unitTestHasConnectCompleteReport()) {
         test_assert(!mustExist);
-        return nullptr;
+        return UnitTestConnectCompleteReportPtr();
     }
 
-    return &m_data.m_connectCompleteReports.front();
-}
-
-void UnitTestCommonBase::unitTestPopConnectCompleteReport()
-{
-    test_assert(unitTestHasConnectCompleteReport());
+    auto ptr = std::move(m_data.m_connectCompleteReports.front());
     m_data.m_connectCompleteReports.pop_front();
+    return ptr;     
 }
 
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestConnectSend(CC_MqttsnConnectHandle connect)
@@ -474,10 +486,9 @@ void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_Mqt
     unitTestClientInputMessage(client, connackMsg);    
 
     test_assert(unitTestHasConnectCompleteReport());
-    auto* connectReport = unitTestConnectCompleteReport();
+    auto connectReport = unitTestConnectCompleteReport();
     test_assert(connectReport->m_status== CC_MqttsnAsyncOpStatus_Complete)
     test_assert(connectReport->m_info.m_returnCode == CC_MqttsnReturnCode_Accepted)
-    unitTestPopConnectCompleteReport();    
     test_assert(apiIsConnected(client));
 }
 
@@ -495,25 +506,44 @@ bool UnitTestCommonBase::unitTestHasDisconnectCompleteReport() const
     return !m_data.m_disconnectCompleteReports.empty();
 }
 
-const UnitTestCommonBase::UnitTestDisconnectCompleteReport* UnitTestCommonBase::unitTestDisconnectCompleteReport(bool mustExist) const
+UnitTestCommonBase::UnitTestDisconnectCompleteReportPtr UnitTestCommonBase::unitTestDisconnectCompleteReport(bool mustExist)
 {
     if (!unitTestHasDisconnectCompleteReport()) {
         test_assert(!mustExist);
         return nullptr;
     }
 
-    return &m_data.m_disconnectCompleteReports.front();
-}
+    auto ptr = std::move(m_data.m_disconnectCompleteReports.front());
+    m_data.m_disconnectCompleteReports.pop_front();
+    return ptr;    
 
-void UnitTestCommonBase::unitTestPopDisconnectCompleteReport()
-{
-    test_assert(unitTestHasDisconnectCompleteReport());
-    m_data.m_disconnectCompleteReports.pop_front();    
 }
 
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestDisconnectSend(CC_MqttsnDisconnectHandle disconnect)
 {
     return m_funcs.m_disconnect_send(disconnect, &UnitTestCommonBase::unitTestDisconnectCompleteCb, this);
+}
+
+bool UnitTestCommonBase::unitTestHasSubscribeCompleteReport() const
+{
+    return !m_data.m_subscribeCompleteReports.empty();
+}
+
+UnitTestCommonBase::UnitTestSubscribeCompleteReportPtr UnitTestCommonBase::unitTestSubscribeCompleteReport(bool mustExist)
+{
+    if (!unitTestHasSubscribeCompleteReport()) {
+        test_assert(!mustExist);
+        return UnitTestSubscribeCompleteReportPtr();
+    }
+
+    auto ptr = std::move(m_data.m_subscribeCompleteReports.front());
+    m_data.m_subscribeCompleteReports.pop_front();
+    return ptr;
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestSubscribeSend(CC_MqttsnSubscribeHandle subscribe)
+{
+    return m_funcs.m_subscribe_send(subscribe, &UnitTestCommonBase::unitTestSubscribeCompleteCb, this);
 }
 
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
@@ -626,12 +656,32 @@ void UnitTestCommonBase::unitTestSendOutputDataCb(void* data, const unsigned cha
 
 void UnitTestCommonBase::unitTestGwStatusReportCb(void* data, CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info)
 {
-    asThis(data)->m_data.m_gwInfoReports.emplace_back(status, info);
+    asThis(data)->m_data.m_gwInfoReports.push_back(std::make_unique<UnitTestGwInfoReport>(status, info));
 }
 
 void UnitTestCommonBase::unitTestGwDisconnectReportCb(void* data, CC_MqttsnGatewayDisconnectReason reason)
 {
-    asThis(data)->m_data.m_gwDisconnectReports.emplace_back(reason);
+    asThis(data)->m_data.m_gwDisconnectReports.push_back(std::make_unique<UnitTestGwDisconnectReport>(reason));
+}
+
+CC_MqttsnSubscribeHandle UnitTestCommonBase::apiSubscribePrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_subscribe_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSubscribeSetRetryCount(CC_MqttsnSubscribeHandle subscribe, unsigned count)
+{
+    return m_funcs.m_subscribe_set_retry_count(subscribe, count);
+}
+
+void UnitTestCommonBase::apiSubscribeInitConfig(CC_MqttsnSubscribeConfig* config)
+{
+    m_funcs.m_subscribe_init_config(config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSubscribeConfig(CC_MqttsnSubscribeHandle subscribe, const CC_MqttsnSubscribeConfig* config)
+{
+    return m_funcs.m_subscribe_config(subscribe, config);
 }
 
 void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo)
@@ -656,8 +706,10 @@ void UnitTestCommonBase::unitTestErrorLogCb([[maybe_unused]] void* data, const c
 
 void UnitTestCommonBase::unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info)
 {
+    test_assert((status != CC_MqttsnAsyncOpStatus_Complete) || (info != nullptr));
+
     auto* thisPtr = asThis(data);
-    thisPtr->m_data.m_searchCompleteReports.emplace_back(status, info);
+    thisPtr->m_data.m_searchCompleteReports.push_back(std::make_unique<UnitTestSearchCompleteReport>(status, info));
 
     if (thisPtr->m_data.m_searchCompleteCallbacks.empty()) {
         return;
@@ -666,7 +718,7 @@ void UnitTestCommonBase::unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpSt
     auto& func = thisPtr->m_data.m_searchCompleteCallbacks.front();
     test_assert(func);
 
-    bool popReport = func(thisPtr->m_data.m_searchCompleteReports.back());
+    bool popReport = func(*thisPtr->m_data.m_searchCompleteReports.back());
     thisPtr->m_data.m_searchCompleteCallbacks.pop_front();
 
     if (popReport) {
@@ -676,12 +728,20 @@ void UnitTestCommonBase::unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpSt
 
 void UnitTestCommonBase::unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
 {
+    test_assert((status != CC_MqttsnAsyncOpStatus_Complete) || (info != nullptr));
     auto* thisPtr = asThis(data);
-    thisPtr->m_data.m_connectCompleteReports.emplace_back(status, info);
+    thisPtr->m_data.m_connectCompleteReports.push_back(std::make_unique<UnitTestConnectCompleteReport>(status, info));
 }
 
 void UnitTestCommonBase::unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status)
 {
     auto* thisPtr = asThis(data);
-    thisPtr->m_data.m_disconnectCompleteReports.emplace_back(status);
+    thisPtr->m_data.m_disconnectCompleteReports.push_back(std::make_unique<UnitTestDisconnectCompleteReport>(status));
+}
+
+void UnitTestCommonBase::unitTestSubscribeCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
+{
+    test_assert((status != CC_MqttsnAsyncOpStatus_Complete) || (info != nullptr));
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_subscribeCompleteReports.push_back(std::make_unique<UnitTestSubscribeCompleteReport>(status, info));
 }

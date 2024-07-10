@@ -65,6 +65,16 @@ public:
         CC_MqttsnErrorCode (*m_disconnect_send)(CC_MqttsnDisconnectHandle, CC_MqttsnDisconnectCompleteCb, void*) = nullptr;
         CC_MqttsnErrorCode (*m_disconnect_cancel)(CC_MqttsnDisconnectHandle) = nullptr;
         CC_MqttsnErrorCode (*m_disconnect)(CC_MqttsnClientHandle, CC_MqttsnDisconnectCompleteCb, void*) = nullptr;
+        CC_MqttsnSubscribeHandle (*m_subscribe_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;     
+        CC_MqttsnErrorCode (*m_subscribe_set_retry_period)(CC_MqttsnSubscribeHandle, unsigned) = nullptr; 
+        unsigned (*m_subscribe_get_retry_period)(CC_MqttsnSubscribeHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_subscribe_set_retry_count)(CC_MqttsnSubscribeHandle, unsigned) = nullptr; 
+        unsigned (*m_subscribe_get_retry_count)(CC_MqttsnSubscribeHandle) = nullptr; 
+        void (*m_subscribe_init_config)(CC_MqttsnSubscribeConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_subscribe_config)(CC_MqttsnSubscribeHandle, const CC_MqttsnSubscribeConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_subscribe_send)(CC_MqttsnSubscribeHandle, CC_MqttsnSubscribeCompleteCb, void*) = nullptr; 
+        CC_MqttsnErrorCode (*m_subscribe_cancel)(CC_MqttsnSubscribeHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_subscribe)(CC_MqttsnClientHandle, const CC_MqttsnSubscribeConfig*, CC_MqttsnSubscribeCompleteCb, void* cbData) = nullptr;             
 
         void (*m_set_next_tick_program_callback)(CC_MqttsnClientHandle, CC_MqttsnNextTickProgramCb, void*) = nullptr;
         void (*m_set_cancel_next_tick_wait_callback)(CC_MqttsnClientHandle, CC_MqttsnCancelNextTickWaitCb, void*) = nullptr;
@@ -134,7 +144,8 @@ public:
         UnitTestGwInfoReport(CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info);
     };
 
-    using UnitTestGwInfoReportsList = std::list<UnitTestGwInfoReport>;
+    using UnitTestGwInfoReportPtr = std::unique_ptr<UnitTestGwInfoReport>;
+    using UnitTestGwInfoReportsList = std::list<UnitTestGwInfoReportPtr>;
 
     struct UnitTestGwDisconnectReport
     {
@@ -143,7 +154,8 @@ public:
         UnitTestGwDisconnectReport(CC_MqttsnGatewayDisconnectReason reason) : m_reason(reason) {}
     };    
 
-    using UnitTestGwDisconnectReportsList = std::list<UnitTestGwDisconnectReport>;
+    using UnitTestGwDisconnectReportPtr = std::unique_ptr<UnitTestGwDisconnectReport>;
+    using UnitTestGwDisconnectReportsList = std::list<UnitTestGwDisconnectReportPtr>;
 
     struct UnitTestSearchCompleteReport
     {
@@ -153,7 +165,9 @@ public:
         UnitTestSearchCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
         void assignInfo(CC_MqttsnGatewayInfo& info) const;
     };
-    using UnitTestSearchCompleteReportsList = std::list<UnitTestSearchCompleteReport>;
+
+    using UnitTestSearchCompleteReportPtr = std::unique_ptr<UnitTestSearchCompleteReport>;
+    using UnitTestSearchCompleteReportsList = std::list<UnitTestSearchCompleteReportPtr>;
 
     using UnitTestSearchCompleteCb = std::function<bool (const UnitTestSearchCompleteReport& info)>;
     using UnitTestSearchCompleteCbList = std::list<UnitTestSearchCompleteCb>;
@@ -176,7 +190,8 @@ public:
         UnitTestConnectCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
     };
 
-    using UnitTestConnectCompleteReportList = std::list<UnitTestConnectCompleteReport>;    
+    using UnitTestConnectCompleteReportPtr = std::unique_ptr<UnitTestConnectCompleteReport>;
+    using UnitTestConnectCompleteReportList = std::list<UnitTestConnectCompleteReportPtr>;    
 
     struct UnitTestDisconnectCompleteReport
     {
@@ -185,7 +200,32 @@ public:
         UnitTestDisconnectCompleteReport(CC_MqttsnAsyncOpStatus status) : m_status(status) {};
     };
 
-    using UnitTestDisconnectCompleteReportList = std::list<UnitTestDisconnectCompleteReport>;    
+    using UnitTestDisconnectCompleteReportPtr = std::unique_ptr<UnitTestDisconnectCompleteReport>;
+    using UnitTestDisconnectCompleteReportList = std::list<UnitTestDisconnectCompleteReportPtr>;    
+
+    struct UnitTestSubscribeInfo
+    {
+        CC_MqttsnReturnCode m_returnCode = CC_MqttsnReturnCode_ValuesLimit;
+        CC_MqttsnTopicId m_topicId;
+        CC_MqttsnQoS m_qos;        
+        UnitTestSubscribeInfo() = default;
+        UnitTestSubscribeInfo(const UnitTestSubscribeInfo&) = default;
+        UnitTestSubscribeInfo& operator=(const UnitTestSubscribeInfo&) = default;
+        UnitTestSubscribeInfo& operator=(const CC_MqttsnSubscribeInfo& info);
+    };    
+
+    struct UnitTestSubscribeCompleteReport
+    {
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+        UnitTestSubscribeInfo m_info;
+
+        UnitTestSubscribeCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
+        UnitTestSubscribeCompleteReport(UnitTestSubscribeCompleteReport&&) = default;
+        UnitTestSubscribeCompleteReport& operator=(const UnitTestSubscribeCompleteReport&) = default;
+    };    
+
+    using UnitTestSubscribeCompleteReportPtr = std::unique_ptr<UnitTestSubscribeCompleteReport>;
+    using UnitTestSubscribeCompleteReportList = std::list<UnitTestSubscribeCompleteReportPtr>;        
 
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
@@ -207,34 +247,34 @@ public:
     UniTestsMsgPtr unitTestPopOutputMessage(bool mustExist = true);
 
     bool unitTestHasGwInfoReport() const;
-    const UnitTestGwInfoReport* unitTestGetGwInfoReport(bool mustExist = true) const;
-    void unitTestPopGwInfoReport();
+    UnitTestGwInfoReportPtr unitTestGetGwInfoReport(bool mustExist = true);
 
     bool unitTestHasGwDisconnectReport() const;
-    const UnitTestGwDisconnectReport* unitTestGetGwDisconnectReport(bool mustExist = true) const;
-    void unitTestPopGwDisconnectReport();    
+    UnitTestGwDisconnectReportPtr unitTestGetGwDisconnectReport(bool mustExist = true);
 
     bool unitTestHasSearchCompleteReport() const;
-    const UnitTestSearchCompleteReport* unitTestSearchCompleteReport(bool mustExist = true) const;
-    void unitTestPopSearchCompleteReport();
+    UnitTestSearchCompleteReportPtr unitTestSearchCompleteReport(bool mustExist = true);
 
     CC_MqttsnErrorCode unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
     void unitTestSearch(CC_MqttsnClient* client, UnitTestSearchCompleteCb&& cb = UnitTestSearchCompleteCb());
     void unitTestSearchUpdateAddr(CC_MqttsnClient* client, const UnitTestData& addr);
 
     bool unitTestHasConnectCompleteReport() const;
-    const UnitTestConnectCompleteReport* unitTestConnectCompleteReport(bool mustExist = true) const;
-    void unitTestPopConnectCompleteReport();
+    UnitTestConnectCompleteReportPtr unitTestConnectCompleteReport(bool mustExist = true);
 
     CC_MqttsnErrorCode unitTestConnectSend(CC_MqttsnConnectHandle connect);
     void unitTestDoConnect(CC_MqttsnClient* client, const CC_MqttsnConnectConfig* config, const CC_MqttsnWillConfig* willConfig);
     void unitTestDoConnectBasic(CC_MqttsnClient* client, const std::string& clientId = std::string(), bool cleanSession = true);
 
     bool unitTestHasDisconnectCompleteReport() const;
-    const UnitTestDisconnectCompleteReport* unitTestDisconnectCompleteReport(bool mustExist = true) const;
-    void unitTestPopDisconnectCompleteReport();
+    UnitTestDisconnectCompleteReportPtr unitTestDisconnectCompleteReport(bool mustExist = true);
 
     CC_MqttsnErrorCode unitTestDisconnectSend(CC_MqttsnDisconnectHandle disconnect);
+
+    bool unitTestHasSubscribeCompleteReport() const;
+    UnitTestSubscribeCompleteReportPtr unitTestSubscribeCompleteReport(bool mustExist = true);
+
+    CC_MqttsnErrorCode unitTestSubscribeSend(CC_MqttsnSubscribeHandle subscribe);
 
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
@@ -255,6 +295,12 @@ public:
     CC_MqttsnDisconnectHandle apiDisconnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
     CC_MqttsnErrorCode apiDisconnectSetRetryCount(CC_MqttsnDisconnectHandle disconnect, unsigned count);
 
+    CC_MqttsnSubscribeHandle apiSubscribePrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiSubscribeSetRetryCount(CC_MqttsnSubscribeHandle subscribe, unsigned count);
+    void apiSubscribeInitConfig(CC_MqttsnSubscribeConfig* config);
+    CC_MqttsnErrorCode apiSubscribeConfig(CC_MqttsnSubscribeHandle subscribe, const CC_MqttsnSubscribeConfig* config);
+
+
 protected:
     explicit UnitTestCommonBase(const LibFuncs& funcs);
 
@@ -269,6 +315,7 @@ private:
         UnitTestSearchCompleteCbList m_searchCompleteCallbacks;
         UnitTestConnectCompleteReportList m_connectCompleteReports;
         UnitTestDisconnectCompleteReportList m_disconnectCompleteReports;
+        UnitTestSubscribeCompleteReportList m_subscribeCompleteReports;
     };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);
@@ -282,6 +329,7 @@ private:
     static void unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
     static void unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
     static void unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
+    static void unitTestSubscribeCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
 
     LibFuncs m_funcs;  
     ClientData m_data;
