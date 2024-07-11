@@ -775,7 +775,7 @@
 /// configuration. It can be changed for the allocated operation using the
 /// @b cc_mqttsn_client_disconnect_set_retry_period() function.
 /// @code
-/// ec = cc_mqttsn_client_disconnect_set_retry_period(connect, 1000);
+/// ec = cc_mqttsn_client_disconnect_set_retry_period(disconnect, 1000);
 /// if (ec != CC_MqttsnErrorCode_Success) {
 ///     ... /* Something went wrong */
 /// }
@@ -868,6 +868,192 @@
 ///     ...
 /// }
 /// @endcode
+///
+/// @section doc_cc_mqttsn_client_subscribe Subscribing to Receive Messages
+/// To subscribe to receive incoming messages use @ref subscribe "subscribe" operation.
+/// The application can issue multiple "subscribe" operations in parallel.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_prepare Preparing "Subscribe" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnSubscribeHandle subscribe = cc_mqttsn_client_subscribe_prepare(client, &ec);
+/// if (subscribe == NULL) {
+///     printf("ERROR: Subscribe allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_retry_period Configuring "Subscribe" Retry Period
+/// When created, the "subscribe" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_subscribe_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_subscribe_set_retry_period(connect, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_subscribe_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_retry_count Configuring "Subscribe" Retry Count
+/// When created, the "subscribe" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_subscribe_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_subscribe_set_retry_count(subscribe, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_subscribe_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_config Subscribe Configuration
+/// To configure "subscribe" operation use @b cc_mqttsn_client_subscribe_config() function.
+/// @code
+/// CC_MqttsnSubscribeConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_subscribe_init_config(&config);
+/// assert(config.m_qos == CC_MqttsnQoS_ExactlyOnceDelivery); // Initialization puts the maximum allowed QoS
+///
+/// // Update values if needed
+/// config.m_topic = "some/topic";
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_subscribe_config(subscribe, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Topic configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// When there is a need to use a predefined topic id instead of the topic string
+/// use @ref CC_MqttsnSubscribeConfig::m_topicId "m_topicId" member instead
+/// of @ref CC_MqttsnSubscribeConfig::m_topic "m_topic".
+/// @code
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_subscribe_init_config(&config);
+///
+/// // Update values if needed
+/// config.m_topicId = 123;
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnSubscribeConfig structure.
+///
+/// The MQTT-SN specification also specifies short topics of 2 byte length. The
+/// library detects this case by analysing the string assigned to the
+/// @ref CC_MqttsnSubscribeConfig::m_topic "m_topic" member and uses appropriate
+/// message configuration if needed.
+///
+/// By default the library will perform the analysis of the submitted topic format and
+/// reject it if topic format is incorrect. However, for performance reasons
+/// it is possible to disable such verification when client application
+/// ensures that no invalid topics are used.
+/// @code
+/// ec = cc_mqttsn_client_set_verify_outgoing_topic_enabled(client, false);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something is wrong */
+/// }
+/// @endcode
+/// @b NOTE that the configuration is global per client and not per "subscribe"
+/// operation.
+///
+/// Also @b note that the same function controls the verification of the
+/// "subscribe", "unsubscribe" and "publish" topic formats.
+///
+/// To retrieve the current configuration use @b cc_mqttsn_client_get_verify_outgoing_topic_enabled()
+/// function.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_send Sending Subscription Request
+/// When all the necessary configurations are performed for the allocated "subscribe"
+/// operation it can actually be sent to the broker. To initiate sending
+/// use the @b cc_mqttsn_client_subscribe_send() function.
+/// @code
+/// void my_subscribe_complete_cb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The subscription operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze response values.
+/// }
+///
+/// ec = cc_mqttsn_client_subscribe_send(subscribe, &my_subscribe_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send subscribe request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "subscribe" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_subscribe_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_subscribe_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_subscribe_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// The MQTT-SN spec demands that the @b SUBSCRIBE transactions be issued one at
+/// a time. However, the library allows @ref doc_cc_mqttsn_client_subscribe_prepare "preparing"
+/// and @ref doc_cc_mqttsn_client_subscribe_send "sending" multiple subscription
+/// requests in parallel before completion of the first one. The library will
+/// retain the requested "subscribe" operation requests internally and will
+/// issue them one after another to comply with the specification.
+///
+/// Note that the callback function receives the "subscribe" operation handle as
+/// its second parameter. Although the handle is already invalid and cannot be
+/// used in any other function, it allows the application to identify the
+/// original "subscribe" request if multiple have been issued in parallel
+/// and use the same callback function for all of them.
+///
+/// When the "subscribe" operation completion callback is invoked the reported
+/// response information is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_cancel Cancel the "Subscribe" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_subscribe_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_subscribe_cancel(subscribe);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel subscribe with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_subscribe_send() function was successfully
+/// called before the @b cc_mqttsn_client_subscribe_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_simplify Simplifying the "Subscribe" Operation Preparation.
+/// In many use cases the "subscribe" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function that can be used:
+/// @li @b cc_mqttsn_client_subscribe()
+///
+/// For example:
+/// @code
+/// CC_MqttsnSubscribeConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_subscribe_init_config(&config);
+///
+/// // Update values if needed
+/// config.m_topic = "some/topic";
+///
+/// ec = cc_mqttsn_client_subscribe(client, &config, &my_subscribe_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send subscribe request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_subscribe_prepare(). It means that it's not possible to
+/// cancel the "subscribe" operation before its completion or identify the
+/// subscribe operation by the reported handle when the completion callback
+/// is invoked.
 ///
 /// @section doc_cc_mqttsn_client_receive Receiving Messages
 /// TODO
