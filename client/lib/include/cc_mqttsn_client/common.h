@@ -335,12 +335,16 @@ typedef void (*CC_MqttsnDisconnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus
 /// @brief Callback used to report completion of the subscribe operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
+/// @param[in] handle Handle returned by @b cc_mqttsn_client_subscribe_prepare() function. When the 
+///     callback is invoked the handle is already invalid and cannot be used in any relevant 
+///     function invocation, but it allows end application to identify the original "subscribe" operation
+///     and use the same callback function in parallel requests.
 /// @param[in] status Status of the "subscribe" operation.
 /// @param[in] info Information about op completion. Not-NULL is reported <b>if and onfly if</b>
 ///     the "status" is equal to @ref CC_MqttsnAsyncOpStatus_Complete.
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup subscribe
-typedef void (*CC_MqttsnSubscribeCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
+typedef void (*CC_MqttsnSubscribeCompleteCb)(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
 
 #ifdef __cplusplus
 }

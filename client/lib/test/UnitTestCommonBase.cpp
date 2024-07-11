@@ -158,7 +158,8 @@ UnitTestCommonBase::UnitTestSubscribeInfo& UnitTestCommonBase::UnitTestSubscribe
     return *this;
 }
 
-UnitTestCommonBase::UnitTestSubscribeCompleteReport::UnitTestSubscribeCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info) : 
+UnitTestCommonBase::UnitTestSubscribeCompleteReport::UnitTestSubscribeCompleteReport(CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info) : 
+    m_handle(handle),
     m_status(status)
 {
     if (info != nullptr) {
@@ -739,9 +740,9 @@ void UnitTestCommonBase::unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsync
     thisPtr->m_data.m_disconnectCompleteReports.push_back(std::make_unique<UnitTestDisconnectCompleteReport>(status));
 }
 
-void UnitTestCommonBase::unitTestSubscribeCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
+void UnitTestCommonBase::unitTestSubscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
 {
     test_assert((status != CC_MqttsnAsyncOpStatus_Complete) || (info != nullptr));
     auto* thisPtr = asThis(data);
-    thisPtr->m_data.m_subscribeCompleteReports.push_back(std::make_unique<UnitTestSubscribeCompleteReport>(status, info));
+    thisPtr->m_data.m_subscribeCompleteReports.push_back(std::make_unique<UnitTestSubscribeCompleteReport>(handle, status, info));
 }

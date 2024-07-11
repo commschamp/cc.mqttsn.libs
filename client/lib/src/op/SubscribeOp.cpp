@@ -29,6 +29,11 @@ inline SubscribeOp* asSubscribeOp(void* data)
     return reinterpret_cast<SubscribeOp*>(data);
 }
 
+inline CC_MqttsnSubscribeHandle asHandle(SubscribeOp* op)
+{
+    return reinterpret_cast<CC_MqttsnSubscribeHandle>(op);
+}
+
 } // namespace 
     
 
@@ -136,12 +141,7 @@ CC_MqttsnErrorCode SubscribeOp::cancel()
 
 void SubscribeOp::handle(SubackMsg& msg)
 {
-    if (m_suspended) {
-        return;
-    }
-
-    if (msg.field_msgId().value() != m_subscribeMsg.field_msgId().value()) {
-        errorLog("Unexpected SUBACK message received");
+    if ((m_suspended) || (msg.field_msgId().value() != m_subscribeMsg.field_msgId().value())) {
         return;
     }
 
@@ -184,7 +184,7 @@ void SubscribeOp::resume()
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         errorLog("Failed to send SUBSCRIBE, after prev SUBSCRIBE completion");
-        completeOpInternal(CC_MqttsnAsyncOpStatus_InternalError);
+        completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }
 }
@@ -201,11 +201,12 @@ void SubscribeOp::terminateOpImpl(CC_MqttsnAsyncOpStatus status)
 
 void SubscribeOp::completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
 {
+    auto handle = asHandle(this);
     auto cb = m_cb;
     auto* cbData = m_cbData;
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
-        cb(cbData, status, info);    
+        cb(cbData, handle, status, info);    
     }
 }
 

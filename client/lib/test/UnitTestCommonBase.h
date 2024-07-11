@@ -216,10 +216,11 @@ public:
 
     struct UnitTestSubscribeCompleteReport
     {
+        CC_MqttsnSubscribeHandle m_handle = nullptr;
         CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
         UnitTestSubscribeInfo m_info;
 
-        UnitTestSubscribeCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
+        UnitTestSubscribeCompleteReport(CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
         UnitTestSubscribeCompleteReport(UnitTestSubscribeCompleteReport&&) = default;
         UnitTestSubscribeCompleteReport& operator=(const UnitTestSubscribeCompleteReport&) = default;
     };    
@@ -329,7 +330,7 @@ private:
     static void unitTestSearchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info);
     static void unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
     static void unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
-    static void unitTestSubscribeCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
+    static void unitTestSubscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
 
     LibFuncs m_funcs;  
     ClientData m_data;

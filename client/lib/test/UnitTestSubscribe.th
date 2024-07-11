@@ -532,7 +532,68 @@ void UnitTestSubscribe::test6()
         TS_ASSERT(!unitTestHasOutputData());
         subMsgId2 = subscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(subMsgId2, 0U);
+        TS_ASSERT_DIFFERS(subMsgId2, subMsgId1);
     }      
 
-    // TODO
+    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);     
+
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId2);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasSubscribeCompleteReport());
+        auto subscribeReport = unitTestSubscribeCompleteReport();
+        TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, 0U);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
+    }
+
+    auto subMsgId3 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtMostOnceDelivery);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic3);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId3 = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId3, 0U);
+        TS_ASSERT_DIFFERS(subMsgId3, subMsgId2);
+        TS_ASSERT_DIFFERS(subMsgId3, subMsgId1);
+    }       
+
+    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);   
+
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId3);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasSubscribeCompleteReport());
+        auto subscribeReport = unitTestSubscribeCompleteReport();
+        TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, 0U);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
+    }       
+
+    TS_ASSERT(unitTestHasTickReq());
 }
