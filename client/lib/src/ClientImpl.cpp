@@ -315,8 +315,8 @@ op::SubscribeOp* ClientImpl::subscribePrepare(CC_MqttsnErrorCode* ec)
         m_subscribeOps.push_back(std::move(ptr));
         op = m_subscribeOps.back().get();
 
-        if (1U < m_subscribeOps.size()) {
-            // Only one SUBSCRIBE transaction is allowed at a time by the specification
+        if ((1U < m_subscribeOps.size()) || (!m_unsubscribeOps.empty())) {
+            // Only one SUBSCRIBE / UNSUBSCRIBE transaction is allowed at a time by the specification
             op->suspend();
         }
 
@@ -326,56 +326,56 @@ op::SubscribeOp* ClientImpl::subscribePrepare(CC_MqttsnErrorCode* ec)
     return op;
 }
 
-// op::UnsubscribeOp* ClientImpl::unsubscribePrepare(CC_MqttsnErrorCode* ec)
-// {
-//     op::UnsubscribeOp* unsubOp = nullptr;
-//     do {
-//         if (!m_sessionState.m_connected) {
-//             errorLog("Client must be connected to allow unsubscription.");
-//             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
-//             break;
-//         }
+op::UnsubscribeOp* ClientImpl::unsubscribePrepare(CC_MqttsnErrorCode* ec)
+{
+    op::UnsubscribeOp* op = nullptr;
+    do {
+        if (!m_sessionState.m_connected) {
+            errorLog("Client must be connected to allow subscription.");
+            updateEc(ec, CC_MqttsnErrorCode_NotConnected);
+            break;
+        }
 
-//         if (m_sessionState.m_disconnecting) {
-//             errorLog("Session disconnection is in progress, cannot initiate unsubscription.");
-//             updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
-//             break;
-//         }
+        if (m_sessionState.m_disconnecting) {
+            errorLog("Session disconnection is in progress, cannot initiate subscription.");
+            updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
+            break;
+        }
 
-//         if (m_clientState.m_networkDisconnected) {
-//             errorLog("Network is disconnected.");
-//             updateEc(ec, CC_MqttsnErrorCode_NetworkDisconnected);
-//             break;            
-//         }        
+        if (m_ops.max_size() <= m_ops.size()) {
+            errorLog("Cannot start unsubscribe operation, retry in next event loop iteration.");
+            updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+            break;
+        }  
 
-//         if (m_ops.max_size() <= m_ops.size()) {
-//             errorLog("Cannot start subscribe operation, retry in next event loop iteration.");
-//             updateEc(ec, CC_MqttsnErrorCode_RetryLater);
-//             break;
-//         }    
+        if (m_preparationLocked) {
+            errorLog("Another operation is being prepared, cannot prepare \"unsubscribe\" without \"send\" or \"cancel\" of the previous.");
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            break;
+        }            
 
-//         if (m_preparationLocked) {
-//             errorLog("Another operation is being prepared, cannot prepare \"unsubscribe\" without \"send\" or \"cancel\" of the previous.");
-//             updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
-//             break;
-//         }             
+        auto ptr = m_unsubscribeOpsAlloc.alloc(*this);
+        if (!ptr) {
+            errorLog("Cannot allocate new unsubscribe operation.");
+            updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
+            break;
+        }
 
-//         auto ptr = m_unsubscribeOpsAlloc.alloc(*this);
-//         if (!ptr) {
-//             errorLog("Cannot allocate new unsubscribe operation.");
-//             updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
-//             break;
-//         }
+        m_preparationLocked = true;
+        m_ops.push_back(ptr.get());
+        m_unsubscribeOps.push_back(std::move(ptr));
+        op = m_unsubscribeOps.back().get();
 
-//         m_preparationLocked = true;
-//         m_ops.push_back(ptr.get());
-//         m_unsubscribeOps.push_back(std::move(ptr));
-//         unsubOp = m_unsubscribeOps.back().get();
-//         updateEc(ec, CC_MqttsnErrorCode_Success);
-//     } while (false);
+        if ((1U < m_unsubscribeOps.size()) || (!m_subscribeOps.empty())) {
+            // Only one SUBSCRIBE / UNSUBSCRIBE transaction is allowed at a time by the specification
+            op->suspend();
+        }
 
-//     return unsubOp;
-// }
+        updateEc(ec, CC_MqttsnErrorCode_Success);
+    } while (false);
+
+    return op;
+}
 
 // op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
 // {
@@ -856,7 +856,7 @@ void ClientImpl::opComplete(const op::Op* op)
         /* Type_KeepAlive */ &ClientImpl::opComplete_KeepAlive,
         /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
         /* Type_Subscribe */ &ClientImpl::opComplete_Subscribe,
-        // /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
+        /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
         // /* Type_Recv */ &ClientImpl::opComplete_Recv,
         // /* Type_Send */ &ClientImpl::opComplete_Send,
     };
@@ -1205,16 +1205,14 @@ void ClientImpl::opComplete_Disconnect(const op::Op* op)
 void ClientImpl::opComplete_Subscribe(const op::Op* op)
 {
     eraseFromList(op, m_subscribeOps);
-    if (!m_subscribeOps.empty()) {
-        COMMS_ASSERT(m_subscribeOps.front());
-        m_subscribeOps.front()->resume();
-    }
+    finaliseSupUnsubOp();
 }
 
-// void ClientImpl::opComplete_Unsubscribe(const op::Op* op)
-// {
-//     eraseFromList(op, m_unsubscribeOps);
-// }
+void ClientImpl::opComplete_Unsubscribe(const op::Op* op)
+{
+    eraseFromList(op, m_unsubscribeOps);
+    finaliseSupUnsubOp();
+}
 
 // void ClientImpl::opComplete_Recv(const op::Op* op)
 // {
@@ -1230,6 +1228,46 @@ void ClientImpl::opComplete_Subscribe(const op::Op* op)
 
 //     resumeSendOpsSince(idx);
 // }
+
+void ClientImpl::finaliseSupUnsubOp()
+{
+    if (m_subscribeOps.empty() && m_unsubscribeOps.empty()) {
+        return;
+    }
+
+    if ((!m_subscribeOps.empty()) && (m_unsubscribeOps.empty())) {
+        COMMS_ASSERT(m_subscribeOps.front());
+        m_subscribeOps.front()->resume();
+        return;        
+    }
+
+    if (m_subscribeOps.empty()) {
+        COMMS_ASSERT(!m_unsubscribeOps.empty());
+        COMMS_ASSERT(m_unsubscribeOps.front());
+        m_unsubscribeOps.front()->resume();
+        return;        
+    }    
+
+    COMMS_ASSERT(!m_subscribeOps.empty());
+    COMMS_ASSERT(!m_unsubscribeOps.empty());
+    for (auto* op : m_ops) {
+        if (op == nullptr) {
+            continue;
+        }
+
+        if (op->type() == op::Op::Type_Subscribe) {
+            auto* subscribeOp = static_cast<op::SubscribeOp*>(op);
+            subscribeOp->resume();
+            return;
+        }
+
+        if (op->type() == op::Op::Type_Unsubscribe) {
+            auto* unsubscribeOp = static_cast<op::UnsubscribeOp*>(op);
+            unsubscribeOp->resume();
+            return;
+        }        
+    }
+}
 
 void ClientImpl::monitorGatewayExpiry()
 {

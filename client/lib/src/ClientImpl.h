@@ -25,7 +25,7 @@
 #include "op/SearchOp.h"
 // #include "op/SendOp.h"
 #include "op/SubscribeOp.h"
-// #include "op/UnsubscribeOp.h"
+#include "op/UnsubscribeOp.h"
 
 #include "cc_mqttsn_client/common.h"
 
@@ -72,7 +72,7 @@ public:
     op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);
     op::DisconnectOp* disconnectPrepare(CC_MqttsnErrorCode* ec);
     op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
-    // op::UnsubscribeOp* unsubscribePrepare(CC_MqttsnErrorCode* ec);
+    op::UnsubscribeOp* unsubscribePrepare(CC_MqttsnErrorCode* ec);
     // op::SendOp* publishPrepare(CC_MqttsnErrorCode* ec);
 
     // std::size_t sendsCount() const
@@ -247,8 +247,8 @@ private:
     using SubscribeOpAlloc = ObjAllocator<op::SubscribeOp, ExtConfig::SubscribeOpsLimit>;
     using SubscribeOpsList = ObjListType<SubscribeOpAlloc::Ptr, ExtConfig::SubscribeOpsLimit>;
 
-    // using UnsubscribeOpAlloc = ObjAllocator<op::UnsubscribeOp, ExtConfig::UnsubscribeOpsLimit>;
-    // using UnsubscribeOpsList = ObjListType<UnsubscribeOpAlloc::Ptr, ExtConfig::UnsubscribeOpsLimit>;
+    using UnsubscribeOpAlloc = ObjAllocator<op::UnsubscribeOp, ExtConfig::UnsubscribeOpsLimit>;
+    using UnsubscribeOpsList = ObjListType<UnsubscribeOpAlloc::Ptr, ExtConfig::UnsubscribeOpsLimit>;
 
     // using RecvOpAlloc = ObjAllocator<op::RecvOp, ExtConfig::RecvOpsLimit>;
     // using RecvOpsList = ObjListType<RecvOpAlloc::Ptr, ExtConfig::RecvOpsLimit>;
@@ -285,10 +285,11 @@ private:
     void opComplete_KeepAlive(const op::Op* op);
     void opComplete_Disconnect(const op::Op* op);
     void opComplete_Subscribe(const op::Op* op);
-    // void opComplete_Unsubscribe(const op::Op* op);
+    void opComplete_Unsubscribe(const op::Op* op);
     // void opComplete_Recv(const op::Op* op);
     // void opComplete_Send(const op::Op* op);
 
+    void finaliseSupUnsubOp();
     void monitorGatewayExpiry();
     void gwExpiryTimeout();
     void reportGwStatus(CC_MqttsnGwStatus status, const ClientState::GwInfo& info);
@@ -354,8 +355,8 @@ private:
     SubscribeOpAlloc m_subscribeOpsAlloc;
     SubscribeOpsList m_subscribeOps;
 
-    // UnsubscribeOpAlloc m_unsubscribeOpsAlloc;
-    // UnsubscribeOpsList m_unsubscribeOps;
+    UnsubscribeOpAlloc m_unsubscribeOpsAlloc;
+    UnsubscribeOpsList m_unsubscribeOps;
 
     // RecvOpAlloc m_recvOpsAlloc;
     // RecvOpsList m_recvOps;

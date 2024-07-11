@@ -158,6 +158,14 @@ struct CC_MqttsnSubscribe;
 /// @ingroup "subscribe".
 typedef struct CC_MqttsnSubscribe* CC_MqttsnSubscribeHandle;
 
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnUnsubscribeHandle
+/// @ingroup unsubscribe
+struct CC_MqttsnUnsubscribe;
+
+/// @brief Handle for "unsubscribe" operation.
+/// @details Returned by @b cc_mqttsn_client_unsubscribe_prepare() function.
+/// @ingroup "subscribe".
+typedef struct CC_MqttsnUnsubscribe* CC_MqttsnUnsubscribeHandle;
 
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
@@ -236,6 +244,15 @@ typedef struct
     CC_MqttsnTopicId m_topicId; ///< Granted topic ID (if applicable).
     CC_MqttsnQoS m_qos; ///< Granted max QoS value
 } CC_MqttsnSubscribeInfo;
+
+/// @brief Configuration the "unsubscribe" operation
+/// @ingroup unsubscribe
+typedef struct
+{
+    const char* m_topic; ///< Subscription topic, can be NULL when pre-defined topic ID is used.
+    CC_MqttsnTopicId m_topicId; ///< Pre-defined topic ID, should be @b 0 when topic is not NULL.
+    CC_MqttsnQoS m_qos; ///< Max QoS value
+} CC_MqttsnUnsubscribeConfig;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
@@ -345,6 +362,18 @@ typedef void (*CC_MqttsnDisconnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup subscribe
 typedef void (*CC_MqttsnSubscribeCompleteCb)(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
+
+/// @brief Callback used to report completion of the unsubscribe operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] handle Handle returned by @b cc_mqttsn_client_unsubscribe_prepare() function. When the 
+///     callback is invoked the handle is already invalid and cannot be used in any relevant 
+///     function invocation, but it allows end application to identify the original "unsubscribe" operation
+///     and use the same callback function in parallel requests.
+/// @param[in] status Status of the "unsubscribe" operation.
+/// @post The data members of the reported response can NOT be accessed after the function returns.
+/// @ingroup unsubscribe
+typedef void (*CC_MqttsnUnsubscribeCompleteCb)(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status);
 
 #ifdef __cplusplus
 }
