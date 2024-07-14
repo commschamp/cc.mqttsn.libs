@@ -67,7 +67,47 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
     if ((!emptyTopic) && (!verifySubFilter(config->m_topic))) {
         errorLog("Bad topic filter format in unsubscribe.");
         return CC_MqttsnErrorCode_BadParam;
-    }    
+    }  
+
+    if constexpr (Config::HasSubTopicVerification) {
+        do {
+            if (!client().configState().m_verifySubFilter) {
+                break;
+            }
+
+            auto& filtersMap = client().reuseState().m_subFilters;
+            if (!emptyTopic) {
+                auto iter = 
+                    std::lower_bound(
+                        filtersMap.begin(), filtersMap.end(), config->m_topic,
+                        [](auto& elem, const char* topicParam)
+                        {
+                            return elem.m_topic < topicParam;
+                        });
+
+                if ((iter == filtersMap.end()) || (iter->m_topic != config->m_topic)) {
+                    errorLog("Requested unsubscribe topic hasn't been used for subscription before");
+                    return CC_MqttsnErrorCode_BadParam;
+                }
+
+                break;
+            }
+
+            COMMS_ASSERT(isValidTopicId(config->m_topicId));
+            auto iter = 
+                std::find_if(
+                    filtersMap.begin(), filtersMap.end(),
+                    [config](auto& elem)
+                    {
+                        return config->m_topicId == elem.m_topicId;
+                    });
+
+            if (iter == filtersMap.end()) {
+                errorLog("Requested unsubscribe topic ID hasn't been used for subscription before");
+                return CC_MqttsnErrorCode_BadParam;
+            }
+        } while (false);
+    }         
 
     m_unsubscribeMsg.field_flags().field_qos().setValue(config->m_qos);
 
@@ -124,7 +164,60 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
         return ec;
     }
 
-    // TODO: remove the record
+    // Remove record on first send rather than acknowledgement allowing message
+    // to get lost.
+    do {
+        if (m_recordRemoved) {
+            break;
+        }
+
+        m_recordRemoved = true;
+
+        auto& topicStr = m_unsubscribeMsg.field_topicName().field().value();
+        auto* topicPtr = topicStr.c_str();
+        if (m_unsubscribeMsg.field_topicName().isMissing()) {
+            topicPtr = nullptr;
+        }
+
+        auto topicId = m_unsubscribeMsg.field_topicId().field().value();
+        COMMS_ASSERT(m_unsubscribeMsg.field_topicId().doesExist() || (topicId == 0U));
+        COMMS_ASSERT((topicPtr == nullptr) || (topicId == 0U));
+        COMMS_ASSERT((topicPtr != nullptr) || (topicId != 0U));
+
+        removeInRegTopic(topicPtr, topicId);
+
+        if constexpr (Config::HasSubTopicVerification) {
+            auto& filtersMap = client().reuseState().m_subFilters;
+            if (topicPtr != nullptr) {
+                auto iter = 
+                    std::lower_bound(
+                        filtersMap.begin(), filtersMap.end(), topicPtr,
+                        [](auto& elem, const char* topicParam)
+                        {
+                            return elem.m_topic < topicParam;
+                        });
+
+                if ((iter != filtersMap.end()) && (iter->m_topic != topicPtr)) {
+                    filtersMap.erase(iter);
+                }
+
+                break;
+            }
+
+            COMMS_ASSERT(topicId != 0U);
+
+            auto iter = 
+                std::find_if(
+                    filtersMap.begin(), filtersMap.end(),
+                    [topicId](auto& elem) {
+                        return elem.m_topicId == topicId;
+                    });
+
+            if (iter != filtersMap.end()) {
+                filtersMap.erase(iter);
+            }
+        }
+    } while (false);  
 
     completeOnError.release();
     return CC_MqttsnErrorCode_Success;

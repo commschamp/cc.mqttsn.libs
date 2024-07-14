@@ -206,7 +206,6 @@ public:
     struct UnitTestSubscribeInfo
     {
         CC_MqttsnReturnCode m_returnCode = CC_MqttsnReturnCode_ValuesLimit;
-        CC_MqttsnTopicId m_topicId;
         CC_MqttsnQoS m_qos;        
         UnitTestSubscribeInfo() = default;
         UnitTestSubscribeInfo(const UnitTestSubscribeInfo&) = default;

@@ -92,7 +92,6 @@ void UnitTestSubscribe::test1()
     auto subscribeReport = unitTestSubscribeCompleteReport();
     TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-    TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, 0U);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
 
     TS_ASSERT(unitTestHasTickReq());
@@ -166,7 +165,6 @@ void UnitTestSubscribe::test2()
     auto subscribeReport = unitTestSubscribeCompleteReport();
     TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-    TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, AckTopicId);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
 
     TS_ASSERT(unitTestHasTickReq());
@@ -236,7 +234,6 @@ void UnitTestSubscribe::test3()
     auto subscribeReport = unitTestSubscribeCompleteReport();
     TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-    TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, TopicId);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
 
     TS_ASSERT(unitTestHasTickReq());
@@ -322,7 +319,6 @@ void UnitTestSubscribe::test4()
     auto subscribeReport = unitTestSubscribeCompleteReport();
     TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-    TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, 0U);
     TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
 
     TS_ASSERT(unitTestHasTickReq());
@@ -514,7 +510,6 @@ void UnitTestSubscribe::test6()
         auto subscribeReport = unitTestSubscribeCompleteReport();
         TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-        TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, 0U);
         TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
     }
 
@@ -552,7 +547,6 @@ void UnitTestSubscribe::test6()
         auto subscribeReport = unitTestSubscribeCompleteReport();
         TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-        TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, 0U);
         TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
     }
 
@@ -591,7 +585,6 @@ void UnitTestSubscribe::test6()
         auto subscribeReport = unitTestSubscribeCompleteReport();
         TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-        TS_ASSERT_EQUALS(subscribeReport->m_info.m_topicId, 0U);
         TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
     }       
 

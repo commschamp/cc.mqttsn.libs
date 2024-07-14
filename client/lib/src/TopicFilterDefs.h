@@ -18,14 +18,20 @@ namespace cc_mqttsn_client
 {
 
 using TopicNameStr = SubscribeMsg::Field_topicName::Field::ValueType;
-using SubFiltersMap = ObjListType<TopicNameStr, Config::SubFiltersLimit, Config::HasSubTopicVerification>;
 
 struct RegTopicInfo
 {
     TopicNameStr m_topic;
-    CC_MqttsnTopicId m_topicId = 0U; // key
+    CC_MqttsnTopicId m_topicId = 0U; 
+
+    template <typename T>
+    RegTopicInfo(T&& topic, CC_MqttsnTopicId topicId) : m_topic(std::forward<T>(topic)), m_topicId(topicId) {}
+
+    RegTopicInfo(const char* topic) : m_topic(topic) {}
+    RegTopicInfo(CC_MqttsnTopicId topicId) : m_topicId(topicId) {}
 };
 
-using InRegTopicsMap = ObjListType<RegTopicInfo, Config::InRegTopicsLimit>;
+using SubFiltersMap = ObjListType<RegTopicInfo, Config::SubFiltersLimit, Config::HasSubTopicVerification>; // key is m_topic
+using InRegTopicsMap = ObjListType<RegTopicInfo, Config::InRegTopicsLimit>; // key is m_topicId;
 
 } // namespace cc_mqttsn_client

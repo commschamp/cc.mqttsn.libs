@@ -153,7 +153,6 @@ UnitTestCommonBase::UnitTestConnectCompleteReport::UnitTestConnectCompleteReport
 UnitTestCommonBase::UnitTestSubscribeInfo& UnitTestCommonBase::UnitTestSubscribeInfo::operator=(const CC_MqttsnSubscribeInfo& info)
 {
     m_returnCode = info.m_returnCode;
-    m_topicId = info.m_topicId;
     m_qos = info.m_qos;
     return *this;
 }

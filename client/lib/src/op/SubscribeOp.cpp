@@ -150,29 +150,50 @@ void SubscribeOp::handle(SubackMsg& msg)
     auto info = CC_MqttsnSubscribeInfo();
     info.m_returnCode = static_cast<decltype(info.m_returnCode)>(msg.field_returnCode().value());
     info.m_qos = static_cast<decltype(info.m_qos)>(msg.field_flags().field_qos().value());
-    info.m_topicId = msg.field_topicId().value();
 
-    do {
-        if (info.m_topicId == 0U) {
-            break;
-        }
-
-        auto& topicStr = m_subscribeMsg.field_topicName().field().value();
-        if (!topicStr.empty()) {
-            storeInRegTopic(topicStr.c_str(), info.m_topicId);    
-            break;
-        }
-
-        if constexpr (Config::HasSubTopicVerification) {
-            storeInRegTopic(nullptr, info.m_topicId);    
-            break;            
-        }
-        
-    } while (false);
-
-    if ((info.m_topicId != 0U) && (!m_subscribeMsg.field_topicName().field().value().empty())) {
-        storeInRegTopic(m_subscribeMsg.field_topicName().field().value().c_str(), info.m_topicId);
+    auto topicId = static_cast<CC_MqttsnTopicId>(msg.field_topicId().value());
+    auto& topicStr = m_subscribeMsg.field_topicName().field().value();
+    auto* topicPtr = topicStr.c_str();
+    if (topicStr.empty()) {
+        topicPtr = nullptr;
     }
+
+    if (topicId != 0U) {
+        storeInRegTopic(topicPtr, topicId);
+    }
+
+    COMMS_ASSERT((topicId != 0U) || (topicPtr != nullptr));
+    auto& filtersMap = client().reuseState().m_subFilters;
+    do {
+        if (topicPtr != nullptr) {
+            auto iter = 
+                std::lower_bound(
+                    filtersMap.begin(), filtersMap.end(), topicPtr,
+                    [](auto& elem, const char* topicParam)
+                    {
+                        return elem.m_topic < topicParam;
+                    });
+
+            if ((iter == filtersMap.end()) || (iter->m_topic != topicPtr)) {
+                filtersMap.emplace(iter, topicPtr);    
+            }
+
+            break;
+        }
+
+        COMMS_ASSERT(m_subscribeMsg.field_topicId().doesExist());    
+        COMMS_ASSERT(m_subscribeMsg.field_topicId().field().value() != 0U);
+
+        auto iter = 
+            std::find_if(
+                filtersMap.begin(), filtersMap.end(),
+                [](auto& elem)
+                {
+                    return !elem.m_topic.empty();
+                });
+
+        filtersMap.emplace(iter, static_cast<CC_MqttsnTopicId>(m_subscribeMsg.field_topicId().field().value()));
+    } while (false);
 
     completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
 }

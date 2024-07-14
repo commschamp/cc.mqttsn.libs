@@ -241,7 +241,6 @@ typedef struct
 typedef struct
 {
     CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b SUBACK message
-    CC_MqttsnTopicId m_topicId; ///< Granted topic ID (if applicable).
     CC_MqttsnQoS m_qos; ///< Granted max QoS value
 } CC_MqttsnSubscribeInfo;
 
