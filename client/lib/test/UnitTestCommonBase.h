@@ -34,6 +34,12 @@ public:
         unsigned (*m_get_default_gw_adv_duration)(CC_MqttsnClientHandle) = nullptr;
         CC_MqttsnErrorCode (*m_set_allowed_adv_losses)(CC_MqttsnClientHandle, unsigned) = nullptr;
         unsigned (*m_get_allowed_adv_losses)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_set_verify_outgoing_topic_enabled)(CC_MqttsnClientHandle, bool) = nullptr;
+        bool (*m_get_verify_outgoing_topic_enabled)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_set_verify_incoming_topic_enabled)(CC_MqttsnClientHandle, bool) = nullptr;
+        bool (*m_get_verify_incoming_topic_enabled)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_set_verify_incoming_msg_subscribed)(CC_MqttsnClientHandle, bool) = nullptr;
+        bool (*m_get_verify_incoming_msg_subscribed)(CC_MqttsnClientHandle) = nullptr;
         CC_MqttsnSearchHandle (*m_search_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;
         CC_MqttsnErrorCode (*m_search_set_retry_period)(CC_MqttsnSearchHandle, unsigned) = nullptr;
         unsigned (*m_search_get_retry_period)(CC_MqttsnSearchHandle) = nullptr;
@@ -75,6 +81,17 @@ public:
         CC_MqttsnErrorCode (*m_subscribe_send)(CC_MqttsnSubscribeHandle, CC_MqttsnSubscribeCompleteCb, void*) = nullptr; 
         CC_MqttsnErrorCode (*m_subscribe_cancel)(CC_MqttsnSubscribeHandle) = nullptr; 
         CC_MqttsnErrorCode (*m_subscribe)(CC_MqttsnClientHandle, const CC_MqttsnSubscribeConfig*, CC_MqttsnSubscribeCompleteCb, void* cbData) = nullptr;             
+        CC_MqttsnUnsubscribeHandle (*m_unsubscribe_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;     
+        CC_MqttsnErrorCode (*m_unsubscribe_set_retry_period)(CC_MqttsnUnsubscribeHandle, unsigned) = nullptr; 
+        unsigned (*m_unsubscribe_get_retry_period)(CC_MqttsnUnsubscribeHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_unsubscribe_set_retry_count)(CC_MqttsnUnsubscribeHandle, unsigned) = nullptr; 
+        unsigned (*m_unsubscribe_get_retry_count)(CC_MqttsnUnsubscribeHandle) = nullptr; 
+        void (*m_unsubscribe_init_config)(CC_MqttsnUnsubscribeConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_unsubscribe_config)(CC_MqttsnUnsubscribeHandle, const CC_MqttsnUnsubscribeConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_unsubscribe_send)(CC_MqttsnUnsubscribeHandle, CC_MqttsnUnsubscribeCompleteCb, void*) = nullptr; 
+        CC_MqttsnErrorCode (*m_unsubscribe_cancel)(CC_MqttsnUnsubscribeHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_unsubscribe)(CC_MqttsnClientHandle, const CC_MqttsnUnsubscribeConfig*, CC_MqttsnUnsubscribeCompleteCb, void* cbData) = nullptr;             
+
 
         void (*m_set_next_tick_program_callback)(CC_MqttsnClientHandle, CC_MqttsnNextTickProgramCb, void*) = nullptr;
         void (*m_set_cancel_next_tick_wait_callback)(CC_MqttsnClientHandle, CC_MqttsnCancelNextTickWaitCb, void*) = nullptr;
@@ -225,7 +242,21 @@ public:
     };    
 
     using UnitTestSubscribeCompleteReportPtr = std::unique_ptr<UnitTestSubscribeCompleteReport>;
-    using UnitTestSubscribeCompleteReportList = std::list<UnitTestSubscribeCompleteReportPtr>;        
+    using UnitTestSubscribeCompleteReportList = std::list<UnitTestSubscribeCompleteReportPtr>;    
+
+
+    struct UnitTestUnsubscribeCompleteReport
+    {
+        CC_MqttsnUnsubscribeHandle m_handle = nullptr;
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+
+        UnitTestUnsubscribeCompleteReport(CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status);
+        UnitTestUnsubscribeCompleteReport(UnitTestUnsubscribeCompleteReport&&) = default;
+        UnitTestUnsubscribeCompleteReport& operator=(const UnitTestUnsubscribeCompleteReport&) = default;
+    };    
+
+    using UnitTestUnsubscribeCompleteReportPtr = std::unique_ptr<UnitTestUnsubscribeCompleteReport>;
+    using UnitTestUnsubscribeCompleteReportList = std::list<UnitTestUnsubscribeCompleteReportPtr>;           
 
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
@@ -275,10 +306,20 @@ public:
     UnitTestSubscribeCompleteReportPtr unitTestSubscribeCompleteReport(bool mustExist = true);
 
     CC_MqttsnErrorCode unitTestSubscribeSend(CC_MqttsnSubscribeHandle subscribe);
+    void unitTestDoSubscribe(CC_MqttsnClient* client, const CC_MqttsnSubscribeConfig* config);
+    void unitTestDoSubscribeTopic(CC_MqttsnClient* client, const std::string& topic, CC_MqttsnQoS qos = CC_MqttsnQoS_ExactlyOnceDelivery);
+    void unitTestDoSubscribeTopicId(CC_MqttsnClient* client, CC_MqttsnTopicId topicId, CC_MqttsnQoS qos = CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    bool unitTestHasUnsubscribeCompleteReport() const;
+    UnitTestUnsubscribeCompleteReportPtr unitTestUnsubscribeCompleteReport(bool mustExist = true);
+
+    CC_MqttsnErrorCode unitTestUnsubscribeSend(CC_MqttsnUnsubscribeHandle unsubscribe);    
 
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
     CC_MqttsnErrorCode apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value);
+    CC_MqttsnErrorCode apiSetVerifyIncomingMsgSubscribed(CC_MqttsnClient* client, bool enabled);
+
     CC_MqttsnSearchHandle apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
     CC_MqttsnErrorCode apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value);
     CC_MqttsnErrorCode apiSearchSetRetryCount(CC_MqttsnSearchHandle search, unsigned value);
@@ -299,6 +340,13 @@ public:
     CC_MqttsnErrorCode apiSubscribeSetRetryCount(CC_MqttsnSubscribeHandle subscribe, unsigned count);
     void apiSubscribeInitConfig(CC_MqttsnSubscribeConfig* config);
     CC_MqttsnErrorCode apiSubscribeConfig(CC_MqttsnSubscribeHandle subscribe, const CC_MqttsnSubscribeConfig* config);
+    CC_MqttsnErrorCode apiSubscribeCancel(CC_MqttsnSubscribeHandle subscribe);
+
+    CC_MqttsnUnsubscribeHandle apiUnsubscribePrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiUnsubscribeSetRetryCount(CC_MqttsnUnsubscribeHandle unsubscribe, unsigned count);
+    void apiUnsubscribeInitConfig(CC_MqttsnUnsubscribeConfig* config);
+    CC_MqttsnErrorCode apiUnsubscribeConfig(CC_MqttsnUnsubscribeHandle unsubscribe, const CC_MqttsnUnsubscribeConfig* config);
+    CC_MqttsnErrorCode apiUnsubscribeCancel(CC_MqttsnUnsubscribeHandle unsubscribe);    
 
 
 protected:
@@ -316,6 +364,7 @@ private:
         UnitTestConnectCompleteReportList m_connectCompleteReports;
         UnitTestDisconnectCompleteReportList m_disconnectCompleteReports;
         UnitTestSubscribeCompleteReportList m_subscribeCompleteReports;
+        UnitTestUnsubscribeCompleteReportList m_unsubscribeCompleteReports;
     };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);
@@ -330,6 +379,7 @@ private:
     static void unitTestConnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
     static void unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
     static void unitTestSubscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
+    static void unitTestUnsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status);
 
     LibFuncs m_funcs;  
     ClientData m_data;

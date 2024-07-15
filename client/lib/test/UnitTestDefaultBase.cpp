@@ -25,6 +25,12 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_get_default_gw_adv_duration = &cc_mqttsn_client_get_default_gw_adv_duration;
     funcs.m_set_allowed_adv_losses = &cc_mqttsn_client_set_allowed_adv_losses;
     funcs.m_get_allowed_adv_losses = &cc_mqttsn_client_get_allowed_adv_losses;
+    funcs.m_set_verify_outgoing_topic_enabled = &cc_mqttsn_client_set_verify_outgoing_topic_enabled;
+    funcs.m_get_verify_outgoing_topic_enabled = &cc_mqttsn_client_get_verify_outgoing_topic_enabled;
+    funcs.m_set_verify_incoming_topic_enabled = &cc_mqttsn_client_set_verify_incoming_topic_enabled;
+    funcs.m_get_verify_incoming_topic_enabled = &cc_mqttsn_client_get_verify_incoming_topic_enabled;
+    funcs.m_set_verify_incoming_msg_subscribed = &cc_mqttsn_client_set_verify_incoming_msg_subscribed;
+    funcs.m_get_verify_incoming_msg_subscribed = &cc_mqttsn_client_get_verify_incoming_msg_subscribed;
     funcs.m_search_prepare = &cc_mqttsn_client_search_prepare;
     funcs.m_search_set_retry_period = &cc_mqttsn_client_search_set_retry_period;
     funcs.m_search_get_retry_period = &cc_mqttsn_client_search_get_retry_period;
@@ -66,6 +72,16 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_subscribe_send = &cc_mqttsn_client_subscribe_send;
     funcs.m_subscribe_cancel = &cc_mqttsn_client_subscribe_cancel;
     funcs.m_subscribe = &cc_mqttsn_client_subscribe;     
+    funcs.m_unsubscribe_prepare = &cc_mqttsn_client_unsubscribe_prepare;
+    funcs.m_unsubscribe_set_retry_period = &cc_mqttsn_client_unsubscribe_set_retry_period;
+    funcs.m_unsubscribe_get_retry_period = &cc_mqttsn_client_unsubscribe_get_retry_period;
+    funcs.m_unsubscribe_set_retry_count = &cc_mqttsn_client_unsubscribe_set_retry_count;
+    funcs.m_unsubscribe_get_retry_count = &cc_mqttsn_client_unsubscribe_get_retry_count;
+    funcs.m_unsubscribe_init_config = &cc_mqttsn_client_unsubscribe_init_config;
+    funcs.m_unsubscribe_config = &cc_mqttsn_client_unsubscribe_config;
+    funcs.m_unsubscribe_send = &cc_mqttsn_client_unsubscribe_send;
+    funcs.m_unsubscribe_cancel = &cc_mqttsn_client_unsubscribe_cancel;
+    funcs.m_unsubscribe = &cc_mqttsn_client_unsubscribe;      
 
     funcs.m_set_next_tick_program_callback = &cc_mqttsn_client_set_next_tick_program_callback;
     funcs.m_set_cancel_next_tick_wait_callback = &cc_mqttsn_client_set_cancel_next_tick_wait_callback;

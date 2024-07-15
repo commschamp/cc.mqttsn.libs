@@ -250,7 +250,6 @@ typedef struct
 {
     const char* m_topic; ///< Subscription topic, can be NULL when pre-defined topic ID is used.
     CC_MqttsnTopicId m_topicId; ///< Pre-defined topic ID, should be @b 0 when topic is not NULL.
-    CC_MqttsnQoS m_qos; ///< Max QoS value
 } CC_MqttsnUnsubscribeConfig;
 
 /// @brief Callback used to request time measurement.

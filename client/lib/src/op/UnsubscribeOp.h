@@ -56,7 +56,6 @@ private:
     CC_MqttsnUnsubscribeCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;
     bool m_suspended = false;
-    bool m_recordRemoved = false;
 
     static_assert(ExtConfig::UnsubscribeOpTimers == 1U);
 };

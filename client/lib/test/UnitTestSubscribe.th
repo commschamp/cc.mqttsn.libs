@@ -14,6 +14,7 @@ public:
     void test4();
     void test5();
     void test6();
+    void test7();
 
 private:
     virtual void setUp() override
@@ -75,7 +76,7 @@ void UnitTestSubscribe::test1()
         TS_ASSERT_DIFFERS(subMsgId, 0U);
     }   
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 100);
 
@@ -146,7 +147,7 @@ void UnitTestSubscribe::test2()
         TS_ASSERT_DIFFERS(subMsgId, 0U);
     }   
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 100);
 
@@ -216,7 +217,7 @@ void UnitTestSubscribe::test3()
         TS_ASSERT_DIFFERS(subMsgId, 0U);
     }   
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 100);
 
@@ -285,7 +286,7 @@ void UnitTestSubscribe::test4()
         TS_ASSERT_DIFFERS(subMsgId, 0U);
     }   
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client); // timeout
 
@@ -372,7 +373,7 @@ void UnitTestSubscribe::test5()
         TS_ASSERT_DIFFERS(subMsgId, 0U);
     }   
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client); // timeout
 
@@ -450,7 +451,7 @@ void UnitTestSubscribe::test6()
         TS_ASSERT_DIFFERS(subMsgId1, 0U);
     }   
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 10);
 
@@ -589,4 +590,56 @@ void UnitTestSubscribe::test6()
     }       
 
     TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestSubscribe::test7()
+{
+    // Testing invalid topics subscribe
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto subscribe = apiSubscribePrepare(client);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    CC_MqttsnSubscribeConfig config;
+    apiSubscribeInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    config.m_topic = "++";
+    auto ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
+
+    config.m_topic = "#+";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);    
+
+    config.m_topic = "#/hello";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "hello+/bla";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "#hello";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "+hello";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);  
+
+    ec = apiSubscribeCancel(subscribe);    
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
 }

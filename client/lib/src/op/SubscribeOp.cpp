@@ -153,16 +153,29 @@ void SubscribeOp::handle(SubackMsg& msg)
 
     auto topicId = static_cast<CC_MqttsnTopicId>(msg.field_topicId().value());
     auto& topicStr = m_subscribeMsg.field_topicName().field().value();
+    char shortTopic[sizeof(std::uint16_t) + 1] = {0};
+
     auto* topicPtr = topicStr.c_str();
-    if (topicStr.empty()) {
+    do {
+        if (!topicStr.empty()) {
+            break;
+        }
+
+        using TopicIdType = SubscribeMsg::Field_flags::Field_topicIdType::ValueType;
+        if (m_subscribeMsg.field_flags().field_topicIdType().value() == TopicIdType::ShortTopicName) {
+            shortTopic[0] = static_cast<char>(m_subscribeMsg.field_topicId().field().value() >> 8U);
+            shortTopic[1] = static_cast<char>(m_subscribeMsg.field_topicId().field().value() & 0xff);
+            topicPtr = &shortTopic[0];
+            break;
+        }
+
         topicPtr = nullptr;
-    }
+    } while (false);
 
     if (topicId != 0U) {
         storeInRegTopic(topicPtr, topicId);
     }
 
-    COMMS_ASSERT((topicId != 0U) || (topicPtr != nullptr));
     auto& filtersMap = client().reuseState().m_subFilters;
     do {
         if (topicPtr != nullptr) {

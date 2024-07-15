@@ -59,11 +59,6 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
         return CC_MqttsnErrorCode_BadParam;
     }
 
-    if (static_cast<decltype(config->m_qos)>(Config::MaxQos) < config->m_qos) {
-        errorLog("Bad subscription qos value.");
-        return CC_MqttsnErrorCode_BadParam;        
-    }    
-
     if ((!emptyTopic) && (!verifySubFilter(config->m_topic))) {
         errorLog("Bad topic filter format in unsubscribe.");
         return CC_MqttsnErrorCode_BadParam;
@@ -108,8 +103,6 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
             }
         } while (false);
     }         
-
-    m_unsubscribeMsg.field_flags().field_qos().setValue(config->m_qos);
 
     using TopicIdType = UnsubscribeMsg::Field_flags::Field_topicIdType::ValueType;
     if (emptyTopic) {
@@ -164,29 +157,24 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
         return ec;
     }
 
-    // Remove record on first send rather than acknowledgement allowing message
+    // Remove record on send attempt rather than acknowledgement allowing message
     // to get lost.
-    do {
-        if (m_recordRemoved) {
-            break;
-        }
 
-        m_recordRemoved = true;
+    auto& topicStr = m_unsubscribeMsg.field_topicName().field().value();
+    auto* topicPtr = topicStr.c_str();
+    if (m_unsubscribeMsg.field_topicName().isMissing()) {
+        topicPtr = nullptr;
+    }
 
-        auto& topicStr = m_unsubscribeMsg.field_topicName().field().value();
-        auto* topicPtr = topicStr.c_str();
-        if (m_unsubscribeMsg.field_topicName().isMissing()) {
-            topicPtr = nullptr;
-        }
+    auto topicId = m_unsubscribeMsg.field_topicId().field().value();
+    COMMS_ASSERT(m_unsubscribeMsg.field_topicId().doesExist() || (topicId == 0U));
+    COMMS_ASSERT((topicPtr == nullptr) || (topicId == 0U));
+    COMMS_ASSERT((topicPtr != nullptr) || (topicId != 0U));
 
-        auto topicId = m_unsubscribeMsg.field_topicId().field().value();
-        COMMS_ASSERT(m_unsubscribeMsg.field_topicId().doesExist() || (topicId == 0U));
-        COMMS_ASSERT((topicPtr == nullptr) || (topicId == 0U));
-        COMMS_ASSERT((topicPtr != nullptr) || (topicId != 0U));
-
-        removeInRegTopic(topicPtr, topicId);
-
-        if constexpr (Config::HasSubTopicVerification) {
+    removeInRegTopic(topicPtr, topicId);
+        
+    if constexpr (Config::HasSubTopicVerification) {
+        do {
             auto& filtersMap = client().reuseState().m_subFilters;
             if (topicPtr != nullptr) {
                 auto iter = 
@@ -216,8 +204,8 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
             if (iter != filtersMap.end()) {
                 filtersMap.erase(iter);
             }
-        }
-    } while (false);  
+        } while (false);  
+    }
 
     completeOnError.release();
     return CC_MqttsnErrorCode_Success;

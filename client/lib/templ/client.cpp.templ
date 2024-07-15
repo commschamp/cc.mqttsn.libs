@@ -19,6 +19,7 @@ struct CC_MqttsnSearch {};
 struct CC_MqttsnConnect {};
 struct CC_MqttsnDisconnect {};
 struct CC_MqttsnSubscribe {};
+struct CC_MqttsnUnsubscribe {};
 
 namespace
 {
@@ -79,6 +80,16 @@ inline cc_mqttsn_client::op::SubscribeOp* subscribeOpFromHandle(CC_MqttsnSubscri
 inline CC_MqttsnSubscribeHandle handleFromSubscribeOp(cc_mqttsn_client::op::SubscribeOp* op)
 {
     return reinterpret_cast<CC_MqttsnSubscribeHandle>(op);
+}
+
+inline cc_mqttsn_client::op::UnsubscribeOp* unsubscribeOpFromHandle(CC_MqttsnUnsubscribeHandle handle)
+{
+    return reinterpret_cast<cc_mqttsn_client::op::UnsubscribeOp*>(handle);
+}
+
+inline CC_MqttsnUnsubscribeHandle handleFromUnsubscribeOp(cc_mqttsn_client::op::UnsubscribeOp* op)
+{
+    return reinterpret_cast<CC_MqttsnUnsubscribeHandle>(op);
 }
 
 }  // namespace
@@ -801,6 +812,99 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
     cancelOnExitGuard.release();
     return cc_mqttsn_##NAME##client_subscribe_send(subscribe, cb, cbData);     
 }
+
+CC_MqttsnUnsubscribeHandle cc_mqttsn_##NAME##client_unsubscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
+{
+    COMMS_ASSERT(client != nullptr);
+    return handleFromUnsubscribeOp(clientFromHandle(client)->unsubscribePrepare(ec));    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_set_retry_period(CC_MqttsnUnsubscribeHandle handle, unsigned ms)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (ms == 0U) {
+        unsubscribeOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    COMMS_ASSERT(handle != nullptr);
+    unsubscribeOpFromHandle(handle)->setRetryPeriod(ms);     
+    return CC_MqttsnErrorCode_Success;    
+}
+
+unsigned cc_mqttsn_##NAME##client_unsubscribe_get_retry_period(CC_MqttsnUnsubscribeHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return unsubscribeOpFromHandle(handle)->getRetryPeriod();      
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_set_retry_count(CC_MqttsnUnsubscribeHandle handle, unsigned count)
+{
+    COMMS_ASSERT(handle != nullptr);
+    unsubscribeOpFromHandle(handle)->setRetryCount(count);     
+    return CC_MqttsnErrorCode_Success;  
+}
+
+unsigned cc_mqttsn_##NAME##client_unsubscribe_get_retry_count(CC_MqttsnUnsubscribeHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return unsubscribeOpFromHandle(handle)->getRetryCount();         
+}
+
+void cc_mqttsn_##NAME##client_unsubscribe_init_config(CC_MqttsnUnsubscribeConfig* config)
+{
+    COMMS_ASSERT(config != nullptr);
+    *config = CC_MqttsnUnsubscribeConfig();
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_config(CC_MqttsnUnsubscribeHandle handle, const CC_MqttsnUnsubscribeConfig* config)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return unsubscribeOpFromHandle(handle)->config(config);    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_send(CC_MqttsnUnsubscribeHandle handle, CC_MqttsnUnsubscribeCompleteCb cb, void* cbData)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return unsubscribeOpFromHandle(handle)->send(cb, cbData);       
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_cancel(CC_MqttsnUnsubscribeHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return unsubscribeOpFromHandle(handle)->cancel();  
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnUnsubscribeConfig* config,
+    CC_MqttsnUnsubscribeCompleteCb cb, 
+    void* cbData)
+{
+    auto ec = CC_MqttsnErrorCode_Success;
+    auto unsubscribe = cc_mqttsn_##NAME##client_unsubscribe_prepare(client, &ec);
+    if (unsubscribe == nullptr) {
+        return ec;
+    }
+
+    auto cancelOnExitGuard = 
+        comms::util::makeScopeGuard(
+            [unsubscribe]()
+            {
+                [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_unsubscribe_cancel(unsubscribe);
+            });    
+
+    if (config != nullptr) {
+        ec = cc_mqttsn_##NAME##client_unsubscribe_config(unsubscribe, config);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            return ec;
+        }
+    }
+
+    cancelOnExitGuard.release();
+    return cc_mqttsn_##NAME##client_unsubscribe_send(unsubscribe, cb, cbData);     
+}
+
 
 // --------------------- Callbacks ---------------------
 

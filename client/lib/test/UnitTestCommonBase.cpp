@@ -44,6 +44,12 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_get_default_gw_adv_duration != nullptr);
     test_assert(m_funcs.m_set_allowed_adv_losses != nullptr);
     test_assert(m_funcs.m_get_allowed_adv_losses != nullptr);
+    test_assert(m_funcs.m_set_verify_outgoing_topic_enabled != nullptr);
+    test_assert(m_funcs.m_get_verify_outgoing_topic_enabled != nullptr);
+    test_assert(m_funcs.m_set_verify_incoming_topic_enabled != nullptr);
+    test_assert(m_funcs.m_get_verify_incoming_topic_enabled != nullptr);    
+    test_assert(m_funcs.m_set_verify_incoming_msg_subscribed != nullptr);
+    test_assert(m_funcs.m_get_verify_incoming_msg_subscribed != nullptr);
     test_assert(m_funcs.m_search_prepare != nullptr);
     test_assert(m_funcs.m_search_set_retry_period != nullptr);
     test_assert(m_funcs.m_search_get_retry_period != nullptr);
@@ -84,7 +90,17 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_subscribe_config != nullptr);
     test_assert(m_funcs.m_subscribe_send != nullptr);
     test_assert(m_funcs.m_subscribe_cancel != nullptr);
-    test_assert(m_funcs.m_subscribe != nullptr);      
+    test_assert(m_funcs.m_subscribe != nullptr);     
+    test_assert(m_funcs.m_unsubscribe_prepare != nullptr);
+    test_assert(m_funcs.m_unsubscribe_set_retry_period != nullptr);
+    test_assert(m_funcs.m_unsubscribe_get_retry_period != nullptr);
+    test_assert(m_funcs.m_unsubscribe_set_retry_count != nullptr);
+    test_assert(m_funcs.m_unsubscribe_get_retry_count != nullptr);
+    test_assert(m_funcs.m_unsubscribe_init_config != nullptr);
+    test_assert(m_funcs.m_unsubscribe_config != nullptr);
+    test_assert(m_funcs.m_unsubscribe_send != nullptr);
+    test_assert(m_funcs.m_unsubscribe_cancel != nullptr);
+    test_assert(m_funcs.m_unsubscribe != nullptr);       
 
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
@@ -166,6 +182,11 @@ UnitTestCommonBase::UnitTestSubscribeCompleteReport::UnitTestSubscribeCompleteRe
     }
 }
 
+UnitTestCommonBase::UnitTestUnsubscribeCompleteReport::UnitTestUnsubscribeCompleteReport(CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status) : 
+    m_handle(handle),
+    m_status(status)
+{
+}
 
 void UnitTestCommonBase::unitTestSetUp()
 {
@@ -546,6 +567,77 @@ CC_MqttsnErrorCode UnitTestCommonBase::unitTestSubscribeSend(CC_MqttsnSubscribeH
     return m_funcs.m_subscribe_send(subscribe, &UnitTestCommonBase::unitTestSubscribeCompleteCb, this);
 }
 
+void UnitTestCommonBase::unitTestDoSubscribe(CC_MqttsnClient* client, const CC_MqttsnSubscribeConfig* config)
+{
+    auto ec = m_funcs.m_subscribe(client, config, &UnitTestCommonBase::unitTestSubscribeCompleteCb, this);
+    test_assert(ec == CC_MqttsnErrorCode_Success);
+
+    auto subMsgId = 0U;
+    test_assert(unitTestHasOutputData());
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+    test_assert(subscribeMsg != nullptr);
+    test_assert(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()) == config->m_qos);
+    test_assert(!unitTestHasOutputData());
+    subMsgId = subscribeMsg->field_msgId().value();
+    test_assert(subMsgId != 0U);
+
+    test_assert(unitTestHasTickReq());
+    unitTestTick(client, 100); 
+
+    UnitTestSubackMsg subackMsg;
+    subackMsg.field_flags().field_qos().setValue(config->m_qos);
+    subackMsg.field_msgId().setValue(subMsgId);
+    subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+    unitTestClientInputMessage(client, subackMsg);    
+
+    test_assert(unitTestHasSubscribeCompleteReport());
+    auto subscribeReport = unitTestSubscribeCompleteReport();
+    test_assert(subscribeReport->m_status == CC_MqttsnAsyncOpStatus_Complete);
+    test_assert(subscribeReport->m_info.m_returnCode == CC_MqttsnReturnCode_Accepted);
+    test_assert(subscribeReport->m_info.m_qos == config->m_qos);
+}
+
+void UnitTestCommonBase::unitTestDoSubscribeTopic(CC_MqttsnClient* client, const std::string& topic, CC_MqttsnQoS qos)
+{
+    CC_MqttsnSubscribeConfig config;
+    m_funcs.m_subscribe_init_config(&config);
+    config.m_topic = topic.c_str();
+    config.m_qos = qos;
+    unitTestDoSubscribe(client, &config);
+}
+
+void UnitTestCommonBase::unitTestDoSubscribeTopicId(CC_MqttsnClient* client, CC_MqttsnTopicId topicId, CC_MqttsnQoS qos)
+{
+    CC_MqttsnSubscribeConfig config;
+    m_funcs.m_subscribe_init_config(&config);
+    config.m_topicId = topicId;
+    config.m_qos = qos;
+    unitTestDoSubscribe(client, &config);
+}
+
+bool UnitTestCommonBase::unitTestHasUnsubscribeCompleteReport() const
+{
+    return !m_data.m_unsubscribeCompleteReports.empty();
+}
+
+UnitTestCommonBase::UnitTestUnsubscribeCompleteReportPtr UnitTestCommonBase::unitTestUnsubscribeCompleteReport(bool mustExist)
+{
+    if (!unitTestHasUnsubscribeCompleteReport()) {
+        test_assert(!mustExist);
+        return UnitTestUnsubscribeCompleteReportPtr();
+    }
+
+    auto ptr = std::move(m_data.m_unsubscribeCompleteReports.front());
+    m_data.m_unsubscribeCompleteReports.pop_front();
+    return ptr;
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestUnsubscribeSend(CC_MqttsnUnsubscribeHandle unsubscribe)
+{
+    return m_funcs.m_unsubscribe_send(unsubscribe, &UnitTestCommonBase::unitTestUnsubscribeCompleteCb, this);
+}
+
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
 {
     m_funcs.m_process_data(client, buf, bufLen);
@@ -559,6 +651,11 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiSetDefaultRetryPeriod(CC_MqttsnClient*
 CC_MqttsnErrorCode UnitTestCommonBase::apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value)
 {
     return m_funcs.m_set_default_retry_count(client, value);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSetVerifyIncomingMsgSubscribed(CC_MqttsnClient* client, bool enabled)
+{
+    return m_funcs.m_set_verify_incoming_msg_subscribed(client, enabled);
 }
 
 CC_MqttsnSearchHandle UnitTestCommonBase::apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
@@ -684,6 +781,36 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiSubscribeConfig(CC_MqttsnSubscribeHand
     return m_funcs.m_subscribe_config(subscribe, config);
 }
 
+CC_MqttsnErrorCode UnitTestCommonBase::apiSubscribeCancel(CC_MqttsnSubscribeHandle subscribe)
+{
+    return m_funcs.m_subscribe_cancel(subscribe);
+}
+
+CC_MqttsnUnsubscribeHandle UnitTestCommonBase::apiUnsubscribePrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_unsubscribe_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiUnsubscribeSetRetryCount(CC_MqttsnUnsubscribeHandle unsubscribe, unsigned count)
+{
+    return m_funcs.m_unsubscribe_set_retry_count(unsubscribe, count);
+}
+
+void UnitTestCommonBase::apiUnsubscribeInitConfig(CC_MqttsnUnsubscribeConfig* config)
+{
+    m_funcs.m_unsubscribe_init_config(config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiUnsubscribeConfig(CC_MqttsnUnsubscribeHandle unsubscribe, const CC_MqttsnUnsubscribeConfig* config)
+{
+    return m_funcs.m_unsubscribe_config(unsubscribe, config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiUnsubscribeCancel(CC_MqttsnUnsubscribeHandle unsubscribe)
+{
+    return m_funcs.m_unsubscribe_cancel(unsubscribe);
+}
+
 void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo)
 {
     // TODO:
@@ -744,4 +871,10 @@ void UnitTestCommonBase::unitTestSubscribeCompleteCb(void* data, CC_MqttsnSubscr
     test_assert((status != CC_MqttsnAsyncOpStatus_Complete) || (info != nullptr));
     auto* thisPtr = asThis(data);
     thisPtr->m_data.m_subscribeCompleteReports.push_back(std::make_unique<UnitTestSubscribeCompleteReport>(handle, status, info));
+}
+
+void UnitTestCommonBase::unitTestUnsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status)
+{
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_unsubscribeCompleteReports.push_back(std::make_unique<UnitTestUnsubscribeCompleteReport>(handle, status));
 }
