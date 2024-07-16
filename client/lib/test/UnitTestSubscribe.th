@@ -414,7 +414,7 @@ void UnitTestSubscribe::test6()
     unitTestTick(client, 1000);
 
     const std::string Topic1("a/+");
-    const std::string Topic2("c/+");
+    const std::string Topic2("cd");
     const std::string Topic3("e/+");    
 
     {
@@ -520,11 +520,10 @@ void UnitTestSubscribe::test6()
         auto sentMsg = unitTestPopOutputMessage();
         auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
-        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
         TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtLeastOnceDelivery);
-        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
-        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
-        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic2);
+        TS_ASSERT(subscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(subscribeMsg->field_topicName().isMissing());
         TS_ASSERT(!unitTestHasOutputData());
         subMsgId2 = subscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(subMsgId2, 0U);
