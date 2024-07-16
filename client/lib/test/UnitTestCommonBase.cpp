@@ -231,6 +231,11 @@ void UnitTestCommonBase::unitTestClientInputMessage(CC_MqttsnClient* client, con
     unitTestClientInputData(client, data);
 }
 
+void UnitTestCommonBase::unitTestPushSearchgwResponseDelay(unsigned val)
+{
+    m_data.m_searchgwResponseDelays.push_back(val);
+}
+
 bool UnitTestCommonBase::unitTestHasTickReq() const
 {
     return !m_data.m_ticks.empty();
@@ -658,6 +663,16 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiSetVerifyIncomingMsgSubscribed(CC_Mqtt
     return m_funcs.m_set_verify_incoming_msg_subscribed(client, enabled);
 }
 
+void UnitTestCommonBase::apiInitGatewayInfo(CC_MqttsnGatewayInfo* info)
+{
+    m_funcs.m_init_gateway_info(info);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSetAvailableGatewayInfo(CC_MqttsnClient* client, const CC_MqttsnGatewayInfo* info)
+{
+    return m_funcs.m_set_available_gateway_info(client, info);
+}
+
 CC_MqttsnSearchHandle UnitTestCommonBase::apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
 {
     return m_funcs.m_search_prepare(client, ec);
@@ -821,9 +836,15 @@ void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMess
 
 unsigned UnitTestCommonBase::unitTestGwinfoDelayRequestCb(void* data)
 {
-    // TODO:
-    static_cast<void>(data);
-    test_assert(false);  
+    auto* thisPtr = asThis(data);
+    test_assert(!thisPtr->m_data.m_searchgwResponseDelays.empty());
+    if (thisPtr->m_data.m_searchgwResponseDelays.empty()) {
+        return 0U;
+    }
+
+    auto result = thisPtr->m_data.m_searchgwResponseDelays.front();
+    thisPtr->m_data.m_searchgwResponseDelays.pop_front();
+    return result;
 }
 
 void UnitTestCommonBase::unitTestErrorLogCb([[maybe_unused]] void* data, const char* msg)

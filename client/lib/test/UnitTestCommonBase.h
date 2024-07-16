@@ -188,6 +188,7 @@ public:
 
     using UnitTestSearchCompleteCb = std::function<bool (const UnitTestSearchCompleteReport& info)>;
     using UnitTestSearchCompleteCbList = std::list<UnitTestSearchCompleteCb>;
+    using UnitTestSearchgwResponseDelayList = std::list<unsigned>;
 
     struct UnitTestConnectInfo
     {
@@ -266,6 +267,7 @@ public:
     UnitTestClientPtr unitTestAllocClient(bool enableLog = false);
     void unitTestClientInputData(CC_MqttsnClient* client, const UnitTestData& data);
     void unitTestClientInputMessage(CC_MqttsnClient* client, const UnitTestMessage& msg);
+    void unitTestPushSearchgwResponseDelay(unsigned val);
 
     bool unitTestHasTickReq() const;
     const UnitTestTickInfo* unitTestTickInfo(bool mustExist = true) const;
@@ -319,6 +321,8 @@ public:
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
     CC_MqttsnErrorCode apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value);
     CC_MqttsnErrorCode apiSetVerifyIncomingMsgSubscribed(CC_MqttsnClient* client, bool enabled);
+    void apiInitGatewayInfo(CC_MqttsnGatewayInfo* info);
+    CC_MqttsnErrorCode apiSetAvailableGatewayInfo(CC_MqttsnClient* client, const CC_MqttsnGatewayInfo* info);
 
     CC_MqttsnSearchHandle apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
     CC_MqttsnErrorCode apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value);
@@ -361,6 +365,7 @@ private:
         UnitTestGwDisconnectReportsList m_gwDisconnectReports;
         UnitTestSearchCompleteReportsList m_searchCompleteReports;
         UnitTestSearchCompleteCbList m_searchCompleteCallbacks;
+        UnitTestSearchgwResponseDelayList m_searchgwResponseDelays;
         UnitTestConnectCompleteReportList m_connectCompleteReports;
         UnitTestDisconnectCompleteReportList m_disconnectCompleteReports;
         UnitTestSubscribeCompleteReportList m_subscribeCompleteReports;
