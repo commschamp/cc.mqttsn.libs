@@ -130,6 +130,7 @@ unsigned cc_mqttsn_##NAME##client_get_available_gateways_count(CC_MqttsnClientHa
 
 /// @brief Initialize the @ref CC_MqttsnGatewayInfo structure.
 /// @details Zeroes all the member fields.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_init_gateway_info(CC_MqttsnGatewayInfo* info);
 
 /// @brief Retrieve stored available gateway information
@@ -156,10 +157,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_Mqttsn
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] gwId Gateway ID.
 /// @return Result code of the call.
+/// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_discard_available_gateway_info(CC_MqttsnClientHandle client, unsigned char gwId);
 
 /// @brief Discard stored information on all available gateways.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_discard_all_gateway_infos(CC_MqttsnClientHandle client);
 
 /// @brief Set default gateway advertise duration.
@@ -689,6 +692,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
 /// @param[in] cb Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnNextTickProgramCb cb,
@@ -704,6 +708,7 @@ void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
 /// @param[in] cb Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnCancelNextTickWaitCb cb,
@@ -717,6 +722,7 @@ void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
 /// @param[in] cb Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_send_output_data_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnSendOutputDataCb cb,
@@ -728,6 +734,7 @@ void cc_mqttsn_##NAME##client_set_send_output_data_callback(
 /// @param[in] cb Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnGwStatusReportCb cb,
@@ -740,6 +747,7 @@ void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
 /// @param[in] cb Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnGwDisconnectedReportCb cb,
@@ -750,6 +758,7 @@ void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
 /// @param[in] cb Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_message_report_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnMessageReportCb cb,
@@ -760,6 +769,7 @@ void cc_mqttsn_##NAME##client_set_message_report_callback(
 /// @param[in] cb Callback function.
 /// @param[in] data Pointer to any user data structure. It will passed as one 
 ///     of the parameters in callback invocation. May be NULL.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_error_log_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnErrorLogCb cb,
@@ -769,6 +779,7 @@ void cc_mqttsn_##NAME##client_set_error_log_callback(
 /// @details According to the MQTT-SN specification, the client can send @b GWINFO message on behalf of a gateway
 ///     after some randrom amount of time. Use this function to allow the library to 
 ///     request such timeout. If not set, sending @b GWINFO on behalf of the gateway is @b disabled.
+/// @ingroup client
 void cc_mqttsn_##NAME##client_set_gwinfo_delay_request_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnGwinfoDelayRequestCb cb,

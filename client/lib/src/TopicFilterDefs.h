@@ -33,5 +33,6 @@ struct RegTopicInfo
 
 using SubFiltersMap = ObjListType<RegTopicInfo, Config::SubFiltersLimit, Config::HasSubTopicVerification>; // key is m_topic
 using InRegTopicsMap = ObjListType<RegTopicInfo, Config::InRegTopicsLimit>; // key is m_topicId;
+using OutRegTopicsMap = ObjListType<RegTopicInfo, Config::OutRegTopicsLimit>; // key is m_topicId;
 
 } // namespace cc_mqttsn_client

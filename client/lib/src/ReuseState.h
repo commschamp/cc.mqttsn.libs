@@ -16,6 +16,7 @@ struct ReuseState
 {
     SubFiltersMap m_subFilters;
     InRegTopicsMap m_inRegTopics;
+    OutRegTopicsMap m_outRegTopics;
 };
 
 } // namespace cc_mqttsn_client

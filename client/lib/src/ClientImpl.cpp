@@ -57,13 +57,12 @@ ClientImpl::ClientImpl() :
     m_gwDiscoveryTimer(m_timerMgr.allocTimer()),
     m_sendGwinfoTimer(m_timerMgr.allocTimer())
 {
-    // TODO: check validity of timer in during intialization
 }
 
 ClientImpl::~ClientImpl()
 {
     COMMS_ASSERT(m_apiEnterCount == 0U);
-    // terminateOps(CC_MqttsnAsyncOpStatus_Aborted, TerminateMode_AbortSendRecvOps);
+    terminateOps(CC_MqttsnAsyncOpStatus_Aborted);
 }
 
 
@@ -1070,9 +1069,14 @@ CC_MqttsnErrorCode ClientImpl::initInternal()
         }
     }
 
-    // TODO:
-    // terminateOps(CC_MqttsnAsyncOpStatus_Aborted, TerminateMode_KeepSendRecvOps);
-    // m_sessionState = SessionState();
+    if ((!m_gwDiscoveryTimer.isValid()) || 
+        (!m_sendGwinfoTimer.isValid())) {
+        errorLog("Some timers haven't been allocated properly");
+        return CC_MqttsnErrorCode_OutOfMemory;
+    }
+
+    terminateOps(CC_MqttsnAsyncOpStatus_Aborted);
+    m_sessionState = SessionState();
     m_clientState.m_initialized = true;
     return CC_MqttsnErrorCode_Success;
 }

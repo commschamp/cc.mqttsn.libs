@@ -167,6 +167,15 @@ struct CC_MqttsnUnsubscribe;
 /// @ingroup "subscribe".
 typedef struct CC_MqttsnUnsubscribe* CC_MqttsnUnsubscribeHandle;
 
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnPublishHandle
+/// @ingroup publish
+struct CC_MqttsnPublish;
+
+/// @brief Handle for "publish" operation.
+/// @details Returned by @b cc_mqttsn_client_publish_prepare() function.
+/// @ingroup "publish".
+typedef struct CC_MqttsnPublish* CC_MqttsnPublishHandle;
+
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
 
@@ -251,6 +260,25 @@ typedef struct
     const char* m_topic; ///< Subscription topic, can be NULL when pre-defined topic ID is used.
     CC_MqttsnTopicId m_topicId; ///< Pre-defined topic ID, should be @b 0 when topic is not NULL.
 } CC_MqttsnUnsubscribeConfig;
+
+/// @brief Configuration the will for "publish" operations
+/// @ingroup publish
+typedef struct
+{
+    const char* m_topic; ///< Publish topic.
+    CC_MqttsnTopicId m_topicId; ///< Pre-defined topic ID, should be @b 0 when topic is not NULL.
+    const unsigned char* m_data; ///< Publish data (message).
+    unsigned m_dataLen; ///< Publish data (message) length.
+    CC_MqttsnQoS m_qos; ///< Publish message QoS.
+    bool m_retain; ///< Publish message retain configuration.
+} CC_MqttsnPublishConfig;
+
+/// @brief Information on the "publish" operation completion
+/// @ingroup publish
+typedef struct
+{
+    CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b PUBACK message
+} CC_MqttsnPublishInfo;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
@@ -372,6 +400,17 @@ typedef void (*CC_MqttsnSubscribeCompleteCb)(void* data, CC_MqttsnSubscribeHandl
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup unsubscribe
 typedef void (*CC_MqttsnUnsubscribeCompleteCb)(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status);
+
+/// @brief Callback used to report completion of the publish operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] status Status of the "publish" operation.
+/// @param[in] info Information about op completion. Not-NULL is reported <b>onfly if</b>
+///     the "status" is equal to @ref CC_MqttsnAsyncOpStatus_Complete. When QoS2 publish
+///     is successfully performed the "info" can still be NULL.
+/// @post The data members of the reported response can NOT be accessed after the function returns.
+/// @ingroup publish
+typedef void (*CC_MqttsnPublishCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
 
 #ifdef __cplusplus
 }
