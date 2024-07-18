@@ -377,7 +377,7 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous unsubscribe is complete
     }
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 10);    
 
@@ -425,7 +425,7 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT_DIFFERS(unsubMsgId2, unsubMsgId1);
     }      
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 10);     
 
@@ -459,7 +459,7 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT_DIFFERS(unsubMsgId3, unsubMsgId1);
     }       
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 10);   
 

@@ -1,0 +1,79 @@
+#include "UnitTestDefaultBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestPublish : public CxxTest::TestSuite, public UnitTestDefaultBase
+{
+public:
+    void test1();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+
+    using TopicIdType = UnitTestPublishMsg::Field_flags::Field_topicIdType::ValueType;
+};
+
+void UnitTestPublish::test1()
+{
+    // Testing basic Qos0 publish with pre-defined topic ID
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnTopicId TopicId = 1U;
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const bool Retain = true;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_topic, nullptr);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_AtMostOnceDelivery);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_retain = Retain;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    TS_ASSERT(unitTestHasOutputData());
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(publishMsg, nullptr);
+    TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+    TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtMostOnceDelivery);
+    TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+    TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+    TS_ASSERT(!unitTestHasOutputData());
+
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}

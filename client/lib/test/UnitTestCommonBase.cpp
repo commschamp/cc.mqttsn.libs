@@ -101,6 +101,16 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_unsubscribe_send != nullptr);
     test_assert(m_funcs.m_unsubscribe_cancel != nullptr);
     test_assert(m_funcs.m_unsubscribe != nullptr);       
+    test_assert(m_funcs.m_publish_prepare != nullptr);
+    test_assert(m_funcs.m_publish_set_retry_period != nullptr);
+    test_assert(m_funcs.m_publish_get_retry_period != nullptr);
+    test_assert(m_funcs.m_publish_set_retry_count != nullptr);
+    test_assert(m_funcs.m_publish_get_retry_count != nullptr);
+    test_assert(m_funcs.m_publish_init_config != nullptr);
+    test_assert(m_funcs.m_publish_config != nullptr);
+    test_assert(m_funcs.m_publish_send != nullptr);
+    test_assert(m_funcs.m_publish_cancel != nullptr);
+    test_assert(m_funcs.m_publish != nullptr);    
 
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
@@ -186,6 +196,21 @@ UnitTestCommonBase::UnitTestUnsubscribeCompleteReport::UnitTestUnsubscribeComple
     m_handle(handle),
     m_status(status)
 {
+}
+
+UnitTestCommonBase::UnitTestPublishInfo& UnitTestCommonBase::UnitTestPublishInfo::operator=(const CC_MqttsnPublishInfo& info)
+{
+    m_returnCode = info.m_returnCode;
+    return *this;
+}
+
+UnitTestCommonBase::UnitTestPublishCompleteReport::UnitTestPublishCompleteReport(CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info) : 
+    m_handle(handle),
+    m_status(status)
+{
+    if (info != nullptr) {
+        m_info = *info;
+    }
 }
 
 void UnitTestCommonBase::unitTestSetUp()
@@ -643,6 +668,28 @@ CC_MqttsnErrorCode UnitTestCommonBase::unitTestUnsubscribeSend(CC_MqttsnUnsubscr
     return m_funcs.m_unsubscribe_send(unsubscribe, &UnitTestCommonBase::unitTestUnsubscribeCompleteCb, this);
 }
 
+bool UnitTestCommonBase::unitTestHasPublishCompleteReport() const
+{
+    return !m_data.m_publishCompleteReports.empty();
+}
+
+UnitTestCommonBase::UnitTestPublishCompleteReportPtr UnitTestCommonBase::unitTestPublishCompleteReport(bool mustExist)
+{
+    if (!unitTestHasPublishCompleteReport()) {
+        test_assert(!mustExist);
+        return UnitTestPublishCompleteReportPtr();
+    }
+
+    auto ptr = std::move(m_data.m_publishCompleteReports.front());
+    m_data.m_publishCompleteReports.pop_front();
+    return ptr;
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestPublishSend(CC_MqttsnPublishHandle publish)
+{
+    return m_funcs.m_publish_send(publish, &UnitTestCommonBase::unitTestPublishCompleteCb, this);
+}
+
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
 {
     m_funcs.m_process_data(client, buf, bufLen);
@@ -826,6 +873,31 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiUnsubscribeCancel(CC_MqttsnUnsubscribe
     return m_funcs.m_unsubscribe_cancel(unsubscribe);
 }
 
+CC_MqttsnPublishHandle UnitTestCommonBase::apiPublishPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_publish_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiPublishSetRetryCount(CC_MqttsnPublishHandle publish, unsigned count)
+{
+    return m_funcs.m_publish_set_retry_count(publish, count);
+}
+
+void UnitTestCommonBase::apiPublishInitConfig(CC_MqttsnPublishConfig* config)
+{
+    m_funcs.m_publish_init_config(config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiPublishConfig(CC_MqttsnPublishHandle publish, const CC_MqttsnPublishConfig* config)
+{
+    return m_funcs.m_publish_config(publish, config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiPublishCancel(CC_MqttsnPublishHandle publish)
+{
+    return m_funcs.m_publish_cancel(publish);
+}
+
 void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo)
 {
     // TODO:
@@ -898,4 +970,10 @@ void UnitTestCommonBase::unitTestUnsubscribeCompleteCb(void* data, CC_MqttsnUnsu
 {
     auto* thisPtr = asThis(data);
     thisPtr->m_data.m_unsubscribeCompleteReports.push_back(std::make_unique<UnitTestUnsubscribeCompleteReport>(handle, status));
+}
+
+void UnitTestCommonBase::unitTestPublishCompleteCb(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info)
+{
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_publishCompleteReports.push_back(std::make_unique<UnitTestPublishCompleteReport>(handle, status, info));
 }

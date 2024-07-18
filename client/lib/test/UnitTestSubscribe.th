@@ -474,7 +474,7 @@ void UnitTestSubscribe::test6()
         TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous subscribe is complete
     }
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 10);    
 
@@ -530,7 +530,7 @@ void UnitTestSubscribe::test6()
         TS_ASSERT_DIFFERS(subMsgId2, subMsgId1);
     }      
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 10);     
 
@@ -568,7 +568,7 @@ void UnitTestSubscribe::test6()
         TS_ASSERT_DIFFERS(subMsgId3, subMsgId1);
     }       
 
-    TS_ASSERT(!unitTestHasDisconnectCompleteReport());
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 10);   
 

@@ -958,7 +958,6 @@ void cc_mqttsn_##NAME##client_publish_init_config(CC_MqttsnPublishConfig* config
 {
     COMMS_ASSERT(config != nullptr);
     *config = CC_MqttsnPublishConfig();
-    config->m_qos = static_cast<decltype(config->m_qos)>(cc_mqttsn_client::Config::MaxQos);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_config(CC_MqttsnPublishHandle handle, const CC_MqttsnPublishConfig* config)

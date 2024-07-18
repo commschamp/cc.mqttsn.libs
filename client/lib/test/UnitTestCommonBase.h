@@ -91,7 +91,16 @@ public:
         CC_MqttsnErrorCode (*m_unsubscribe_send)(CC_MqttsnUnsubscribeHandle, CC_MqttsnUnsubscribeCompleteCb, void*) = nullptr; 
         CC_MqttsnErrorCode (*m_unsubscribe_cancel)(CC_MqttsnUnsubscribeHandle) = nullptr; 
         CC_MqttsnErrorCode (*m_unsubscribe)(CC_MqttsnClientHandle, const CC_MqttsnUnsubscribeConfig*, CC_MqttsnUnsubscribeCompleteCb, void* cbData) = nullptr;             
-
+        CC_MqttsnPublishHandle (*m_publish_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;     
+        CC_MqttsnErrorCode (*m_publish_set_retry_period)(CC_MqttsnPublishHandle, unsigned) = nullptr; 
+        unsigned (*m_publish_get_retry_period)(CC_MqttsnPublishHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_publish_set_retry_count)(CC_MqttsnPublishHandle, unsigned) = nullptr; 
+        unsigned (*m_publish_get_retry_count)(CC_MqttsnPublishHandle) = nullptr; 
+        void (*m_publish_init_config)(CC_MqttsnPublishConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_publish_config)(CC_MqttsnPublishHandle, const CC_MqttsnPublishConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_publish_send)(CC_MqttsnPublishHandle, CC_MqttsnPublishCompleteCb, void*) = nullptr; 
+        CC_MqttsnErrorCode (*m_publish_cancel)(CC_MqttsnPublishHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_publish)(CC_MqttsnClientHandle, const CC_MqttsnPublishConfig*, CC_MqttsnPublishCompleteCb, void* cbData) = nullptr;             
 
         void (*m_set_next_tick_program_callback)(CC_MqttsnClientHandle, CC_MqttsnNextTickProgramCb, void*) = nullptr;
         void (*m_set_cancel_next_tick_wait_callback)(CC_MqttsnClientHandle, CC_MqttsnCancelNextTickWaitCb, void*) = nullptr;
@@ -259,6 +268,30 @@ public:
     using UnitTestUnsubscribeCompleteReportPtr = std::unique_ptr<UnitTestUnsubscribeCompleteReport>;
     using UnitTestUnsubscribeCompleteReportList = std::list<UnitTestUnsubscribeCompleteReportPtr>;           
 
+    struct UnitTestPublishInfo
+    {
+        CC_MqttsnReturnCode m_returnCode = CC_MqttsnReturnCode_ValuesLimit;
+
+        UnitTestPublishInfo() = default;
+        UnitTestPublishInfo(const UnitTestPublishInfo&) = default;
+        UnitTestPublishInfo& operator=(const UnitTestPublishInfo&) = default;
+        UnitTestPublishInfo& operator=(const CC_MqttsnPublishInfo& info);
+    };    
+
+    struct UnitTestPublishCompleteReport
+    {
+        CC_MqttsnPublishHandle m_handle = nullptr;
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+        UnitTestPublishInfo m_info;
+
+        UnitTestPublishCompleteReport(CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
+        UnitTestPublishCompleteReport(UnitTestPublishCompleteReport&&) = default;
+        UnitTestPublishCompleteReport& operator=(const UnitTestPublishCompleteReport&) = default;
+    };    
+
+    using UnitTestPublishCompleteReportPtr = std::unique_ptr<UnitTestPublishCompleteReport>;
+    using UnitTestPublishCompleteReportList = std::list<UnitTestPublishCompleteReportPtr>;        
+
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
     void unitTestSetUp();
@@ -317,6 +350,11 @@ public:
 
     CC_MqttsnErrorCode unitTestUnsubscribeSend(CC_MqttsnUnsubscribeHandle unsubscribe);    
 
+    bool unitTestHasPublishCompleteReport() const;
+    UnitTestPublishCompleteReportPtr unitTestPublishCompleteReport(bool mustExist = true);
+
+    CC_MqttsnErrorCode unitTestPublishSend(CC_MqttsnPublishHandle publish);    
+
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
     CC_MqttsnErrorCode apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value);
@@ -352,6 +390,12 @@ public:
     CC_MqttsnErrorCode apiUnsubscribeConfig(CC_MqttsnUnsubscribeHandle unsubscribe, const CC_MqttsnUnsubscribeConfig* config);
     CC_MqttsnErrorCode apiUnsubscribeCancel(CC_MqttsnUnsubscribeHandle unsubscribe);    
 
+    CC_MqttsnPublishHandle apiPublishPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiPublishSetRetryCount(CC_MqttsnPublishHandle publish, unsigned count);
+    void apiPublishInitConfig(CC_MqttsnPublishConfig* config);
+    CC_MqttsnErrorCode apiPublishConfig(CC_MqttsnPublishHandle publish, const CC_MqttsnPublishConfig* config);
+    CC_MqttsnErrorCode apiPublishCancel(CC_MqttsnPublishHandle publish);    
+
 
 protected:
     explicit UnitTestCommonBase(const LibFuncs& funcs);
@@ -370,6 +414,7 @@ private:
         UnitTestDisconnectCompleteReportList m_disconnectCompleteReports;
         UnitTestSubscribeCompleteReportList m_subscribeCompleteReports;
         UnitTestUnsubscribeCompleteReportList m_unsubscribeCompleteReports;
+        UnitTestPublishCompleteReportList m_publishCompleteReports;
     };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);
@@ -385,6 +430,7 @@ private:
     static void unitTestDisconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
     static void unitTestSubscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
     static void unitTestUnsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status);
+    static void unitTestPublishCompleteCb(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
 
     LibFuncs m_funcs;  
     ClientData m_data;
