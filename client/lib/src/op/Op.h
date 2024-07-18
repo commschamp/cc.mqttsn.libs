@@ -36,7 +36,7 @@ public:
         Type_Subscribe,
         Type_Unsubscribe,
         // Type_Recv,
-        // Type_Send,
+        Type_Send,
         Type_NumOfValues // Must be last
     };
 
@@ -99,6 +99,7 @@ protected:
     void decRetryCount();
     void storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
     bool removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
+
     static bool isValidTopicId(CC_MqttsnTopicId id);
     static bool isShortTopic(const char* topic);
 

@@ -18,6 +18,7 @@ struct SessionState
     unsigned m_keepAliveMs = 0U;
     bool m_connected = false;
     bool m_disconnecting = false;
+    bool m_topicRegInProgress = false;
 };
 
 } // namespace cc_mqttsn_client

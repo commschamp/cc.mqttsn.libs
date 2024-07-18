@@ -24,6 +24,7 @@ class UnsubscribeOp final : public Op
     using Base = Op;
 public:
     explicit UnsubscribeOp(ClientImpl& client);
+    virtual ~UnsubscribeOp();
 
     CC_MqttsnErrorCode config(const CC_MqttsnUnsubscribeConfig* config);
     CC_MqttsnErrorCode send(CC_MqttsnUnsubscribeCompleteCb cb, void* cbData);

@@ -23,7 +23,7 @@
 #include "op/Op.h"
 // #include "op/RecvOp.h"
 #include "op/SearchOp.h"
-// #include "op/SendOp.h"
+#include "op/SendOp.h"
 #include "op/SubscribeOp.h"
 #include "op/UnsubscribeOp.h"
 
@@ -73,7 +73,7 @@ public:
     op::DisconnectOp* disconnectPrepare(CC_MqttsnErrorCode* ec);
     op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
     op::UnsubscribeOp* unsubscribePrepare(CC_MqttsnErrorCode* ec);
-    // op::SendOp* publishPrepare(CC_MqttsnErrorCode* ec);
+    op::SendOp* publishPrepare(CC_MqttsnErrorCode* ec);
 
     // std::size_t sendsCount() const
     // {
@@ -176,6 +176,7 @@ public:
     // bool hasPausedSendsBefore(const op::SendOp* sendOp) const;
     // bool hasHigherQosSendsBefore(const op::SendOp* sendOp, op::Op::Qos qos) const;
     void allowNextPrepare();
+    void allowNextRegister();
 
     TimerMgr& timerMgr()
     {
@@ -253,8 +254,8 @@ private:
     // using RecvOpAlloc = ObjAllocator<op::RecvOp, ExtConfig::RecvOpsLimit>;
     // using RecvOpsList = ObjListType<RecvOpAlloc::Ptr, ExtConfig::RecvOpsLimit>;
 
-    // using SendOpAlloc = ObjAllocator<op::SendOp, ExtConfig::SendOpsLimit>;
-    // using SendOpsList = ObjListType<SendOpAlloc::Ptr, ExtConfig::SendOpsLimit>;
+    using SendOpAlloc = ObjAllocator<op::SendOp, ExtConfig::SendOpsLimit>;
+    using SendOpsList = ObjListType<SendOpAlloc::Ptr, ExtConfig::SendOpsLimit>;
 
     using OpPtrsList = ObjListType<op::Op*, ExtConfig::OpsLimit>;
     // using OpToDeletePtrsList = ObjListType<const op::Op*, ExtConfig::OpsLimit>;
@@ -287,7 +288,7 @@ private:
     void opComplete_Subscribe(const op::Op* op);
     void opComplete_Unsubscribe(const op::Op* op);
     // void opComplete_Recv(const op::Op* op);
-    // void opComplete_Send(const op::Op* op);
+    void opComplete_Send(const op::Op* op);
 
     void finaliseSupUnsubOp();
     void monitorGatewayExpiry();
@@ -361,8 +362,8 @@ private:
     // RecvOpAlloc m_recvOpsAlloc;
     // RecvOpsList m_recvOps;
 
-    // SendOpAlloc m_sendOpsAlloc;
-    // SendOpsList m_sendOps;
+    SendOpAlloc m_sendOpsAlloc;
+    SendOpsList m_sendOps;
 
     OpPtrsList m_ops;
     unsigned m_pendingGwinfoBroadcastRadius = 0U;

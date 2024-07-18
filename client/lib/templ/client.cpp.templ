@@ -20,6 +20,7 @@ struct CC_MqttsnConnect {};
 struct CC_MqttsnDisconnect {};
 struct CC_MqttsnSubscribe {};
 struct CC_MqttsnUnsubscribe {};
+struct CC_MqttsnPublish {};
 
 namespace
 {
@@ -90,6 +91,16 @@ inline cc_mqttsn_client::op::UnsubscribeOp* unsubscribeOpFromHandle(CC_MqttsnUns
 inline CC_MqttsnUnsubscribeHandle handleFromUnsubscribeOp(cc_mqttsn_client::op::UnsubscribeOp* op)
 {
     return reinterpret_cast<CC_MqttsnUnsubscribeHandle>(op);
+}
+
+inline cc_mqttsn_client::op::SendOp* sendOpFromHandle(CC_MqttsnPublishHandle handle)
+{
+    return reinterpret_cast<cc_mqttsn_client::op::SendOp*>(handle);
+}
+
+inline CC_MqttsnPublishHandle handleFromSendOp(cc_mqttsn_client::op::SendOp* op)
+{
+    return reinterpret_cast<CC_MqttsnPublishHandle>(op);
 }
 
 }  // namespace
@@ -905,6 +916,98 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
     return cc_mqttsn_##NAME##client_unsubscribe_send(unsubscribe, cb, cbData);     
 }
 
+CC_MqttsnPublishHandle cc_mqttsn_##NAME##client_publish_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
+{
+    COMMS_ASSERT(client != nullptr);
+    return handleFromSendOp(clientFromHandle(client)->publishPrepare(ec));    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_set_retry_period(CC_MqttsnPublishHandle handle, unsigned ms)
+{
+    COMMS_ASSERT(handle != nullptr);
+    if (ms == 0U) {
+        sendOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+    
+    COMMS_ASSERT(handle != nullptr);
+    sendOpFromHandle(handle)->setRetryPeriod(ms);     
+    return CC_MqttsnErrorCode_Success;    
+}
+
+unsigned cc_mqttsn_##NAME##client_publish_get_retry_period(CC_MqttsnPublishHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return sendOpFromHandle(handle)->getRetryPeriod();      
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_set_retry_count(CC_MqttsnPublishHandle handle, unsigned count)
+{
+    COMMS_ASSERT(handle != nullptr);
+    sendOpFromHandle(handle)->setRetryCount(count);     
+    return CC_MqttsnErrorCode_Success;  
+}
+
+unsigned cc_mqttsn_##NAME##client_publish_get_retry_count(CC_MqttsnPublishHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return sendOpFromHandle(handle)->getRetryCount();         
+}
+
+void cc_mqttsn_##NAME##client_publish_init_config(CC_MqttsnPublishConfig* config)
+{
+    COMMS_ASSERT(config != nullptr);
+    *config = CC_MqttsnPublishConfig();
+    config->m_qos = static_cast<decltype(config->m_qos)>(cc_mqttsn_client::Config::MaxQos);
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_config(CC_MqttsnPublishHandle handle, const CC_MqttsnPublishConfig* config)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return sendOpFromHandle(handle)->config(config);    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_send(CC_MqttsnPublishHandle handle, CC_MqttsnPublishCompleteCb cb, void* cbData)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return sendOpFromHandle(handle)->send(cb, cbData);       
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_cancel(CC_MqttsnPublishHandle handle)
+{
+    COMMS_ASSERT(handle != nullptr);
+    return sendOpFromHandle(handle)->cancel();  
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnPublishConfig* config,
+    CC_MqttsnPublishCompleteCb cb, 
+    void* cbData)
+{
+    auto ec = CC_MqttsnErrorCode_Success;
+    auto publish = cc_mqttsn_##NAME##client_publish_prepare(client, &ec);
+    if (publish == nullptr) {
+        return ec;
+    }
+
+    auto cancelOnExitGuard = 
+        comms::util::makeScopeGuard(
+            [publish]()
+            {
+                [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_publish_cancel(publish);
+            });    
+
+    if (config != nullptr) {
+        ec = cc_mqttsn_##NAME##client_publish_config(publish, config);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            return ec;
+        }
+    }
+
+    cancelOnExitGuard.release();
+    return cc_mqttsn_##NAME##client_publish_send(publish, cb, cbData);     
+}
 
 // --------------------- Callbacks ---------------------
 

@@ -24,6 +24,7 @@ class SubscribeOp final : public Op
     using Base = Op;
 public:
     explicit SubscribeOp(ClientImpl& client);
+    virtual ~SubscribeOp();
 
     CC_MqttsnErrorCode config(const CC_MqttsnSubscribeConfig* config);
     CC_MqttsnErrorCode send(CC_MqttsnSubscribeCompleteCb cb, void* cbData);

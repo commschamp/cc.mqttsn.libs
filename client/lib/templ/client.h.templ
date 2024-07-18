@@ -680,6 +680,93 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
     CC_MqttsnUnsubscribeCompleteCb cb, 
     void* cbData);    
 
+/// @brief Prepare "publish" operation.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[out] ec Error code reporting result of the operation. Can be NULL.
+/// @return Handle of the "publish" operation, will be NULL in case of failure. To analyze the reason failure use "ec" output parameter.
+/// @post The "publish" operation is allocated, use either @ref cc_mqttsn_##NAME##client_publish_send()
+///     or @ref cc_mqttsn_##NAME##client_publish_cancel() to prevent memory leaks.
+/// @ingroup publish
+CC_MqttsnPublishHandle cc_mqttsn_##NAME##client_publish_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+
+/// @brief Configure the retry period for the "publish" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
+/// @param[in] ms Retry period in @b milliseconds.
+/// @return Result code of the call.
+/// @ingroup publish
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_set_retry_period(CC_MqttsnPublishHandle handle, unsigned ms);
+
+/// @brief Retrieve the configured retry period for the "publish" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
+/// @return Retry period duration in @b milliseconds.
+/// @ingroup publish
+unsigned cc_mqttsn_##NAME##client_publish_get_retry_period(CC_MqttsnPublishHandle handle);
+
+/// @brief Configure the retry count for the "publish" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
+/// @param[in] count Number of retries.
+/// @return Result code of the call.
+/// @ingroup publish
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_set_retry_count(CC_MqttsnPublishHandle handle, unsigned count);
+
+/// @brief Retrieve the configured retry count for the "publish" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
+/// @return Number of retries.
+/// @ingroup publish
+unsigned cc_mqttsn_##NAME##client_publish_get_retry_count(CC_MqttsnPublishHandle handle);
+
+/// @brief Intialize the @ref CC_MqttsnPublishConfig configuration structure.
+/// @param[out] config Configuration structure. Must not be NULL.
+/// @ingroup publish
+void cc_mqttsn_##NAME##client_publish_init_config(CC_MqttsnPublishConfig* config);
+
+/// @brief Perform configuration of the "publish" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
+/// @param[in] config Configuration structure. Must NOT be NULL. Does not need to be preserved after invocation.
+/// @return Result code of the call.
+/// @ingroup publish
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_config(CC_MqttsnPublishHandle handle, const CC_MqttsnPublishConfig* config);
+
+/// @brief Send the "publish" operation
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
+/// @param[in] cb Callback to be invoked when "publish" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @post The handle of the "publish" operation can be discarded.
+/// @post The provided callback will be invoked when the "publish" operation is complete <b> if and only if</b>
+///     the function returns @ref CC_MqttsnErrorCode_Success.
+/// @ingroup publish
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_send(CC_MqttsnPublishHandle handle, CC_MqttsnPublishCompleteCb cb, void* cbData);
+
+/// @brief Cancel the allocated "publish" operation
+/// @details In case the @ref cc_mqttsn_##NAME##client_publish_send() function was successfully called before,
+///     the operation is cancelled @b without callback invocation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
+/// @return Result code of the call.
+/// @post The handle of the "publish" operation is no longer valid and must be discarded.
+/// @ingroup publish
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_cancel(CC_MqttsnPublishHandle handle);
+
+/// @brief Prepare and send "publish" request in one go 
+/// @details Abstracts away sequence of the following functions invocation:
+///     @li @ref cc_mqttsn_##NAME##client_publish_prepare()
+///     @li @ref cc_mqttsn_##NAME##client_publish_config()
+///     @li @ref cc_mqttsn_##NAME##client_publish_send()
+///
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] config Subscription configuration.
+/// @param[in] cb Callback to be invoked when "publish" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @ingroup publish
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnPublishConfig* config,
+    CC_MqttsnPublishCompleteCb cb, 
+    void* cbData);    
+
 
 // --------------------- Callbacks ---------------------
 

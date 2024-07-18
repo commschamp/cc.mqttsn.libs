@@ -43,6 +43,11 @@ SubscribeOp::SubscribeOp(ClientImpl& client) :
 {
 }   
 
+SubscribeOp::~SubscribeOp()
+{
+    releasePacketId(m_subscribeMsg.field_msgId().value());
+}
+
 CC_MqttsnErrorCode SubscribeOp::config(const CC_MqttsnSubscribeConfig* config)
 {
     if (config == nullptr) {

@@ -404,13 +404,17 @@ typedef void (*CC_MqttsnUnsubscribeCompleteCb)(void* data, CC_MqttsnUnsubscribeH
 /// @brief Callback used to report completion of the publish operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
+/// @param[in] handle Handle returned by @b cc_mqttsn_client_publish_prepare() function. When the 
+///     callback is invoked the handle is already invalid and cannot be used in any relevant 
+///     function invocation, but it allows end application to identify the original "publish" operation
+///     and use the same callback function in parallel requests.
 /// @param[in] status Status of the "publish" operation.
 /// @param[in] info Information about op completion. Not-NULL is reported <b>onfly if</b>
 ///     the "status" is equal to @ref CC_MqttsnAsyncOpStatus_Complete. When QoS2 publish
 ///     is successfully performed the "info" can still be NULL.
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup publish
-typedef void (*CC_MqttsnPublishCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
+typedef void (*CC_MqttsnPublishCompleteCb)(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
 
 #ifdef __cplusplus
 }

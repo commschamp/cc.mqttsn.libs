@@ -376,56 +376,50 @@ op::UnsubscribeOp* ClientImpl::unsubscribePrepare(CC_MqttsnErrorCode* ec)
     return op;
 }
 
-// op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
-// {
-//     op::SendOp* sendOp = nullptr;
-//     do {
-//         if (!m_sessionState.m_connected) {
-//             errorLog("Client must be connected to allow publish.");
-//             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
-//             break;
-//         }
+op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
+{
+    op::SendOp* op = nullptr;
+    do {
+        if (!m_sessionState.m_connected) {
+            errorLog("Client must be connected to allow publish.");
+            updateEc(ec, CC_MqttsnErrorCode_NotConnected);
+            break;
+        }
 
-//         if (m_sessionState.m_disconnecting) {
-//             errorLog("Session disconnection is in progress, cannot initiate publish.");
-//             updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
-//             break;
-//         }
+        if (m_sessionState.m_disconnecting) {
+            errorLog("Session disconnection is in progress, cannot initiate publish.");
+            updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
+            break;
+        }
 
-//         if (m_clientState.m_networkDisconnected) {
-//             errorLog("Network is disconnected.");
-//             updateEc(ec, CC_MqttsnErrorCode_NetworkDisconnected);
-//             break;            
-//         }        
+        if (m_ops.max_size() <= m_ops.size()) {
+            errorLog("Cannot start publish operation, retry in next event loop iteration.");
+            updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+            break;
+        }        
 
-//         if (m_ops.max_size() <= m_ops.size()) {
-//             errorLog("Cannot start publish operation, retry in next event loop iteration.");
-//             updateEc(ec, CC_MqttsnErrorCode_RetryLater);
-//             break;
-//         }        
+        auto ptr = m_sendOpsAlloc.alloc(*this);
+        if (!ptr) {
+            errorLog("Cannot allocate new publish operation.");
+            updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
+            break;
+        }
 
-//         auto ptr = m_sendOpsAlloc.alloc(*this);
-//         if (!ptr) {
-//             errorLog("Cannot allocate new publish operation.");
-//             updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
-//             break;
-//         }
+        if (m_preparationLocked) {
+            errorLog("Another operation is being prepared, cannot prepare \"unsubscribe\" without \"send\" or \"cancel\" of the previous.");
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            break;
+        }          
 
-//         if (m_preparationLocked) {
-//             errorLog("Another operation is being prepared, cannot prepare \"unsubscribe\" without \"send\" or \"cancel\" of the previous.");
-//             updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
-//             break;
-//         }          
+        m_preparationLocked = true;
+        m_ops.push_back(ptr.get());
+        m_sendOps.push_back(std::move(ptr));
+        op = m_sendOps.back().get();
+        updateEc(ec, CC_MqttsnErrorCode_Success);
+    } while (false);
 
-//         m_preparationLocked = true;
-//         m_ops.push_back(ptr.get());
-//         m_sendOps.push_back(std::move(ptr));
-//         sendOp = m_sendOps.back().get();
-//         updateEc(ec, CC_MqttsnErrorCode_Success);
-//     } while (false);
-
-//     return sendOp;
-// }
+    return op;
+}
 
 // CC_MqttsnErrorCode ClientImpl::setPublishOrdering(CC_MqttsnPublishOrdering ordering)
 // {
@@ -857,7 +851,7 @@ void ClientImpl::opComplete(const op::Op* op)
         /* Type_Subscribe */ &ClientImpl::opComplete_Subscribe,
         /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
         // /* Type_Recv */ &ClientImpl::opComplete_Recv,
-        // /* Type_Send */ &ClientImpl::opComplete_Send,
+        /* Type_Send */ &ClientImpl::opComplete_Send,
     };
     static const std::size_t MapSize = std::extent<decltype(Map)>::value;
     static_assert(MapSize == op::Op::Type_NumOfValues);
@@ -947,6 +941,17 @@ void ClientImpl::allowNextPrepare()
 {
     COMMS_ASSERT(m_preparationLocked);
     m_preparationLocked = false;
+}
+
+void ClientImpl::allowNextRegister()
+{
+    for (auto& op : m_sendOps) {
+        COMMS_ASSERT(op);
+        if (op->isRegPending()) {
+            op->proceedWithReg();
+            break;
+        }
+    }
 }
 
 void ClientImpl::doApiEnter()
@@ -1223,15 +1228,10 @@ void ClientImpl::opComplete_Unsubscribe(const op::Op* op)
 //     eraseFromList(op, m_recvOps);
 // }
 
-// void ClientImpl::opComplete_Send(const op::Op* op)
-// {
-//     auto idx = eraseFromList(op, m_sendOps);
-//     if (m_sessionState.m_disconnecting) {
-//         return;
-//     }
-
-//     resumeSendOpsSince(idx);
-// }
+void ClientImpl::opComplete_Send(const op::Op* op)
+{
+    eraseFromList(op, m_sendOps);
+}
 
 void ClientImpl::finaliseSupUnsubOp()
 {

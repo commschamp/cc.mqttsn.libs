@@ -43,6 +43,11 @@ UnsubscribeOp::UnsubscribeOp(ClientImpl& client) :
 {
 }   
 
+UnsubscribeOp::~UnsubscribeOp()
+{
+    releasePacketId(m_unsubscribeMsg.field_msgId().value());
+}
+
 CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* config)
 {
     if (config == nullptr) {
