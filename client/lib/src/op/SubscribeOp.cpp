@@ -276,13 +276,12 @@ void SubscribeOp::timeoutInternal()
         return;
     }  
 
+    decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }  
-
-    decRetryCount();
 }
 
 void SubscribeOp::opTimeoutCb(void* data)

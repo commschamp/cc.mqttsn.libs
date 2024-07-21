@@ -261,6 +261,15 @@ void UnitTestCommonBase::unitTestPushSearchgwResponseDelay(unsigned val)
     m_data.m_searchgwResponseDelays.push_back(val);
 }
 
+CC_MqttsnTopicId UnitTestCommonBase::unitTestShortTopicNameToId(const std::string& topic)
+{
+    test_assert(topic.size() == 2U);
+    unsigned result = 
+        (static_cast<unsigned>(topic[0]) << 8U) | 
+        (static_cast<unsigned>(topic[1]));
+    return static_cast<CC_MqttsnTopicId>(result);
+}
+
 bool UnitTestCommonBase::unitTestHasTickReq() const
 {
     return !m_data.m_ticks.empty();

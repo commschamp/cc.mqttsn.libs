@@ -297,13 +297,12 @@ void UnsubscribeOp::timeoutInternal()
         return;
     }  
 
+    decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }  
-
-    decRetryCount();
 }
 
 void UnsubscribeOp::opTimeoutCb(void* data)

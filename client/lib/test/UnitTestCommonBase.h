@@ -302,6 +302,8 @@ public:
     void unitTestClientInputMessage(CC_MqttsnClient* client, const UnitTestMessage& msg);
     void unitTestPushSearchgwResponseDelay(unsigned val);
 
+    static CC_MqttsnTopicId unitTestShortTopicNameToId(const std::string& topic);
+
     bool unitTestHasTickReq() const;
     const UnitTestTickInfo* unitTestTickInfo(bool mustExist = true) const;
     void unitTestTick(CC_MqttsnClient* client, unsigned ms = 0U);

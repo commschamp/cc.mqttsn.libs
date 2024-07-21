@@ -81,7 +81,7 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
         return CC_MqttsnErrorCode_BadParam;          
     }
 
-    if ((!emptyTopic) && (!verifySubFilter(config->m_topic))) {
+    if ((!emptyTopic) && (!verifyPubTopic(config->m_topic, true))) {
         errorLog("Bad topic filter format in publish.");
         return CC_MqttsnErrorCode_BadParam;
     }    
@@ -112,6 +112,7 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
             m_publishMsg.field_topicId().setValue(topicId);
             m_publishMsg.field_flags().field_topicIdType().value() = TopicIdType::ShortTopicName;
             m_stage = Stage_Publish;
+            break;
         }
 
         auto& regMap = client().reuseState().m_outRegTopics;
@@ -210,6 +211,13 @@ void SendOp::handle(RegackMsg& msg)
         return;
     }    
 
+    if (msg.field_returnCode().value() != RegackMsg::Field_returnCode::ValueType::Accepted) {
+        auto info = CC_MqttsnPublishInfo();
+        comms::cast_assign(info.m_returnCode) = msg.field_returnCode().value();
+        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
+        return;
+    }    
+
     auto topicId = msg.field_topicId().value();
     if (!isValidTopicId(topicId)) {
         errorLog("Unexpected topic ID in REGACK message, ignoring");
@@ -237,11 +245,17 @@ void SendOp::handle(RegackMsg& msg)
         iter->m_topicId = topicId;
     } while (false);
 
+    auto onExitAllowRegister = 
+        comms::util::makeScopeGuard(
+            [&cl = client()]()
+            {
+                cl.allowNextRegister();
+            });
+
     m_registerInProgress = false;
-    client().sessionState().m_topicRegInProgress = false;
-    client().allowNextRegister();
-    m_publishMsg.field_topicId().setValue(topicId);
     m_stage = Stage_Publish; 
+    client().sessionState().m_topicRegInProgress = false;
+    m_publishMsg.field_topicId().setValue(topicId);
     setRetryCount(m_origRetryCount);
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
@@ -260,7 +274,15 @@ void SendOp::handle(PubackMsg& msg)
     }
 
     auto info = CC_MqttsnPublishInfo();
-    info.m_returnCode = static_cast<decltype(info.m_returnCode)>(msg.field_returnCode().value());
+    info.m_returnCode = static_cast<decltype(info.m_returnCode)>(msg.field_returnCode().value());    
+
+    using Qos = PublishMsg::Field_flags::Field_qos::ValueType;
+    if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) && 
+        (m_publishMsg.field_flags().field_qos().value() != Qos::AtLeastOnceDelivery)) {
+        errorLog("Received PUBACK instead of PUBREC, ignoring...");
+        return;
+    }
+
     completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
 }
 
@@ -271,6 +293,12 @@ void SendOp::handle(PubrecMsg& msg)
         (msg.field_msgId().value() != m_publishMsg.field_msgId().value()))  {
         return;
     }
+
+    using Qos = PublishMsg::Field_flags::Field_qos::ValueType;
+    if (m_publishMsg.field_flags().field_qos().value() != Qos::ExactlyOnceDelivery) {
+        errorLog("Received PUBREC instead of PUBACK, ignoring...");
+        return;
+    }    
 
     m_stage = Stage_Acked;
     setRetryCount(m_origRetryCount);
@@ -385,7 +413,7 @@ CC_MqttsnErrorCode SendOp::sendInternal_Pubrel()
     if constexpr (2 <= Config::MaxQos) {
         PubrelMsg pubrelMsg;
         pubrelMsg.field_msgId().setValue(m_publishMsg.field_msgId().value());
-        auto ec = sendMessage(m_publishMsg);
+        auto ec = sendMessage(pubrelMsg);
         if (ec == CC_MqttsnErrorCode_Success) {
             restartTimer();
         }
@@ -405,13 +433,13 @@ void SendOp::timeoutInternal()
         return;
     }  
 
+    decRetryCount();
+
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }  
-
-    decRetryCount();
 }
 
 void SendOp::opTimeoutCb(void* data)

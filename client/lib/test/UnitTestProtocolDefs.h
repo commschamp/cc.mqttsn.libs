@@ -22,6 +22,7 @@ using UnitTestMessage = cc_mqttsn::Message<
     comms::option::app::WriteIterator<std::uint8_t*>,
     comms::option::app::LengthInfoInterface,
     comms::option::app::IdInfoInterface,
+    comms::option::app::NameInterface,
     comms::option::app::Handler<UnitTestMsgHandler>
 >;
 

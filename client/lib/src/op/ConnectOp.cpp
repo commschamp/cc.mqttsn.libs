@@ -279,13 +279,12 @@ void ConnectOp::timeoutInternal()
         return;
     }  
 
+    decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }  
-
-    decRetryCount();
 }
 
 const ProtMessage& ConnectOp::getConnectMsg() const

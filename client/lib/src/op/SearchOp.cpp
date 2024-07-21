@@ -153,13 +153,12 @@ void SearchOp::timeoutInternal()
         return;
     }
 
+    decRetryCount();  
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }    
-
-    decRetryCount();  
 }
 
 void SearchOp::opTimeoutCb(void* data)
