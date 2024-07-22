@@ -160,8 +160,7 @@ CC_MqttsnErrorCode SendOp::send(CC_MqttsnPublishCompleteCb cb, void* cbData)
         m_registerMsg.field_msgId().setValue(allocPacketId());    
     }
 
-    using QoS = PublishMsg::Field_flags::Field_qos::ValueType;
-    if (QoS::AtMostOnceDelivery < m_publishMsg.field_flags().field_qos().value()) {
+    if (Qos::AtMostOnceDelivery < m_publishMsg.field_flags().field_qos().value()) {
         m_publishMsg.field_msgId().setValue(allocPacketId());
     }
 
@@ -267,7 +266,6 @@ void SendOp::handle(PubackMsg& msg)
     auto info = CC_MqttsnPublishInfo();
     info.m_returnCode = static_cast<decltype(info.m_returnCode)>(msg.field_returnCode().value());    
 
-    using Qos = PublishMsg::Field_flags::Field_qos::ValueType;
     if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) && 
         (m_publishMsg.field_flags().field_qos().value() != Qos::AtLeastOnceDelivery)) {
         errorLog("Received PUBACK instead of PUBREC, ignoring...");
@@ -286,7 +284,6 @@ void SendOp::handle(PubrecMsg& msg)
         return;
     }
 
-    using Qos = PublishMsg::Field_flags::Field_qos::ValueType;
     if (m_publishMsg.field_flags().field_qos().value() != Qos::ExactlyOnceDelivery) {
         errorLog("Received PUBREC instead of PUBACK, ignoring...");
         return;
@@ -387,8 +384,7 @@ CC_MqttsnErrorCode SendOp::sendInternal_Publish()
         return ec;
     }
 
-    using QoS = PublishMsg::Field_flags::Field_qos::ValueType;
-    if (QoS::AtMostOnceDelivery == m_publishMsg.field_flags().field_qos().value()) {
+    if (Qos::AtMostOnceDelivery == m_publishMsg.field_flags().field_qos().value()) {
         completeOpInternal(CC_MqttsnAsyncOpStatus_Complete);
         return CC_MqttsnErrorCode_Success;
     }
