@@ -176,7 +176,6 @@ public:
     // bool hasPausedSendsBefore(const op::SendOp* sendOp) const;
     // bool hasHigherQosSendsBefore(const op::SendOp* sendOp, op::Op::Qos qos) const;
     void allowNextPrepare();
-    void allowNextRegister();
 
     TimerMgr& timerMgr()
     {

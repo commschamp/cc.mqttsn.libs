@@ -415,6 +415,12 @@ op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
         m_ops.push_back(ptr.get());
         m_sendOps.push_back(std::move(ptr));
         op = m_sendOps.back().get();
+
+        if (1U < m_sendOps.size()) {
+            // Only one PUBLISH transaction is allowed at a time by the specification
+            op->suspend();
+        }
+
         updateEc(ec, CC_MqttsnErrorCode_Success);
     } while (false);
 
@@ -943,17 +949,6 @@ void ClientImpl::allowNextPrepare()
     m_preparationLocked = false;
 }
 
-void ClientImpl::allowNextRegister()
-{
-    for (auto& op : m_sendOps) {
-        COMMS_ASSERT(op);
-        if (op->isRegPending()) {
-            op->proceedWithReg();
-            break;
-        }
-    }
-}
-
 void ClientImpl::doApiEnter()
 {
     ++m_apiEnterCount;
@@ -1231,6 +1226,13 @@ void ClientImpl::opComplete_Unsubscribe(const op::Op* op)
 void ClientImpl::opComplete_Send(const op::Op* op)
 {
     eraseFromList(op, m_sendOps);
+
+    if (m_sendOps.empty()) {
+        return;
+    }    
+
+    COMMS_ASSERT(m_sendOps.front());
+    m_sendOps.front()->resume();
 }
 
 void ClientImpl::finaliseSupUnsubOp()

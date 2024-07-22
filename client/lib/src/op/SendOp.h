@@ -32,10 +32,12 @@ public:
     CC_MqttsnErrorCode cancel();
     void proceedWithReg();
 
-    bool isRegPending() const
+    void suspend()
     {
-        return (m_stage == Stage_Register) && (!m_registerInProgress);
+        m_suspended = true;
     }
+
+    void resume();
 
     using Base::handle;
     void handle(RegackMsg& msg) override;
@@ -75,7 +77,7 @@ private:
     void* m_cbData = nullptr;
     Stage m_stage = Stage_Register;
     unsigned m_origRetryCount = 0U;
-    bool m_registerInProgress = false;
+    bool m_suspended = false;
 
     static_assert(ExtConfig::SendOpTimers == 1U);
 };

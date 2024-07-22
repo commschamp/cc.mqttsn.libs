@@ -47,12 +47,6 @@ SendOp::~SendOp()
 {
     releasePacketId(m_registerMsg.field_msgId().value());
     releasePacketId(m_publishMsg.field_msgId().value());
-
-    if (m_registerInProgress) {
-        COMMS_ASSERT(client().sessionState().m_topicRegInProgress);
-        client().sessionState().m_topicRegInProgress = false;
-        client().allowNextRegister();
-    }
 }
 
 CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
@@ -193,12 +187,13 @@ CC_MqttsnErrorCode SendOp::cancel()
     return CC_MqttsnErrorCode_Success;
 }
 
-void SendOp::proceedWithReg()
+void SendOp::resume()
 {
-    COMMS_ASSERT(isRegPending());
-    COMMS_ASSERT(!client().sessionState().m_topicRegInProgress);
+    COMMS_ASSERT(m_suspended);
+    m_suspended = false;
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
+        errorLog("Failed to send SUBSCRIBE, after prev SUBSCRIBE completion");
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
     }
@@ -206,7 +201,11 @@ void SendOp::proceedWithReg()
 
 void SendOp::handle(RegackMsg& msg)
 {
-    if ((!m_registerInProgress) || (msg.field_msgId().value() != m_registerMsg.field_msgId().value())) {
+    if (m_suspended) {
+        return;
+    }
+
+    if ((Stage_Register < m_stage) || (msg.field_msgId().value() != m_registerMsg.field_msgId().value())) {
         errorLog("Unexpected REGACK message, ignoring");
         return;
     }    
@@ -245,16 +244,7 @@ void SendOp::handle(RegackMsg& msg)
         iter->m_topicId = topicId;
     } while (false);
 
-    auto onExitAllowRegister = 
-        comms::util::makeScopeGuard(
-            [&cl = client()]()
-            {
-                cl.allowNextRegister();
-            });
-
-    m_registerInProgress = false;
     m_stage = Stage_Publish; 
-    client().sessionState().m_topicRegInProgress = false;
     m_publishMsg.field_topicId().setValue(topicId);
     setRetryCount(m_origRetryCount);
     auto ec = sendInternal();
@@ -267,7 +257,8 @@ void SendOp::handle(RegackMsg& msg)
 #if CC_MQTTSN_CLIENT_MAX_QOS > 0
 void SendOp::handle(PubackMsg& msg)
 {
-    if ((m_stage < Stage_Publish) || 
+    if ((m_suspended) ||
+        (m_stage < Stage_Publish) || 
         (msg.field_msgId().value() != m_publishMsg.field_msgId().value()) ||
         (msg.field_topicId().value() != m_publishMsg.field_topicId().value()))  {
         return;
@@ -289,7 +280,8 @@ void SendOp::handle(PubackMsg& msg)
 #if CC_MQTTSN_CLIENT_MAX_QOS > 1
 void SendOp::handle(PubrecMsg& msg)
 {
-    if ((m_stage < Stage_Publish) || 
+    if ((m_suspended) || 
+        (m_stage < Stage_Publish) || 
         (msg.field_msgId().value() != m_publishMsg.field_msgId().value()))  {
         return;
     }
@@ -311,7 +303,8 @@ void SendOp::handle(PubrecMsg& msg)
 
 void SendOp::handle(PubcompMsg& msg)
 {
-    if ((m_stage < Stage_Acked) || 
+    if ((m_suspended) || 
+        (m_stage < Stage_Acked) || 
         (msg.field_msgId().value() != m_publishMsg.field_msgId().value()))  {
         return;
     }
@@ -350,6 +343,10 @@ void SendOp::restartTimer()
 
 CC_MqttsnErrorCode SendOp::sendInternal()
 {
+    if (m_suspended) {
+        return CC_MqttsnErrorCode_Success;
+    }
+
     using SendFunc = CC_MqttsnErrorCode (SendOp::*)();
     static const SendFunc Map[] = {
         /* Stage_Register */ &SendOp::sendInternal_Register,
@@ -367,13 +364,6 @@ CC_MqttsnErrorCode SendOp::sendInternal()
 
 CC_MqttsnErrorCode SendOp::sendInternal_Register()
 {
-    if ((client().sessionState().m_topicRegInProgress) && (!m_registerInProgress)) {
-        return CC_MqttsnErrorCode_Success; // Wait fore other registration is complete
-    }   
-
-    client().sessionState().m_topicRegInProgress = true;
-    m_registerInProgress = true;
-
     auto ec = sendMessage(m_registerMsg);
     if (ec == CC_MqttsnErrorCode_Success) {
         restartTimer();
