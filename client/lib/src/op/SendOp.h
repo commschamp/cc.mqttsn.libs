@@ -39,6 +39,11 @@ public:
 
     void resume();
 
+    std::uint16_t publishMsgId() const
+    {
+        return m_publishMsg.field_msgId().value();
+    }
+
     using Base::handle;
     void handle(RegackMsg& msg) override;
 #if CC_MQTTSN_CLIENT_MAX_QOS > 0    
@@ -67,6 +72,8 @@ private:
     CC_MqttsnErrorCode sendInternal_Publish();
     CC_MqttsnErrorCode sendInternal_Pubrel();
     void timeoutInternal();
+    void allocPacketIdsInternal();
+    void releasePacketIdsInternal();
 
     static void opTimeoutCb(void* data);
 
@@ -77,6 +84,7 @@ private:
     void* m_cbData = nullptr;
     Stage m_stage = Stage_Register;
     unsigned m_origRetryCount = 0U;
+    unsigned m_fullRetryRemCount = 0U;
     bool m_suspended = false;
 
     static_assert(ExtConfig::SendOpTimers == 1U);

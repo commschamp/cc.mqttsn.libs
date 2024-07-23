@@ -53,14 +53,12 @@ using ProtInputMessages =
         cc_mqttsn::message::Register<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Regack<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Publish<ProtMessage, ProtocolOptions>,
-#if CC_MQTTSN_CLIENT_MAX_QOS > 0        
         cc_mqttsn::message::Puback<ProtMessage, ProtocolOptions>,
 #if CC_MQTTSN_CLIENT_MAX_QOS > 1                
         cc_mqttsn::message::Pubcomp<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Pubrec<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Pubrel<ProtMessage, ProtocolOptions>,
 #endif // #if CC_MQTTSN_CLIENT_MAX_QOS > 1        
-#endif // #if CC_MQTTSN_CLIENT_MAX_QOS > 0        
         cc_mqttsn::message::Suback<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Unsuback<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Pingreq<ProtMessage, ProtocolOptions>,

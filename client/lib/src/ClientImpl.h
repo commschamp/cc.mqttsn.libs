@@ -150,16 +150,7 @@ public:
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
 //     virtual void handle(PublishMsg& msg) override;
 
-// #if CC_MQTTSN_CLIENT_MAX_QOS >= 1    
-//     virtual void handle(PubackMsg& msg) override;
-// #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 1    
-
-// #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
-//     virtual void handle(PubrecMsg& msg) override;
-//     virtual void handle(PubrelMsg& msg) override;
-//     virtual void handle(PubcompMsg& msg) override;
-// #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
-
+    virtual void handle(PubackMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
     virtual void handle(ProtMessage& msg) override;

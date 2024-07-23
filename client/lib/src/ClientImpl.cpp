@@ -698,58 +698,49 @@ void ClientImpl::handle(GwinfoMsg& msg)
 //     } while (false);
 // }
 
-// #if CC_MQTTSN_CLIENT_MAX_QOS >= 1
-// void ClientImpl::handle(PubackMsg& msg)
-// {
-//     static_assert(Config::MaxQos >= 1);
-//     if (!processPublishAckMsg(msg, msg.field_packetId().value(), false)) {
-//         errorLog("PUBACK with unknown packet id");
-//     }    
-// }
-// #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 1
+void ClientImpl::handle(PubackMsg& msg)
+{
+    for (auto& opPtr : m_keepAliveOps) {
+        msg.dispatch(*opPtr);
+    }  
 
-// #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
-// void ClientImpl::handle(PubrecMsg& msg)
-// {
-//     static_assert(Config::MaxQos >= 2);
-//     if (!processPublishAckMsg(msg, msg.field_packetId().value(), false)) {
-//         errorLog("PUBREC with unknown packet id");
-//     }       
-// }
+    auto iter = m_sendOps.end();
+    if constexpr (Config::MaxQos >= 1) {
+        iter = 
+            std::find_if(
+                m_sendOps.begin(), m_sendOps.end(),
+                [&msg](auto& opPtr)
+                {
+                    COMMS_ASSERT(opPtr);
+                    return opPtr->publishMsgId() == msg.field_msgId().value();
+                });
+    }
 
-// void ClientImpl::handle(PubrelMsg& msg)
-// {
-//     static_assert(Config::MaxQos >= 2);
-//     for (auto& opPtr : m_keepAliveOps) {
-//         msg.dispatch(*opPtr);
-//     }
+    auto retCode = static_cast<CC_MqttsnReturnCode>(msg.field_returnCode().value());
+    if (retCode == CC_MqttsnReturnCode_InvalidTopicId) {
+        auto& map = m_reuseState.m_outRegTopics;
+        auto topicId = msg.field_topicId().value();
+        map.erase(
+            std::remove_if(
+                map.begin(), map.end(), 
+                [topicId](auto& elem)
+                {
+                    return topicId == elem.m_topicId;
+                }),
+            map.end());
+    }
 
-//     auto iter = 
-//         std::find_if(
-//             m_recvOps.begin(), m_recvOps.end(),
-//             [&msg](auto& opPtr)
-//             {
-//                 COMMS_ASSERT(opPtr);
-//                 return opPtr->packetId() == msg.field_packetId().value();
-//             });
+    if ((iter == m_sendOps.end()) && 
+        (msg.field_msgId().value() != 0U)) {
+        errorLog("PUBACK with uknown msg id");
+        return;
+    }
 
-//     if (iter == m_recvOps.end()) {
-//         errorLog("PUBREL with unknown packet id");
-//         return;
-//     }
-
-//     msg.dispatch(**iter);
-// }
-
-// void ClientImpl::handle(PubcompMsg& msg)
-// {
-//     static_assert(Config::MaxQos >= 2);
-//     if (!processPublishAckMsg(msg, msg.field_packetId().value(), true)) {
-//         errorLog("PUBCOMP with unknown packet id");
-//     }    
-// }
-
-// #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
+    if (iter != m_sendOps.end()) {
+        COMMS_ASSERT(*iter);
+        msg.dispatch(**iter);
+    }
+}
 
 void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 {

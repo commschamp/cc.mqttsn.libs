@@ -45,8 +45,7 @@ SendOp::SendOp(ClientImpl& client) :
 
 SendOp::~SendOp()
 {
-    releasePacketId(m_registerMsg.field_msgId().value());
-    releasePacketId(m_publishMsg.field_msgId().value());
+    releasePacketIdsInternal();
 }
 
 CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
@@ -109,6 +108,7 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
             break;
         }
 
+        m_registerMsg.field_topicName().value() = config->m_topic;
         auto& regMap = client().reuseState().m_outRegTopics;
         auto iter = 
             std::lower_bound(
@@ -125,7 +125,6 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
             break;
         }
 
-        m_registerMsg.field_topicName().value() = config->m_topic;
         m_stage = Stage_Register;
     } while (false);
 
@@ -156,15 +155,10 @@ CC_MqttsnErrorCode SendOp::send(CC_MqttsnPublishCompleteCb cb, void* cbData)
     m_cb = cb;
     m_cbData = cbData;
 
-    if (m_stage == Stage_Register) {
-        m_registerMsg.field_msgId().setValue(allocPacketId());    
-    }
-
-    if (Qos::AtMostOnceDelivery < m_publishMsg.field_flags().field_qos().value()) {
-        m_publishMsg.field_msgId().setValue(allocPacketId());
-    }
+    allocPacketIdsInternal();
 
     m_origRetryCount = getRetryCount();
+    m_fullRetryRemCount = m_origRetryCount;
 
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
@@ -272,7 +266,41 @@ void SendOp::handle(PubackMsg& msg)
         return;
     }
 
-    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
+    auto status = CC_MqttsnAsyncOpStatus_Complete;
+    do {
+        if (info.m_returnCode != CC_MqttsnReturnCode_InvalidTopicId) {
+            break;
+        }
+
+        using TopicIdType = PublishMsg::Field_flags::Field_topicIdType::ValueType;
+        if (m_publishMsg.field_flags().field_topicIdType().value() != TopicIdType::Normal) {
+            errorLog("Unexpected return code for the publish");
+            break;              
+        }
+
+        if (m_fullRetryRemCount == 0U) {
+            errorLog("Used topic ID was rejected, by the gateway");
+            break;        
+        }        
+
+        --m_fullRetryRemCount;
+        m_stage = Stage_Register;
+
+        // Re-allocate new packet IDs
+        releasePacketIdsInternal();
+        allocPacketIdsInternal();      
+
+        setRetryCount(m_origRetryCount);
+        auto ec = sendInternal();
+        if (ec != CC_MqttsnErrorCode_Success) {
+            status = translateErrorCodeToAsyncOpStatus(ec);
+            break;
+        }
+
+        return;
+    } while (false);
+
+    completeOpInternal(status, &info);
 }
 
 #if CC_MQTTSN_CLIENT_MAX_QOS > 1
@@ -327,6 +355,10 @@ void SendOp::completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnPu
     auto handle = asHandle(this);
     auto cb = m_cb;
     auto* cbData = m_cbData;
+    if (status != CC_MqttsnAsyncOpStatus_Complete) {
+        info = nullptr;
+    }
+    
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
         cb(cbData, handle, status, info);    
@@ -431,6 +463,23 @@ void SendOp::timeoutInternal()
 void SendOp::opTimeoutCb(void* data)
 {
     asSendOp(data)->timeoutInternal();
+}
+
+void SendOp::allocPacketIdsInternal()
+{
+    if (m_stage == Stage_Register) {
+        m_registerMsg.field_msgId().setValue(allocPacketId());    
+    }
+
+    if (Qos::AtMostOnceDelivery < m_publishMsg.field_flags().field_qos().value()) {
+        m_publishMsg.field_msgId().setValue(allocPacketId());
+    }
+}
+
+void SendOp::releasePacketIdsInternal()
+{
+    releasePacketId(m_registerMsg.field_msgId().value());
+    releasePacketId(m_publishMsg.field_msgId().value());
 }
 
 } // namespace op
