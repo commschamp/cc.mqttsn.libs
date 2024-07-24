@@ -285,6 +285,7 @@ void SendOp::handle(PubackMsg& msg)
 
         --m_fullRetryRemCount;
         m_stage = Stage_Register;
+        m_publishMsg.field_flags().field_high().setBitValue_Dup(false); // Make sure it's not reported as duplicate
 
         // Re-allocate new packet IDs
         releasePacketIdsInternal();
