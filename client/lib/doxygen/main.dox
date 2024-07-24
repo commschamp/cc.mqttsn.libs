@@ -243,7 +243,7 @@
 /// @code
 /// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
 /// CC_MqttsnConnectHandle connect = cc_mqttsn_client_search_prepare(...);
-/// assert(connect != nullptr);
+/// assert(connect != NULL);
 ///
 /// // The following attempt to prepare the "subscribe" operation will fail because
 /// // previously allocated "search" hasn't been sent or cancelled yet.
@@ -809,7 +809,7 @@
 ///     ...
 /// }
 ///
-/// ec = cc_mqttsn_client_disconnect_send(connect, &my_disconnect_complete_cb, data);
+/// ec = cc_mqttsn_client_disconnect_send(disconnect, &my_disconnect_complete_cb, data);
 /// if (ec != CC_MqttsnErrorCode_Success) {
 ///     printf("ERROR: Failed to send disconnect request with ec=%d\n", ec);
 ///     ...
@@ -887,7 +887,7 @@
 /// configuration. It can be changed for the allocated operation using the
 /// @b cc_mqttsn_client_subscribe_set_retry_period() function.
 /// @code
-/// ec = cc_mqttsn_client_subscribe_set_retry_period(connect, 1000);
+/// ec = cc_mqttsn_client_subscribe_set_retry_period(subscribe, 1000);
 /// if (ec != CC_MqttsnErrorCode_Success) {
 ///     ... /* Something went wrong */
 /// }
@@ -963,7 +963,7 @@
 ///
 /// @subsection doc_cc_mqttsn_client_subscribe_send Sending Subscription Request
 /// When all the necessary configurations are performed for the allocated "subscribe"
-/// operation it can actually be sent to the broker. To initiate sending
+/// operation it can actually be sent to the gateway. To initiate sending
 /// use the @b cc_mqttsn_client_subscribe_send() function.
 /// @code
 /// void my_subscribe_complete_cb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
@@ -1073,7 +1073,7 @@
 /// configuration. It can be changed for the allocated operation using the
 /// @b cc_mqttsn_client_unsubscribe_set_retry_period() function.
 /// @code
-/// ec = cc_mqttsn_client_unsubscribe_set_retry_period(connect, 1000);
+/// ec = cc_mqttsn_client_unsubscribe_set_retry_period(unsubscribe, 1000);
 /// if (ec != CC_MqttsnErrorCode_Success) {
 ///     ... /* Something went wrong */
 /// }
@@ -1148,7 +1148,7 @@
 ///
 /// @subsection doc_cc_mqttsn_client_unsubscribe_send Sending Unsubscription Request
 /// When all the necessary configurations are performed for the allocated "unsubscribe"
-/// operation it can actually be sent to the broker. To initiate sending
+/// operation it can actually be sent to the gateway. To initiate sending
 /// use the @b cc_mqttsn_client_unsubscribe_send() function.
 /// @code
 /// void my_unsubscribe_complete_cb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status)
@@ -1230,6 +1230,211 @@
 /// @b cc_mqttsn_client_unsubscribe_prepare(). It means that it's not possible to
 /// cancel the "unsubscribe" operation before its completion or identify the
 /// unsubscribe operation by the reported handle when the completion callback
+/// is invoked.
+///
+/// @section doc_cc_mqttsn_client_publish Publishing Messages
+/// To publish messages to the gateway use @ref publish "publish" operation.
+///
+/// @subsection doc_cc_mqttsn_client_publish_prepare Preparing "Publish" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnPublishHandle publish = cc_mqttsn_client_publish_prepare(client, &ec);
+/// if (publish == NULL) {
+///     printf("ERROR: Publish allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_publish_retry_period Configuring "Publish" Retry Period
+/// When created, the "publish" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_publish_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_publish_set_retry_period(publish, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_publish_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_publish_retry_count Configuring "Publish" Retry Count
+/// When created, the "publish" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_publish_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_unsubscribe_set_retry_count(publish, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_publish_get_retry_count() function.
+///
+/// The publish operation can exchange multiple messages in a single transaction. For example, when
+/// publishing @b QoS2 messages which require registration, the client will send @b REGISTER,
+/// @b PUBLISH, and @b PUBREL messages and will expect @b REGACK, @b PUBREC, and @b PUBCOMP
+/// messages as their respective acknowledgements. The configuration of the retry count
+/// is per such single message exchange. In other words when 2 retries are allowed, the client will
+/// allow 2 retries for @b REGISTER <-> @b REGACK, 2 retries for @b PUBLISH <-> @b PUBREC
+/// and 2 retries for @b PUBREL <-> @b PUBCOMP exchanges.
+///
+/// @subsection doc_cc_mqttsn_client_publish_config Configuration of "Publish" Operation
+/// @code
+/// CC_MqttsnPublishConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_publish_init_config(&config);
+///
+/// // Update the required values
+/// config.m_topic = "some/topic";
+/// config.m_data = &some_buf[0];
+/// config.m_dataLen = ...;
+/// config.m_qos = ...;
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_publish_config(publish, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnPublishConfig structure.
+///
+/// Similar to the @ref doc_cc_mqttsn_client_subscribe "subscribe" operation it
+/// is possible to use predefined topic id by setting @ref CC_MqttsnPublishConfig::m_topicId "topicId"
+/// member instead of @ref CC_MqttsnPublishConfig::m_topic "m_topic".
+/// @code
+/// // Update the required values
+/// config.m_topicId = 123;
+/// @endcode
+///
+/// By default the library will perform the analysis of the submitted topic format and
+/// reject it if topic format is incorrect. However, for performance reasons
+/// it is possible to disable such verification when client application
+/// ensures that no invalid topics are used.
+/// @code
+/// ec = cc_mqttsn_client_set_verify_outgoing_topic_enabled(client, false);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something is wrong */
+/// }
+/// @endcode
+/// To retrieve the current configuration use the @b cc_mqttsn_client_get_verify_outgoing_topic_enabled()
+/// function.
+///
+/// @b NOTE that the configuration is global per client and not per "publish"
+/// operation.
+///
+/// Also @b note that the same function controls the verification of the
+/// "subscribe", "unsubscribe", and "publish" filter / topic formats.
+///
+/// @subsection doc_cc_mqttsn_client_publish_send Sending Publish Request
+/// When all the necessary configurations are performed for the allocated "publish"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_publish_send() function.
+/// @code
+/// void my_publish_complete_cb(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The publish operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     if (info != NULL) {
+///         ... // Analyse return code
+///     }
+///     ...
+/// }
+///
+/// ec = cc_mqttsn_client_publish_send(publish, &my_publish_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send publish request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "publish" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// When QoS value is @ref CC_MqttsnQoS_AtMostOnceDelivery and no registration stage
+/// is required, there is no gateway response to wait for and the callback is invoked right away
+/// after sending the serialized data.
+///
+/// When the callback is invoked with @ref CC_MqttsnAsyncOpStatus_Complete status
+/// the "info" parameter may or may not be @b NULL. If it's @b NULL then
+/// the operation is successful. If its not @b NULL, then extra analysis of the
+/// @ref CC_MqttsnPublishInfo::m_returnCode "m_returnCode" data member value is
+/// expected to be performed by the application.
+/// @li If the return code reports
+///     @ref CC_MqttsnReturnCode_Conjestion, then it's up to the application to retry
+///     the re-send later (specification requires waiting @b T<sub>wait</sub> time before
+///     retrying). The retry is performed by issuing another @ref doc_cc_mqttsn_client_publish "publish"
+///     operation.
+/// @li If the return code reports @ref CC_MqttsnReturnCode_InvalidTopicId then
+///     it's a case when the gateway rejected used topic ID (probably pre-defined one)
+///     and the client library cannot silently perform re-registration because
+///     the topic information was missing in the @ref doc_cc_mqttsn_client_publish_config "configuration".
+///
+/// The handle returned by the @b cc_mqttsn_client_publish_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_publish_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_publish_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// The MQTT-SN spec demands that the @b PUBLISH transactions be issued one at
+/// a time. However, the library allows @ref doc_cc_mqttsn_client_publish_prepare "preparing"
+/// and @ref doc_cc_mqttsn_client_publish_send "sending" multiple publish
+/// requests in parallel before completion of the first one. The library will
+/// retain the requested "publish" operation requests internally and will
+/// issue them one after another to comply with the specification.
+///
+/// Note that the callback function receives the "publish" operation handle as
+/// its second parameter. Although the handle is already invalid and cannot be
+/// used in any other function, it allows the application to identify the
+/// original "publish" request if multiple have been issued in parallel
+/// and use the same callback function for all of them.
+///
+/// @subsection doc_cc_mqttsn_client_publish_cancel Cancel the "Publish" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_publish_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_publish_cancel(publish);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel publish with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_publish_send() function was successfully
+/// called before the @b cc_mqttsn_client_publish_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_publish_simplify Simplifying the "Publish" Operation Preparation.
+/// In many use cases the "publish" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function that can be used:
+/// @li @b cc_mqttsn_client_publish()
+///
+/// For example:
+/// @code
+/// CC_MqttsnPublishConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_publish_init_config(&config);
+///
+/// // Update values
+/// config.m_topic = "some/topic";
+/// config.m_data = ...;
+/// ...
+///
+/// ec = cc_mqttsn_client_publish(client, &config, &my_publish_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send publish request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_publish_prepare(). It means that it's not possible to
+/// cancel the "publish" operation before its completion or identify the
+/// publish operation by the reported handle when the completion callback
 /// is invoked.
 ///
 /// @section doc_cc_mqttsn_client_receive Receiving Messages
