@@ -30,6 +30,8 @@ struct ExtConfig : public Config
     static constexpr unsigned RecvOpsLimit = MaxQos < 2 ? 1U : (ReceiveMaxLimit == 0U ? 0U : ReceiveMaxLimit + 1U);
     static constexpr unsigned RecvOpTimers = 1U;
     static constexpr unsigned SendOpTimers = 1U;    
+    static constexpr unsigned WillOpsLimit = HasDynMemAlloc ? 0 : 1U;
+    static constexpr unsigned WillOpTimers = 1U;   
     static constexpr bool HasOpsLimit = 
         (SearchOpsLimit > 0U) && 
         (ConnectOpsLimit > 0U) && 
@@ -38,7 +40,8 @@ struct ExtConfig : public Config
         (SubscribeOpsLimit > 0U) &&
         (UnsubscribeOpsLimit > 0U)  &&
         (RecvOpsLimit > 0U) &&
-        (SendOpsLimit > 0U);
+        (SendOpsLimit > 0U) &&
+        (HasWill && (WillOpsLimit > 0U));
     static constexpr unsigned MaxTimersLimit =
         (DiscoveryTimers) +  
         (SearchOpsLimit * SearchOpTimers) + 
@@ -49,7 +52,8 @@ struct ExtConfig : public Config
         (SubscribeOpsLimit * SubscribeOpTimers) +
         (UnsubscribeOpsLimit * UnsubscribeOpTimers) + 
         (RecvOpsLimit * RecvOpTimers) + 
-        (SendOpsLimit * SendOpTimers);
+        (SendOpsLimit * SendOpTimers) + 
+        (WillOpsLimit * WillOpTimers);
     static constexpr unsigned TimersLimit = HasOpsLimit ? MaxTimersLimit : 0U;
 
     static const unsigned MaxOpsLimit = 
@@ -59,7 +63,8 @@ struct ExtConfig : public Config
         SubscribeOpsLimit + 
         UnsubscribeOpsLimit + 
         RecvOpsLimit + 
-        SendOpsLimit;
+        SendOpsLimit + 
+        WillOpsLimit;
 
     static const unsigned OpsLimit = HasOpsLimit ? MaxOpsLimit : 0U;
 
@@ -76,6 +81,7 @@ struct ExtConfig : public Config
     static_assert(HasDynMemAlloc || (DisconnectOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (RecvOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (SendOpsLimit > 0U));
+    static_assert(HasDynMemAlloc || (WillOpsLimit > 0U));
     static_assert(HasDynMemAlloc || (OpsLimit > 0U));
     static_assert(HasDynMemAlloc || (PacketIdsLimit > 0U));
 };

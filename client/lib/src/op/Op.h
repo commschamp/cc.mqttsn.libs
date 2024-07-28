@@ -37,6 +37,7 @@ public:
         Type_Unsubscribe,
         // Type_Recv,
         Type_Send,
+        Type_Will,
         Type_NumOfValues // Must be last
     };
 

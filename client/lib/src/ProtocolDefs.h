@@ -46,10 +46,10 @@ using ProtInputMessages =
         cc_mqttsn::message::Gwinfo<ProtMessage, ProtocolOptions>,
 #endif // CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
         cc_mqttsn::message::Connack<ProtMessage, ProtocolOptions>,
-#ifdef CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL        
         cc_mqttsn::message::Willtopicreq<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Willmsgreq<ProtMessage, ProtocolOptions>,
-#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
         cc_mqttsn::message::Register<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Regack<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Publish<ProtMessage, ProtocolOptions>,
@@ -64,11 +64,11 @@ using ProtInputMessages =
         cc_mqttsn::message::Pingreq<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Pingresp<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Disconnect<ProtMessage, ProtocolOptions>
-#ifdef CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL        
         ,
         cc_mqttsn::message::Willtopicresp<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Willmsgresp<ProtMessage, ProtocolOptions>
-#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL        
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL        
     >;
 
 using ProtFrame = cc_mqttsn::frame::Frame<ProtMessage, ProtInputMessages, ProtocolOptions>;

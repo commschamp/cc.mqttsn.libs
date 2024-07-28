@@ -173,6 +173,7 @@ function (gen_lib_mqttsn_client config_file)
         src/op/SendOp.cpp
         src/op/SubscribeOp.cpp
         src/op/UnsubscribeOp.cpp
+        src/op/WillOp.cpp
         src/ClientImpl.cpp
         src/TimerMgr.cpp
     )

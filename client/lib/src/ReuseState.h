@@ -7,7 +7,11 @@
 
 #pragma once
 
+#include "ExtConfig.h"
+#include "ProtocolDefs.h"
 #include "TopicFilterDefs.h"
+
+#include "cc_mqttsn_client/common.h"
 
 namespace cc_mqttsn_client
 {
@@ -17,6 +21,22 @@ struct ReuseState
     SubFiltersMap m_subFilters;
     InRegTopicsMap m_inRegTopics;
     OutRegTopicsMap m_outRegTopics;
+
+#if CC_MQTTSN_CLIENT_HAS_WILL    
+    using WillTopicType = WilltopicMsg::Field_willTopic::ValueType;
+    using WillMsgType = WillmsgMsg::Field_willMsg::ValueType;
+
+    struct WillInfo
+    {
+        WillTopicType m_topic;
+        WillMsgType m_msg;
+        CC_MqttsnQoS m_qos = CC_MqttsnQoS_AtMostOnceDelivery;
+        bool m_retain = false;
+    };
+
+    WillInfo m_prevWill;
+
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL       
 };
 
 } // namespace cc_mqttsn_client

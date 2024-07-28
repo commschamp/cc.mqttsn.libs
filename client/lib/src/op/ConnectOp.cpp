@@ -66,7 +66,7 @@ CC_MqttsnErrorCode ConnectOp::config(const CC_MqttsnConnectConfig* config)
 
 CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillConfig* config)
 {
-#ifdef CC_MQTTSN_CLIENT_HAS_WILL    
+#if CC_MQTTSN_CLIENT_HAS_WILL    
     if (config == nullptr) {
         errorLog("Will configuration is not provided.");
         return CC_MqttsnErrorCode_BadParam;
@@ -79,6 +79,8 @@ CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillCon
             return CC_MqttsnErrorCode_BadParam;            
         }
 
+        m_willtopicMsg.field_flags().setMissing();
+        m_willtopicMsg.field_willTopic().value().clear();
         return CC_MqttsnErrorCode_Success;
     } 
 
@@ -101,10 +103,10 @@ CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillCon
         comms::util::assign(m_willmsgMsg.field_willMsg().value(), config->m_data, config->m_data + config->m_dataLen);
     }
     return CC_MqttsnErrorCode_Success;
-#else // #ifdef CC_MQTTSN_CLIENT_HAS_WILL
+#else // #if CC_MQTTSN_CLIENT_HAS_WILL
     errorLog("Will configuration is not supported");
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
 }
 
 CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData) 
@@ -137,6 +139,7 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
     m_cbData = cbData;
     
     m_origRetryCount = getRetryCount();
+
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         return ec;
@@ -162,12 +165,17 @@ CC_MqttsnErrorCode ConnectOp::cancel()
     return CC_MqttsnErrorCode_Success;
 }
 
-#ifdef CC_MQTTSN_CLIENT_HAS_WILL
+#if CC_MQTTSN_CLIENT_HAS_WILL
 void ConnectOp::handle([[maybe_unused]] WilltopicreqMsg& msg)
 {
     if (!m_connectMsg.field_flags().field_mid().getBitValue_Will()) {
         errorLog("WILLTOPICREQ message when will is disabled, ignoring");
         return;
+    }
+
+    if (m_willtopicMsg.field_willTopic().value().empty()) {
+        // The will message won't be requested
+        client().reuseState().m_prevWill = ReuseState::WillInfo();
     }
 
     setRetryCount(m_origRetryCount);
@@ -187,6 +195,17 @@ void ConnectOp::handle([[maybe_unused]] WillmsgreqMsg& msg)
         return;
     }
 
+    if (m_stage != Stage_willTopic) {
+        errorLog("WILLMSGREQ before WILLTOPICREQ, ignoring");
+        return;        
+    }
+
+    auto& prevWill = client().reuseState().m_prevWill;
+    prevWill.m_topic = m_willtopicMsg.field_willTopic().value().c_str();
+    prevWill.m_msg.clear();
+    prevWill.m_qos = static_cast<decltype(prevWill.m_qos)>(m_willtopicMsg.field_flags().field().field_qos().value());
+    prevWill.m_retain = m_willtopicMsg.field_flags().field().field_mid().getBitValue_Retain();
+    
     setRetryCount(m_origRetryCount);
     m_stage = Stage_willMsg;
 
@@ -196,20 +215,33 @@ void ConnectOp::handle([[maybe_unused]] WillmsgreqMsg& msg)
         return;
     }
 }
-#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
 void ConnectOp::handle(ConnackMsg& msg)
 {
     auto info = CC_MqttsnConnectInfo();
     comms::cast_assign(info.m_returnCode) = msg.field_returnCode().value();
 
-#ifdef CC_MQTTSN_CLIENT_HAS_WILL
+#if CC_MQTTSN_CLIENT_HAS_WILL
+    bool clearPrevWillInfo = (info.m_returnCode != CC_MqttsnReturnCode_Accepted);
+    
     if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) && 
         (m_stage < Stage_willMsg) && 
         (m_connectMsg.field_flags().field_mid().getBitValue_Will())) {
+
         errorLog("Connection accepted without full will inquiry");
+        clearPrevWillInfo = true;
     }
-#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL    
+
+    if (clearPrevWillInfo) {
+        client().reuseState().m_prevWill = ReuseState::WillInfo();
+    }
+    else if (Stage_willMsg <= m_stage) {
+        auto& dataVec = m_willmsgMsg.field_willMsg().value();
+        comms::util::assign(client().reuseState().m_prevWill.m_msg, dataVec.begin(), dataVec.end());
+    }
+
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
 
     if (info.m_returnCode == CC_MqttsnReturnCode_Accepted) {
         client().sessionState().m_keepAliveMs = comms::units::getMilliseconds<unsigned>(m_connectMsg.field_duration());
@@ -249,10 +281,10 @@ CC_MqttsnErrorCode ConnectOp::sendInternal()
     using GetMsgFunc = const ProtMessage& (ConnectOp::*)() const;
     static const GetMsgFunc Map[] = {
         /* Stage_connect */ &ConnectOp::getConnectMsg,
-#ifdef CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL        
         /* Stage_willTopic */ &ConnectOp::getWilltopicMsg,
         /* Stage_willMsg */ &ConnectOp::getWillmsgMsg,        
-#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL        
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL        
     };
     static const std::size_t MapSize = std::extent<decltype(Map)>::value;
     static_assert(MapSize == Stage_valuesLimit);
@@ -292,7 +324,7 @@ const ProtMessage& ConnectOp::getConnectMsg() const
     return m_connectMsg;
 }
 
-#ifdef CC_MQTTSN_CLIENT_HAS_WILL
+#if CC_MQTTSN_CLIENT_HAS_WILL
 const ProtMessage& ConnectOp::getWilltopicMsg() const
 {
     return m_willtopicMsg;
@@ -302,7 +334,7 @@ const ProtMessage& ConnectOp::getWillmsgMsg() const
 {
     return m_willmsgMsg;
 }
-#endif // #ifdef CC_MQTTSN_CLIENT_HAS_WILL
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
 void ConnectOp::opTimeoutCb(void* data)
 {

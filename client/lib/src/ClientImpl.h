@@ -26,6 +26,7 @@
 #include "op/SendOp.h"
 #include "op/SubscribeOp.h"
 #include "op/UnsubscribeOp.h"
+#include "op/WillOp.h"
 
 #include "cc_mqttsn_client/common.h"
 
@@ -74,6 +75,7 @@ public:
     op::SubscribeOp* subscribePrepare(CC_MqttsnErrorCode* ec);
     op::UnsubscribeOp* unsubscribePrepare(CC_MqttsnErrorCode* ec);
     op::SendOp* publishPrepare(CC_MqttsnErrorCode* ec);
+    op::WillOp* willPrepare(CC_MqttsnErrorCode* ec);
 
     // std::size_t sendsCount() const
     // {
@@ -247,16 +249,15 @@ private:
     using SendOpAlloc = ObjAllocator<op::SendOp, ExtConfig::SendOpsLimit>;
     using SendOpsList = ObjListType<SendOpAlloc::Ptr, ExtConfig::SendOpsLimit>;
 
+#if CC_MQTTSN_CLIENT_HAS_WILL
+    using WillOpAlloc = ObjAllocator<op::WillOp, ExtConfig::WillOpsLimit>;
+    using WillOpsList = ObjListType<WillOpAlloc::Ptr, ExtConfig::WillOpsLimit>;
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
+
+
     using OpPtrsList = ObjListType<op::Op*, ExtConfig::OpsLimit>;
     // using OpToDeletePtrsList = ObjListType<const op::Op*, ExtConfig::OpsLimit>;
     using OutputBuf = ObjListType<std::uint8_t, ExtConfig::MaxOutputPacketSize>;
-
-    // enum TerminateMode
-    // {
-    //     TerminateMode_KeepSendRecvOps,
-    //     TerminateMode_AbortSendRecvOps,
-    //     TerminateMode_NumOfValues
-    // };
 
     void doApiEnter();
     void doApiExit();
@@ -279,6 +280,7 @@ private:
     void opComplete_Unsubscribe(const op::Op* op);
     // void opComplete_Recv(const op::Op* op);
     void opComplete_Send(const op::Op* op);
+    void opComplete_Will(const op::Op* op);
 
     void finaliseSupUnsubOp();
     void monitorGatewayExpiry();
@@ -354,6 +356,11 @@ private:
 
     SendOpAlloc m_sendOpsAlloc;
     SendOpsList m_sendOps;
+
+#if CC_MQTTSN_CLIENT_HAS_WILL
+    WillOpAlloc m_willOpAlloc;
+    WillOpsList m_willOps;    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
 
     OpPtrsList m_ops;
     unsigned m_pendingGwinfoBroadcastRadius = 0U;

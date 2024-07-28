@@ -507,3 +507,5 @@ void UnitTestConnect::test6()
     TS_ASSERT(!unitTestHasTickReq()); 
     TS_ASSERT(!apiIsConnected(client));
 }
+
+// TODO: test reconnect without disconnecting

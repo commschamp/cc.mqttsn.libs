@@ -176,18 +176,17 @@ struct CC_MqttsnPublish;
 /// @ingroup "publish".
 typedef struct CC_MqttsnPublish* CC_MqttsnPublishHandle;
 
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnWillHandle
+/// @ingroup will
+struct CC_MqttsnWill;
+
+/// @brief Handle for "will" operation.
+/// @details Returned by @b cc_mqttsn_client_will_prepare() function.
+/// @ingroup "will".
+typedef struct CC_MqttsnWill* CC_MqttsnWillHandle;
+
 /// @brief Type used to hold Topic ID value.
 typedef unsigned short CC_MqttsnTopicId;
-
-/// @brief Will Information
-typedef struct
-{
-    const char* topic; ///< Topic of the will, can be NULL (means empty topic)
-    const unsigned char* msg; ///< Pointer to the buffer containing will binary message.
-    unsigned msgLen; ///< Length of the buffer containing will binary message.
-    CC_MqttsnQoS qos; ///< QoS level of the will message.
-    bool retain; ///< Retain flag
-} CC_MqttsnWillInfo;
 
 /// @brief Incoming message information
 typedef struct
@@ -279,6 +278,14 @@ typedef struct
 {
     CC_MqttsnReturnCode m_returnCode; ///< Return code reported by the @b PUBACK message
 } CC_MqttsnPublishInfo;
+
+/// @brief Information on the "will" operation completion
+/// @ingroup will
+typedef struct
+{
+    CC_MqttsnReturnCode m_topicUpdReturnCode; ///< Return code reported by the @b WILLTOPICRESP message
+    CC_MqttsnReturnCode m_msgUpdReturnCode; ///< Return code reported by the @b WILLMSGRESP message
+} CC_MqttsnWillInfo;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
@@ -409,12 +416,22 @@ typedef void (*CC_MqttsnUnsubscribeCompleteCb)(void* data, CC_MqttsnUnsubscribeH
 ///     function invocation, but it allows end application to identify the original "publish" operation
 ///     and use the same callback function in parallel requests.
 /// @param[in] status Status of the "publish" operation.
-/// @param[in] info Information about op completion. Not-NULL is reported <b>onfly if</b>
+/// @param[in] info Information about op completion. Not-NULL is reported <b>only if</b>
 ///     the "status" is equal to @ref CC_MqttsnAsyncOpStatus_Complete. When QoS2 publish
 ///     is successfully performed the "info" can still be NULL.
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup publish
 typedef void (*CC_MqttsnPublishCompleteCb)(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
+
+/// @brief Callback used to report completion of the publish operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] status Status of the "will" operation.
+/// @param[in] info Information about op completion. Not-NULL is reported <b>if and onfly if</b>
+///     the "status" is equal to @ref CC_MqttsnAsyncOpStatus_Complete.
+/// @post The data members of the reported response can NOT be accessed after the function returns.
+/// @ingroup will
+typedef void (*CC_MqttsnWillCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info);
 
 #ifdef __cplusplus
 }

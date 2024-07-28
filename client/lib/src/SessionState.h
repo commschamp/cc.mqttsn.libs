@@ -12,7 +12,6 @@ namespace cc_mqttsn_client
 
 struct SessionState
 {
-
     static constexpr unsigned DefaultKeepAlive = 60;
 
     unsigned m_keepAliveMs = 0U;

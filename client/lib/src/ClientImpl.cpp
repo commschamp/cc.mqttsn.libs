@@ -427,6 +427,80 @@ op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
     return op;
 }
 
+#if CC_MQTTSN_CLIENT_HAS_WILL
+op::WillOp* ClientImpl::willPrepare(CC_MqttsnErrorCode* ec)
+{
+    op::WillOp* op = nullptr;
+    do {
+        if (!m_sessionState.m_connected) {
+            errorLog("Client must be connected to allow will update.");
+            updateEc(ec, CC_MqttsnErrorCode_NotConnected);
+            break;
+        }
+
+        if (m_sessionState.m_disconnecting) {
+            errorLog("Session disconnection is in progress, cannot initiate publish.");
+            updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
+            break;
+        }
+                
+        if (!m_willOps.empty()) {
+            // Already allocated
+            errorLog("Another will operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }
+
+        if (!m_connectOps.empty()) {
+            // Already allocated
+            errorLog("Another connect operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }        
+
+        if (!m_disconnectOps.empty()) {
+            // Already allocated
+            errorLog("Another disconnect operation is in progress.");
+            updateEc(ec, CC_MqttsnErrorCode_Busy);
+            break;
+        }        
+
+        if (m_sessionState.m_disconnecting) {
+            errorLog("Session disconnection is in progress, cannot initiate will update.");
+            updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
+            break;
+        }
+
+        if (m_ops.max_size() <= m_ops.size()) {
+            errorLog("Cannot start will operation, retry in next event loop iteration.");
+            updateEc(ec, CC_MqttsnErrorCode_RetryLater);
+            break;
+        }
+
+        if (m_preparationLocked) {
+            errorLog("Another operation is being prepared, cannot prepare \"will\" without \"send\" or \"cancel\" of the previous.");
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            break;
+        }
+
+        auto ptr = m_willOpAlloc.alloc(*this);
+        if (!ptr) {
+            errorLog("Cannot allocate new will operation.");
+            updateEc(ec, CC_MqttsnErrorCode_OutOfMemory);
+            break;
+        }
+
+        m_preparationLocked = true;
+        m_ops.push_back(ptr.get());
+        m_willOps.push_back(std::move(ptr));
+        op = m_willOps.back().get();
+        updateEc(ec, CC_MqttsnErrorCode_Success);
+    } while (false);
+
+    return op;
+}
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
+
 // CC_MqttsnErrorCode ClientImpl::setPublishOrdering(CC_MqttsnPublishOrdering ordering)
 // {
 //     if (CC_MqttsnPublishOrdering_ValuesLimit <= ordering) {
@@ -849,6 +923,7 @@ void ClientImpl::opComplete(const op::Op* op)
         /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
         // /* Type_Recv */ &ClientImpl::opComplete_Recv,
         /* Type_Send */ &ClientImpl::opComplete_Send,
+        /* Type_Will */ &ClientImpl::opComplete_Will,
     };
     static const std::size_t MapSize = std::extent<decltype(Map)>::value;
     static_assert(MapSize == op::Op::Type_NumOfValues);
@@ -890,48 +965,6 @@ void ClientImpl::gatewayDisconnected(
 // {
 //     COMMS_ASSERT(m_messageReceivedReportCb != nullptr);
 //     m_messageReceivedReportCb(m_messageReceivedReportData, &info);
-// }
-
-// bool ClientImpl::hasPausedSendsBefore(const op::SendOp* sendOp) const
-// {
-//     auto riter = 
-//         std::find_if(
-//             m_sendOps.rbegin(), m_sendOps.rend(),
-//             [sendOp](auto& opPtr)
-//             {
-//                 return opPtr.get() == sendOp;
-//             });
-
-//     COMMS_ASSERT(riter != m_sendOps.rend());
-//     if (riter == m_sendOps.rend()) {
-//         return false;
-//     }
-
-//     auto iter = riter.base() - 1;
-//     auto idx = static_cast<unsigned>(std::distance(m_sendOps.begin(), iter));
-//     COMMS_ASSERT(idx < m_sendOps.size());
-//     if (idx == 0U) {
-//         return false;
-//     }
-
-//     auto& prevSendOpPtr = m_sendOps[idx - 1U];
-//     return prevSendOpPtr->isPaused();
-// }
-
-// bool ClientImpl::hasHigherQosSendsBefore(const op::SendOp* sendOp, op::Op::Qos qos) const
-// {
-//     for (auto& sendOpPtr : m_sendOps) {
-//         if (sendOpPtr.get() == sendOp) {
-//             return false;
-//         }
-
-//         if (sendOpPtr->qos() > qos) {
-//             return true;
-//         }
-//     }
-
-//     COMMS_ASSERT(false); // Mustn't reach here
-//     return false;
 // }
 
 void ClientImpl::allowNextPrepare()
@@ -1008,20 +1041,20 @@ void ClientImpl::terminateOps(CC_MqttsnAsyncOpStatus status)
 
 void ClientImpl::cleanOps()
 {
-//     if (!m_opsDeleted) {
-//         return;
-//     }
+    if (!m_opsDeleted) {
+        return;
+    }
 
-//     m_ops.erase(
-//         std::remove_if(
-//             m_ops.begin(), m_ops.end(),
-//             [](auto* op)
-//             {
-//                 return op == nullptr;
-//             }),
-//         m_ops.end());
+    m_ops.erase(
+        std::remove_if(
+            m_ops.begin(), m_ops.end(),
+            [](auto* op)
+            {
+                return op == nullptr;
+            }),
+        m_ops.end());
 
-//     m_opsDeleted = false;
+    m_opsDeleted = false;
 }
 
 void ClientImpl::errorLogInternal(const char* msg)
@@ -1224,6 +1257,13 @@ void ClientImpl::opComplete_Send(const op::Op* op)
 
     COMMS_ASSERT(m_sendOps.front());
     m_sendOps.front()->resume();
+}
+
+void ClientImpl::opComplete_Will([[maybe_unused]] const op::Op* op)
+{
+#if CC_MQTTSN_CLIENT_HAS_WILL
+    eraseFromList(op, m_willOps);
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
 }
 
 void ClientImpl::finaliseSupUnsubOp()
