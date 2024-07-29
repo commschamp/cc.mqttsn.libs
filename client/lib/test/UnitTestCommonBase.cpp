@@ -111,6 +111,16 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_publish_send != nullptr);
     test_assert(m_funcs.m_publish_cancel != nullptr);
     test_assert(m_funcs.m_publish != nullptr);    
+    test_assert(m_funcs.m_will_prepare != nullptr);
+    test_assert(m_funcs.m_will_set_retry_period != nullptr);
+    test_assert(m_funcs.m_will_get_retry_period != nullptr);
+    test_assert(m_funcs.m_will_set_retry_count != nullptr);
+    test_assert(m_funcs.m_will_get_retry_count != nullptr);
+    test_assert(m_funcs.m_will_init_config != nullptr);
+    test_assert(m_funcs.m_will_config != nullptr);
+    test_assert(m_funcs.m_will_send != nullptr);
+    test_assert(m_funcs.m_will_cancel != nullptr);
+    test_assert(m_funcs.m_will != nullptr);    
 
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
@@ -206,6 +216,21 @@ UnitTestCommonBase::UnitTestPublishInfo& UnitTestCommonBase::UnitTestPublishInfo
 
 UnitTestCommonBase::UnitTestPublishCompleteReport::UnitTestPublishCompleteReport(CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info) : 
     m_handle(handle),
+    m_status(status)
+{
+    if (info != nullptr) {
+        m_info = *info;
+    }
+}
+
+UnitTestCommonBase::UnitTestWillInfo& UnitTestCommonBase::UnitTestWillInfo::operator=(const CC_MqttsnWillInfo& info)
+{
+    m_topicUpdReturnCode = info.m_topicUpdReturnCode;
+    m_msgUpdReturnCode = info.m_msgUpdReturnCode;
+    return *this;
+}
+
+UnitTestCommonBase::UnitTestWillCompleteReport::UnitTestWillCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info) : 
     m_status(status)
 {
     if (info != nullptr) {
@@ -579,6 +604,33 @@ UnitTestCommonBase::UnitTestDisconnectCompleteReportPtr UnitTestCommonBase::unit
 
 }
 
+void UnitTestCommonBase::unitTestDoDisconnect(CC_MqttsnClient* client)
+{
+    auto ec = m_funcs.m_disconnect(client, &UnitTestCommonBase::unitTestDisconnectCompleteCb, this);
+    test_assert(ec == CC_MqttsnErrorCode_Success);
+
+    {
+        test_assert(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* disconnectMsg = dynamic_cast<UnitTestDisconnectMsg*>(sentMsg.get());
+        test_assert(disconnectMsg != nullptr);
+        test_assert(disconnectMsg->field_duration().isMissing());
+        test_assert(!unitTestHasOutputData());
+    }     
+
+    test_assert(unitTestHasTickReq());
+    unitTestTick(client, 100); // timeout    
+
+    {
+        UnitTestDisconnectMsg disconnectMsg;
+        unitTestClientInputMessage(client, disconnectMsg);    
+    }
+
+    test_assert(unitTestHasDisconnectCompleteReport());
+    auto disconnectReport = unitTestDisconnectCompleteReport();
+    test_assert(disconnectReport->m_status == CC_MqttsnAsyncOpStatus_Complete)
+}
+
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestDisconnectSend(CC_MqttsnDisconnectHandle disconnect)
 {
     return m_funcs.m_disconnect_send(disconnect, &UnitTestCommonBase::unitTestDisconnectCompleteCb, this);
@@ -697,6 +749,28 @@ UnitTestCommonBase::UnitTestPublishCompleteReportPtr UnitTestCommonBase::unitTes
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestPublishSend(CC_MqttsnPublishHandle publish)
 {
     return m_funcs.m_publish_send(publish, &UnitTestCommonBase::unitTestPublishCompleteCb, this);
+}
+
+bool UnitTestCommonBase::unitTestHasWillCompleteReport() const
+{
+    return !m_data.m_willCompleteReports.empty();
+}
+
+UnitTestCommonBase::UnitTestWillCompleteReportPtr UnitTestCommonBase::unitTestWillCompleteReport(bool mustExist)
+{
+    if (!unitTestHasWillCompleteReport()) {
+        test_assert(!mustExist);
+        return UnitTestWillCompleteReportPtr();
+    }
+
+    auto ptr = std::move(m_data.m_willCompleteReports.front());
+    m_data.m_willCompleteReports.pop_front();
+    return ptr;
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestWillSend(CC_MqttsnWillHandle will)
+{
+    return m_funcs.m_will_send(will, &UnitTestCommonBase::unitTestWillCompleteCb, this);
 }
 
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
@@ -907,6 +981,31 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiPublishCancel(CC_MqttsnPublishHandle p
     return m_funcs.m_publish_cancel(publish);
 }
 
+CC_MqttsnWillHandle UnitTestCommonBase::apiWillPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_will_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiWillSetRetryCount(CC_MqttsnWillHandle will, unsigned count)
+{
+    return m_funcs.m_will_set_retry_count(will, count);
+}
+
+void UnitTestCommonBase::apiWillInitConfig(CC_MqttsnWillConfig* config)
+{
+    m_funcs.m_will_init_config(config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiWillConfig(CC_MqttsnWillHandle will, const CC_MqttsnWillConfig* config)
+{
+    return m_funcs.m_will_config(will, config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiWillCancel(CC_MqttsnWillHandle will)
+{
+    return m_funcs.m_will_cancel(will);
+}
+
 void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo)
 {
     // TODO:
@@ -985,4 +1084,10 @@ void UnitTestCommonBase::unitTestPublishCompleteCb(void* data, CC_MqttsnPublishH
 {
     auto* thisPtr = asThis(data);
     thisPtr->m_data.m_publishCompleteReports.push_back(std::make_unique<UnitTestPublishCompleteReport>(handle, status, info));
+}
+
+void UnitTestCommonBase::unitTestWillCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info)
+{
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_willCompleteReports.push_back(std::make_unique<UnitTestWillCompleteReport>(status, info));
 }

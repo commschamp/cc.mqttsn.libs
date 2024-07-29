@@ -120,7 +120,9 @@ CC_MqttsnErrorCode WillOp::send(CC_MqttsnWillCompleteCb cb, void* cbData)
 
     if ((m_stage == Stage_willMsg) &&
         (m_willmsgupdMsg.field_willMsg().value() == prevWill.m_msg)) {
-        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &m_info);
+        completeOnError.release();
+        auto info = m_info; // copy
+        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
         return CC_MqttsnErrorCode_Success;
     }
 
@@ -161,9 +163,10 @@ void WillOp::handle(WilltopicrespMsg& msg)
     }
 
     auto rc = static_cast<CC_MqttsnReturnCode>(msg.field_returnCode().value());
+    m_info.m_topicUpdReturnCode = rc;
     if (rc != CC_MqttsnReturnCode_Accepted) {
-        m_info.m_topicUpdReturnCode = rc;
-        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &m_info);
+        auto info = m_info; // copy
+        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
         return;
     }
 
@@ -174,7 +177,8 @@ void WillOp::handle(WilltopicrespMsg& msg)
 
     m_stage = Stage_willMsg;
     if (m_willmsgupdMsg.field_willMsg().value() == prevWill.m_msg) {
-        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &m_info);    
+        auto info = m_info; // copy
+        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);    
         return;
     }
 
@@ -200,7 +204,8 @@ void WillOp::handle(WillmsgrespMsg& msg)
     }
 
     m_info.m_msgUpdReturnCode = rc;
-    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &m_info);    
+    auto info = m_info; // copy
+    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);    
 }
 
 Op::Type WillOp::typeImpl() const

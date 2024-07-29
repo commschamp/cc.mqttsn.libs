@@ -767,6 +767,92 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
     CC_MqttsnPublishCompleteCb cb, 
     void* cbData);    
 
+/// @brief Prepare "will" operation.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[out] ec Error code reporting result of the operation. Can be NULL.
+/// @return Handle of the "will" operation, will be NULL in case of failure. To analyze the reason failure use "ec" output parameter.
+/// @post The "will" operation is allocated, use either @ref cc_mqttsn_##NAME##client_will_send()
+///     or @ref cc_mqttsn_##NAME##client_will_cancel() to prevent memory leaks.
+/// @ingroup will
+CC_MqttsnWillHandle cc_mqttsn_##NAME##client_will_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+
+/// @brief Configure the retry period for the "will" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
+/// @param[in] ms Retry period in @b milliseconds.
+/// @return Result code of the call.
+/// @ingroup will
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_set_retry_period(CC_MqttsnWillHandle handle, unsigned ms);
+
+/// @brief Retrieve the configured retry period for the "will" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
+/// @return Retry period duration in @b milliseconds.
+/// @ingroup will
+unsigned cc_mqttsn_##NAME##client_will_get_retry_period(CC_MqttsnWillHandle handle);
+
+/// @brief Configure the retry count for the "will" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
+/// @param[in] count Number of retries.
+/// @return Result code of the call.
+/// @ingroup will
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_set_retry_count(CC_MqttsnWillHandle handle, unsigned count);
+
+/// @brief Retrieve the configured retry count for the "will" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
+/// @return Number of retries.
+/// @ingroup will
+unsigned cc_mqttsn_##NAME##client_will_get_retry_count(CC_MqttsnWillHandle handle);
+
+/// @brief Intialize the @ref CC_MqttsnWillConfig configuration structure.
+/// @param[out] config Configuration structure. Must not be NULL.
+/// @ingroup will
+void cc_mqttsn_##NAME##client_will_init_config(CC_MqttsnWillConfig* config);
+
+/// @brief Perform configuration of the "will" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
+/// @param[in] config Configuration structure. Must NOT be NULL. Does not need to be preserved after invocation.
+/// @return Result code of the call.
+/// @ingroup will
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_config(CC_MqttsnWillHandle handle, const CC_MqttsnWillConfig* config);
+
+/// @brief Send the "will" operation
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
+/// @param[in] cb Callback to be invoked when "will" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @post The handle of the "will" operation can be discarded.
+/// @post The provided callback will be invoked when the "will" operation is complete <b> if and only if</b>
+///     the function returns @ref CC_MqttsnErrorCode_Success.
+/// @ingroup will
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_send(CC_MqttsnWillHandle handle, CC_MqttsnWillCompleteCb cb, void* cbData);
+
+/// @brief Cancel the allocated "will" operation
+/// @details In case the @ref cc_mqttsn_##NAME##client_will_send() function was successfully called before,
+///     the operation is cancelled @b without callback invocation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
+/// @return Result code of the call.
+/// @post The handle of the "will" operation is no longer valid and must be discarded.
+/// @ingroup will
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_cancel(CC_MqttsnWillHandle handle);
+
+/// @brief Prepare and send "will" request in one go 
+/// @details Abstracts away sequence of the following functions invocation:
+///     @li @ref cc_mqttsn_##NAME##client_will_prepare()
+///     @li @ref cc_mqttsn_##NAME##client_will_config()
+///     @li @ref cc_mqttsn_##NAME##client_will_send()
+///
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] config Subscription configuration.
+/// @param[in] cb Callback to be invoked when "will" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @ingroup will
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnWillConfig* config,
+    CC_MqttsnWillCompleteCb cb, 
+    void* cbData);    
 
 // --------------------- Callbacks ---------------------
 

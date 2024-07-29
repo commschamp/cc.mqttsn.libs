@@ -2155,5 +2155,3 @@ void UnitTestPublish::test20()
 
     TS_ASSERT(unitTestHasTickReq());
 }
-
-// TODO: loop of accepting registration, but rejecting topic id

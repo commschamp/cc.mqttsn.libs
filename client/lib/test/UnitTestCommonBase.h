@@ -101,6 +101,16 @@ public:
         CC_MqttsnErrorCode (*m_publish_send)(CC_MqttsnPublishHandle, CC_MqttsnPublishCompleteCb, void*) = nullptr; 
         CC_MqttsnErrorCode (*m_publish_cancel)(CC_MqttsnPublishHandle) = nullptr; 
         CC_MqttsnErrorCode (*m_publish)(CC_MqttsnClientHandle, const CC_MqttsnPublishConfig*, CC_MqttsnPublishCompleteCb, void* cbData) = nullptr;             
+        CC_MqttsnWillHandle (*m_will_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;     
+        CC_MqttsnErrorCode (*m_will_set_retry_period)(CC_MqttsnWillHandle, unsigned) = nullptr; 
+        unsigned (*m_will_get_retry_period)(CC_MqttsnWillHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_will_set_retry_count)(CC_MqttsnWillHandle, unsigned) = nullptr; 
+        unsigned (*m_will_get_retry_count)(CC_MqttsnWillHandle) = nullptr; 
+        void (*m_will_init_config)(CC_MqttsnWillConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_will_config)(CC_MqttsnWillHandle, const CC_MqttsnWillConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_will_send)(CC_MqttsnWillHandle, CC_MqttsnWillCompleteCb, void*) = nullptr; 
+        CC_MqttsnErrorCode (*m_will_cancel)(CC_MqttsnWillHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_will)(CC_MqttsnClientHandle, const CC_MqttsnWillConfig*, CC_MqttsnWillCompleteCb, void* cbData) = nullptr;             
 
         void (*m_set_next_tick_program_callback)(CC_MqttsnClientHandle, CC_MqttsnNextTickProgramCb, void*) = nullptr;
         void (*m_set_cancel_next_tick_wait_callback)(CC_MqttsnClientHandle, CC_MqttsnCancelNextTickWaitCb, void*) = nullptr;
@@ -110,7 +120,6 @@ public:
         void (*m_set_message_report_callback)(CC_MqttsnClientHandle, CC_MqttsnMessageReportCb, void*) = nullptr;  
         void (*m_set_error_log_callback)(CC_MqttsnClientHandle, CC_MqttsnErrorLogCb, void*) = nullptr;     
         void (*m_set_gwinfo_delay_request_callback)(CC_MqttsnClientHandle, CC_MqttsnGwinfoDelayRequestCb, void*) = nullptr;
-
     };
 
     struct UnitTestDeleter
@@ -290,7 +299,32 @@ public:
     };    
 
     using UnitTestPublishCompleteReportPtr = std::unique_ptr<UnitTestPublishCompleteReport>;
-    using UnitTestPublishCompleteReportList = std::list<UnitTestPublishCompleteReportPtr>;        
+    using UnitTestPublishCompleteReportList = std::list<UnitTestPublishCompleteReportPtr>;    
+
+    struct UnitTestWillInfo
+    {
+        CC_MqttsnReturnCode m_topicUpdReturnCode = CC_MqttsnReturnCode_ValuesLimit;
+        CC_MqttsnReturnCode m_msgUpdReturnCode = CC_MqttsnReturnCode_ValuesLimit;
+
+        UnitTestWillInfo() = default;
+        UnitTestWillInfo(const UnitTestWillInfo&) = default;
+        UnitTestWillInfo& operator=(const UnitTestWillInfo&) = default;
+        UnitTestWillInfo& operator=(const CC_MqttsnWillInfo& info);
+    };    
+
+
+    struct UnitTestWillCompleteReport
+    {
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+        UnitTestWillInfo m_info;
+
+        UnitTestWillCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info);
+        UnitTestWillCompleteReport(UnitTestWillCompleteReport&&) = default;
+        UnitTestWillCompleteReport& operator=(const UnitTestWillCompleteReport&) = default;
+    };    
+
+    using UnitTestWillCompleteReportPtr = std::unique_ptr<UnitTestWillCompleteReport>;
+    using UnitTestWillCompleteReportList = std::list<UnitTestWillCompleteReportPtr>;            
 
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
@@ -337,6 +371,7 @@ public:
     bool unitTestHasDisconnectCompleteReport() const;
     UnitTestDisconnectCompleteReportPtr unitTestDisconnectCompleteReport(bool mustExist = true);
 
+    void unitTestDoDisconnect(CC_MqttsnClient* client);
     CC_MqttsnErrorCode unitTestDisconnectSend(CC_MqttsnDisconnectHandle disconnect);
 
     bool unitTestHasSubscribeCompleteReport() const;
@@ -356,6 +391,11 @@ public:
     UnitTestPublishCompleteReportPtr unitTestPublishCompleteReport(bool mustExist = true);
 
     CC_MqttsnErrorCode unitTestPublishSend(CC_MqttsnPublishHandle publish);    
+
+    bool unitTestHasWillCompleteReport() const;
+    UnitTestWillCompleteReportPtr unitTestWillCompleteReport(bool mustExist = true);
+
+    CC_MqttsnErrorCode unitTestWillSend(CC_MqttsnWillHandle will);    
 
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
@@ -396,7 +436,13 @@ public:
     CC_MqttsnErrorCode apiPublishSetRetryCount(CC_MqttsnPublishHandle publish, unsigned count);
     void apiPublishInitConfig(CC_MqttsnPublishConfig* config);
     CC_MqttsnErrorCode apiPublishConfig(CC_MqttsnPublishHandle publish, const CC_MqttsnPublishConfig* config);
-    CC_MqttsnErrorCode apiPublishCancel(CC_MqttsnPublishHandle publish);    
+    CC_MqttsnErrorCode apiPublishCancel(CC_MqttsnPublishHandle publish);  
+
+    CC_MqttsnWillHandle apiWillPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiWillSetRetryCount(CC_MqttsnWillHandle will, unsigned count);
+    void apiWillInitConfig(CC_MqttsnWillConfig* config);
+    CC_MqttsnErrorCode apiWillConfig(CC_MqttsnWillHandle will, const CC_MqttsnWillConfig* config);
+    CC_MqttsnErrorCode apiWillCancel(CC_MqttsnWillHandle will);        
 
 
 protected:
@@ -417,6 +463,7 @@ private:
         UnitTestSubscribeCompleteReportList m_subscribeCompleteReports;
         UnitTestUnsubscribeCompleteReportList m_unsubscribeCompleteReports;
         UnitTestPublishCompleteReportList m_publishCompleteReports;
+        UnitTestWillCompleteReportList m_willCompleteReports;
     };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);
@@ -433,6 +480,7 @@ private:
     static void unitTestSubscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info);
     static void unitTestUnsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status);
     static void unitTestPublishCompleteCb(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
+    static void unitTestWillCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info);
 
     LibFuncs m_funcs;  
     ClientData m_data;

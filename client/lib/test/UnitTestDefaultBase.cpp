@@ -92,6 +92,16 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_publish_send = &cc_mqttsn_client_publish_send;
     funcs.m_publish_cancel = &cc_mqttsn_client_publish_cancel;
     funcs.m_publish = &cc_mqttsn_client_publish;    
+    funcs.m_will_prepare = &cc_mqttsn_client_will_prepare;
+    funcs.m_will_set_retry_period = &cc_mqttsn_client_will_set_retry_period;
+    funcs.m_will_get_retry_period = &cc_mqttsn_client_will_get_retry_period;
+    funcs.m_will_set_retry_count = &cc_mqttsn_client_will_set_retry_count;
+    funcs.m_will_get_retry_count = &cc_mqttsn_client_will_get_retry_count;
+    funcs.m_will_init_config = &cc_mqttsn_client_will_init_config;
+    funcs.m_will_config = &cc_mqttsn_client_will_config;
+    funcs.m_will_send = &cc_mqttsn_client_will_send;
+    funcs.m_will_cancel = &cc_mqttsn_client_will_cancel;
+    funcs.m_will = &cc_mqttsn_client_will;        
 
     funcs.m_set_next_tick_program_callback = &cc_mqttsn_client_set_next_tick_program_callback;
     funcs.m_set_cancel_next_tick_wait_callback = &cc_mqttsn_client_set_cancel_next_tick_wait_callback;

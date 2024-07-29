@@ -1,0 +1,558 @@
+#include "UnitTestDefaultBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestWill : public CxxTest::TestSuite, public UnitTestDefaultBase
+{
+public:
+    void test1();
+    void test2();
+    void test3();
+    void test4();
+    void test5();
+    void test6();
+    void test7();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+};
+
+void UnitTestWill::test1()
+{
+    // Testing basic will update after connection
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("will/topic");
+    const UnitTestData Data{1, 2, 3, 4};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const bool Retain = true;
+
+    CC_MqttsnWillConfig config;
+    apiWillInitConfig(&config);
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+    config.m_retain = Retain;
+
+    auto will = apiWillPrepare(client);
+    TS_ASSERT_DIFFERS(will, nullptr);
+
+    auto ec = apiWillConfig(will, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestWillSend(will);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willtopicupdMsg = dynamic_cast<UnitTestWilltopicupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willtopicupdMsg, nullptr);
+        TS_ASSERT(willtopicupdMsg->field_flags().doesExist());
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicupdMsg->field_flags().field().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), Retain);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestWilltopicrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }
+
+    TS_ASSERT(!unitTestHasWillCompleteReport());
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willmsgupdMsg = dynamic_cast<UnitTestWillmsgupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willmsgupdMsg, nullptr);
+        TS_ASSERT_EQUALS(willmsgupdMsg->field_willMsg().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        UnitTestWillmsgrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }    
+
+    TS_ASSERT(!unitTestHasOutputData());    
+
+    {
+        TS_ASSERT(unitTestHasWillCompleteReport());
+        auto willReport = unitTestWillCompleteReport();
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT(!unitTestHasWillCompleteReport());
+    }
+}
+
+void UnitTestWill::test2()
+{
+    // Testing full will update after connection with will
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    const std::string ConnectWillTopic("connect/will/topic");
+    const UnitTestData ConnectWillData{1, 2, 3, 4, 5, 6};
+    const CC_MqttsnQoS ConnectWillQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const bool ConnectWillRetain = false;
+
+
+    CC_MqttsnConnectConfig connectConfig;
+    apiConnectInitConfig(&connectConfig);
+    connectConfig.m_clientId = ClientId.c_str();
+    connectConfig.m_cleanSession = true;
+
+    CC_MqttsnWillConfig connectWillConfig;
+    apiConnectInitConfigWill(&connectWillConfig);
+    connectWillConfig.m_topic = ConnectWillTopic.c_str();
+    connectWillConfig.m_data = ConnectWillData.data();
+    connectWillConfig.m_dataLen = static_cast<decltype(connectWillConfig.m_dataLen)>(ConnectWillData.size());
+    connectWillConfig.m_qos = ConnectWillQos;
+    connectWillConfig.m_retain = ConnectWillRetain;
+
+    unitTestDoConnect(client, &connectConfig, &connectWillConfig);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("will/topic");
+    const UnitTestData Data{1, 2, 3, 4};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const bool Retain = true;
+
+    CC_MqttsnWillConfig config;
+    apiWillInitConfig(&config);
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+    config.m_retain = Retain;
+
+    auto will = apiWillPrepare(client);
+    TS_ASSERT_DIFFERS(will, nullptr);
+
+    auto ec = apiWillConfig(will, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestWillSend(will);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willtopicupdMsg = dynamic_cast<UnitTestWilltopicupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willtopicupdMsg, nullptr);
+        TS_ASSERT(willtopicupdMsg->field_flags().doesExist());
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicupdMsg->field_flags().field().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), Retain);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestWilltopicrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }
+
+    TS_ASSERT(!unitTestHasWillCompleteReport());
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willmsgupdMsg = dynamic_cast<UnitTestWillmsgupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willmsgupdMsg, nullptr);
+        TS_ASSERT_EQUALS(willmsgupdMsg->field_willMsg().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        UnitTestWillmsgrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }    
+
+    TS_ASSERT(!unitTestHasOutputData());    
+
+    {
+        TS_ASSERT(unitTestHasWillCompleteReport());
+        auto willReport = unitTestWillCompleteReport();
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT(!unitTestHasWillCompleteReport());
+    }
+}
+
+void UnitTestWill::test3()
+{
+    // Testing will message only update after connection with will
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    const std::string ConnectWillTopic("connect/will/topic");
+    const UnitTestData ConnectWillData{1, 2, 3, 4, 5, 6};
+    const CC_MqttsnQoS ConnectWillQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const bool ConnectWillRetain = false;
+
+    CC_MqttsnConnectConfig connectConfig;
+    apiConnectInitConfig(&connectConfig);
+    connectConfig.m_clientId = ClientId.c_str();
+    connectConfig.m_cleanSession = true;
+
+    CC_MqttsnWillConfig connectWillConfig;
+    apiConnectInitConfigWill(&connectWillConfig);
+    connectWillConfig.m_topic = ConnectWillTopic.c_str();
+    connectWillConfig.m_data = ConnectWillData.data();
+    connectWillConfig.m_dataLen = static_cast<decltype(connectWillConfig.m_dataLen)>(ConnectWillData.size());
+    connectWillConfig.m_qos = ConnectWillQos;
+    connectWillConfig.m_retain = ConnectWillRetain;
+
+    unitTestDoConnect(client, &connectConfig, &connectWillConfig);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const UnitTestData Data{1, 2, 3, 4};
+
+    CC_MqttsnWillConfig config;
+    apiWillInitConfig(&config);
+    config = connectWillConfig;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+
+    auto will = apiWillPrepare(client);
+    TS_ASSERT_DIFFERS(will, nullptr);
+
+    auto ec = apiWillConfig(will, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestWillSend(will);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    TS_ASSERT(!unitTestHasWillCompleteReport());
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willmsgupdMsg = dynamic_cast<UnitTestWillmsgupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willmsgupdMsg, nullptr);
+        TS_ASSERT_EQUALS(willmsgupdMsg->field_willMsg().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        UnitTestWillmsgrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }    
+
+    TS_ASSERT(!unitTestHasOutputData());    
+
+    {
+        TS_ASSERT(unitTestHasWillCompleteReport());
+        auto willReport = unitTestWillCompleteReport();
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
+        TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT(!unitTestHasWillCompleteReport());
+    }
+}
+
+void UnitTestWill::test4()
+{
+    // Testing will topic only update after connection with will
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    const std::string ConnectWillTopic("connect/will/topic");
+    const UnitTestData ConnectWillData{1, 2, 3, 4, 5, 6};
+    const CC_MqttsnQoS ConnectWillQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const bool ConnectWillRetain = false;
+
+    CC_MqttsnConnectConfig connectConfig;
+    apiConnectInitConfig(&connectConfig);
+    connectConfig.m_clientId = ClientId.c_str();
+    connectConfig.m_cleanSession = true;
+
+    CC_MqttsnWillConfig connectWillConfig;
+    apiConnectInitConfigWill(&connectWillConfig);
+    connectWillConfig.m_topic = ConnectWillTopic.c_str();
+    connectWillConfig.m_data = ConnectWillData.data();
+    connectWillConfig.m_dataLen = static_cast<decltype(connectWillConfig.m_dataLen)>(ConnectWillData.size());
+    connectWillConfig.m_qos = ConnectWillQos;
+    connectWillConfig.m_retain = ConnectWillRetain;
+
+    unitTestDoConnect(client, &connectConfig, &connectWillConfig);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string WillTopic("will/topic");
+
+    auto config1 = connectWillConfig;
+    config1.m_topic = WillTopic.c_str();
+
+    {
+        auto will = apiWillPrepare(client);
+        TS_ASSERT_DIFFERS(will, nullptr);
+
+        auto ec = apiWillConfig(will, &config1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestWillSend(will);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    TS_ASSERT(!unitTestHasWillCompleteReport());
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willtopicupdMsg = dynamic_cast<UnitTestWilltopicupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willtopicupdMsg, nullptr);
+        TS_ASSERT(willtopicupdMsg->field_flags().doesExist());
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicupdMsg->field_flags().field().field_qos().value()), ConnectWillQos);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), ConnectWillRetain);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), WillTopic);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        UnitTestWilltopicrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }    
+
+    TS_ASSERT(!unitTestHasOutputData());    
+
+    {
+        TS_ASSERT(unitTestHasWillCompleteReport());
+        auto willReport = unitTestWillCompleteReport();
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
+        TS_ASSERT(!unitTestHasWillCompleteReport());
+    }
+
+    const CC_MqttsnQoS WillQos = CC_MqttsnQoS_AtMostOnceDelivery;
+    auto config2 = config1;
+    config2.m_qos = WillQos;
+
+    {
+        auto will = apiWillPrepare(client);
+        TS_ASSERT_DIFFERS(will, nullptr);
+
+        auto ec = apiWillConfig(will, &config2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestWillSend(will);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    TS_ASSERT(!unitTestHasWillCompleteReport());
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willtopicupdMsg = dynamic_cast<UnitTestWilltopicupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willtopicupdMsg, nullptr);
+        TS_ASSERT(willtopicupdMsg->field_flags().doesExist());
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicupdMsg->field_flags().field().field_qos().value()), WillQos);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), ConnectWillRetain);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), WillTopic);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        UnitTestWilltopicrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }    
+
+    TS_ASSERT(!unitTestHasOutputData());    
+
+    {
+        TS_ASSERT(unitTestHasWillCompleteReport());
+        auto willReport = unitTestWillCompleteReport();
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
+        TS_ASSERT(!unitTestHasWillCompleteReport());
+    }    
+
+    const bool WillRetain = !config2.m_retain;
+    auto config3 = config2;
+    config3.m_retain = WillRetain;
+
+    {
+        auto will = apiWillPrepare(client);
+        TS_ASSERT_DIFFERS(will, nullptr);
+
+        auto ec = apiWillConfig(will, &config3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestWillSend(will);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    TS_ASSERT(!unitTestHasWillCompleteReport());
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* willtopicupdMsg = dynamic_cast<UnitTestWilltopicupdMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(willtopicupdMsg, nullptr);
+        TS_ASSERT(willtopicupdMsg->field_flags().doesExist());
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicupdMsg->field_flags().field().field_qos().value()), WillQos);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), WillRetain);
+        TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), WillTopic);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        UnitTestWilltopicrespMsg respMsg;
+        respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, respMsg);
+    }    
+
+    TS_ASSERT(!unitTestHasOutputData());    
+
+    {
+        TS_ASSERT(unitTestHasWillCompleteReport());
+        auto willReport = unitTestWillCompleteReport();
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
+        TS_ASSERT(!unitTestHasWillCompleteReport());
+    }        
+}
+
+void UnitTestWill::test5()
+{
+    // Testing will update when nothing changes, immediate callback invocation.
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    const std::string ConnectWillTopic("connect/will/topic");
+    const UnitTestData ConnectWillData{1, 2, 3, 4, 5, 6};
+    const CC_MqttsnQoS ConnectWillQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const bool ConnectWillRetain = false;
+
+    CC_MqttsnConnectConfig connectConfig;
+    apiConnectInitConfig(&connectConfig);
+    connectConfig.m_clientId = ClientId.c_str();
+    connectConfig.m_cleanSession = true;
+
+    CC_MqttsnWillConfig connectWillConfig;
+    apiConnectInitConfigWill(&connectWillConfig);
+    connectWillConfig.m_topic = ConnectWillTopic.c_str();
+    connectWillConfig.m_data = ConnectWillData.data();
+    connectWillConfig.m_dataLen = static_cast<decltype(connectWillConfig.m_dataLen)>(ConnectWillData.size());
+    connectWillConfig.m_qos = ConnectWillQos;
+    connectWillConfig.m_retain = ConnectWillRetain;
+
+    unitTestDoConnect(client, &connectConfig, &connectWillConfig);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        auto will = apiWillPrepare(client);
+        TS_ASSERT_DIFFERS(will, nullptr);
+
+        auto ec = apiWillConfig(will, &connectWillConfig);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestWillSend(will);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    TS_ASSERT(!unitTestHasOutputData());    
+
+    {
+        TS_ASSERT(unitTestHasWillCompleteReport());
+        auto willReport = unitTestWillCompleteReport();
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
+        TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
+        TS_ASSERT(!unitTestHasWillCompleteReport());
+    }
+}
+
+void UnitTestWill::test6()
+{
+    // Attempting will update before connection
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    auto ec = CC_MqttsnErrorCode_ValuesLimit;
+    auto will = apiWillPrepare(client, &ec);
+    TS_ASSERT_EQUALS(will, nullptr);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_NotConnected);
+}
+
+void UnitTestWill::test7()
+{
+    // Attempting will update after disconnection
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    unitTestDoDisconnect(client);
+
+    TS_ASSERT(!unitTestHasTickReq());
+
+    auto ec = CC_MqttsnErrorCode_ValuesLimit;
+    auto will = apiWillPrepare(client, &ec);
+    TS_ASSERT_EQUALS(will, nullptr);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_NotConnected);
+}
+
+
