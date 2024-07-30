@@ -611,7 +611,7 @@
 /// // Perform the configuration
 /// ec = cc_mqttsn_client_connect_config(connect, &config);
 /// if (ec != CC_MqttsnErrorCode_Success) {
-///     printf("ERROR: Basic configuration failed with ec=%d\n", ec);
+///     printf("ERROR: Connect configuration failed with ec=%d\n", ec);
 ///     ...
 /// }
 /// @endcode
@@ -692,7 +692,7 @@
 /// the operation before the completion callback is invoked.
 ///
 /// When the "connect" operation completion callback is invoked the reported
-/// "response" information is present <b>if and only if</b> the "status" is
+/// "info" is present <b>if and only if</b> the "status" is
 /// @ref CC_MqttsnAsyncOpStatus_Complete.
 ///
 /// @b NOTE that only single "connect" / "disconnect" operation is allowed at a time, any attempt to
@@ -1437,7 +1437,185 @@
 /// publish operation by the reported handle when the completion callback
 /// is invoked.
 ///
+/// ---
+/// @section doc_cc_mqttsn_client_will Updating Will
+/// To update will after the connection established use @ref will "will" operation.
+///
+/// @subsection doc_cc_mqttsn_client_will_prepare Preparing "Will" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnConnectHandle will = cc_mqttsn_client_will_prepare(client, &ec);
+/// if (will == NULL) {
+///     printf("ERROR: Will update allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_will_retry_period Configuring "Will" Retry Period
+/// When created, the "will" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_will_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_will_set_retry_period(will, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_will_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_will_retry_count Configuring "Will" Retry Count
+/// When created, the "will" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_will_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_will_set_retry_count(will, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_will_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_will_config Configuration of "Will" Operation
+/// To configure "will" operation use @b cc_mqttsn_client_will_config() function.
+/// @code
+/// CC_MqttsnWillConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_will_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_topic = "some_topic";
+/// config.m_data = ...;
+/// config.m_dataLen = ...;
+/// ...
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_will_config(will, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Will configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnWillConfig structure.
+///
+/// To remove the previously set will, just assign @b NULL (done by the
+/// invocation of the @b cc_mqttsn_client_will_init_config()) to
+/// @ref CC_MqttsnWillConfig::m_topic "m_topic" data member (also without assigning
+/// anything to @ref CC_MqttsnWillConfig::m_data "m_data").
+///
+/// @subsection doc_cc_mqttsn_client_will_send Sending Will Update Request
+/// When all the necessary configurations are performed for the allocated "will"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_will_send() function.
+/// @code
+/// void my_will_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The will operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze info values.
+/// }
+///
+/// ec = cc_mqttsn_client_will_send(will, &my_will_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send will update request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "will" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_will_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_will_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_will_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// When the "will" operation completion callback is invoked the reported
+/// "info" is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @b NOTE that only single "will" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_will_prepare() will be rejected
+/// until the "will" operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_will_cancel "cancelled".
+///
+/// The will update operation can be split into up to 2 stages:
+/// @li @b WILLTOPICUPD <-> @b WILLTOPICRESP messages exchange
+/// @li @b WILLMSGUPD <-> @b WILLMSGRESP messages exchange
+///
+/// The library monitors the currently set will configuration and may skip one or
+/// more of the stages. When the will update operation is issued, but no
+/// will update is actually needed, the callback passed to the
+/// @b cc_mqttsn_client_will_send() will be invoked right away.
+///
+/// When the callback reporting the will update status is invoked, it is responsibility
+/// of the application to check the @ref CC_MqttsnWillInfo::m_topicUpdReturnCode and
+/// @ref CC_MqttsnWillInfo::m_msgUpdReturnCode values. If the value of any of
+/// them is @ref CC_MqttsnReturnCode_ValuesLimit, then the relevant operation didn't take
+/// place. Otherwise, if the value is not @ref CC_MqttsnReturnCode_Accepted, then the
+/// relevant operation stage has failed.
+///
+/// For example if any of the return codes is reported to be @ref CC_MqttsnReturnCode_Conjestion,
+/// it means that the gateway may still be processing the previous will update stage
+/// and cannot process the next one. The application is responsible to re-issue
+/// the the same will update request a bit later. If one of the stages was successful
+/// (acknowledged by the gateway), then the appropriate stage will be skipped by the
+/// library and the failing stage is going to be repeated.
+///
+/// @subsection doc_cc_mqttsn_client_will_cancel Cancel the "Will" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_will_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_will_cancel(will);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel will with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_will_send() function was successfully
+/// called before the @b cc_mqttsn_client_will_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_will_simplify Simplifying the "Will" Operation Preparation.
+/// In many use cases the "will" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_will()
+///
+/// For example:
+/// @code
+/// CC_MqttsnWillConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_will_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_topic = "some_topic";
+/// config.m_data = ...;
+/// config.m_dataLen = ...;
+///
+/// ec = cc_mqttsn_client_will(client, config, &my_will_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send will request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_will_prepare(). It means that it's not possible to
+/// cancel the "will" operation before its completion.
+///
+///
 /// @section doc_cc_mqttsn_client_receive Receiving Messages
+/// TODO
+///
+/// @section doc_cc_mqttsn_client_sleep Sleeping
 /// TODO
 ///
 /// @section doc_cc_mqttsn_client_unsolicited_disconnect Unsolicited Gateway Disconnection

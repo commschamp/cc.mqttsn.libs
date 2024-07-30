@@ -555,4 +555,5 @@ void UnitTestWill::test7()
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_NotConnected);
 }
 
+// TODO: test clear will
 

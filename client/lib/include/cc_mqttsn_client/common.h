@@ -38,7 +38,7 @@ extern "C" {
 #define CC_MQTTSN_CLIENT_VERSION CC_MQTTSN_CLIENT_MAKE_VERSION(CC_MQTTSN_CLIENT_MAJOR_VERSION, CC_MQTTSN_CLIENT_MINOR_VERSION, CC_MQTTSN_CLIENT_PATCH_VERSION)
 
 /// @brief Quality of Service
-/// @ingroup client
+/// @ingroup global
 typedef enum
 {
     CC_MqttsnQoS_AtMostOnceDelivery = 0, ///< QoS=0. At most once delivery.
@@ -47,7 +47,7 @@ typedef enum
 } CC_MqttsnQoS;
 
 /// @brief Error code returned by various API functions.
-/// @ingroup client
+/// @ingroup global
 typedef enum
 {
     CC_MqttsnErrorCode_Success = 0, ///< The requested operation was successfully started.
@@ -69,7 +69,7 @@ typedef enum
 } CC_MqttsnErrorCode;
 
 /// @brief Status of the gateway
-/// @ingroup client
+/// @ingroup global
 typedef enum
 {
     CC_MqttsnGwStatus_AddedByGateway = 0, ///< Added by the @b ADVERTISE or @b GWINFO sent by the gateway messages
@@ -82,7 +82,7 @@ typedef enum
 } CC_MqttsnGwStatus;
 
 /// @brief Status of the asynchronous operation
-/// @ingroup client
+/// @ingroup global
 typedef enum
 {
     CC_MqttsnAsyncOpStatus_Complete = 0, ///< The requested operation has been completed, refer to reported extra details for information
@@ -105,7 +105,7 @@ typedef enum
 } CC_MqttsnGatewayDisconnectReason;
 
 /// @brief Return code as per MQTT-SN specification
-/// @ingroup client
+/// @ingroup global
 typedef enum
 {
     CC_MqttsnReturnCode_Accepted = 0, ///< Accepted
@@ -116,10 +116,12 @@ typedef enum
 } CC_MqttsnReturnCode;
 
 /// @brief Declaration of struct for the @ref CC_MqttsnClientHandle;
+/// @ingroup client
 struct CC_MqttsnClient;
 
 /// @brief Handler used to access client specific data structures.
 /// @details Returned by cc_mqttsn_client_alloc() function.
+/// @ingroup client
 typedef struct CC_MqttsnClient* CC_MqttsnClientHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnSearchHandle
@@ -186,9 +188,11 @@ struct CC_MqttsnWill;
 typedef struct CC_MqttsnWill* CC_MqttsnWillHandle;
 
 /// @brief Type used to hold Topic ID value.
+/// @ingroup global
 typedef unsigned short CC_MqttsnTopicId;
 
 /// @brief Incoming message information
+/// @ingroup global
 typedef struct
 {
     const char* topic; ///< Topic the message was published with. May be NULL if message is reported with predefined topic ID.
@@ -200,7 +204,7 @@ typedef struct
 } CC_MqttsnMessageInfo;
 
 /// @brief Gateway information
-/// @ingroup client
+/// @ingroup search
 typedef struct
 {
     unsigned char m_gwId; ///< Gateway ID
@@ -294,6 +298,7 @@ typedef struct
 ///     cc_mqttsn_client_set_next_tick_program_callback() function.
 /// @param[in] duration Time duration in @b milliseconds. After the requested
 ///     time expires, the cc_mqttsn_client_tick() function is expected to be invoked.
+/// @ingroup client
 typedef void (*CC_MqttsnNextTickProgramCb)(void* data, unsigned duration);
 
 /// @brief Callback used to request termination of existing time measurement.
@@ -302,6 +307,7 @@ typedef void (*CC_MqttsnNextTickProgramCb)(void* data, unsigned duration);
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_cancel_next_tick_wait_callback() function.
 /// @return Number of elapsed milliseconds since last time measurement request.
+/// @ingroup client
 typedef unsigned (*CC_MqttsnCancelNextTickWaitCb)(void* data);
 
 /// @brief Callback used to request to send data to the gateway.
@@ -316,6 +322,7 @@ typedef unsigned (*CC_MqttsnCancelNextTickWaitCb)(void* data);
 /// @param[in] buf Pointer to the buffer containing data to send
 /// @param[in] bufLen Number of bytes to send
 /// @param[in] broadcastRadius Broadcast radius. When @b 0, means unicast to the connected gateway.
+/// @ingroup client
 typedef void (*CC_MqttsnSendOutputDataCb)(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
 
 /// @brief Callback used to report gateway status.
@@ -325,12 +332,14 @@ typedef void (*CC_MqttsnSendOutputDataCb)(void* data, const unsigned char* buf, 
 ///     cc_mqttsn_client_set_gw_status_report_callback() function.
 /// @param[in] status Current status of the gateway.
 /// @param[in] info Currently stored gateway information.
+/// @ingroup client
 typedef void (*CC_MqttsnGwStatusReportCb)(void* data, CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info);
 
 /// @brief Callback used to report unsolicited disconnection of the gateway.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
 /// @param[in] reason Reason of the disconnection.
+/// @ingroup client
 typedef void (*CC_MqttsnGwDisconnectedReportCb)(void* data, CC_MqttsnGatewayDisconnectReason reason);
 
 /// @brief Callback used to report incoming messages.
@@ -341,6 +350,7 @@ typedef void (*CC_MqttsnGwDisconnectedReportCb)(void* data, CC_MqttsnGatewayDisc
 /// @param[in] data Pointer to user data object, passed as last parameter to
 ///     cc_mqttsn_client_set_message_report_callback() function.
 /// @param[in] msgInfo Information about incoming message.
+/// @ingroup client
 typedef void (*CC_MqttsnMessageReportCb)(void* data, const CC_MqttsnMessageInfo* msgInfo);
 
 /// @brief Callback used to report discovered errors.
@@ -354,6 +364,7 @@ typedef void (*CC_MqttsnErrorLogCb)(void* data, const char* msg);
 ///     responding with @b GWINFO message on behalf of a gateway.
 /// @details In case function return 0U, the response on behalf of the gateway is disabled.
 /// @return Number of milliseconds to wait for another @b GWINFO to cancel the intended send of @b GWINFO on behalf of the gateway.
+/// @ingroup client
 typedef unsigned (*CC_MqttsnGwinfoDelayRequestCb)(void* data);
 
 /// @brief Callback used to report completion of the asynchronous operation.
