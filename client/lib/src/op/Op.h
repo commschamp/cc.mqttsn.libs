@@ -86,6 +86,8 @@ public:
         return m_client;
     }    
 
+    static bool isValidTopicId(CC_MqttsnTopicId id);
+
 protected:
     explicit Op(ClientImpl& client);
 
@@ -98,10 +100,7 @@ protected:
     std::uint16_t allocPacketId();
     void releasePacketId(std::uint16_t id);
     void decRetryCount();
-    void storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
-    bool removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
 
-    static bool isValidTopicId(CC_MqttsnTopicId id);
     static bool isShortTopic(const char* topic);
 
     const ClientImpl& client() const

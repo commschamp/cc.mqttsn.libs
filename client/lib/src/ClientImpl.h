@@ -168,6 +168,8 @@ public:
     // bool hasPausedSendsBefore(const op::SendOp* sendOp) const;
     // bool hasHigherQosSendsBefore(const op::SendOp* sendOp, op::Op::Qos qos) const;
     void allowNextPrepare();
+    void storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
+    bool removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);    
 
     TimerMgr& timerMgr()
     {

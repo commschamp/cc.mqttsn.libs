@@ -51,6 +51,27 @@ void updateEc(CC_MqttsnErrorCode* ec, CC_MqttsnErrorCode val)
     }
 }
 
+InRegTopicsMap::iterator findInRegTopicInfo(CC_MqttsnTopicId topicId, InRegTopicsMap& map)
+{
+    return 
+        std::lower_bound(
+            map.begin(), map.end(), topicId,
+            [](auto& info, CC_MqttsnTopicId topicIdParam) {
+                return info.m_topicId < topicIdParam;
+            });
+}
+
+InRegTopicsMap::iterator findInRegTopicInfo(const char* topic, InRegTopicsMap& map)
+{
+    return 
+        std::find_if(
+            map.begin(), map.end(),
+            [topic](auto& info)
+            {
+                return info.m_topic == topic;
+            });
+}
+
 } // namespace 
 
 ClientImpl::ClientImpl() : 
@@ -749,8 +770,12 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
 void ClientImpl::handle(RegisterMsg& msg)
 {
-    static_cast<void>(msg);
-    // TODO:
+    storeInRegTopic(msg.field_topicName().value().c_str(), msg.field_topicId().value());
+    RegackMsg resp;
+    resp.field_topicId().setValue(msg.field_topicId().value());
+    resp.field_msgId().setValue(msg.field_msgId().value());
+    resp.field_returnCode().value() = RegackMsg::Field_returnCode::ValueType::Accepted;
+    sendMessage(resp);
 }
 
 // void ClientImpl::handle(PublishMsg& msg)
@@ -1022,6 +1047,64 @@ void ClientImpl::allowNextPrepare()
 {
     COMMS_ASSERT(m_preparationLocked);
     m_preparationLocked = false;
+}
+
+void ClientImpl::storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
+{
+    auto& map = m_reuseState.m_inRegTopics;
+    auto iter = findInRegTopicInfo(topicId, map);
+    if ((iter != map.end()) && (iter->m_topicId == topicId)) {
+        iter->m_topic = topic;
+        iter->m_timestamp = m_clientState.m_timestamp;
+        return;
+    }
+
+    if (m_clientState.m_inRegTopicsLimit <= map.size()) {
+        auto eraseIter = 
+            std::min_element(
+                map.begin(), map.end(),
+                [](auto& info1, auto& info2)
+                {
+                    return info1.m_timestamp < info2.m_timestamp;
+                });
+
+        COMMS_ASSERT(eraseIter != map.end());
+        map.erase(eraseIter);
+        iter = findInRegTopicInfo(topicId, map); // The location can change after erase
+    }
+
+    if (topic == nullptr) {
+        map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, TopicNameStr(), topicId});    
+        return;
+    }
+
+    map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, topic, topicId});        
+}
+
+bool ClientImpl::removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
+{
+    auto& map = m_reuseState.m_inRegTopics;
+    if (op::Op::isValidTopicId(topicId)) {
+        auto iter = findInRegTopicInfo(topicId, map);
+        if ((iter != map.end()) && (iter->m_topicId == topicId)) {
+            map.erase(iter);
+            return true;
+        }
+
+        return false;
+    }
+
+    if (topic == nullptr) {
+        return false;
+    }
+
+    auto iter = findInRegTopicInfo(topic, map);
+    if (iter == map.end()) {
+        return false;
+    }
+
+    map.erase(iter);
+    return true;
 }
 
 void ClientImpl::doApiEnter()

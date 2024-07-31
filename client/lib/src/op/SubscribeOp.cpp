@@ -178,7 +178,7 @@ void SubscribeOp::handle(SubackMsg& msg)
     } while (false);
 
     if (topicId != 0U) {
-        storeInRegTopic(topicPtr, topicId);
+        client().storeInRegTopic(topicPtr, topicId);
     }
 
     auto& filtersMap = client().reuseState().m_subFilters;

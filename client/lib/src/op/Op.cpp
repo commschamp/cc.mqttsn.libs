@@ -29,80 +29,12 @@ static constexpr char TopicSep = '/';
 static constexpr char MultLevelWildcard = '#';
 static constexpr char SingleLevelWildcard = '+';
 
-bool isValidTopicIdInternal(CC_MqttsnTopicId id)
+} // namespace 
+
+bool Op::isValidTopicId(CC_MqttsnTopicId id)
 {
     return (id != 0U) && (id != 0xffff);
 }
-
-template <typename TMap>
-typename TMap::iterator findRegTopicInfo(CC_MqttsnTopicId topicId, TMap& map)
-{
-    return 
-        std::lower_bound(
-            map.begin(), map.end(), topicId,
-            [](auto& info, CC_MqttsnTopicId topicIdParam) {
-                return info.m_topicId < topicIdParam;
-            });
-}
-
-template <typename TMap>
-typename TMap::iterator findRegTopicInfo(const char* topic, TMap& map)
-{
-    return 
-        std::find_if(
-            map.begin(), map.end(),
-            [topic](auto& info)
-            {
-                return info.m_topic == topic;
-            });
-}
-
-template <typename TMap>
-void storeFullRegTopic(ClientState::Timestamp timestamp, const char* topic, CC_MqttsnTopicId topicId, TMap& map)
-{
-    auto iter = findRegTopicInfo(topicId, map);
-    if ((iter != map.end()) && (iter->m_topicId == topicId)) {
-        iter->m_topic = topic;
-        return;
-    }
-
-    if (topic == nullptr) {
-        map.insert(iter, FullRegTopicInfo{timestamp, TopicNameStr(), topicId});    
-        return;
-    }
-
-    map.insert(iter, FullRegTopicInfo{timestamp, topic, topicId});    
-}
-
-template <typename TMap>
-bool removeFullRegTopic(const char* topic, CC_MqttsnTopicId topicId, TMap& map)
-{
-    if (isValidTopicIdInternal(topicId)) {
-        auto iter = findRegTopicInfo(topicId, map);
-        if ((iter != map.end()) && (iter->m_topicId == topicId)) {
-            map.erase(iter);
-            return true;
-        }
-
-        return false;
-    }
-
-    if (topic == nullptr) {
-        return false;
-    }
-
-    auto iter = findRegTopicInfo(topic, map);
-    if (iter == map.end()) {
-        return false;
-    }
-
-    map.erase(iter);
-    return true;
-}
-
-} // namespace 
-
-
 
 Op::Op(ClientImpl& client) : 
     m_client(client),
@@ -215,23 +147,6 @@ void Op::decRetryCount()
 {
     COMMS_ASSERT(m_retryCount > 0U);
     --m_retryCount;
-}
-
-void Op::storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
-{
-    auto& map = m_client.reuseState().m_inRegTopics;
-    storeFullRegTopic(m_client.clientState().m_timestamp, topic, topicId, map);
-}
-
-bool Op::removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
-{
-    auto& map = m_client.reuseState().m_inRegTopics;
-    return removeFullRegTopic(topic, topicId, map);
-}
-
-bool Op::isValidTopicId(CC_MqttsnTopicId id)
-{
-    return isValidTopicIdInternal(id);
 }
 
 bool Op::isShortTopic(const char* topic)

@@ -176,7 +176,7 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
     COMMS_ASSERT((topicPtr == nullptr) || (topicId == 0U));
     COMMS_ASSERT((topicPtr != nullptr) || (topicId != 0U));
 
-    removeInRegTopic(topicPtr, topicId);
+    client().removeInRegTopic(topicPtr, topicId);
         
     if constexpr (Config::HasSubTopicVerification) {
         do {
