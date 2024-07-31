@@ -1437,7 +1437,35 @@
 /// publish operation by the reported handle when the completion callback
 /// is invoked.
 ///
-/// ---
+/// @subsection doc_cc_mqttsn_client_publish_reg_limit Limiting Stored Outgoing Topic IDs
+/// When a client attempts to publish a message with non-short topic (length of which
+/// is not equal to 2 characters), the topic needs to be registered against the
+/// gateway, and receive a numeric topic ID in response. Such topic ID is preserved
+/// for future use to avoid registration process before the required message is
+/// actually <b>PUBLISH</b>-ed. Depending on the amount of various topic strings that
+/// the end application generates there might be a need to limit the uncontrolled growth of
+/// internal storage. To do so use @b cc_mqttsn_client_set_outgoing_topic_id_storage_limit()
+/// function
+/// @code
+/// ec = cc_mqttsn_client_set_outgoing_topic_id_storage_limit(client, 10);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to limit the outgoing topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// To get the current limit use @b cc_mqttsn_client_get_outgoing_topic_id_storage_limit()
+/// function.
+///
+/// To remove the previously set limit, i.e. reset it to the default pass @b 0 as
+/// the limit value to @b cc_mqttsn_client_set_outgoing_topic_id_storage_limit().
+/// @code
+/// ec = cc_mqttsn_client_set_outgoing_topic_id_storage_limit(client, 0);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to reset the limit the outgoing topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
 /// @section doc_cc_mqttsn_client_will Updating Will
 /// To update will after the connection established use @ref will "will" operation.
 ///

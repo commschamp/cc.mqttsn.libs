@@ -58,7 +58,7 @@ typename TMap::iterator findRegTopicInfo(const char* topic, TMap& map)
 }
 
 template <typename TMap>
-void storeRegTopic(const char* topic, CC_MqttsnTopicId topicId, TMap& map)
+void storeFullRegTopic(ClientState::Timestamp timestamp, const char* topic, CC_MqttsnTopicId topicId, TMap& map)
 {
     auto iter = findRegTopicInfo(topicId, map);
     if ((iter != map.end()) && (iter->m_topicId == topicId)) {
@@ -67,15 +67,15 @@ void storeRegTopic(const char* topic, CC_MqttsnTopicId topicId, TMap& map)
     }
 
     if (topic == nullptr) {
-        map.insert(iter, RegTopicInfo{TopicNameStr(), topicId});    
+        map.insert(iter, FullRegTopicInfo{timestamp, TopicNameStr(), topicId});    
         return;
     }
 
-    map.insert(iter, RegTopicInfo{topic, topicId});    
+    map.insert(iter, FullRegTopicInfo{timestamp, topic, topicId});    
 }
 
 template <typename TMap>
-bool removeRegTopic(const char* topic, CC_MqttsnTopicId topicId, TMap& map)
+bool removeFullRegTopic(const char* topic, CC_MqttsnTopicId topicId, TMap& map)
 {
     if (isValidTopicIdInternal(topicId)) {
         auto iter = findRegTopicInfo(topicId, map);
@@ -220,13 +220,13 @@ void Op::decRetryCount()
 void Op::storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
 {
     auto& map = m_client.reuseState().m_inRegTopics;
-    storeRegTopic(topic, topicId, map);
+    storeFullRegTopic(m_client.clientState().m_timestamp, topic, topicId, map);
 }
 
 bool Op::removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
 {
     auto& map = m_client.reuseState().m_inRegTopics;
-    return removeRegTopic(topic, topicId, map);
+    return removeFullRegTopic(topic, topicId, map);
 }
 
 bool Op::isValidTopicId(CC_MqttsnTopicId id)

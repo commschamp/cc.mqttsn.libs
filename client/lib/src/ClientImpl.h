@@ -66,8 +66,6 @@ public:
     // -------------------- API Calls -----------------------------
     void tick(unsigned ms);
     void processData(const std::uint8_t* iter, unsigned len);
-    // void notifyNetworkDisconnected();
-    // bool isNetworkDisconnected() const;
 
     op::SearchOp* searchPrepare(CC_MqttsnErrorCode* ec);
     op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);
@@ -77,10 +75,10 @@ public:
     op::SendOp* publishPrepare(CC_MqttsnErrorCode* ec);
     op::WillOp* willPrepare(CC_MqttsnErrorCode* ec);
 
-    // std::size_t sendsCount() const
-    // {
-    //     return m_sendOps.size();
-    // }
+    CC_MqttsnErrorCode setOutgoingRegTopicsLimit(std::size_t limit);
+    std::size_t getOutgoingRegTopicsLimit() const;
+    CC_MqttsnErrorCode setIncomingRegTopicsLimit(std::size_t limit);
+    std::size_t getIncomingRegTopicsLimit() const;    
 
     void setNextTickProgramCallback(CC_MqttsnNextTickProgramCb cb, void* data)
     {
@@ -152,6 +150,7 @@ public:
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
 //     virtual void handle(PublishMsg& msg) override;
 
+    virtual void handle(RegisterMsg& msg) override;
     virtual void handle(PubackMsg& msg) override;
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;

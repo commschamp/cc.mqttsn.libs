@@ -237,10 +237,45 @@ bool cc_mqttsn_##NAME##client_get_verify_incoming_topic_enabled(CC_MqttsnClientH
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_incoming_msg_subscribed(CC_MqttsnClientHandle client, bool enabled);
 
 /// @brief Retrieve current incoming message being correctly subscribed control.
-/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @return @b true when enabled, @b false when disabled
 /// @ingroup client
-bool cc_mqttsn_##NAME##client_get_verify_incoming_msg_subscribed(CC_MqttsnClientHandle handle);
+bool cc_mqttsn_##NAME##client_get_verify_incoming_msg_subscribed(CC_MqttsnClientHandle client);
+
+/// @brief Specify limit of the topic IDs stored for the outgoing messages
+/// @details When performing publish operations with the normal topic string there is a 
+///    need to be able to store the topic string <-> topic id mapping, which can be used
+///    in the future publish operations as well. Use this function to set the runtime limit.
+///    When the specified limit reached the least recently used mapping will be dropped to
+///    accomodate the new one.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] limit Limit for the topic ids stored. @b 0 means previously set limit is removed. i.e reset to default
+/// @return Error code of the operation
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_outgoing_topic_id_storage_limit(CC_MqttsnClientHandle client, unsigned long long limit);
+
+/// @brief Retrieve currently configured limit of the topic IDs stored for the outgoing messages
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @see @ref cc_mqttsn_##NAME##client_set_outgoing_topic_id_storage_limit()
+/// @ingroup client
+unsigned long long cc_mqttsn_##NAME##client_get_outgoing_topic_id_storage_limit(CC_MqttsnClientHandle client);
+
+/// @brief Specify limit of the topic IDs stored for the incoming messages
+/// @details When receiving messages from the gateway, the latter may register topic IDs. 
+///    Use this function to set the runtime limit of how many such registration are stored.
+///    When the specified limit reached the least recently used mapping will be dropped to
+///    accomodate the new one.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] limit Limit for the topic ids stored. @b 0 means previously set limit is removed. i.e reset to default
+/// @return Error code of the operation
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_incoming_topic_id_storage_limit(CC_MqttsnClientHandle client, unsigned long long limit);
+
+/// @brief Retrieve currently configured limit of the topic IDs stored for the incoming messages
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @see @ref cc_mqttsn_##NAME##client_set_incoming_topic_id_storage_limit()
+/// @ingroup client
+unsigned long long cc_mqttsn_##NAME##client_get_incoming_topic_id_storage_limit(CC_MqttsnClientHandle client);
 
 /// @brief Prepare "search" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.

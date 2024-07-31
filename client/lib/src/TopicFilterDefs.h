@@ -13,6 +13,8 @@
 #include "ObjListType.h"
 #include "ProtocolDefs.h"
 
+#include <iostream>
+
 
 namespace cc_mqttsn_client
 {
@@ -31,8 +33,30 @@ struct RegTopicInfo
     RegTopicInfo(CC_MqttsnTopicId topicId) : m_topicId(topicId) {}
 };
 
+struct TimestampStorage
+{
+    using Timestamp = std::uint64_t;
+    Timestamp m_timestamp = 0U;
+
+    TimestampStorage(Timestamp timestamp) : m_timestamp(timestamp) {}
+};
+
+struct FullRegTopicInfo : public TimestampStorage, public RegTopicInfo
+{
+    template <typename T>
+    FullRegTopicInfo(Timestamp timestamp, T&& topic, CC_MqttsnTopicId topicId) : 
+        TimestampStorage(timestamp), 
+        RegTopicInfo(std::forward<T>(topic), topicId)
+    {
+    }
+
+    FullRegTopicInfo(Timestamp timestamp, const char* topic) : TimestampStorage(timestamp), RegTopicInfo(topic) {}
+    FullRegTopicInfo(Timestamp timestamp, CC_MqttsnTopicId topicId) : TimestampStorage(timestamp), RegTopicInfo(topicId) {}    
+};
+
+
 using SubFiltersMap = ObjListType<RegTopicInfo, Config::SubFiltersLimit, Config::HasSubTopicVerification>; // key is m_topic
-using InRegTopicsMap = ObjListType<RegTopicInfo, Config::InRegTopicsLimit>; // key is m_topicId;
-using OutRegTopicsMap = ObjListType<RegTopicInfo, Config::OutRegTopicsLimit>; // key is m_topic;
+using InRegTopicsMap = ObjListType<FullRegTopicInfo, Config::InRegTopicsLimit>; // key is m_topicId;
+using OutRegTopicsMap = ObjListType<FullRegTopicInfo, Config::OutRegTopicsLimit>; // key is m_topic;
 
 } // namespace cc_mqttsn_client

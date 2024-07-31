@@ -14,6 +14,7 @@
 #include "cc_mqttsn_client/common.h"
 
 #include <cstdint>
+#include <limits>
 
 namespace cc_mqttsn_client
 {
@@ -40,6 +41,8 @@ struct ClientState
     GwInfosList m_gwInfos;
     PacketIdsList m_allocatedPacketIds;
     Timestamp m_timestamp = 0U;
+    std::size_t m_outRegTopicsLimit = std::numeric_limits<std::size_t>::max();
+    std::size_t m_inRegTopicsLimit = std::numeric_limits<std::size_t>::max();
     std::uint16_t m_lastPacketId = 0U;
     bool m_initialized = false;
     bool m_firstConnect = true;

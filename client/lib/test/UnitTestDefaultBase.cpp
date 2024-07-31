@@ -31,6 +31,10 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_get_verify_incoming_topic_enabled = &cc_mqttsn_client_get_verify_incoming_topic_enabled;
     funcs.m_set_verify_incoming_msg_subscribed = &cc_mqttsn_client_set_verify_incoming_msg_subscribed;
     funcs.m_get_verify_incoming_msg_subscribed = &cc_mqttsn_client_get_verify_incoming_msg_subscribed;
+    funcs.m_set_outgoing_topic_id_storage_limit = &cc_mqttsn_client_set_outgoing_topic_id_storage_limit;
+    funcs.m_get_outgoing_topic_id_storage_limit = &cc_mqttsn_client_get_outgoing_topic_id_storage_limit;
+    funcs.m_set_incoming_topic_id_storage_limit = &cc_mqttsn_client_set_incoming_topic_id_storage_limit;
+    funcs.m_get_incoming_topic_id_storage_limit = &cc_mqttsn_client_get_incoming_topic_id_storage_limit;
     funcs.m_search_prepare = &cc_mqttsn_client_search_prepare;
     funcs.m_search_set_retry_period = &cc_mqttsn_client_search_set_retry_period;
     funcs.m_search_get_retry_period = &cc_mqttsn_client_search_get_retry_period;

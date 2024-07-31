@@ -40,6 +40,10 @@ public:
         bool (*m_get_verify_incoming_topic_enabled)(CC_MqttsnClientHandle) = nullptr;
         CC_MqttsnErrorCode (*m_set_verify_incoming_msg_subscribed)(CC_MqttsnClientHandle, bool) = nullptr;
         bool (*m_get_verify_incoming_msg_subscribed)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_set_outgoing_topic_id_storage_limit)(CC_MqttsnClientHandle, unsigned long long) = nullptr;
+        unsigned long long (*m_get_outgoing_topic_id_storage_limit)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_set_incoming_topic_id_storage_limit)(CC_MqttsnClientHandle, unsigned long long) = nullptr;
+        unsigned long long (*m_get_incoming_topic_id_storage_limit)(CC_MqttsnClientHandle) = nullptr;
         CC_MqttsnSearchHandle (*m_search_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;
         CC_MqttsnErrorCode (*m_search_set_retry_period)(CC_MqttsnSearchHandle, unsigned) = nullptr;
         unsigned (*m_search_get_retry_period)(CC_MqttsnSearchHandle) = nullptr;
@@ -403,6 +407,7 @@ public:
     CC_MqttsnErrorCode apiSetVerifyIncomingMsgSubscribed(CC_MqttsnClient* client, bool enabled);
     void apiInitGatewayInfo(CC_MqttsnGatewayInfo* info);
     CC_MqttsnErrorCode apiSetAvailableGatewayInfo(CC_MqttsnClient* client, const CC_MqttsnGatewayInfo* info);
+    CC_MqttsnErrorCode apiSetOutgoingTopicIdStorageLimit(CC_MqttsnClient* client, unsigned long long limit);
 
     CC_MqttsnSearchHandle apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
     CC_MqttsnErrorCode apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value);

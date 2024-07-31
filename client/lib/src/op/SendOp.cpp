@@ -122,6 +122,7 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
             m_publishMsg.field_topicId().setValue(iter->m_topicId);
             m_publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
             m_stage = Stage_Publish;
+            iter->m_timestamp = client().clientState().m_timestamp;
             break;
         }
 
@@ -220,21 +221,46 @@ void SendOp::handle(RegackMsg& msg)
     auto& topicStr = m_registerMsg.field_topicName().value();
     COMMS_ASSERT(!topicStr.empty());
 
-    auto iter = 
-        std::lower_bound(
-            regMap.begin(), regMap.end(), topicStr,
-            [](auto& elem, auto& topicParam)
-            {
-                return elem.m_topic < topicParam;
-            });   
+    auto findElem = 
+        [&regMap, &topicStr]()
+        {
+            return
+                std::lower_bound(
+                    regMap.begin(), regMap.end(), topicStr,
+                    [](auto& elem, auto& topicParam)
+                    {
+                        return elem.m_topic < topicParam;
+                    });             
+        };
+
+    auto iter = findElem();
 
     do {
-        if ((iter == regMap.end()) || (iter->m_topic != topicStr)) {
-            regMap.emplace(iter, topicStr.c_str(), topicId);
+        if ((iter != regMap.end()) && (iter->m_topic == topicStr)) {
+            iter->m_timestamp = client().clientState().m_timestamp;
+            iter->m_topicId = topicId;
             break;
         }
 
-        iter->m_topicId = topicId;
+        auto outRegTopicsLimit = client().clientState().m_outRegTopicsLimit;
+        COMMS_ASSERT(outRegTopicsLimit <= regMap.max_size());
+        if (outRegTopicsLimit <= regMap.size()) {
+            // Already full, need to drop least recently used
+            auto dropIter = 
+                std::min_element(
+                    regMap.begin(), regMap.end(),
+                    [](auto& info1, auto& info2)
+                    {
+                        return info1.m_timestamp < info2.m_timestamp;
+                    });
+
+            COMMS_ASSERT(dropIter != regMap.end());
+            regMap.erase(dropIter);
+
+            iter = findElem(); // the insert place may have changed
+        }
+
+        regMap.emplace(iter, client().clientState().m_timestamp, topicStr.c_str(), topicId);
     } while (false);
 
     m_stage = Stage_Publish; 

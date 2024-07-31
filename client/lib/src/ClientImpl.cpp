@@ -57,6 +57,9 @@ ClientImpl::ClientImpl() :
     m_gwDiscoveryTimer(m_timerMgr.allocTimer()),
     m_sendGwinfoTimer(m_timerMgr.allocTimer())
 {
+    // Set the limits to maximum allowed
+    setOutgoingRegTopicsLimit(0); 
+    setIncomingRegTopicsLimit(0);
 }
 
 ClientImpl::~ClientImpl()
@@ -501,6 +504,48 @@ op::WillOp* ClientImpl::willPrepare(CC_MqttsnErrorCode* ec)
 }
 #endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
+CC_MqttsnErrorCode ClientImpl::setOutgoingRegTopicsLimit(std::size_t limit)
+{
+    auto maxLimit = m_reuseState.m_outRegTopics.max_size();
+    if (maxLimit < limit) {
+        errorLog("The specified limit for outgoing topic ids is too high");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    if (limit == 0U) {
+        limit = maxLimit;
+    }
+
+    m_clientState.m_outRegTopicsLimit = limit;
+    return CC_MqttsnErrorCode_Success;
+}
+
+std::size_t ClientImpl::getOutgoingRegTopicsLimit() const
+{
+    return m_clientState.m_outRegTopicsLimit;
+}
+
+CC_MqttsnErrorCode ClientImpl::setIncomingRegTopicsLimit(std::size_t limit)
+{
+    auto maxLimit = m_reuseState.m_inRegTopics.max_size();
+    if (maxLimit < limit) {
+        errorLog("The specified limit for incoming topic ids is too high");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    if (limit == 0U) {
+        limit = maxLimit;
+    }
+
+    m_clientState.m_inRegTopicsLimit = limit;
+    return CC_MqttsnErrorCode_Success;
+}
+
+std::size_t ClientImpl::getIncomingRegTopicsLimit() const
+{
+    return m_clientState.m_inRegTopicsLimit;
+}
+
 // CC_MqttsnErrorCode ClientImpl::setPublishOrdering(CC_MqttsnPublishOrdering ordering)
 // {
 //     if (CC_MqttsnPublishOrdering_ValuesLimit <= ordering) {
@@ -701,6 +746,12 @@ void ClientImpl::handle(GwinfoMsg& msg)
     // Report geteway status on exit
 }
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
+
+void ClientImpl::handle(RegisterMsg& msg)
+{
+    static_cast<void>(msg);
+    // TODO:
+}
 
 // void ClientImpl::handle(PublishMsg& msg)
 // {

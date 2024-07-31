@@ -411,6 +411,30 @@ bool cc_mqttsn_##NAME##client_get_verify_incoming_msg_subscribed(CC_MqttsnClient
     }
 }
 
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_outgoing_topic_id_storage_limit(CC_MqttsnClientHandle client, unsigned long long limit)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->setOutgoingRegTopicsLimit(static_cast<std::size_t>(limit));
+}
+
+unsigned long long cc_mqttsn_##NAME##client_get_outgoing_topic_id_storage_limit(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return static_cast<unsigned long long>(clientFromHandle(client)->getOutgoingRegTopicsLimit());    
+}
+
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_incoming_topic_id_storage_limit(CC_MqttsnClientHandle client, unsigned long long limit)
+{
+    COMMS_ASSERT(client != nullptr);
+    return clientFromHandle(client)->setIncomingRegTopicsLimit(static_cast<std::size_t>(limit));
+}
+
+unsigned long long cc_mqttsn_##NAME##client_get_incoming_topic_id_storage_limit(CC_MqttsnClientHandle client)
+{
+    COMMS_ASSERT(client != nullptr);
+    return static_cast<unsigned long long>(clientFromHandle(client)->getIncomingRegTopicsLimit());    
+}
+
 CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(
     [[maybe_unused]] CC_MqttsnClientHandle client, 
     [[maybe_unused]] CC_MqttsnErrorCode* ec)

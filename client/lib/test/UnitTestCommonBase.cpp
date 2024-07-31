@@ -50,6 +50,10 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_get_verify_incoming_topic_enabled != nullptr);    
     test_assert(m_funcs.m_set_verify_incoming_msg_subscribed != nullptr);
     test_assert(m_funcs.m_get_verify_incoming_msg_subscribed != nullptr);
+    test_assert(m_funcs.m_set_outgoing_topic_id_storage_limit != nullptr);
+    test_assert(m_funcs.m_get_outgoing_topic_id_storage_limit != nullptr);    
+    test_assert(m_funcs.m_set_incoming_topic_id_storage_limit != nullptr);
+    test_assert(m_funcs.m_get_incoming_topic_id_storage_limit != nullptr);
     test_assert(m_funcs.m_search_prepare != nullptr);
     test_assert(m_funcs.m_search_set_retry_period != nullptr);
     test_assert(m_funcs.m_search_get_retry_period != nullptr);
@@ -801,6 +805,11 @@ void UnitTestCommonBase::apiInitGatewayInfo(CC_MqttsnGatewayInfo* info)
 CC_MqttsnErrorCode UnitTestCommonBase::apiSetAvailableGatewayInfo(CC_MqttsnClient* client, const CC_MqttsnGatewayInfo* info)
 {
     return m_funcs.m_set_available_gateway_info(client, info);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSetOutgoingTopicIdStorageLimit(CC_MqttsnClient* client, unsigned long long limit)
+{
+    return m_funcs.m_set_outgoing_topic_id_storage_limit(client, limit);
 }
 
 CC_MqttsnSearchHandle UnitTestCommonBase::apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
