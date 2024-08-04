@@ -125,16 +125,6 @@ protected:
         }
     }    
 
-    inline bool verifyPubTopic(const char* topic, bool outgoing)
-    {
-        if (Config::HasTopicFormatVerification) {
-            return verifyPubTopicInternal(topic, outgoing);
-        }
-        else {
-            return true;
-        }
-    }     
-
     static constexpr std::size_t maxStringLen()
     {
         return std::numeric_limits<std::uint16_t>::max();
@@ -143,7 +133,6 @@ protected:
 private:
     void errorLogInternal(const char* msg);
     bool verifySubFilterInternal(const char* filter);
-    bool verifyPubTopicInternal(const char* topic, bool outgoing);
 
     ClientImpl& m_client;    
     unsigned m_retryPeriod = 0U;

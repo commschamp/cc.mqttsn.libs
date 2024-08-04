@@ -151,7 +151,13 @@ public:
 //     virtual void handle(PublishMsg& msg) override;
 
     virtual void handle(RegisterMsg& msg) override;
+    virtual void handle(PublishMsg& msg) override;
     virtual void handle(PubackMsg& msg) override;
+
+#if CC_MQTTSN_CLIENT_MAX_QOS >= 2
+    virtual void handle(PubrelMsg& msg) override;
+#endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
+
     virtual void handle(PingreqMsg& msg) override;
     virtual void handle(DisconnectMsg& msg) override;
     virtual void handle(ProtMessage& msg) override;
@@ -218,6 +224,16 @@ public:
         }
     }
 
+    inline bool verifyPubTopic(const char* topic, bool outgoing)
+    {
+        if (Config::HasTopicFormatVerification) {
+            return verifyPubTopicInternal(topic, outgoing);
+        }
+        else {
+            return true;
+        }
+    }       
+
     // std::size_t recvsCount() const
     // {
     //     return m_recvOps.size();
@@ -267,6 +283,7 @@ private:
     void cleanOps();
     void errorLogInternal(const char* msg);
     CC_MqttsnErrorCode initInternal();
+    bool verifyPubTopicInternal(const char* topic, bool outgoing);
     // void resumeSendOpsSince(unsigned idx);
     // op::SendOp* findSendOp(std::uint16_t packetId);
     // bool isLegitSendAck(const op::SendOp* sendOp, bool pubcompAck = false) const;

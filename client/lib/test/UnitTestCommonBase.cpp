@@ -242,6 +242,21 @@ UnitTestCommonBase::UnitTestWillCompleteReport::UnitTestWillCompleteReport(CC_Mq
     }
 }
 
+UnitTestCommonBase::UnitTestMessageInfo::UnitTestMessageInfo(const CC_MqttsnMessageInfo& info) :
+    m_qos(info.m_qos),
+    m_topicId(info.m_topicId),
+    m_retained(info.m_retained)
+{
+    if (info.m_topic != nullptr) {
+        m_topic = info.m_topic;
+    }
+
+    if (info.m_dataLen > 0U) {
+        test_assert(info.m_data != nullptr);
+        m_data.assign(info.m_data, info.m_data + info.m_dataLen);
+    }
+}
+
 void UnitTestCommonBase::unitTestSetUp()
 {
 }
@@ -777,6 +792,23 @@ CC_MqttsnErrorCode UnitTestCommonBase::unitTestWillSend(CC_MqttsnWillHandle will
     return m_funcs.m_will_send(will, &UnitTestCommonBase::unitTestWillCompleteCb, this);
 }
 
+bool UnitTestCommonBase::unitTestHasReceivedMessage() const
+{
+    return !m_data.m_recvMsgs.empty();
+}
+
+UnitTestCommonBase::UnitTestMessageInfoPtr UnitTestCommonBase::unitTestReceivedMessage(bool mustExist)
+{
+    if (!unitTestHasReceivedMessage()) {
+        test_assert(!mustExist);
+        return UnitTestMessageInfoPtr();
+    }
+
+    auto ptr = std::move(m_data.m_recvMsgs.front());
+    m_data.m_recvMsgs.pop_front();
+    return ptr;    
+}
+
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
 {
     m_funcs.m_process_data(client, buf, bufLen);
@@ -1017,10 +1049,9 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiWillCancel(CC_MqttsnWillHandle will)
 
 void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo)
 {
-    // TODO:
-    static_cast<void>(data);
-    static_cast<void>(msgInfo);
-    test_assert(false);    
+    test_assert(msgInfo != nullptr);
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_recvMsgs.push_back(std::make_unique<UnitTestMessageInfo>(*msgInfo));
 }
 
 unsigned UnitTestCommonBase::unitTestGwinfoDelayRequestCb(void* data)

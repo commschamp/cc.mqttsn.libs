@@ -245,54 +245,6 @@ bool Op::verifySubFilterInternal(const char* filter)
     }
 }
 
-bool Op::verifyPubTopicInternal(const char* topic, bool outgoing)
-{
-    if (Config::HasTopicFormatVerification) {
-        if (outgoing && (!m_client.configState().m_verifyOutgoingTopic)) {
-            return true;
-        }
-
-        if ((!outgoing) && (!m_client.configState().m_verifyIncomingTopic)) {
-            return true;
-        }
-
-        COMMS_ASSERT(topic != nullptr);
-        if (topic[0] == '\0') {
-            return false;
-        }
-
-        if (outgoing && (topic[0] == '$')) {
-            errorLog("Cannot start topic with \'$\'.");
-            return false;
-        }
-
-        auto pos = 0U;
-        while (topic[pos] != '\0') {
-            auto incPosGuard = 
-                comms::util::makeScopeGuard(
-                    [&pos]()
-                    {
-                        ++pos;
-                    });
-
-            auto ch = topic[pos];
-
-            if ((ch == MultLevelWildcard) || 
-                (ch == SingleLevelWildcard)) {
-                errorLog("Wildcards cannot be used in publish topic");
-                return false;
-            }
-        }
-
-        return true;
-    }
-    else {
-        [[maybe_unused]] static constexpr bool ShouldNotBeCalled = false;
-        COMMS_ASSERT(ShouldNotBeCalled);
-        return false;
-    }
-}
-
 } // namespace op
 
 } // namespace cc_mqttsn_client

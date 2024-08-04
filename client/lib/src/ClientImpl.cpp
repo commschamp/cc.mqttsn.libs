@@ -23,6 +23,9 @@ namespace cc_mqttsn_client
 namespace 
 {
 
+static constexpr char MultLevelWildcard = '#';
+static constexpr char SingleLevelWildcard = '+';    
+
 template <typename TList>
 unsigned eraseFromList(const op::Op* op, TList& list)
 {
@@ -770,83 +773,220 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
 void ClientImpl::handle(RegisterMsg& msg)
 {
-    storeInRegTopic(msg.field_topicName().value().c_str(), msg.field_topicId().value());
-    RegackMsg resp;
-    resp.field_topicId().setValue(msg.field_topicId().value());
-    resp.field_msgId().setValue(msg.field_msgId().value());
-    resp.field_returnCode().value() = RegackMsg::Field_returnCode::ValueType::Accepted;
-    sendMessage(resp);
+    if (m_sessionState.m_disconnecting) {
+        return;
+    }    
+
+    for (auto& opPtr : m_keepAliveOps) {
+        msg.dispatch(*opPtr);
+    }  
+
+    using RetCodeType = RegackMsg::Field_returnCode::ValueType;
+    auto retCode = RetCodeType::Accepted;
+
+    auto sendRegackOnExit = 
+        comms::util::makeScopeGuard(
+            [this, &msg, &retCode]()
+            {
+                RegackMsg resp;
+                resp.field_topicId().setValue(msg.field_topicId().value());
+                resp.field_msgId().setValue(msg.field_msgId().value());
+                resp.field_returnCode().value() = retCode;
+                sendMessage(resp);
+            });
+
+    auto& topic = msg.field_topicName().value();
+    if ((topic.empty()) || (!verifyPubTopic(topic.c_str(), false))) {
+        errorLog("Received PUBLISH with invalid topic format.");
+        retCode = RetCodeType::NotSupported;
+        return; // Sends REGACK on exit
+    }         
+
+    storeInRegTopic(topic.c_str(), msg.field_topicId().value());
+    return; // Sends REGACK on exit
 }
 
-// void ClientImpl::handle(PublishMsg& msg)
-// {
-//     if (m_sessionState.m_disconnecting) {
-//         return;
-//     }
+void ClientImpl::handle(PublishMsg& msg)
+{
+    if (m_sessionState.m_disconnecting) {
+        return;
+    }
 
-//     for (auto& opPtr : m_keepAliveOps) {
-//         msg.dispatch(*opPtr);
-//     }       
+    for (auto& opPtr : m_keepAliveOps) {
+        msg.dispatch(*opPtr);
+    }   
 
-//     do {
-//         auto createRecvOp = 
-//             [this, &msg]()
-//             {
-//                 auto ptr = m_recvOpsAlloc.alloc(*this);
-//                 if (!ptr) {
-//                     errorLog("Failed to allocate handling op for the incoming PUBLISH message, ignoring.");
-//                     return; 
-//                 }
+    using ReturnCode = PubackMsg::Field_returnCode::ValueType;
+    auto sendPuback = 
+        [this, &msg](ReturnCode retCode)
+        {
+            PubackMsg pubackMsg;
+            pubackMsg.field_topicId().value() = msg.field_topicId().value();
+            pubackMsg.field_msgId().value() = msg.field_msgId().value();
+            pubackMsg.field_returnCode().value() = retCode;
+            auto ec = sendMessage(pubackMsg);
 
-//                 m_ops.push_back(ptr.get());
-//                 m_recvOps.push_back(std::move(ptr));
-//                 msg.dispatch(*m_recvOps.back());
-//             };
+            if (ec != CC_MqttsnErrorCode_Success) {
+                errorLog("Failed to send PUBACK in response to PUBLISH");
+                return;
+            }
+        };
 
-//         using Qos = op::Op::Qos;
-//         auto qos = msg.transportField_flags().field_qos().value();
-//         if ((qos == Qos::AtMostOnceDelivery) || 
-//             (qos == Qos::AtLeastOnceDelivery)) {
-//             createRecvOp();
-//             break;
-//         }
+    auto qos = msg.field_flags().field_qos().value();
+    if (Config::MaxQos < static_cast<unsigned>(qos)) {
+        sendPuback(ReturnCode::NotSupported);
+        return;        
+    }        
 
-//         if constexpr (Config::MaxQos >= 2) {
-//             auto iter = 
-//                 std::find_if(
-//                     m_recvOps.begin(), m_recvOps.end(),
-//                     [&msg](auto& opPtr)
-//                     {
-//                         return opPtr->packetId() == msg.field_packetId().field().value();
-//                     });
+    char shortTopicName[3] = {0};
+    const char* topic = nullptr;
+    auto topicIdType = msg.field_flags().field_topicIdType().value();
+    CC_MqttsnTopicId topicId = msg.field_topicId().value();
+    using TopicIdType = std::decay_t<decltype(topicIdType)>;
 
-//             if (iter == m_recvOps.end()) {
-//                 createRecvOp();
-//                 break;            
-//             }
+    if (topicIdType == TopicIdType::Normal) {
+        auto& regMap = m_reuseState.m_inRegTopics;
+        auto iter = findInRegTopicInfo(topicId, regMap);
+        if (iter == regMap.end()) {
+            sendPuback(ReturnCode::InvalidTopicId);
+            return;
+        }
 
-//             PubrecMsg pubrecMsg;
-//             pubrecMsg.field_packetId().setValue(msg.field_packetId().field().value());
+        COMMS_ASSERT(!iter->m_topic.empty());
+        topic = iter->m_topic.c_str();
+    }
 
-//             if (!msg.transportField_flags().field_dup().getBitValue_bit()) {
-//                 errorLog("Non duplicate PUBLISH with packet ID in use");
-//                 gatewayDisconnected(CC_MqttsnGatewayDisconnectReason_ProtocolError);
-//                 return;
-//             }
-//             else {
-//                 // Duplicate detected, just re-confirming
-//                 (*iter)->resetTimer();
-//             }
+    if (topicIdType == TopicIdType::ShortTopicName) {
+        shortTopicName[0] = static_cast<char>((topicId >> 8U) & 0xff);
+        shortTopicName[1] = static_cast<char>(topicId & 0xff);
+        topic = &shortTopicName[0];
+    }    
 
-//             sendMessage(pubrecMsg);
-//             return;
-//         }
-//         else {
-//             createRecvOp();
-//             break;
-//         }
-//     } while (false);
-// }
+    if constexpr (Config::HasSubTopicVerification) {    
+        do {
+            if (!m_configState.m_verifySubFilter) {
+                break;
+            }
+
+            auto& subFilters = m_reuseState.m_subFilters;
+            if (topicIdType == TopicIdType::PredefinedTopicId) {
+                auto iter = 
+                    std::find_if(
+                        subFilters.begin(), subFilters.end(),
+                        [topicId](const auto& info)
+                        {
+                            return 
+                                (info.m_topicId == topicId) && 
+                                (info.m_topic.empty());
+                        });
+
+                if (iter == subFilters.end()) {
+                    errorLog("Received PUBLISH on non-subscribed pre-defined topic ID");
+                    return;
+                }
+
+                // Topic ID is subscribed
+                break;
+            }
+
+            if (topic == nullptr) {
+                errorLog("Cannot determing PUBLISH topic");
+                return;
+            }
+
+            auto iter = 
+                std::lower_bound(
+                    subFilters.begin(), subFilters.end(), topic,
+                    [](const auto& info, const char* topicParam)
+                    {
+                        return info.m_topic < topicParam;
+                    });            
+
+            if (iter == subFilters.end()) {
+                errorLog("Received PUBLISH on non-subscribed topic");
+                return;                
+            }
+
+        } while (false);
+    }
+
+    auto reportMsgOnExit = 
+        comms::util::makeScopeGuard(
+            [this, &msg, topic, topicId]()
+            {
+                auto& dataVec = msg.field_data().value();
+
+                auto info = CC_MqttsnMessageInfo();
+                info.m_topic = topic;
+                info.m_data = dataVec.data();
+                comms::cast_assign(info.m_dataLen) = dataVec.size();
+                comms::cast_assign(info.m_qos) = msg.field_flags().field_qos().value();
+                info.m_retained = msg.field_flags().field_mid().getBitValue_Retain();
+
+                if (topic == nullptr) {
+                    info.m_topicId = topicId;
+                }
+
+                COMMS_ASSERT(m_messageReceivedReportCb != nullptr);
+                m_messageReceivedReportCb(m_messageReceivedReportData, &info);
+            });
+
+    if (qos == op::Op::Qos::AtMostOnceDelivery) {
+        return; 
+    }
+
+    if constexpr (1U <= Config::MaxQos) {
+        if (qos == op::Op::Qos::AtLeastOnceDelivery) {
+            m_sessionState.m_lastRecvMsgId = 0U;
+            sendPuback(ReturnCode::Accepted);
+            return; 
+        }
+    }
+
+    if constexpr (2U <= Config::MaxQos) {
+
+        auto msgId = msg.field_msgId().value();
+        auto sendPubrec = 
+            [this, msgId]()
+            {
+                PubrecMsg pubrecMsg;
+                pubrecMsg.field_msgId().setValue(msgId);
+                auto ec = sendMessage(pubrecMsg);
+                if (ec != CC_MqttsnErrorCode_Success) {
+                    errorLog("Failed to send PUBREC message");
+                }
+            };
+
+        do {
+            if (m_sessionState.m_lastRecvMsgId == 0U) {
+                break;
+            }
+
+            if (m_sessionState.m_lastRecvMsgId != msgId) {
+                errorLog("Previous Qos2 message reception wasn't completed properly.");
+                break;
+            }
+
+            if (!msg.field_flags().field_high().getBitValue_Dup()) {
+                errorLog("Repeated PUBLISH without DUP flag, ignoring.");
+                reportMsgOnExit.release();
+                return;
+            }
+                
+            sendPubrec();
+            reportMsgOnExit.release();
+            return;
+        } while (false);
+
+        m_sessionState.m_lastRecvMsgId = msgId;
+        sendPubrec();
+        return;
+    }
+
+    // Not expected to reach this point
+    COMMS_ASSERT(false); 
+    reportMsgOnExit.release();
+}
 
 void ClientImpl::handle(PubackMsg& msg)
 {
@@ -891,6 +1031,28 @@ void ClientImpl::handle(PubackMsg& msg)
         msg.dispatch(**iter);
     }
 }
+
+#if CC_MQTTSN_CLIENT_MAX_QOS >= 2
+void ClientImpl::handle(PubrelMsg& msg)
+{
+    auto msgId = msg.field_msgId().value();
+    if (m_sessionState.m_lastRecvMsgId == msgId) {
+        // Expected completion
+        m_sessionState.m_lastRecvMsgId = 0U;
+    } 
+    else if (m_sessionState.m_lastRecvMsgId != 0U) {
+        // Previous Qos2 reception is incomplete while unexpected PUBREL arrives
+        errorLog("Unexpected PUBREL message received");
+    }
+
+    PubcompMsg pubcompMsg;
+    pubcompMsg.field_msgId().value() = msgId;
+    auto ec = sendMessage(pubcompMsg);
+    if (ec != CC_MqttsnErrorCode_Success) {
+        errorLog("Failed to send PUBCOMP message");
+    }   
+}
+#endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 
 void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 {
@@ -1237,6 +1399,54 @@ CC_MqttsnErrorCode ClientImpl::initInternal()
     m_sessionState = SessionState();
     m_clientState.m_initialized = true;
     return CC_MqttsnErrorCode_Success;
+}
+
+bool ClientImpl::verifyPubTopicInternal(const char* topic, bool outgoing)
+{
+    if (Config::HasTopicFormatVerification) {
+        if (outgoing && (!m_configState.m_verifyOutgoingTopic)) {
+            return true;
+        }
+
+        if ((!outgoing) && (!m_configState.m_verifyIncomingTopic)) {
+            return true;
+        }
+
+        COMMS_ASSERT(topic != nullptr);
+        if (topic[0] == '\0') {
+            return false;
+        }
+
+        // if (outgoing && (topic[0] == '$')) {
+        //     errorLog("Cannot start topic with \'$\'.");
+        //     return false;
+        // }
+
+        auto pos = 0U;
+        while (topic[pos] != '\0') {
+            auto incPosGuard = 
+                comms::util::makeScopeGuard(
+                    [&pos]()
+                    {
+                        ++pos;
+                    });
+
+            auto ch = topic[pos];
+
+            if ((ch == MultLevelWildcard) || 
+                (ch == SingleLevelWildcard)) {
+                errorLog("Wildcards cannot be used in publish topic");
+                return false;
+            }
+        }
+
+        return true;
+    }
+    else {
+        [[maybe_unused]] static constexpr bool ShouldNotBeCalled = false;
+        COMMS_ASSERT(ShouldNotBeCalled);
+        return false;
+    }
 }
 
 // void ClientImpl::resumeSendOpsSince(unsigned idx)

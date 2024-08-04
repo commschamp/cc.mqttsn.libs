@@ -330,6 +330,22 @@ public:
     using UnitTestWillCompleteReportPtr = std::unique_ptr<UnitTestWillCompleteReport>;
     using UnitTestWillCompleteReportList = std::list<UnitTestWillCompleteReportPtr>;            
 
+
+    struct UnitTestMessageInfo
+    {
+        std::string m_topic;
+        UnitTestData m_data;
+        CC_MqttsnQoS m_qos = CC_MqttsnQoS_AtMostOnceDelivery; 
+        CC_MqttsnTopicId m_topicId = 0U; 
+        bool m_retained = false; ///< Retain flag of the message.        
+
+        UnitTestMessageInfo() = default;
+        explicit UnitTestMessageInfo(const CC_MqttsnMessageInfo& info);
+    };
+
+    using UnitTestMessageInfoPtr = std::unique_ptr<UnitTestMessageInfo>;
+    using UnitTestMessageInfosList = std::list<UnitTestMessageInfoPtr>;            
+
     using UnitTestClientPtr = std::unique_ptr<CC_MqttsnClient, UnitTestDeleter>;
 
     void unitTestSetUp();
@@ -401,6 +417,9 @@ public:
 
     CC_MqttsnErrorCode unitTestWillSend(CC_MqttsnWillHandle will);    
 
+    bool unitTestHasReceivedMessage() const;
+    UnitTestMessageInfoPtr unitTestReceivedMessage(bool mustExist = true);
+
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
     CC_MqttsnErrorCode apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value);
@@ -469,6 +488,7 @@ private:
         UnitTestUnsubscribeCompleteReportList m_unsubscribeCompleteReports;
         UnitTestPublishCompleteReportList m_publishCompleteReports;
         UnitTestWillCompleteReportList m_willCompleteReports;
+        UnitTestMessageInfosList m_recvMsgs;
     };
 
     static void unitTestTickProgramCb(void* data, unsigned duration);

@@ -195,12 +195,12 @@ typedef unsigned short CC_MqttsnTopicId;
 /// @ingroup global
 typedef struct
 {
-    const char* topic; ///< Topic the message was published with. May be NULL if message is reported with predefined topic ID.
-    CC_MqttsnTopicId topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.
-    const unsigned char* msg; ///< Pointer to reported message binary data.
-    unsigned msgLen; ///< Number of bytes in reported message binary data.
-    CC_MqttsnQoS qos; ///< QoS level the message was received with.
-    bool retain; ///< Retain flag of the message.
+    const char* m_topic; ///< Topic the message was published with. May be NULL if message is reported with predefined topic ID.
+    const unsigned char* m_data; ///< Pointer to reported message binary data.
+    unsigned m_dataLen; ///< Number of bytes in reported message binary data.
+    CC_MqttsnQoS m_qos; ///< QoS level the message was received with.
+    CC_MqttsnTopicId m_topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.    
+    bool m_retained; ///< Retain flag of the message.
 } CC_MqttsnMessageInfo;
 
 /// @brief Gateway information

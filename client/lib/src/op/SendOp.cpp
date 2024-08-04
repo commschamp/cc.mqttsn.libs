@@ -74,7 +74,7 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
         return CC_MqttsnErrorCode_BadParam;          
     }
 
-    if ((!emptyTopic) && (!verifyPubTopic(config->m_topic, true))) {
+    if ((!emptyTopic) && (!client().verifyPubTopic(config->m_topic, true))) {
         errorLog("Bad topic filter format in publish.");
         return CC_MqttsnErrorCode_BadParam;
     }    

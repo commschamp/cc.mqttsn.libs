@@ -129,6 +129,12 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
         return CC_MqttsnErrorCode_InsufficientConfig;
     }
 
+    if ((!m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) && 
+        (client().clientState().m_firstConnect)) {
+        errorLog("Clean session flag needs to be set on the first connection attempt, perform configuration first.");
+        return CC_MqttsnErrorCode_InsufficientConfig;
+    }      
+
     if (!m_timer.isValid()) {
         errorLog("The library cannot allocate required number of timers.");
         return CC_MqttsnErrorCode_InternalError;
