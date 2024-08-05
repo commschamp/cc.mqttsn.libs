@@ -15,6 +15,7 @@
 #include "comms/util/assign.h"
 
 #include <algorithm>
+#include <string_view>
 #include <type_traits>
 
 namespace cc_mqttsn_client
@@ -74,6 +75,59 @@ InRegTopicsMap::iterator findInRegTopicInfo(const char* topic, InRegTopicsMap& m
                 return info.m_topic == topic;
             });
 }
+
+
+bool isTopicMatch(std::string_view filter, std::string_view topic)
+{
+    if ((filter.size() == 1U) && (filter[0] == '#')) {
+        return true;
+    }
+
+    if (topic.empty()) {
+        return filter.empty();
+    }
+
+    auto filterSepPos = filter.find_first_of("/");
+    auto topicSepPos = topic.find_first_of("/");
+
+    if ((filterSepPos == std::string_view::npos) && 
+        (topicSepPos != std::string_view::npos)) {
+        return false;
+    }
+
+    if (topicSepPos != std::string_view::npos) {
+        COMMS_ASSERT(filterSepPos != std::string_view::npos);
+        if (((filter[0] == '+') && (filterSepPos == 1U)) || 
+            (filter.substr(0, filterSepPos) == topic.substr(0, topicSepPos))) {
+            return isTopicMatch(filter.substr(filterSepPos + 1U), topic.substr(topicSepPos + 1U));
+        }
+
+        return false;
+    }
+
+    if (filterSepPos != std::string_view::npos) {
+        COMMS_ASSERT(topicSepPos == std::string_view::npos);
+        if (filter.size() <= (filterSepPos + 1U)) {
+            // trailing '/' on the filter without any character after that
+            return false;
+        }
+
+        if (((filter[0] == '+') && (filterSepPos == 1U)) || 
+            (filter.substr(0, filterSepPos) == topic)) {
+            return isTopicMatch(filter.substr(filterSepPos + 1U), std::string_view());
+        }
+
+        return false;
+    }
+
+    COMMS_ASSERT(filterSepPos == std::string_view::npos);
+    COMMS_ASSERT(topicSepPos == std::string_view::npos);
+
+    return 
+        (((filter[0] == '+') && (filter.size() == 1U)) || 
+         (filter == topic));
+}
+
 
 } // namespace 
 
@@ -773,9 +827,9 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
 void ClientImpl::handle(RegisterMsg& msg)
 {
-    if (m_sessionState.m_disconnecting) {
+    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
         return;
-    }    
+    } 
 
     for (auto& opPtr : m_keepAliveOps) {
         msg.dispatch(*opPtr);
@@ -808,7 +862,7 @@ void ClientImpl::handle(RegisterMsg& msg)
 
 void ClientImpl::handle(PublishMsg& msg)
 {
-    if (m_sessionState.m_disconnecting) {
+    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
         return;
     }
 
@@ -839,7 +893,7 @@ void ClientImpl::handle(PublishMsg& msg)
     }        
 
     char shortTopicName[3] = {0};
-    const char* topic = nullptr;
+    std::string_view topic;
     auto topicIdType = msg.field_flags().field_topicIdType().value();
     CC_MqttsnTopicId topicId = msg.field_topicId().value();
     using TopicIdType = std::decay_t<decltype(topicIdType)>;
@@ -847,19 +901,19 @@ void ClientImpl::handle(PublishMsg& msg)
     if (topicIdType == TopicIdType::Normal) {
         auto& regMap = m_reuseState.m_inRegTopics;
         auto iter = findInRegTopicInfo(topicId, regMap);
-        if (iter == regMap.end()) {
+        if ((iter == regMap.end()) || (iter->m_topicId != topicId)) {
             sendPuback(ReturnCode::InvalidTopicId);
             return;
         }
 
         COMMS_ASSERT(!iter->m_topic.empty());
-        topic = iter->m_topic.c_str();
+        topic = std::string_view(iter->m_topic.c_str(), iter->m_topic.size());
     }
 
     if (topicIdType == TopicIdType::ShortTopicName) {
         shortTopicName[0] = static_cast<char>((topicId >> 8U) & 0xff);
         shortTopicName[1] = static_cast<char>(topicId & 0xff);
-        topic = &shortTopicName[0];
+        topic = std::string_view(&shortTopicName[0], 2U);
     }    
 
     if constexpr (Config::HasSubTopicVerification) {    
@@ -869,6 +923,7 @@ void ClientImpl::handle(PublishMsg& msg)
             }
 
             auto& subFilters = m_reuseState.m_subFilters;
+
             if (topicIdType == TopicIdType::PredefinedTopicId) {
                 auto iter = 
                     std::find_if(
@@ -889,18 +944,18 @@ void ClientImpl::handle(PublishMsg& msg)
                 break;
             }
 
-            if (topic == nullptr) {
-                errorLog("Cannot determing PUBLISH topic");
+            if (topic.empty()) {
+                errorLog("Cannot determine PUBLISH topic");
                 return;
             }
 
             auto iter = 
-                std::lower_bound(
-                    subFilters.begin(), subFilters.end(), topic,
-                    [](const auto& info, const char* topicParam)
+                std::find_if(
+                    subFilters.begin(), subFilters.end(),
+                    [&topic](auto& info)
                     {
-                        return info.m_topic < topicParam;
-                    });            
+                        return isTopicMatch(std::string_view(info.m_topic.c_str(), info.m_topic.size()), topic);
+                    });
 
             if (iter == subFilters.end()) {
                 errorLog("Received PUBLISH on non-subscribed topic");
@@ -917,13 +972,13 @@ void ClientImpl::handle(PublishMsg& msg)
                 auto& dataVec = msg.field_data().value();
 
                 auto info = CC_MqttsnMessageInfo();
-                info.m_topic = topic;
+                info.m_topic = topic.data();
                 info.m_data = dataVec.data();
                 comms::cast_assign(info.m_dataLen) = dataVec.size();
                 comms::cast_assign(info.m_qos) = msg.field_flags().field_qos().value();
                 info.m_retained = msg.field_flags().field_mid().getBitValue_Retain();
 
-                if (topic == nullptr) {
+                if (topic.empty()) {
                     info.m_topicId = topicId;
                 }
 
@@ -990,6 +1045,10 @@ void ClientImpl::handle(PublishMsg& msg)
 
 void ClientImpl::handle(PubackMsg& msg)
 {
+    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+        return;
+    }
+
     for (auto& opPtr : m_keepAliveOps) {
         msg.dispatch(*opPtr);
     }  
@@ -1035,6 +1094,10 @@ void ClientImpl::handle(PubackMsg& msg)
 #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 void ClientImpl::handle(PubrelMsg& msg)
 {
+    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+        return;
+    }
+
     auto msgId = msg.field_msgId().value();
     if (m_sessionState.m_lastRecvMsgId == msgId) {
         // Expected completion
@@ -1159,7 +1222,6 @@ void ClientImpl::opComplete(const op::Op* op)
         /* Type_Disconnect */ &ClientImpl::opComplete_Disconnect,
         /* Type_Subscribe */ &ClientImpl::opComplete_Subscribe,
         /* Type_Unsubscribe */ &ClientImpl::opComplete_Unsubscribe,
-        // /* Type_Recv */ &ClientImpl::opComplete_Recv,
         /* Type_Send */ &ClientImpl::opComplete_Send,
         /* Type_Will */ &ClientImpl::opComplete_Will,
     };
@@ -1585,11 +1647,6 @@ void ClientImpl::opComplete_Unsubscribe(const op::Op* op)
     eraseFromList(op, m_unsubscribeOps);
     finaliseSupUnsubOp();
 }
-
-// void ClientImpl::opComplete_Recv(const op::Op* op)
-// {
-//     eraseFromList(op, m_recvOps);
-// }
 
 void ClientImpl::opComplete_Send(const op::Op* op)
 {

@@ -21,7 +21,6 @@
 #include "op/DisconnectOp.h"
 #include "op/KeepAliveOp.h"
 #include "op/Op.h"
-// #include "op/RecvOp.h"
 #include "op/SearchOp.h"
 #include "op/SendOp.h"
 #include "op/SubscribeOp.h"
@@ -234,11 +233,6 @@ public:
         }
     }       
 
-    // std::size_t recvsCount() const
-    // {
-    //     return m_recvOps.size();
-    // }    
-    
 private:
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     using SearchOpAlloc = ObjAllocator<op::SearchOp, ExtConfig::SearchOpsLimit>;
@@ -259,9 +253,6 @@ private:
 
     using UnsubscribeOpAlloc = ObjAllocator<op::UnsubscribeOp, ExtConfig::UnsubscribeOpsLimit>;
     using UnsubscribeOpsList = ObjListType<UnsubscribeOpAlloc::Ptr, ExtConfig::UnsubscribeOpsLimit>;
-
-    // using RecvOpAlloc = ObjAllocator<op::RecvOp, ExtConfig::RecvOpsLimit>;
-    // using RecvOpsList = ObjListType<RecvOpAlloc::Ptr, ExtConfig::RecvOpsLimit>;
 
     using SendOpAlloc = ObjAllocator<op::SendOp, ExtConfig::SendOpsLimit>;
     using SendOpsList = ObjListType<SendOpAlloc::Ptr, ExtConfig::SendOpsLimit>;
@@ -296,7 +287,6 @@ private:
     void opComplete_Disconnect(const op::Op* op);
     void opComplete_Subscribe(const op::Op* op);
     void opComplete_Unsubscribe(const op::Op* op);
-    // void opComplete_Recv(const op::Op* op);
     void opComplete_Send(const op::Op* op);
     void opComplete_Will(const op::Op* op);
 
@@ -368,9 +358,6 @@ private:
 
     UnsubscribeOpAlloc m_unsubscribeOpsAlloc;
     UnsubscribeOpsList m_unsubscribeOps;
-
-    // RecvOpAlloc m_recvOpsAlloc;
-    // RecvOpsList m_recvOps;
 
     SendOpAlloc m_sendOpsAlloc;
     SendOpsList m_sendOps;

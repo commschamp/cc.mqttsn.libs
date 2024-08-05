@@ -31,9 +31,6 @@ set(CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN 128)
 # Limit the length of the buffer required to store serialized message
 set(CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE 512)
 
-# Limit the amount of incomplete QoS2 messages being received in parallel
-set (CC_MQTTSN_CLIENT_RECEIVE_MAX_LIMIT 4)
-
 # Limit the amount of outstanding publish (send) operations
 set (CC_MQTTSN_CLIENT_ASYNC_SEND_LIMIT 6)
 

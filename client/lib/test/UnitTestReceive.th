@@ -11,6 +11,16 @@ public:
     void test1();
     void test2();
     void test3();
+    void test4();
+    void test5();
+    void test6();
+    void test7();
+    void test8();
+    void test9();
+    void test10();
+    void test11();
+    void test12();
+    void test13();
 
 private:
     virtual void setUp() override
@@ -208,6 +218,825 @@ void UnitTestReceive::test3()
         TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), MsgId);
         TS_ASSERT(!unitTestHasReceivedMessage());
     }        
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestReceive::test4()
+{
+    // Testing Qos0 reception of short topic name
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtMostOnceDelivery;
+    const std::string Topic = "ab";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+
+    unitTestDoSubscribeTopic(client, "#");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto topicId = unitTestShortTopicNameToId(Topic);
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::ShortTopicName;
+        publishMsg.field_topicId().setValue(topicId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestReceive::test5()
+{
+    // Testing Qos1 reception of short topic name
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const std::string Topic = "ab";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const std::uint16_t MsgId = 1;
+
+    unitTestDoSubscribeTopic(client, "#");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto topicId = unitTestShortTopicNameToId(Topic);
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::ShortTopicName;
+        publishMsg.field_topicId().setValue(topicId);
+        publishMsg.field_msgId().setValue(MsgId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubackMsg = dynamic_cast<UnitTestPubackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubackMsg, nullptr);
+        TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), topicId);
+        TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), MsgId);
+        TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::Accepted);
+    }       
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+
+void UnitTestReceive::test6()
+{
+    // Testing Qos2 reception of short topic name
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const std::string Topic = "ab";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const std::uint16_t MsgId = 1;
+    auto topicId = unitTestShortTopicNameToId(Topic);
+
+    unitTestDoSubscribeTopic(client, "+");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::ShortTopicName;
+        publishMsg.field_topicId().setValue(topicId);
+        publishMsg.field_msgId().setValue(MsgId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), MsgId);
+    }       
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubrelMsg pubrelMsg;
+        pubrelMsg.field_msgId().setValue(MsgId);
+        unitTestClientInputMessage(client, pubrelMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubcompMsg = dynamic_cast<UnitTestPubcompMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubcompMsg, nullptr);
+        TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), MsgId);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }        
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestReceive::test7()
+{
+    // Testing Qos0 reception with registration
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtMostOnceDelivery;
+    const std::string Topic = "abcd";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const CC_MqttsnTopicId TopicId = 123;
+    const std::uint16_t RegMsgId = 1;
+
+    unitTestDoSubscribeTopic(client, "#");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        UnitTestRegisterMsg registerMsg;
+        registerMsg.field_topicId().setValue(TopicId);
+        registerMsg.field_msgId().setValue(RegMsgId);
+        registerMsg.field_topicName().setValue(Topic);
+        unitTestClientInputMessage(client, registerMsg);
+    }    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* regackMsg = dynamic_cast<UnitTestRegackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(regackMsg, nullptr);
+        TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId);
+        TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000); 
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+        publishMsg.field_topicId().setValue(TopicId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestReceive::test8()
+{
+    // Testing Qos1 reception with registration
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const std::string Topic = "abcd";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const CC_MqttsnTopicId TopicId = 123;
+    const std::uint16_t RegMsgId = 1;
+    const std::uint16_t PubMsgId = 2;
+
+    unitTestDoSubscribeTopic(client, "#");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        UnitTestRegisterMsg registerMsg;
+        registerMsg.field_topicId().setValue(TopicId);
+        registerMsg.field_msgId().setValue(RegMsgId);
+        registerMsg.field_topicName().setValue(Topic);
+        unitTestClientInputMessage(client, registerMsg);
+    }    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* regackMsg = dynamic_cast<UnitTestRegackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(regackMsg, nullptr);
+        TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId);
+        TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);    
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+        publishMsg.field_topicId().setValue(TopicId);
+        publishMsg.field_msgId().setValue(PubMsgId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubackMsg = dynamic_cast<UnitTestPubackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubackMsg, nullptr);
+        TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), PubMsgId);
+        TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::Accepted);
+    }     
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+
+void UnitTestReceive::test9()
+{
+    // Testing Qos2 reception with registration
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const std::string Topic = "abcd";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const CC_MqttsnTopicId TopicId = 123;
+    const std::uint16_t RegMsgId = 1;
+    const std::uint16_t PubMsgId = 2;
+
+    unitTestDoSubscribeTopic(client, "#");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        UnitTestRegisterMsg registerMsg;
+        registerMsg.field_topicId().setValue(TopicId);
+        registerMsg.field_msgId().setValue(RegMsgId);
+        registerMsg.field_topicName().setValue(Topic);
+        unitTestClientInputMessage(client, registerMsg);
+    }    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* regackMsg = dynamic_cast<UnitTestRegackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(regackMsg, nullptr);
+        TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId);
+        TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);    
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+        publishMsg.field_topicId().setValue(TopicId);
+        publishMsg.field_msgId().setValue(PubMsgId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), PubMsgId);
+    }     
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubrelMsg pubrelMsg;
+        pubrelMsg.field_msgId().setValue(PubMsgId);
+        unitTestClientInputMessage(client, pubrelMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubcompMsg = dynamic_cast<UnitTestPubcompMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubcompMsg, nullptr);
+        TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), PubMsgId);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }        
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestReceive::test10()
+{
+    // Testing reception with unknown topic id
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtMostOnceDelivery;
+    const std::string Topic = "abcd";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const CC_MqttsnTopicId TopicId = 123;
+
+    unitTestDoSubscribeTopic(client, "#");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000); 
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+        publishMsg.field_topicId().setValue(TopicId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    TS_ASSERT(!unitTestHasReceivedMessage());
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubackMsg = dynamic_cast<UnitTestPubackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubackMsg, nullptr);
+        TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), 0U);
+        TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::InvalidTopicId);
+    } 
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+
+void UnitTestReceive::test11()
+{
+    // Testing duplicate Qos2 reception of predefined topicId
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const std::uint16_t MsgId = 1;
+
+    unitTestDoSubscribeTopicId(client, TopicId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::PredefinedTopicId;
+        publishMsg.field_topicId().setValue(TopicId);
+        publishMsg.field_msgId().setValue(MsgId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), MsgId);
+    }       
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT(msgInfo->m_topic.empty());
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, TopicId);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 3000);
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::PredefinedTopicId;
+        publishMsg.field_flags().field_high().setBitValue_Dup(true);
+        publishMsg.field_topicId().setValue(TopicId);
+        publishMsg.field_msgId().setValue(MsgId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }    
+
+    TS_ASSERT(!unitTestHasReceivedMessage()); // Duplicate message should not be reported
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), MsgId);
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);      
+
+    {
+        UnitTestPubrelMsg pubrelMsg;
+        pubrelMsg.field_msgId().setValue(MsgId);
+        unitTestClientInputMessage(client, pubrelMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubcompMsg = dynamic_cast<UnitTestPubcompMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubcompMsg, nullptr);
+        TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), MsgId);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }        
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestReceive::test12()
+{
+    // Testing topic id registration during subscribe
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtMostOnceDelivery;
+    const std::string Topic = "abcd";
+    const bool Retained = true;
+    const UnitTestData Data = {1, 2, 3, 4};
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnSubscribeConfig config;
+    UnitTestSubscribeResponseConfig subRespConfig;
+    subRespConfig.m_topicId = TopicId;
+
+    apiSubscribeInitConfig(&config);    
+    config.m_topic = Topic.c_str();
+    unitTestDoSubscribe(client, &config, &subRespConfig);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        UnitTestPublishMsg publishMsg;
+        publishMsg.field_flags().field_qos().setValue(Qos);
+        publishMsg.field_flags().field_mid().setBitValue_Retain(Retained);
+        publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+        publishMsg.field_topicId().setValue(TopicId);
+        publishMsg.field_data().value() = Data;
+
+        unitTestClientInputMessage(client, publishMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestReceive::test13()
+{
+    // Testing reception with expiring registration
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    auto ec = apiSetIncomingTopicIdStorageLimit(client, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtMostOnceDelivery;
+    const std::string Topic1 = "dead";
+    const std::string Topic2 = "beef";
+    const UnitTestData Data = {1, 2, 3, 4};
+    const CC_MqttsnTopicId TopicId1 = 123;
+    const CC_MqttsnTopicId TopicId2 = 321;
+    const std::uint16_t RegMsgId1 = 1;
+    const std::uint16_t RegMsgId2 = 2;
+
+    unitTestDoSubscribeTopic(client, "#");
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    {
+        UnitTestRegisterMsg registerMsg;
+        registerMsg.field_topicId().setValue(TopicId1);
+        registerMsg.field_msgId().setValue(RegMsgId1);
+        registerMsg.field_topicName().setValue(Topic1);
+        unitTestClientInputMessage(client, registerMsg);
+    }    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* regackMsg = dynamic_cast<UnitTestRegackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(regackMsg, nullptr);
+        TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId1);
+        TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId1);
+        TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000); 
+
+    UnitTestPublishMsg publishMsg1;
+    publishMsg1.field_flags().field_qos().setValue(Qos);
+    publishMsg1.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+    publishMsg1.field_topicId().setValue(TopicId1);
+    publishMsg1.field_data().value() = Data;
+    unitTestClientInputMessage(client, publishMsg1);
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic1);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, false);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);     
+
+    // Repeat Topic1 publish
+    unitTestClientInputMessage(client, publishMsg1);
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic1);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, false);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }    
+
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    // Register Topic2
+    {
+        UnitTestRegisterMsg registerMsg;
+        registerMsg.field_topicId().setValue(TopicId2);
+        registerMsg.field_msgId().setValue(RegMsgId2);
+        registerMsg.field_topicName().setValue(Topic2);
+        unitTestClientInputMessage(client, registerMsg);
+    }    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* regackMsg = dynamic_cast<UnitTestRegackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(regackMsg, nullptr);
+        TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId2);
+        TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId2);
+        TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);     
+
+    UnitTestPublishMsg publishMsg2;
+    publishMsg2.field_flags().field_qos().setValue(Qos);
+    publishMsg2.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+    publishMsg2.field_topicId().setValue(TopicId2);
+    publishMsg2.field_data().value() = Data;
+    unitTestClientInputMessage(client, publishMsg2);
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic2);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, false);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);     
+
+    // Repeat Topic2 message
+    unitTestClientInputMessage(client, publishMsg2);
+
+    {
+        TS_ASSERT(unitTestHasReceivedMessage());
+        auto msgInfo = unitTestReceivedMessage();
+        TS_ASSERT_EQUALS(msgInfo->m_topic, Topic2);
+        TS_ASSERT_EQUALS(msgInfo->m_topicId, 0U);
+        TS_ASSERT_EQUALS(msgInfo->m_data, Data);
+        TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
+        TS_ASSERT_EQUALS(msgInfo->m_retained, false);
+        TS_ASSERT(!unitTestHasReceivedMessage());
+    }   
+
+    // Repeat Topic1 message, expected to reject  
+
+    unitTestClientInputMessage(client, publishMsg1);      
+
+    {
+        TS_ASSERT(!unitTestHasReceivedMessage());
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubackMsg = dynamic_cast<UnitTestPubackMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubackMsg, nullptr);
+        TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), TopicId1);
+        TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), 0U);
+        TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::InvalidTopicId);        
+    }
 
     TS_ASSERT(unitTestHasTickReq());
 }

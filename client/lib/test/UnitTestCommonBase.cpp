@@ -677,7 +677,10 @@ CC_MqttsnErrorCode UnitTestCommonBase::unitTestSubscribeSend(CC_MqttsnSubscribeH
     return m_funcs.m_subscribe_send(subscribe, &UnitTestCommonBase::unitTestSubscribeCompleteCb, this);
 }
 
-void UnitTestCommonBase::unitTestDoSubscribe(CC_MqttsnClient* client, const CC_MqttsnSubscribeConfig* config)
+void UnitTestCommonBase::unitTestDoSubscribe(
+    CC_MqttsnClient* client, 
+    const CC_MqttsnSubscribeConfig* config, 
+    const UnitTestSubscribeResponseConfig* respConfig)
 {
     auto ec = m_funcs.m_subscribe(client, config, &UnitTestCommonBase::unitTestSubscribeCompleteCb, this);
     test_assert(ec == CC_MqttsnErrorCode_Success);
@@ -699,6 +702,11 @@ void UnitTestCommonBase::unitTestDoSubscribe(CC_MqttsnClient* client, const CC_M
     subackMsg.field_flags().field_qos().setValue(config->m_qos);
     subackMsg.field_msgId().setValue(subMsgId);
     subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+
+    if (respConfig != nullptr) {
+        subackMsg.field_topicId().setValue(respConfig->m_topicId);
+    }
+
     unitTestClientInputMessage(client, subackMsg);    
 
     test_assert(unitTestHasSubscribeCompleteReport());
@@ -842,6 +850,11 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiSetAvailableGatewayInfo(CC_MqttsnClien
 CC_MqttsnErrorCode UnitTestCommonBase::apiSetOutgoingTopicIdStorageLimit(CC_MqttsnClient* client, unsigned long long limit)
 {
     return m_funcs.m_set_outgoing_topic_id_storage_limit(client, limit);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSetIncomingTopicIdStorageLimit(CC_MqttsnClient* client, unsigned long long limit)
+{
+    return m_funcs.m_set_incoming_topic_id_storage_limit(client, limit);
 }
 
 CC_MqttsnSearchHandle UnitTestCommonBase::apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)

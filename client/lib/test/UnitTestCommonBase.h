@@ -267,6 +267,11 @@ public:
     using UnitTestSubscribeCompleteReportPtr = std::unique_ptr<UnitTestSubscribeCompleteReport>;
     using UnitTestSubscribeCompleteReportList = std::list<UnitTestSubscribeCompleteReportPtr>;    
 
+    struct UnitTestSubscribeResponseConfig
+    {
+        CC_MqttsnTopicId m_topicId = 0U;
+    };     
+
 
     struct UnitTestUnsubscribeCompleteReport
     {
@@ -398,7 +403,7 @@ public:
     UnitTestSubscribeCompleteReportPtr unitTestSubscribeCompleteReport(bool mustExist = true);
 
     CC_MqttsnErrorCode unitTestSubscribeSend(CC_MqttsnSubscribeHandle subscribe);
-    void unitTestDoSubscribe(CC_MqttsnClient* client, const CC_MqttsnSubscribeConfig* config);
+    void unitTestDoSubscribe(CC_MqttsnClient* client, const CC_MqttsnSubscribeConfig* config, const UnitTestSubscribeResponseConfig* respConfig = nullptr);
     void unitTestDoSubscribeTopic(CC_MqttsnClient* client, const std::string& topic, CC_MqttsnQoS qos = CC_MqttsnQoS_ExactlyOnceDelivery);
     void unitTestDoSubscribeTopicId(CC_MqttsnClient* client, CC_MqttsnTopicId topicId, CC_MqttsnQoS qos = CC_MqttsnQoS_ExactlyOnceDelivery);
 
@@ -427,6 +432,7 @@ public:
     void apiInitGatewayInfo(CC_MqttsnGatewayInfo* info);
     CC_MqttsnErrorCode apiSetAvailableGatewayInfo(CC_MqttsnClient* client, const CC_MqttsnGatewayInfo* info);
     CC_MqttsnErrorCode apiSetOutgoingTopicIdStorageLimit(CC_MqttsnClient* client, unsigned long long limit);
+    CC_MqttsnErrorCode apiSetIncomingTopicIdStorageLimit(CC_MqttsnClient* client, unsigned long long limit);
 
     CC_MqttsnSearchHandle apiSearchPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
     CC_MqttsnErrorCode apiSearchSetRetryPeriod(CC_MqttsnSearchHandle search, unsigned value);
