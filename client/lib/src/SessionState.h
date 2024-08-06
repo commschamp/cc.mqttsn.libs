@@ -15,7 +15,6 @@ struct SessionState
     static constexpr unsigned DefaultKeepAlive = 60;
 
     unsigned m_keepAliveMs = 0U;
-    std::uint16_t m_lastRecvMsgId = 0U;
     bool m_connected = false;
     bool m_disconnecting = false;
 };

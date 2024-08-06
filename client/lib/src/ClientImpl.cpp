@@ -992,7 +992,7 @@ void ClientImpl::handle(PublishMsg& msg)
 
     if constexpr (1U <= Config::MaxQos) {
         if (qos == op::Op::Qos::AtLeastOnceDelivery) {
-            m_sessionState.m_lastRecvMsgId = 0U;
+            m_reuseState.m_lastRecvMsgId = 0U;
             sendPuback(ReturnCode::Accepted);
             return; 
         }
@@ -1013,11 +1013,11 @@ void ClientImpl::handle(PublishMsg& msg)
             };
 
         do {
-            if (m_sessionState.m_lastRecvMsgId == 0U) {
+            if (m_reuseState.m_lastRecvMsgId == 0U) {
                 break;
             }
 
-            if (m_sessionState.m_lastRecvMsgId != msgId) {
+            if (m_reuseState.m_lastRecvMsgId != msgId) {
                 errorLog("Previous Qos2 message reception wasn't completed properly.");
                 break;
             }
@@ -1033,7 +1033,7 @@ void ClientImpl::handle(PublishMsg& msg)
             return;
         } while (false);
 
-        m_sessionState.m_lastRecvMsgId = msgId;
+        m_reuseState.m_lastRecvMsgId = msgId;
         sendPubrec();
         return;
     }
@@ -1099,11 +1099,11 @@ void ClientImpl::handle(PubrelMsg& msg)
     }
 
     auto msgId = msg.field_msgId().value();
-    if (m_sessionState.m_lastRecvMsgId == msgId) {
+    if (m_reuseState.m_lastRecvMsgId == msgId) {
         // Expected completion
-        m_sessionState.m_lastRecvMsgId = 0U;
+        m_reuseState.m_lastRecvMsgId = 0U;
     } 
-    else if (m_sessionState.m_lastRecvMsgId != 0U) {
+    else if (m_reuseState.m_lastRecvMsgId != 0U) {
         // Previous Qos2 reception is incomplete while unexpected PUBREL arrives
         errorLog("Unexpected PUBREL message received");
     }

@@ -21,6 +21,7 @@ struct ReuseState
     SubFiltersMap m_subFilters;
     InRegTopicsMap m_inRegTopics;
     OutRegTopicsMap m_outRegTopics;
+    std::uint16_t m_lastRecvMsgId = 0U;
 
 #if CC_MQTTSN_CLIENT_HAS_WILL    
     using WillTopicType = WilltopicMsg::Field_willTopic::ValueType;
