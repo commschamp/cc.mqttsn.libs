@@ -1453,6 +1453,9 @@
 ///     ...
 /// }
 /// @endcode
+/// When the set limit is reached the least recently used topic id record is dropped
+/// to free space for the newly registered one.
+///
 /// To get the current limit use @b cc_mqttsn_client_get_outgoing_topic_id_storage_limit()
 /// function.
 ///
@@ -1641,10 +1644,121 @@
 ///
 ///
 /// @section doc_cc_mqttsn_client_receive Receiving Messages
-/// TODO
+/// Right after the successful "connect" operation, the library starts expecting
+/// the arrival of the new messages and reports it via the @ref doc_cc_mqttsn_client_callbacks_message
+/// "registered callback". <b>By default</b> the library monitors the topics the client
+/// application @ref doc_cc_mqttsn_client_subscribe "subscribed" to and does not
+/// report "rogue" messages from the gateway.
+///
+/// @b Note that only topics themselves
+/// are monitored, and not the requested maximal @b QoS values. It means that if
+/// application requested maximal @b QoS1 for a particular subscription, but the
+/// gateway sends message using the @b QoS2, the message is still going to be
+/// reported to the application.
+///
+/// However, if the gateway is trusted to do the right thing, i.e. fully comply to
+/// the specification, it is possible to enable / disable the incoming topics check using the
+/// @b cc_mqttsn_client_set_verify_incoming_msg_subscribed() for performance reasons.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_verify_incoming_msg_subscribed(client, false);
+/// @endcode
+/// To retrieve the current configuration use the @b cc_mqttsn_client_get_verify_incoming_msg_subscribed() function.
+///
+/// @b WARNING: When the incoming message subscription verification is disabled, the
+/// library does @b NOT track any new @ref doc_cc_mqttsn_client_subscribe "subscription"
+/// requests, which can result in dropping legit messages and not reporting them to the application
+/// after the subscription verification is re-enabled later.
+///
+/// Similarly, the library also <b>by default</b> verifies the incoming topic format, that it doesn't contain
+/// wildcard characters. To enable / disable such verification use the @b cc_mqttsn_client_set_verify_incoming_topic_enabled()
+/// function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_verify_incoming_topic_enabled(client, false);
+/// @endcode
+/// To retrieve the current configuration use the @b cc_mqttsn_client_get_verify_incoming_topic_enabled() function.
+///
+/// The
+/// @ref doc_cc_mqttsn_client_callbacks_message "message report callback" is invoked immediately on
+/// reception of the @b PUBLISH message even for QoS2 message. Just like it is shown as "Method B" in the "Figure 4.3" of the
+/// MQTT v3.1.1 specification. For QoS2 messages the packet ID is stored and the
+/// rest of the relevant QoS2 messages are exchanged in the background.
+///
+/// When a gateway attempts to publish a message with non-short topic (length of which
+/// is not equal to 2 characters), the topic needs to be registered against the
+/// client with allocated topic ID. Such topic ID is preserved
+/// for future use to avoid redundant registration process in the future.
+/// Depending on the amount of various topic strings that
+/// the end application may receive there might be a need to limit the uncontrolled growth of
+/// internal storage. To do so use @b cc_mqttsn_client_set_incoming_topic_id_storage_limit()
+/// function
+/// @code
+/// ec = cc_mqttsn_client_set_incoming_topic_id_storage_limit(client, 10);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to limit the incoming topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// When the set limit is reached the least recently used topic id record is dropped
+/// to free space for the newly registered one.
+///
+/// To get the current limit use @b cc_mqttsn_client_get_incoming_topic_id_storage_limit()
+/// function.
+///
+/// To remove the previously set limit, i.e. reset it to the default pass @b 0 as
+/// the limit value to @b cc_mqttsn_client_set_incoming_topic_id_storage_limit().
+/// @code
+/// ec = cc_mqttsn_client_set_incoming_topic_id_storage_limit(client, 0);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to reset the limit the incoming topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
 ///
 /// @section doc_cc_mqttsn_client_sleep Sleeping
 /// TODO
 ///
 /// @section doc_cc_mqttsn_client_unsolicited_disconnect Unsolicited Gateway Disconnection
-/// TODO
+/// When broker disconnection is detected all the incomplete asynchronous operations
+/// will be terminated with the an appropriate @ref CC_MqttsnAsyncOpStatus "status" report.
+///
+/// The unsolicited broker disconnection can happen in one of the following scenarios:
+///
+/// @subsection doc_cc_mqttsn_client_unsolicited_disconnect_keep_alive Keep Alive Timeout
+/// When there was no message from the broker for the "keep alive" timeout (configured during the @ref connect "connect"
+/// operation) and the broker doesn't respond to the @b PINGREQ message.
+/// In such case the library responds in the following way:
+/// @li Terminates and invokes the callbacks of previously initiated but incomplete operations
+///     passing the @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected as their status report.
+/// @li Invokes the @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "disconnection report callback"
+///     registered using the @b cc_mqttsn_client_set_gw_disconnect_report_callback() function
+///     reporting @ref CC_MqttsnGatewayDisconnectReason_NoGatewayResponse as the disconnection reason.
+///
+/// @subsection doc_cc_mqttsn_client_unsolicited_disconnect_message Receiving DISCONNECT message
+/// When something goes wrong the gateway is allowed to send @b DISCONNECT message to
+/// the client at any time.
+/// In such case the library responds in the following way:
+/// @li Terminates and invokes the callbacks of all other previously initiated but incomplete operations
+///     passing the @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected as their status report.
+/// @li Invokes the @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "disconnection report callback"
+///     registered using the @b cc_mqttsn_client_set_gw_disconnect_report_callback() function
+///     reporting @ref CC_MqttsnGatewayDisconnectReason_DisconnectMsg as the disconnection reason.
+///
+/// With all said above it means that if application receives
+/// @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected status in the operation callback, then
+/// the application is expected to wait for the @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "disconnection report callback"
+/// which will follow.
+///
+/// @section doc_cc_mqttsn_client_thread_safety Thread Safety
+/// In general the library is @b NOT thread safe. To support multi-threading the application
+/// is expected to use appropriate locking mechanisms before calling relevant API functions.
+/// However, if each thread operates on a separate allocated
+/// @ref doc_cc_mqttsn_client_allocation "client", then the locking is required only
+/// for the @ref doc_cc_mqttsn_client_allocation "client allocation logic".
+///
+/// @section doc_cc_mqttsn_client_debug_build Debug Build
+/// The client library uses <a href="https://commschamp.github.io/comms_doc/page_use_prot.html#page_use_prot_error_handling">COMMS_ASSERT()</a>
+/// macro to check some internal pre- and post-conditions. It is a bug if the assertion fails, please report if
+/// encountered. By default it is like standard
+/// <a href="https://en.cppreference.com/w/cpp/error/assert">assert()</a> but allows overriding
+/// the default failure behavour, which can be more suitable for bare-metal systems. Please
+/// refer to the <a href="https://commschamp.github.io/comms_doc/page_assert.html">documentation</a> for details.
