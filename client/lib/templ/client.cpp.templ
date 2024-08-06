@@ -684,10 +684,10 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
     return cc_mqttsn_##NAME##client_connect_send(connect, cb, cbData);    
 }
 
-bool cc_mqttsn_##NAME##client_is_connected(CC_MqttsnClientHandle client)
+CC_MqttsnConnectionState cc_mqttsn_##NAME##client_get_connection_state(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
-    return clientFromHandle(client)->sessionState().m_connected;
+    return clientFromHandle(client)->sessionState().m_connectionState;
 }
 
 CC_MqttsnDisconnectHandle cc_mqttsn_##NAME##client_disconnect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)

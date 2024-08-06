@@ -66,7 +66,7 @@ public:
         CC_MqttsnErrorCode (*m_connect_send)(CC_MqttsnConnectHandle, CC_MqttsnConnectCompleteCb, void*) = nullptr;
         CC_MqttsnErrorCode (*m_connect_cancel)(CC_MqttsnConnectHandle) = nullptr;
         CC_MqttsnErrorCode (*m_connect)(CC_MqttsnClientHandle, const CC_MqttsnConnectConfig*, const CC_MqttsnWillConfig*, CC_MqttsnConnectCompleteCb, void*) = nullptr;
-        bool (*m_is_connected)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnConnectionState (*m_get_connection_state)(CC_MqttsnClientHandle) = nullptr;
         CC_MqttsnDisconnectHandle (*m_disconnect_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;
         CC_MqttsnErrorCode (*m_disconnect_set_retry_period)(CC_MqttsnDisconnectHandle, unsigned ms) = nullptr;
         unsigned (*m_disconnect_get_retry_period)(CC_MqttsnDisconnectHandle) = nullptr;
@@ -445,7 +445,7 @@ public:
     void apiConnectInitConfigWill(CC_MqttsnWillConfig* config);
     CC_MqttsnErrorCode apiConnectConfig(CC_MqttsnConnectHandle connect, const CC_MqttsnConnectConfig* config);
     CC_MqttsnErrorCode apiConnectConfigWill(CC_MqttsnConnectHandle connect, const CC_MqttsnWillConfig* config);
-    bool apiIsConnected(CC_MqttsnClient* client);
+    CC_MqttsnConnectionState apiGetConnectionState(CC_MqttsnClient* client);
 
     CC_MqttsnDisconnectHandle apiDisconnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
     CC_MqttsnErrorCode apiDisconnectSetRetryCount(CC_MqttsnDisconnectHandle disconnect, unsigned count);

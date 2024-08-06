@@ -76,7 +76,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_connect_send != nullptr);
     test_assert(m_funcs.m_connect_cancel != nullptr);
     test_assert(m_funcs.m_connect != nullptr);
-    test_assert(m_funcs.m_is_connected != nullptr);
+    test_assert(m_funcs.m_get_connection_state != nullptr);
     test_assert(m_funcs.m_disconnect_prepare != nullptr);
     test_assert(m_funcs.m_disconnect_set_retry_period != nullptr);
     test_assert(m_funcs.m_disconnect_get_retry_period != nullptr);
@@ -580,7 +580,7 @@ void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_Mqt
         }          
 
         test_assert(!unitTestHasConnectCompleteReport());
-        test_assert(!apiIsConnected(client));
+        test_assert(apiGetConnectionState(client) == CC_MqttsnConnectionState_Disconnected);
         test_assert(unitTestHasTickReq());
         unitTestTick(client, 100);               
     }
@@ -593,7 +593,7 @@ void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_Mqt
     auto connectReport = unitTestConnectCompleteReport();
     test_assert(connectReport->m_status== CC_MqttsnAsyncOpStatus_Complete)
     test_assert(connectReport->m_info.m_returnCode == CC_MqttsnReturnCode_Accepted)
-    test_assert(apiIsConnected(client));
+    test_assert(apiGetConnectionState(client)  == CC_MqttsnConnectionState_Connected);
 }
 
 void UnitTestCommonBase::unitTestDoConnectBasic(CC_MqttsnClient* client, const std::string& clientId, bool cleanSession)
@@ -907,9 +907,9 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiConnectConfigWill(CC_MqttsnConnectHand
     return m_funcs.m_connect_config_will(connect, config);
 }
 
-bool UnitTestCommonBase::apiIsConnected(CC_MqttsnClient* client)
+CC_MqttsnConnectionState UnitTestCommonBase::apiGetConnectionState(CC_MqttsnClient* client)
 {
-    return m_funcs.m_is_connected(client);
+    return m_funcs.m_get_connection_state(client);
 }
 
 CC_MqttsnDisconnectHandle UnitTestCommonBase::apiDisconnectPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)

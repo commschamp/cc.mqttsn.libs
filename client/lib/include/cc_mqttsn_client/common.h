@@ -115,6 +115,16 @@ typedef enum
     CC_MqttsnReturnCode_ValuesLimit ///< Limit for the values
 } CC_MqttsnReturnCode;
 
+/// @brief Connection state
+/// @ingroup global
+typedef enum
+{
+    CC_MqttsnConnectionState_Disconnected = 0, ///< Client disconnection from the gateway
+    CC_MqttsnConnectionState_Connected = 1, ///< Client connected to the gateway
+    CC_MqttsnConnectionState_Asleep = 2, ///< Client in the sleep mode
+    CC_MqttsnConnectionState_ValuesLimit ///< Limit for the values
+} CC_MqttsnConnectionState;
+
 /// @brief Declaration of struct for the @ref CC_MqttsnClientHandle;
 /// @ingroup client
 struct CC_MqttsnClient;

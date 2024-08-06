@@ -262,7 +262,7 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
             break;
         }
 
-        if (m_sessionState.m_connected) {
+        if (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Connected) {
             errorLog("Client is already connected.");
             updateEc(ec, CC_MqttsnErrorCode_AlreadyConnected);
             break;
@@ -301,8 +301,8 @@ op::DisconnectOp* ClientImpl::disconnectPrepare(CC_MqttsnErrorCode* ec)
 {
     op::DisconnectOp* op = nullptr;
     do {
-        if (!m_sessionState.m_connected) {
-            errorLog("Client must be connected to allow disconnect.");
+        if (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected) {
+            errorLog("Client must be connected / asleep to allow disconnect.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
         }
@@ -359,7 +359,7 @@ op::SubscribeOp* ClientImpl::subscribePrepare(CC_MqttsnErrorCode* ec)
 {
     op::SubscribeOp* op = nullptr;
     do {
-        if (!m_sessionState.m_connected) {
+        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
             errorLog("Client must be connected to allow subscription.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -410,7 +410,7 @@ op::UnsubscribeOp* ClientImpl::unsubscribePrepare(CC_MqttsnErrorCode* ec)
 {
     op::UnsubscribeOp* op = nullptr;
     do {
-        if (!m_sessionState.m_connected) {
+        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
             errorLog("Client must be connected to allow subscription.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -461,7 +461,7 @@ op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
 {
     op::SendOp* op = nullptr;
     do {
-        if (!m_sessionState.m_connected) {
+        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
             errorLog("Client must be connected to allow publish.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -513,7 +513,7 @@ op::WillOp* ClientImpl::willPrepare(CC_MqttsnErrorCode* ec)
 {
     op::WillOp* op = nullptr;
     do {
-        if (!m_sessionState.m_connected) {
+        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
             errorLog("Client must be connected to allow will update.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -827,7 +827,8 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
 void ClientImpl::handle(RegisterMsg& msg)
 {
-    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+    if ((m_sessionState.m_disconnecting) || 
+        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
         return;
     } 
 
@@ -862,7 +863,8 @@ void ClientImpl::handle(RegisterMsg& msg)
 
 void ClientImpl::handle(PublishMsg& msg)
 {
-    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+    if ((m_sessionState.m_disconnecting) || 
+        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
         return;
     }
 
@@ -1045,7 +1047,8 @@ void ClientImpl::handle(PublishMsg& msg)
 
 void ClientImpl::handle(PubackMsg& msg)
 {
-    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+    if ((m_sessionState.m_disconnecting) || 
+        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
         return;
     }
 
@@ -1094,7 +1097,8 @@ void ClientImpl::handle(PubackMsg& msg)
 #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 void ClientImpl::handle(PubrelMsg& msg)
 {
-    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+    if ((m_sessionState.m_disconnecting) || 
+        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
         return;
     }
 
@@ -1119,7 +1123,8 @@ void ClientImpl::handle(PubrelMsg& msg)
 
 void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 {
-    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+    if ((m_sessionState.m_disconnecting) || 
+        (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected)) {
         return;
     }
 
@@ -1130,7 +1135,8 @@ void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 
 void ClientImpl::handle(DisconnectMsg& msg)
 {
-    if ((m_sessionState.m_disconnecting) || (!m_sessionState.m_connected)) {
+    if ((m_sessionState.m_disconnecting) || 
+        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
         return;
     }   
 
@@ -1241,7 +1247,7 @@ void ClientImpl::opComplete(const op::Op* op)
 void ClientImpl::gatewayConnected()
 {
     m_clientState.m_firstConnect = false;
-    m_sessionState.m_connected = true;
+    m_sessionState.m_connectionState = CC_MqttsnConnectionState_Connected;
     createKeepAliveOpIfNeeded();    
 }
 
@@ -1250,8 +1256,7 @@ void ClientImpl::gatewayDisconnected(
     CC_MqttsnAsyncOpStatus status)
 {
     m_clientState.m_initialized = false; // Require re-initialization
-    m_sessionState.m_connected = false;
-
+    m_sessionState.m_connectionState = CC_MqttsnConnectionState_Disconnected;
     m_sessionState.m_disconnecting = true;
     terminateOps(status);    
 
