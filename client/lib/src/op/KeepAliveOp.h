@@ -25,6 +25,7 @@ class KeepAliveOp final : public Op
 public:
     explicit KeepAliveOp(ClientImpl& client);
 
+    void forceSendPing();
     void messageSent();
 
     using Base::handle;
@@ -38,6 +39,7 @@ protected:
 private:
     void restartPingTimer();
     void restartRecvTimer();
+    void restartRespTimer();
     void sendPing();
     void pingTimeoutInternal();
 

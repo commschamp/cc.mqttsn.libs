@@ -119,11 +119,11 @@ typedef enum
 /// @ingroup global
 typedef enum
 {
-    CC_MqttsnConnectionState_Disconnected = 0, ///< Client disconnection from the gateway
-    CC_MqttsnConnectionState_Connected = 1, ///< Client connected to the gateway
-    CC_MqttsnConnectionState_Asleep = 2, ///< Client in the sleep mode
-    CC_MqttsnConnectionState_ValuesLimit ///< Limit for the values
-} CC_MqttsnConnectionState;
+    CC_MqttsnConnectionStatus_Disconnected = 0, ///< Client disconnection from the gateway
+    CC_MqttsnConnectionStatus_Connected = 1, ///< Client connected to the gateway
+    CC_MqttsnConnectionStatus_Asleep = 2, ///< Client in the sleep mode
+    CC_MqttsnConnectionStatus_ValuesLimit ///< Limit for the values
+} CC_MqttsnConnectionStatus;
 
 /// @brief Declaration of struct for the @ref CC_MqttsnClientHandle;
 /// @ingroup client
@@ -140,7 +140,7 @@ struct CC_MqttsnSearch;
 
 /// @brief Handle for "search" operation.
 /// @details Returned by @b cc_mqttsn_client_search_prepare() function.
-/// @ingroup "search".
+/// @ingroup search.
 typedef struct CC_MqttsnSearch* CC_MqttsnSearchHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnConnectHandle
@@ -149,7 +149,7 @@ struct CC_MqttsnConnect;
 
 /// @brief Handle for "connect" operation.
 /// @details Returned by @b cc_mqttsn_client_connect_prepare() function.
-/// @ingroup "connect".
+/// @ingroup connect.
 typedef struct CC_MqttsnConnect* CC_MqttsnConnectHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnDisconnectHandle
@@ -158,7 +158,7 @@ struct CC_MqttsnDisconnect;
 
 /// @brief Handle for "disconnect" operation.
 /// @details Returned by @b cc_mqttsn_client_disconnect_prepare() function.
-/// @ingroup "disconnect".
+/// @ingroup disconnect.
 typedef struct CC_MqttsnDisconnect* CC_MqttsnDisconnectHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnSubscribeHandle
@@ -167,7 +167,7 @@ struct CC_MqttsnSubscribe;
 
 /// @brief Handle for "subscribe" operation.
 /// @details Returned by @b cc_mqttsn_client_subscribe_prepare() function.
-/// @ingroup "subscribe".
+/// @ingroup subscribe.
 typedef struct CC_MqttsnSubscribe* CC_MqttsnSubscribeHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnUnsubscribeHandle
@@ -176,7 +176,7 @@ struct CC_MqttsnUnsubscribe;
 
 /// @brief Handle for "unsubscribe" operation.
 /// @details Returned by @b cc_mqttsn_client_unsubscribe_prepare() function.
-/// @ingroup "subscribe".
+/// @ingroup subscribe.
 typedef struct CC_MqttsnUnsubscribe* CC_MqttsnUnsubscribeHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnPublishHandle
@@ -185,7 +185,7 @@ struct CC_MqttsnPublish;
 
 /// @brief Handle for "publish" operation.
 /// @details Returned by @b cc_mqttsn_client_publish_prepare() function.
-/// @ingroup "publish".
+/// @ingroup publish.
 typedef struct CC_MqttsnPublish* CC_MqttsnPublishHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnWillHandle
@@ -194,8 +194,17 @@ struct CC_MqttsnWill;
 
 /// @brief Handle for "will" operation.
 /// @details Returned by @b cc_mqttsn_client_will_prepare() function.
-/// @ingroup "will".
+/// @ingroup will.
 typedef struct CC_MqttsnWill* CC_MqttsnWillHandle;
+
+/// @brief Declaration of the hidden structure used to define @ref CC_MqttsnSleepHandle
+/// @ingroup sleep
+struct CC_MqttsnSleep;
+
+/// @brief Handle for "sleep" operation.
+/// @details Returned by @b cc_mqttsn_client_sleep_prepare() function.
+/// @ingroup sleep.
+typedef struct CC_MqttsnSleep* CC_MqttsnSleepHandle;
 
 /// @brief Type used to hold Topic ID value.
 /// @ingroup global
@@ -300,6 +309,13 @@ typedef struct
     CC_MqttsnReturnCode m_topicUpdReturnCode; ///< Return code reported by the @b WILLTOPICRESP message
     CC_MqttsnReturnCode m_msgUpdReturnCode; ///< Return code reported by the @b WILLMSGRESP message
 } CC_MqttsnWillInfo;
+
+/// @brief Configuration the "sleep" operation
+/// @ingroup sleep
+typedef struct
+{
+    unsigned m_duration; ///< Duration configuration in seconds. 
+} CC_MqttsnSleepConfig;
 
 /// @brief Callback used to request time measurement.
 /// @details The callback is set using
@@ -453,6 +469,15 @@ typedef void (*CC_MqttsnPublishCompleteCb)(void* data, CC_MqttsnPublishHandle ha
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup will
 typedef void (*CC_MqttsnWillCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info);
+
+/// @brief Callback used to report completion of the sleep operation.
+/// @param[in] data Pointer to user data object, passed as the last parameter to
+///     the request call.
+/// @param[in] status Status of the "sleep" operation.
+/// @post The data members of the reported response can NOT be accessed after the function returns.
+/// @ingroup sleep
+typedef void (*CC_MqttsnSleepCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status);
+
 
 #ifdef __cplusplus
 }

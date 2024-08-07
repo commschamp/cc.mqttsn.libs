@@ -26,10 +26,16 @@ public:
     explicit DisconnectOp(ClientImpl& client);
 
     CC_MqttsnErrorCode send(CC_MqttsnDisconnectCompleteCb cb, void* cbData);
+    CC_MqttsnErrorCode config(const CC_MqttsnSleepConfig* config);
     CC_MqttsnErrorCode cancel();
 
     using Base::handle;
     void handle(DisconnectMsg& msg) override;
+
+    bool isSleepConfigured() const
+    {
+        return m_disconnectMsg.field_duration().doesExist();
+    }
 
 protected:
     virtual Type typeImpl() const override;    

@@ -15,7 +15,7 @@ struct SessionState
     static constexpr unsigned DefaultKeepAlive = 60;
 
     unsigned m_keepAliveMs = 0U;
-    CC_MqttsnConnectionState m_connectionState = CC_MqttsnConnectionState_Disconnected;
+    CC_MqttsnConnectionStatus m_connectionStatus = CC_MqttsnConnectionStatus_Disconnected;
     bool m_disconnecting = false;
 };
 

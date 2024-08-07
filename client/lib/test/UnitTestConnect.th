@@ -75,7 +75,7 @@ void UnitTestConnect::test1()
     TS_ASSERT_EQUALS(connectReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted)
 
     TS_ASSERT(unitTestHasTickReq()); // For keep alive
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Connected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Connected);
 }
 
 void UnitTestConnect::test2()
@@ -164,7 +164,7 @@ void UnitTestConnect::test2()
     }   
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Disconnected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 100);             
 
@@ -180,7 +180,7 @@ void UnitTestConnect::test2()
     TS_ASSERT_EQUALS(connectReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted)
 
     TS_ASSERT(unitTestHasTickReq()); // For keep alive
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Connected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Connected);
 }
 
 void UnitTestConnect::test3()
@@ -244,7 +244,7 @@ void UnitTestConnect::test3()
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
     TS_ASSERT(!unitTestHasTickReq()); 
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Disconnected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
 void UnitTestConnect::test4()
@@ -342,7 +342,7 @@ void UnitTestConnect::test4()
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
     TS_ASSERT(!unitTestHasTickReq()); 
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Disconnected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
 
@@ -435,7 +435,7 @@ void UnitTestConnect::test5()
     }   
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Disconnected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client);      
 
@@ -448,7 +448,7 @@ void UnitTestConnect::test5()
     }   
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Disconnected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client);                   
 
@@ -457,7 +457,7 @@ void UnitTestConnect::test5()
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
     TS_ASSERT(!unitTestHasTickReq()); 
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Disconnected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
 void UnitTestConnect::test6()
@@ -505,7 +505,7 @@ void UnitTestConnect::test6()
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
     TS_ASSERT(!unitTestHasTickReq()); 
-    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionState_Disconnected);
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
 // TODO: test reconnect without disconnecting

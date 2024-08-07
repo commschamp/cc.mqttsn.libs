@@ -25,6 +25,7 @@ extern "C" {
 /// @defgroup unsubscribe "Unsubscribe Operation Data Types and Functions"
 /// @defgroup publish "Publish Operation Data Types and Functions"
 /// @defgroup will "Will Update Operation Data Types and Functions"
+/// @defgroup sleep "Enter Sleep State Operation Data Types and Functions"
 
 /// @brief Allocate new client.
 /// @details When work with the client is complete, @ref cc_mqttsn_##NAME##client_free()
@@ -277,6 +278,11 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_incoming_topic_id_storage_limit(
 /// @ingroup client
 unsigned long long cc_mqttsn_##NAME##client_get_incoming_topic_id_storage_limit(CC_MqttsnClientHandle client);
 
+/// @brief Check messages when in "asleep" state.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @ingroup client
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_asleep_check_messages(CC_MqttsnClientHandle client);
+
 /// @brief Prepare "search" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[out] ec Error code reporting result of the operation. Can be NULL.
@@ -467,7 +473,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
 /// @brief Check the inner state of the library of whether it's connected to the gateway.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @ingroup connect
-CC_MqttsnConnectionState cc_mqttsn_##NAME##client_get_connection_state(CC_MqttsnClientHandle client);    
+CC_MqttsnConnectionStatus cc_mqttsn_##NAME##client_get_connection_status(CC_MqttsnClientHandle client);    
 
 /// @brief Prepare "disconnect" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
@@ -887,7 +893,94 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will(
     CC_MqttsnClientHandle client,
     const CC_MqttsnWillConfig* config,
     CC_MqttsnWillCompleteCb cb, 
-    void* cbData);    
+    void* cbData);  
+      
+/// @brief Prepare "sleep" operation.
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[out] ec Error code reporting result of the operation. Can be NULL.
+/// @return Handle of the "sleep" operation, will be NULL in case of failure. To analyze the reason failure use "ec" output parameter.
+/// @post The "sleep" operation is allocated, use either @ref cc_mqttsn_##NAME##client_sleep_send()
+///     or @ref cc_mqttsn_##NAME##client_sleep_cancel() to prevent memory leaks.
+/// @ingroup sleep
+CC_MqttsnSleepHandle cc_mqttsn_##NAME##client_sleep_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+
+/// @brief Configure the retry period for the "sleep" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
+/// @param[in] ms Retry period in @b milliseconds.
+/// @return Result code of the call.
+/// @ingroup sleep
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_set_retry_period(CC_MqttsnSleepHandle handle, unsigned ms);
+
+/// @brief Retrieve the configured retry period for the "sleep" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
+/// @return Retry period duration in @b milliseconds.
+/// @ingroup sleep
+unsigned cc_mqttsn_##NAME##client_sleep_get_retry_period(CC_MqttsnSleepHandle handle);
+
+/// @brief Configure the retry count for the "sleep" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
+/// @param[in] count Number of retries.
+/// @return Result code of the call.
+/// @ingroup sleep
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_set_retry_count(CC_MqttsnSleepHandle handle, unsigned count);
+
+/// @brief Retrieve the configured retry count for the "sleep" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
+/// @return Number of retries.
+/// @ingroup sleep
+unsigned cc_mqttsn_##NAME##client_sleep_get_retry_count(CC_MqttsnSleepHandle handle);
+
+/// @brief Intialize the @ref CC_MqttsnSleepConfig configuration structure.
+/// @param[out] config Configuration structure. Must not be NULL.
+/// @ingroup sleep
+void cc_mqttsn_##NAME##client_sleep_init_config(CC_MqttsnSleepConfig* config);
+
+/// @brief Perform configuration of the "sleep" operation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
+/// @param[in] config Configuration structure. Must NOT be NULL. Does not need to be preserved after invocation.
+/// @return Result code of the call.
+/// @ingroup sleep
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_config(CC_MqttsnSleepHandle handle, const CC_MqttsnSleepConfig* config);
+
+/// @brief Send the "sleep" operation
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
+/// @param[in] cb Callback to be invoked when "sleep" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @post The handle of the "sleep" operation can be discarded.
+/// @post The provided callback will be invoked when the "sleep" operation is complete <b> if and only if</b>
+///     the function returns @ref CC_MqttsnErrorCode_Success.
+/// @ingroup sleep
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_send(CC_MqttsnSleepHandle handle, CC_MqttsnSleepCompleteCb cb, void* cbData);
+
+/// @brief Cancel the allocated "sleep" operation
+/// @details In case the @ref cc_mqttsn_##NAME##client_sleep_send() function was successfully called before,
+///     the operation is cancelled @b without callback invocation.
+/// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
+/// @return Result code of the call.
+/// @post The handle of the "sleep" operation is no longer valid and must be discarded.
+/// @ingroup sleep
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_cancel(CC_MqttsnSleepHandle handle);
+
+/// @brief Prepare and send "sleep" request in one go 
+/// @details Abstracts away sequence of the following functions invocation:
+///     @li @ref cc_mqttsn_##NAME##client_sleep_prepare()
+///     @li @ref cc_mqttsn_##NAME##client_sleep_config()
+///     @li @ref cc_mqttsn_##NAME##client_sleep_send()
+///
+/// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
+/// @param[in] config Subscription configuration.
+/// @param[in] cb Callback to be invoked when "sleep" operation is complete.
+/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+///     of the parameters in callback invocation. May be NULL.
+/// @return Result code of the call.
+/// @ingroup sleep
+CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
+    CC_MqttsnClientHandle client,
+    const CC_MqttsnSleepConfig* config,
+    CC_MqttsnSleepCompleteCb cb, 
+    void* cbData); 
 
 // --------------------- Callbacks ---------------------
 

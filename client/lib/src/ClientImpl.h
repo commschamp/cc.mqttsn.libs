@@ -78,6 +78,7 @@ public:
     std::size_t getOutgoingRegTopicsLimit() const;
     CC_MqttsnErrorCode setIncomingRegTopicsLimit(std::size_t limit);
     std::size_t getIncomingRegTopicsLimit() const;    
+    CC_MqttsnErrorCode asleepCheckMessages();
 
     void setNextTickProgramCallback(CC_MqttsnNextTickProgramCb cb, void* data)
     {
@@ -147,7 +148,6 @@ public:
     virtual void handle(SearchgwMsg& msg) override;
     virtual void handle(GwinfoMsg& msg) override;
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
-//     virtual void handle(PublishMsg& msg) override;
 
     virtual void handle(RegisterMsg& msg) override;
     virtual void handle(PublishMsg& msg) override;
@@ -169,9 +169,7 @@ public:
     void gatewayDisconnected(
         CC_MqttsnGatewayDisconnectReason reason = CC_MqttsnGatewayDisconnectReason_ValuesLimit,  
         CC_MqttsnAsyncOpStatus status = CC_MqttsnAsyncOpStatus_GatewayDisconnected);
-    // void reportMsgInfo(const CC_MqttsnMessageInfo& info);
-    // bool hasPausedSendsBefore(const op::SendOp* sendOp) const;
-    // bool hasHigherQosSendsBefore(const op::SendOp* sendOp, op::Op::Qos qos) const;
+    void enterSleepMode(unsigned durationMs);
     void allowNextPrepare();
     void storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
     bool removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);    
@@ -275,11 +273,6 @@ private:
     void errorLogInternal(const char* msg);
     CC_MqttsnErrorCode initInternal();
     bool verifyPubTopicInternal(const char* topic, bool outgoing);
-    // void resumeSendOpsSince(unsigned idx);
-    // op::SendOp* findSendOp(std::uint16_t packetId);
-    // bool isLegitSendAck(const op::SendOp* sendOp, bool pubcompAck = false) const;
-    // void resendAllUntil(op::SendOp* sendOp);
-    // bool processPublishAckMsg(ProtMessage& msg, std::uint16_t packetId, bool pubcompAck = false);
 
     void opComplete_Search(const op::Op* op);
     void opComplete_Connect(const op::Op* op);

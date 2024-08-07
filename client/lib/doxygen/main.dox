@@ -752,7 +752,7 @@
 /// At any time it is possible to check the internal state of the library of
 /// whether it's properly connected to the gateway.
 /// @code
-/// CC_MqttsnConnectionState connState = cc_mqttsn_client_get_connection_state(client);
+/// CC_MqttsnConnectionStatus connStatus = cc_mqttsn_client_get_connection_status(client);
 /// @endcode
 ///
 /// @section doc_cc_mqttsn_client_disconnect Disconnecting From Gateway

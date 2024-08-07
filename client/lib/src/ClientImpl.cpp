@@ -262,7 +262,7 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
             break;
         }
 
-        if (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Connected) {
+        if (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Connected) {
             errorLog("Client is already connected.");
             updateEc(ec, CC_MqttsnErrorCode_AlreadyConnected);
             break;
@@ -301,7 +301,7 @@ op::DisconnectOp* ClientImpl::disconnectPrepare(CC_MqttsnErrorCode* ec)
 {
     op::DisconnectOp* op = nullptr;
     do {
-        if (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected) {
+        if (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected) {
             errorLog("Client must be connected / asleep to allow disconnect.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -359,7 +359,7 @@ op::SubscribeOp* ClientImpl::subscribePrepare(CC_MqttsnErrorCode* ec)
 {
     op::SubscribeOp* op = nullptr;
     do {
-        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
+        if (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Connected) {
             errorLog("Client must be connected to allow subscription.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -410,7 +410,7 @@ op::UnsubscribeOp* ClientImpl::unsubscribePrepare(CC_MqttsnErrorCode* ec)
 {
     op::UnsubscribeOp* op = nullptr;
     do {
-        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
+        if (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Connected) {
             errorLog("Client must be connected to allow subscription.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -461,7 +461,7 @@ op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
 {
     op::SendOp* op = nullptr;
     do {
-        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
+        if (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Connected) {
             errorLog("Client must be connected to allow publish.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -513,7 +513,7 @@ op::WillOp* ClientImpl::willPrepare(CC_MqttsnErrorCode* ec)
 {
     op::WillOp* op = nullptr;
     do {
-        if (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected) {
+        if (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Connected) {
             errorLog("Client must be connected to allow will update.");
             updateEc(ec, CC_MqttsnErrorCode_NotConnected);
             break;
@@ -624,16 +624,25 @@ std::size_t ClientImpl::getIncomingRegTopicsLimit() const
     return m_clientState.m_inRegTopicsLimit;
 }
 
-// CC_MqttsnErrorCode ClientImpl::setPublishOrdering(CC_MqttsnPublishOrdering ordering)
-// {
-//     if (CC_MqttsnPublishOrdering_ValuesLimit <= ordering) {
-//         errorLog("Bad publish ordering value");
-//         return CC_MqttsnErrorCode_BadParam;
-//     }
+CC_MqttsnErrorCode ClientImpl::asleepCheckMessages()
+{
+    if (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Asleep) {
+        errorLog("Not in ASLEEP state, cannot check for pending messages");
+        return CC_MqttsnErrorCode_NotSleeping;
+    }
 
-//     m_configState.m_publishOrdering = ordering;
-//     return CC_MqttsnErrorCode_Success;
-// }
+    if (m_keepAliveOps.empty()) {
+        errorLog("BUG: Cannot send PINGREQ");
+        return CC_MqttsnErrorCode_InternalError;
+    }
+
+    for (auto& op : m_keepAliveOps) {
+        COMMS_ASSERT(op);
+        op->forceSendPing();
+    }
+
+    return CC_MqttsnErrorCode_Success;
+}
 
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 void ClientImpl::handle(AdvertiseMsg& msg)
@@ -828,7 +837,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
 void ClientImpl::handle(RegisterMsg& msg)
 {
     if ((m_sessionState.m_disconnecting) || 
-        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
+        (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     } 
 
@@ -864,7 +873,7 @@ void ClientImpl::handle(RegisterMsg& msg)
 void ClientImpl::handle(PublishMsg& msg)
 {
     if ((m_sessionState.m_disconnecting) || 
-        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
+        (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     }
 
@@ -1048,7 +1057,7 @@ void ClientImpl::handle(PublishMsg& msg)
 void ClientImpl::handle(PubackMsg& msg)
 {
     if ((m_sessionState.m_disconnecting) || 
-        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
+        (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     }
 
@@ -1098,7 +1107,7 @@ void ClientImpl::handle(PubackMsg& msg)
 void ClientImpl::handle(PubrelMsg& msg)
 {
     if ((m_sessionState.m_disconnecting) || 
-        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
+        (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     }
 
@@ -1124,7 +1133,7 @@ void ClientImpl::handle(PubrelMsg& msg)
 void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 {
     if ((m_sessionState.m_disconnecting) || 
-        (m_sessionState.m_connectionState != CC_MqttsnConnectionState_Connected)) {
+        (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Connected)) {
         return;
     }
 
@@ -1136,7 +1145,7 @@ void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 void ClientImpl::handle(DisconnectMsg& msg)
 {
     if ((m_sessionState.m_disconnecting) || 
-        (m_sessionState.m_connectionState == CC_MqttsnConnectionState_Disconnected)) {
+        (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     }   
 
@@ -1247,7 +1256,7 @@ void ClientImpl::opComplete(const op::Op* op)
 void ClientImpl::gatewayConnected()
 {
     m_clientState.m_firstConnect = false;
-    m_sessionState.m_connectionState = CC_MqttsnConnectionState_Connected;
+    m_sessionState.m_connectionStatus = CC_MqttsnConnectionStatus_Connected;
     createKeepAliveOpIfNeeded();    
 }
 
@@ -1256,7 +1265,7 @@ void ClientImpl::gatewayDisconnected(
     CC_MqttsnAsyncOpStatus status)
 {
     m_clientState.m_initialized = false; // Require re-initialization
-    m_sessionState.m_connectionState = CC_MqttsnConnectionState_Disconnected;
+    m_sessionState.m_connectionStatus = CC_MqttsnConnectionStatus_Disconnected;
     m_sessionState.m_disconnecting = true;
     terminateOps(status);    
 
@@ -1266,11 +1275,19 @@ void ClientImpl::gatewayDisconnected(
     }
 }
 
-// void ClientImpl::reportMsgInfo(const CC_MqttsnMessageInfo& info)
-// {
-//     COMMS_ASSERT(m_messageReceivedReportCb != nullptr);
-//     m_messageReceivedReportCb(m_messageReceivedReportData, &info);
-// }
+void ClientImpl::enterSleepMode(unsigned durationMs)
+{
+    COMMS_ASSERT(0U < durationMs);
+    COMMS_ASSERT(m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Connected);
+    m_sessionState.m_connectionStatus = CC_MqttsnConnectionStatus_Asleep;
+    terminateOps(CC_MqttsnAsyncOpStatus_Aborted);
+    COMMS_ASSERT(m_keepAliveOps.empty());
+
+    auto diff = m_configState.m_retryPeriod * (m_configState.m_retryCount + 1U);
+    auto maxDuration = std::max(durationMs, diff + 1U);
+    m_sessionState.m_keepAliveMs = maxDuration - diff;    
+    createKeepAliveOpIfNeeded();
+}
 
 void ClientImpl::allowNextPrepare()
 {
@@ -1387,6 +1404,7 @@ void ClientImpl::createKeepAliveOpIfNeeded()
         return;
     }    
 
+    COMMS_ASSERT(m_ops.size() < m_ops.max_size());
     m_ops.push_back(ptr.get());
     m_keepAliveOps.push_back(std::move(ptr));
 }
@@ -1515,109 +1533,6 @@ bool ClientImpl::verifyPubTopicInternal(const char* topic, bool outgoing)
         return false;
     }
 }
-
-// void ClientImpl::resumeSendOpsSince(unsigned idx)
-// {
-//     while (idx < m_sendOps.size()) {
-//         auto& opToResumePtr = m_sendOps[idx];
-//         if (!opToResumePtr->isPaused()) {
-//             ++idx;
-//             continue;
-//         }         
-        
-//         if (!opToResumePtr->resume()) {
-//             break;
-//         }
-
-//         // After resuming some (QoS0) ops can complete right away, increment idx next iteration
-//     }
-// }
-
-// op::SendOp* ClientImpl::findSendOp(std::uint16_t packetId)
-// {
-//     auto iter = 
-//         std::find_if(
-//             m_sendOps.begin(), m_sendOps.end(),
-//             [packetId](auto& opPtr)
-//             {
-//                 COMMS_ASSERT(opPtr);
-//                 return opPtr->packetId() == packetId;
-//             });
-
-//     if (iter == m_sendOps.end()) {
-//         return nullptr;
-//     }
-
-//     return iter->get();
-// }
-
-// bool ClientImpl::isLegitSendAck(const op::SendOp* sendOp, bool pubcompAck) const
-// {
-//     if (!sendOp->isPublished()) {
-//         return false;
-//     }
-
-//     for (auto& sendOpPtr : m_sendOps) {
-//         if (sendOpPtr.get() == sendOp) {
-//             return true;
-//         }
-
-//         if (!sendOpPtr->isAcked()) {
-//             return false;
-//         }
-
-//         if (pubcompAck && (sendOp != m_sendOps.front().get())) {
-//             return false;
-//         }
-//     }
-
-//     COMMS_ASSERT(false); // Should not be reached;
-//     return false;
-// }
-
-// void ClientImpl::resendAllUntil(op::SendOp* sendOp)
-// {
-//     // Do index controlled iteration because forcing dup resend can
-//     // cause early message destruction.
-//     for (auto idx = 0U; idx < m_sendOps.size();) {
-//         auto& sendOpPtr = m_sendOps[idx];
-//         COMMS_ASSERT(sendOpPtr);
-//         auto* opBeforeResend = sendOpPtr.get();
-//         sendOpPtr->forceDupResend(); // can destruct object
-//         if (opBeforeResend == sendOp) {
-//             break;
-//         }
-
-//         auto* opAfterResend = sendOpPtr.get();
-//         if (opBeforeResend != opAfterResend) {
-//             // The op object was destructed and erased, 
-//             // do not increment index;
-//             continue;
-//         }
-
-//         ++idx;
-//     }
-// }
-
-// bool ClientImpl::processPublishAckMsg(ProtMessage& msg, std::uint16_t packetId, bool pubcompAck)
-// {
-//     for (auto& opPtr : m_keepAliveOps) {
-//         msg.dispatch(*opPtr);
-//     }     
-
-//     auto* sendOp = findSendOp(packetId);
-//     if (sendOp == nullptr) {
-//         return false;
-//     }
-
-//     if (isLegitSendAck(sendOp, pubcompAck)) {
-//         msg.dispatch(*sendOp);
-//         return true;        
-//     }
-
-//     resendAllUntil(sendOp);
-//     return true;
-// }
 
 void ClientImpl::opComplete_Search([[maybe_unused]] const op::Op* op)
 {

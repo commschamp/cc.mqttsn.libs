@@ -37,6 +37,11 @@ KeepAliveOp::KeepAliveOp(ClientImpl& client) :
     restartPingTimer();
 }    
 
+void KeepAliveOp::forceSendPing()
+{
+    sendPing();
+}
+
 void KeepAliveOp::messageSent()
 {
     restartPingTimer();
@@ -44,6 +49,10 @@ void KeepAliveOp::messageSent()
 
 void KeepAliveOp::handle([[maybe_unused]] PingreqMsg& msg)
 {
+    if (client().sessionState().m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected) {
+        return;
+    }
+
     PingrespMsg respMsg;
     sendMessage(respMsg);
     restartRecvTimer();
@@ -59,6 +68,13 @@ void KeepAliveOp::handle([[maybe_unused]] PingrespMsg& msg)
 
 void KeepAliveOp::handle([[maybe_unused]] ProtMessage& msg)
 {
+    if ((client().sessionState().m_connectionStatus == CC_MqttsnConnectionStatus_Asleep) &&
+        (m_respTimer.isActive())) {
+
+        // In ASLEEP mode, gime some more time for PINGRESP after the last message
+        restartRespTimer();
+    }
+
     restartRecvTimer();
 }
 
@@ -87,6 +103,12 @@ void KeepAliveOp::restartRecvTimer()
     m_recvTimer.wait(state.m_keepAliveMs, &KeepAliveOp::recvTimeoutCb, this);
 }
 
+void KeepAliveOp::restartRespTimer()
+{
+    auto& state = client().configState();
+    m_respTimer.wait(state.m_retryPeriod, &KeepAliveOp::pingTimeoutCb, this);
+}
+
 void KeepAliveOp::sendPing()
 {
     if (m_respTimer.isActive()) {
@@ -95,8 +117,7 @@ void KeepAliveOp::sendPing()
 
     PingreqMsg msg;
     client().sendMessage(msg);
-    auto& state = client().configState();
-    m_respTimer.wait(state.m_retryPeriod, &KeepAliveOp::pingTimeoutCb, this);
+    restartRespTimer();
 }
 
 void KeepAliveOp::pingTimeoutInternal()

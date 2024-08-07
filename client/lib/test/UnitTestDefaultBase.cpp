@@ -57,7 +57,7 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_connect_send = &cc_mqttsn_client_connect_send;
     funcs.m_connect_cancel = &cc_mqttsn_client_connect_cancel;
     funcs.m_connect = &cc_mqttsn_client_connect;
-    funcs.m_get_connection_state = &cc_mqttsn_client_get_connection_state;
+    funcs.m_get_connection_status = &cc_mqttsn_client_get_connection_status;
     funcs.m_disconnect_prepare = &cc_mqttsn_client_disconnect_prepare;
     funcs.m_disconnect_set_retry_period = &cc_mqttsn_client_disconnect_set_retry_period;
     funcs.m_disconnect_get_retry_period = &cc_mqttsn_client_disconnect_get_retry_period;

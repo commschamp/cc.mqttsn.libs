@@ -12,7 +12,6 @@
 #include "comms/util/ScopeGuard.h"
 #include "comms/units.h"
 
-#include <algorithm>
 #include <limits>
 
 namespace cc_mqttsn_client
@@ -37,6 +36,31 @@ DisconnectOp::DisconnectOp(ClientImpl& client) :
     m_timer(client.timerMgr().allocTimer())
 {
 }   
+
+CC_MqttsnErrorCode DisconnectOp::config(const CC_MqttsnSleepConfig* config)
+{
+    if (config == nullptr) {
+        errorLog("Sleep configuration is not provided");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    auto& st = client().configState();
+    auto minDurationMs = (st.m_retryPeriod * (st.m_retryCount + 1U));
+    if ((config->m_duration * 1000) <= minDurationMs) {
+        errorLog("Sleep duration is too low, must allow multiple attempts to send PINGREQ");
+        return CC_MqttsnErrorCode_BadParam;
+    }
+
+    using DurationValueType = DisconnectMsg::Field_duration::Field::ValueType;
+    if (std::numeric_limits<DurationValueType>::max() < config->m_duration) {
+        errorLog("Sleep duration value is too high, doesn't fit into protocol");
+        return CC_MqttsnErrorCode_BadParam;        
+    }
+
+    comms::units::setSeconds(m_disconnectMsg.field_duration().field(), config->m_duration);
+    m_disconnectMsg.field_duration().setExists();
+    return CC_MqttsnErrorCode_Success;
+}
 
 CC_MqttsnErrorCode DisconnectOp::send(CC_MqttsnDisconnectCompleteCb cb, void* cbData) 
 {
@@ -87,11 +111,21 @@ void DisconnectOp::handle([[maybe_unused]] DisconnectMsg& msg)
     m_timer.cancel();
 
     auto& cl = client();
+    unsigned sleepDurationMs = 0U;
+    if (isSleepConfigured()) {
+        sleepDurationMs = comms::units::getMilliseconds<decltype(sleepDurationMs)>(m_disconnectMsg.field_duration().field());
+    }
+
     auto onExit = 
         comms::util::makeScopeGuard(
-            [&cl]()
+            [&cl, sleepDurationMs]()
             {
-                cl.gatewayDisconnected();
+                if (0U < sleepDurationMs) {
+                    cl.enterSleepMode(sleepDurationMs);
+                    return;
+                }
+
+                cl.gatewayDisconnected(CC_MqttsnGatewayDisconnectReason_ValuesLimit, CC_MqttsnAsyncOpStatus_Aborted);
             });
 
     completeOpInternal(CC_MqttsnAsyncOpStatus_Complete);
