@@ -47,6 +47,7 @@ if (TARGET cc::cc_mqttsn_client)
     cc_mqttsn_client_add_unit_test(UnitTestSubscribe ${DEFAULT_BASE_LIB_NAME})
     cc_mqttsn_client_add_unit_test(UnitTestUnsubscribe ${DEFAULT_BASE_LIB_NAME})
     cc_mqttsn_client_add_unit_test(UnitTestWill ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(UnitTestSleep ${DEFAULT_BASE_LIB_NAME})
 endif ()    
 
 # TODO

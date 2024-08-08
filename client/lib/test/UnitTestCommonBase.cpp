@@ -54,6 +54,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_get_outgoing_topic_id_storage_limit != nullptr);    
     test_assert(m_funcs.m_set_incoming_topic_id_storage_limit != nullptr);
     test_assert(m_funcs.m_get_incoming_topic_id_storage_limit != nullptr);
+    test_assert(m_funcs.m_asleep_check_messages != nullptr);
     test_assert(m_funcs.m_search_prepare != nullptr);
     test_assert(m_funcs.m_search_set_retry_period != nullptr);
     test_assert(m_funcs.m_search_get_retry_period != nullptr);
@@ -124,8 +125,17 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_will_config != nullptr);
     test_assert(m_funcs.m_will_send != nullptr);
     test_assert(m_funcs.m_will_cancel != nullptr);
-    test_assert(m_funcs.m_will != nullptr);    
-
+    test_assert(m_funcs.m_will != nullptr);   
+    test_assert(m_funcs.m_sleep_prepare != nullptr);
+    test_assert(m_funcs.m_sleep_set_retry_period != nullptr);
+    test_assert(m_funcs.m_sleep_get_retry_period != nullptr);
+    test_assert(m_funcs.m_sleep_set_retry_count != nullptr);
+    test_assert(m_funcs.m_sleep_get_retry_count != nullptr);
+    test_assert(m_funcs.m_sleep_init_config != nullptr);
+    test_assert(m_funcs.m_sleep_config != nullptr);
+    test_assert(m_funcs.m_sleep_send != nullptr);
+    test_assert(m_funcs.m_sleep_cancel != nullptr);
+    test_assert(m_funcs.m_sleep != nullptr);        
     test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
     test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
     test_assert(m_funcs.m_set_send_output_data_callback != nullptr); 
@@ -800,6 +810,28 @@ CC_MqttsnErrorCode UnitTestCommonBase::unitTestWillSend(CC_MqttsnWillHandle will
     return m_funcs.m_will_send(will, &UnitTestCommonBase::unitTestWillCompleteCb, this);
 }
 
+bool UnitTestCommonBase::unitTestHasSleepCompleteReport() const
+{
+    return !m_data.m_sleepCompleteReports.empty();
+}
+
+UnitTestCommonBase::UnitTestSleepCompleteReportPtr UnitTestCommonBase::unitTestSleepCompleteReport(bool mustExist)
+{
+    if (!unitTestHasSleepCompleteReport()) {
+        test_assert(!mustExist);
+        return UnitTestSleepCompleteReportPtr();
+    }
+
+    auto ptr = std::move(m_data.m_sleepCompleteReports.front());
+    m_data.m_sleepCompleteReports.pop_front();
+    return ptr;
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::unitTestSleepSend(CC_MqttsnSleepHandle sleep)
+{
+    return m_funcs.m_sleep_send(sleep, &UnitTestCommonBase::unitTestSleepCompleteCb, this);
+}
+
 bool UnitTestCommonBase::unitTestHasReceivedMessage() const
 {
     return !m_data.m_recvMsgs.empty();
@@ -827,9 +859,19 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiSetDefaultRetryPeriod(CC_MqttsnClient*
     return m_funcs.m_set_default_retry_period(client, value);
 }
 
+unsigned UnitTestCommonBase::apiGetDefaultRetryPeriod(CC_MqttsnClientHandle client)
+{
+    return m_funcs.m_get_default_retry_period(client);
+}
+
 CC_MqttsnErrorCode UnitTestCommonBase::apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value)
 {
     return m_funcs.m_set_default_retry_count(client, value);
+}
+
+unsigned UnitTestCommonBase::apiGetDefaultRetryCount(CC_MqttsnClientHandle client)
+{
+    return m_funcs.m_get_default_retry_count(client);
 }
 
 CC_MqttsnErrorCode UnitTestCommonBase::apiSetVerifyIncomingMsgSubscribed(CC_MqttsnClient* client, bool enabled)
@@ -1060,6 +1102,31 @@ CC_MqttsnErrorCode UnitTestCommonBase::apiWillCancel(CC_MqttsnWillHandle will)
     return m_funcs.m_will_cancel(will);
 }
 
+CC_MqttsnSleepHandle UnitTestCommonBase::apiSleepPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec)
+{
+    return m_funcs.m_sleep_prepare(client, ec);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSleepSetRetryCount(CC_MqttsnSleepHandle sleep, unsigned count)
+{
+    return m_funcs.m_sleep_set_retry_count(sleep, count);
+}
+
+void UnitTestCommonBase::apiSleepInitConfig(CC_MqttsnSleepConfig* config)
+{
+    m_funcs.m_sleep_init_config(config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSleepConfig(CC_MqttsnSleepHandle sleep, const CC_MqttsnSleepConfig* config)
+{
+    return m_funcs.m_sleep_config(sleep, config);
+}
+
+CC_MqttsnErrorCode UnitTestCommonBase::apiSleepCancel(CC_MqttsnSleepHandle sleep)
+{
+    return m_funcs.m_sleep_cancel(sleep);
+}
+
 void UnitTestCommonBase::unitTestMessageReportCb(void* data, const CC_MqttsnMessageInfo* msgInfo)
 {
     test_assert(msgInfo != nullptr);
@@ -1143,4 +1210,10 @@ void UnitTestCommonBase::unitTestWillCompleteCb(void* data, CC_MqttsnAsyncOpStat
 {
     auto* thisPtr = asThis(data);
     thisPtr->m_data.m_willCompleteReports.push_back(std::make_unique<UnitTestWillCompleteReport>(status, info));
+}
+
+void UnitTestCommonBase::unitTestSleepCompleteCb(void* data, CC_MqttsnAsyncOpStatus status)
+{
+    auto* thisPtr = asThis(data);
+    thisPtr->m_data.m_sleepCompleteReports.push_back(std::make_unique<UnitTestSleepCompleteReport>(status));
 }

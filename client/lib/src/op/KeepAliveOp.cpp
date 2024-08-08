@@ -115,8 +115,15 @@ void KeepAliveOp::sendPing()
         return; // Ping has already been sent, waiting for response
     }
 
+    auto& cl = client();
+    auto& st = cl.sessionState();
+
     PingreqMsg msg;
-    client().sendMessage(msg);
+    if (st.m_connectionStatus == CC_MqttsnConnectionStatus_Asleep) {
+        msg.field_clientId().setValue(st.m_clientId);
+    }
+
+    cl.sendMessage(msg);
     restartRespTimer();
 }
 

@@ -169,7 +169,7 @@ CC_MqttsnErrorCode DisconnectOp::sendInternal()
 void DisconnectOp::timeoutInternal()
 {
     if (getRetryCount() == 0U) {
-        errorLog("All retries of the disconnect operation have been exhausted.");
+        errorLog("All retries of the disconnect or sleep operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
         return;
     }  

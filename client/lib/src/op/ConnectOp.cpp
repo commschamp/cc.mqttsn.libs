@@ -151,6 +151,7 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
         return ec;
     }
 
+    client().sessionState().m_clientId.clear();
     if (m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) {
         // Don't wait for acknowledgement, assume state cleared upon send
         client().reuseState() = ReuseState();
@@ -250,6 +251,7 @@ void ConnectOp::handle(ConnackMsg& msg)
 #endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
 
     if (info.m_returnCode == CC_MqttsnReturnCode_Accepted) {
+        client().sessionState().m_clientId = m_connectMsg.field_clientId().value();
         client().sessionState().m_keepAliveMs = comms::units::getMilliseconds<unsigned>(m_connectMsg.field_duration());
         client().gatewayConnected();
     }

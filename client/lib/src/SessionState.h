@@ -7,13 +7,17 @@
 
 #pragma once
 
+#include "ProtocolDefs.h"
+
 namespace cc_mqttsn_client
 {
 
 struct SessionState
 {
+    using ClientIdStr = ConnectMsg::Field_clientId::ValueType;
     static constexpr unsigned DefaultKeepAlive = 60;
 
+    ClientIdStr m_clientId;
     unsigned m_keepAliveMs = 0U;
     CC_MqttsnConnectionStatus m_connectionStatus = CC_MqttsnConnectionStatus_Disconnected;
     bool m_disconnecting = false;

@@ -35,6 +35,7 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_get_outgoing_topic_id_storage_limit = &cc_mqttsn_client_get_outgoing_topic_id_storage_limit;
     funcs.m_set_incoming_topic_id_storage_limit = &cc_mqttsn_client_set_incoming_topic_id_storage_limit;
     funcs.m_get_incoming_topic_id_storage_limit = &cc_mqttsn_client_get_incoming_topic_id_storage_limit;
+    funcs.m_asleep_check_messages = &cc_mqttsn_client_asleep_check_messages;
     funcs.m_search_prepare = &cc_mqttsn_client_search_prepare;
     funcs.m_search_set_retry_period = &cc_mqttsn_client_search_set_retry_period;
     funcs.m_search_get_retry_period = &cc_mqttsn_client_search_get_retry_period;
@@ -105,8 +106,17 @@ const UnitTestDefaultBase::LibFuncs& UnitTestDefaultBase::getFuncs()
     funcs.m_will_config = &cc_mqttsn_client_will_config;
     funcs.m_will_send = &cc_mqttsn_client_will_send;
     funcs.m_will_cancel = &cc_mqttsn_client_will_cancel;
-    funcs.m_will = &cc_mqttsn_client_will;        
-
+    funcs.m_will = &cc_mqttsn_client_will;  
+    funcs.m_sleep_prepare = &cc_mqttsn_client_sleep_prepare;
+    funcs.m_sleep_set_retry_period = &cc_mqttsn_client_sleep_set_retry_period;
+    funcs.m_sleep_get_retry_period = &cc_mqttsn_client_sleep_get_retry_period;
+    funcs.m_sleep_set_retry_count = &cc_mqttsn_client_sleep_set_retry_count;
+    funcs.m_sleep_get_retry_count = &cc_mqttsn_client_sleep_get_retry_count;
+    funcs.m_sleep_init_config = &cc_mqttsn_client_sleep_init_config;
+    funcs.m_sleep_config = &cc_mqttsn_client_sleep_config;
+    funcs.m_sleep_send = &cc_mqttsn_client_sleep_send;
+    funcs.m_sleep_cancel = &cc_mqttsn_client_sleep_cancel;
+    funcs.m_sleep = &cc_mqttsn_client_sleep;       
     funcs.m_set_next_tick_program_callback = &cc_mqttsn_client_set_next_tick_program_callback;
     funcs.m_set_cancel_next_tick_wait_callback = &cc_mqttsn_client_set_cancel_next_tick_wait_callback;
     funcs.m_set_send_output_data_callback = &cc_mqttsn_client_set_send_output_data_callback;

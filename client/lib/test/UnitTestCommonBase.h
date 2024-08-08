@@ -44,6 +44,7 @@ public:
         unsigned long long (*m_get_outgoing_topic_id_storage_limit)(CC_MqttsnClientHandle) = nullptr;
         CC_MqttsnErrorCode (*m_set_incoming_topic_id_storage_limit)(CC_MqttsnClientHandle, unsigned long long) = nullptr;
         unsigned long long (*m_get_incoming_topic_id_storage_limit)(CC_MqttsnClientHandle) = nullptr;
+        CC_MqttsnErrorCode (*m_asleep_check_messages)(CC_MqttsnClientHandle client) = nullptr;
         CC_MqttsnSearchHandle (*m_search_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;
         CC_MqttsnErrorCode (*m_search_set_retry_period)(CC_MqttsnSearchHandle, unsigned) = nullptr;
         unsigned (*m_search_get_retry_period)(CC_MqttsnSearchHandle) = nullptr;
@@ -115,7 +116,16 @@ public:
         CC_MqttsnErrorCode (*m_will_send)(CC_MqttsnWillHandle, CC_MqttsnWillCompleteCb, void*) = nullptr; 
         CC_MqttsnErrorCode (*m_will_cancel)(CC_MqttsnWillHandle) = nullptr; 
         CC_MqttsnErrorCode (*m_will)(CC_MqttsnClientHandle, const CC_MqttsnWillConfig*, CC_MqttsnWillCompleteCb, void* cbData) = nullptr;             
-
+        CC_MqttsnSleepHandle (*m_sleep_prepare)(CC_MqttsnClientHandle, CC_MqttsnErrorCode*) = nullptr;     
+        CC_MqttsnErrorCode (*m_sleep_set_retry_period)(CC_MqttsnSleepHandle, unsigned) = nullptr; 
+        unsigned (*m_sleep_get_retry_period)(CC_MqttsnSleepHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_sleep_set_retry_count)(CC_MqttsnSleepHandle, unsigned) = nullptr; 
+        unsigned (*m_sleep_get_retry_count)(CC_MqttsnSleepHandle) = nullptr; 
+        void (*m_sleep_init_config)(CC_MqttsnSleepConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_sleep_config)(CC_MqttsnSleepHandle, const CC_MqttsnSleepConfig*) = nullptr; 
+        CC_MqttsnErrorCode (*m_sleep_send)(CC_MqttsnSleepHandle, CC_MqttsnSleepCompleteCb, void*) = nullptr; 
+        CC_MqttsnErrorCode (*m_sleep_cancel)(CC_MqttsnSleepHandle) = nullptr; 
+        CC_MqttsnErrorCode (*m_sleep)(CC_MqttsnClientHandle, const CC_MqttsnSleepConfig*, CC_MqttsnSleepCompleteCb, void* cbData) = nullptr;             
         void (*m_set_next_tick_program_callback)(CC_MqttsnClientHandle, CC_MqttsnNextTickProgramCb, void*) = nullptr;
         void (*m_set_cancel_next_tick_wait_callback)(CC_MqttsnClientHandle, CC_MqttsnCancelNextTickWaitCb, void*) = nullptr;
         void (*m_set_send_output_data_callback)(CC_MqttsnClientHandle, CC_MqttsnSendOutputDataCb, void*) = nullptr;  
@@ -272,7 +282,6 @@ public:
         CC_MqttsnTopicId m_topicId = 0U;
     };     
 
-
     struct UnitTestUnsubscribeCompleteReport
     {
         CC_MqttsnUnsubscribeHandle m_handle = nullptr;
@@ -335,6 +344,15 @@ public:
     using UnitTestWillCompleteReportPtr = std::unique_ptr<UnitTestWillCompleteReport>;
     using UnitTestWillCompleteReportList = std::list<UnitTestWillCompleteReportPtr>;            
 
+    struct UnitTestSleepCompleteReport
+    {
+        CC_MqttsnAsyncOpStatus m_status = CC_MqttsnAsyncOpStatus_ValuesLimit;
+
+        UnitTestSleepCompleteReport(CC_MqttsnAsyncOpStatus status) : m_status(status) {};
+    };
+
+    using UnitTestSleepCompleteReportPtr = std::unique_ptr<UnitTestSleepCompleteReport>;
+    using UnitTestSleepCompleteReportList = std::list<UnitTestSleepCompleteReportPtr>; 
 
     struct UnitTestMessageInfo
     {
@@ -422,12 +440,19 @@ public:
 
     CC_MqttsnErrorCode unitTestWillSend(CC_MqttsnWillHandle will);    
 
+    bool unitTestHasSleepCompleteReport() const;
+    UnitTestSleepCompleteReportPtr unitTestSleepCompleteReport(bool mustExist = true);
+
+    CC_MqttsnErrorCode unitTestSleepSend(CC_MqttsnSleepHandle sleep);      
+
     bool unitTestHasReceivedMessage() const;
     UnitTestMessageInfoPtr unitTestReceivedMessage(bool mustExist = true);
 
     void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
+    unsigned apiGetDefaultRetryPeriod(CC_MqttsnClientHandle client);
     CC_MqttsnErrorCode apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value);
+    unsigned apiGetDefaultRetryCount(CC_MqttsnClientHandle client);
     CC_MqttsnErrorCode apiSetVerifyIncomingMsgSubscribed(CC_MqttsnClient* client, bool enabled);
     void apiInitGatewayInfo(CC_MqttsnGatewayInfo* info);
     CC_MqttsnErrorCode apiSetAvailableGatewayInfo(CC_MqttsnClient* client, const CC_MqttsnGatewayInfo* info);
@@ -472,7 +497,13 @@ public:
     CC_MqttsnErrorCode apiWillSetRetryCount(CC_MqttsnWillHandle will, unsigned count);
     void apiWillInitConfig(CC_MqttsnWillConfig* config);
     CC_MqttsnErrorCode apiWillConfig(CC_MqttsnWillHandle will, const CC_MqttsnWillConfig* config);
-    CC_MqttsnErrorCode apiWillCancel(CC_MqttsnWillHandle will);        
+    CC_MqttsnErrorCode apiWillCancel(CC_MqttsnWillHandle will);       
+
+    CC_MqttsnSleepHandle apiSleepPrepare(CC_MqttsnClient* client, CC_MqttsnErrorCode* ec = nullptr);
+    CC_MqttsnErrorCode apiSleepSetRetryCount(CC_MqttsnSleepHandle sleep, unsigned count);
+    void apiSleepInitConfig(CC_MqttsnSleepConfig* config);
+    CC_MqttsnErrorCode apiSleepConfig(CC_MqttsnSleepHandle sleep, const CC_MqttsnSleepConfig* config);
+    CC_MqttsnErrorCode apiSleepCancel(CC_MqttsnSleepHandle sleep);          
 
 
 protected:
@@ -494,6 +525,7 @@ private:
         UnitTestUnsubscribeCompleteReportList m_unsubscribeCompleteReports;
         UnitTestPublishCompleteReportList m_publishCompleteReports;
         UnitTestWillCompleteReportList m_willCompleteReports;
+        UnitTestSleepCompleteReportList m_sleepCompleteReports;
         UnitTestMessageInfosList m_recvMsgs;
     };
 
@@ -512,6 +544,7 @@ private:
     static void unitTestUnsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status);
     static void unitTestPublishCompleteCb(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
     static void unitTestWillCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info);
+    static void unitTestSleepCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
 
     LibFuncs m_funcs;  
     ClientData m_data;

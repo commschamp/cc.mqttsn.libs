@@ -251,7 +251,7 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
 
         if (!m_disconnectOps.empty()) {
             // Already allocated
-            errorLog("Another disconnect operation is in progress.");
+            errorLog("Another disconnect or sleep operation is in progress.");
             updateEc(ec, CC_MqttsnErrorCode_Busy);
             break;
         }        
@@ -308,7 +308,7 @@ op::DisconnectOp* ClientImpl::disconnectPrepare(CC_MqttsnErrorCode* ec)
         }
 
         if (!m_disconnectOps.empty()) {
-            errorLog("Another disconnect operation is in progress.");
+            errorLog("Another disconnect or sleep operation is in progress.");
             updateEc(ec, CC_MqttsnErrorCode_Busy);
             break;
         }      
