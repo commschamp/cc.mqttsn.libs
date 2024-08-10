@@ -159,7 +159,7 @@ public:
         unsigned m_elapsed = 0U;
 
         UnitTestTickInfo() = default;
-        explicit UnitTestTickInfo(unsigned req) : m_req(req) {}
+        explicit UnitTestTickInfo(unsigned req) noexcept : m_req(req) {}
     };
 
     using UnitTestTickInfosList = std::list<UnitTestTickInfo>;

@@ -30,7 +30,7 @@ struct RegTopicInfo
     RegTopicInfo(T&& topic, CC_MqttsnTopicId topicId) : m_topic(std::forward<T>(topic)), m_topicId(topicId) {}
 
     RegTopicInfo(const char* topic) : m_topic(topic) {}
-    RegTopicInfo(CC_MqttsnTopicId topicId) : m_topicId(topicId) {}
+    RegTopicInfo(CC_MqttsnTopicId topicId) noexcept : m_topicId(topicId) {}
 };
 
 struct TimestampStorage
