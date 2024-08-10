@@ -33,7 +33,6 @@ private:
         unitTestTearDown();
     }    
 
-    using Qos = UnitTestPublishMsg::Field_flags::Field_qos::ValueType;
     using TopicIdType = UnitTestPublishMsg::Field_flags::Field_topicIdType::ValueType;
     using RetCode = UnitTestPubackMsg::Field_returnCode::ValueType;
 };
