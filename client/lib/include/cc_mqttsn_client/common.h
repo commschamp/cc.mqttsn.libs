@@ -139,7 +139,7 @@ struct CC_MqttsnSearch;
 
 /// @brief Handle for "search" operation.
 /// @details Returned by @b cc_mqttsn_client_search_prepare() function.
-/// @ingroup search.
+/// @ingroup search
 typedef struct CC_MqttsnSearch* CC_MqttsnSearchHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnConnectHandle
@@ -148,7 +148,7 @@ struct CC_MqttsnConnect;
 
 /// @brief Handle for "connect" operation.
 /// @details Returned by @b cc_mqttsn_client_connect_prepare() function.
-/// @ingroup connect.
+/// @ingroup connect
 typedef struct CC_MqttsnConnect* CC_MqttsnConnectHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnDisconnectHandle
@@ -157,7 +157,7 @@ struct CC_MqttsnDisconnect;
 
 /// @brief Handle for "disconnect" operation.
 /// @details Returned by @b cc_mqttsn_client_disconnect_prepare() function.
-/// @ingroup disconnect.
+/// @ingroup disconnect
 typedef struct CC_MqttsnDisconnect* CC_MqttsnDisconnectHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnSubscribeHandle
@@ -166,7 +166,7 @@ struct CC_MqttsnSubscribe;
 
 /// @brief Handle for "subscribe" operation.
 /// @details Returned by @b cc_mqttsn_client_subscribe_prepare() function.
-/// @ingroup subscribe.
+/// @ingroup subscribe
 typedef struct CC_MqttsnSubscribe* CC_MqttsnSubscribeHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnUnsubscribeHandle
@@ -175,7 +175,7 @@ struct CC_MqttsnUnsubscribe;
 
 /// @brief Handle for "unsubscribe" operation.
 /// @details Returned by @b cc_mqttsn_client_unsubscribe_prepare() function.
-/// @ingroup subscribe.
+/// @ingroup subscribe
 typedef struct CC_MqttsnUnsubscribe* CC_MqttsnUnsubscribeHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnPublishHandle
@@ -184,7 +184,7 @@ struct CC_MqttsnPublish;
 
 /// @brief Handle for "publish" operation.
 /// @details Returned by @b cc_mqttsn_client_publish_prepare() function.
-/// @ingroup publish.
+/// @ingroup publish
 typedef struct CC_MqttsnPublish* CC_MqttsnPublishHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnWillHandle
@@ -193,7 +193,7 @@ struct CC_MqttsnWill;
 
 /// @brief Handle for "will" operation.
 /// @details Returned by @b cc_mqttsn_client_will_prepare() function.
-/// @ingroup will.
+/// @ingroup will
 typedef struct CC_MqttsnWill* CC_MqttsnWillHandle;
 
 /// @brief Declaration of the hidden structure used to define @ref CC_MqttsnSleepHandle
@@ -202,7 +202,7 @@ struct CC_MqttsnSleep;
 
 /// @brief Handle for "sleep" operation.
 /// @details Returned by @b cc_mqttsn_client_sleep_prepare() function.
-/// @ingroup sleep.
+/// @ingroup sleep
 typedef struct CC_MqttsnSleep* CC_MqttsnSleepHandle;
 
 /// @brief Type used to hold Topic ID value.

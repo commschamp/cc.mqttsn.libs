@@ -695,9 +695,9 @@
 /// "info" is present <b>if and only if</b> the "status" is
 /// @ref CC_MqttsnAsyncOpStatus_Complete.
 ///
-/// @b NOTE that only single "connect" / "disconnect" operation is allowed at a time, any attempt to
+/// @b NOTE that only single "connect" / "disconnect" / "sleep" operation is allowed at a time, any attempt to
 /// prepare a new one via @b cc_mqttsn_client_connect_prepare() will be rejected
-/// until the "connect" operation completion callback is invoked or
+/// until the blocking operation completion callback is invoked or
 /// the operation is @ref doc_cc_mqttsn_client_connect_cancel "cancelled".
 ///
 /// When the callback reporting the connection status is invoked, it is responsibility
@@ -706,6 +706,11 @@
 /// is responsible retry the "connect" operation later. The same should be
 /// done when the "connect" operation is not properly completed, i.e. the
 /// reported status is @b NOT @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// The "connect" operation can be @ref doc_cc_mqttsn_client_connect_send "sent" at
+/// any time, even if it's already @ref doc_cc_mqttsn_client_connect_check "connected".
+/// However, upon failing attempt to re-connect the assumed inner state becomes
+/// @ref CC_MqttsnConnectionStatus_Disconnected.
 ///
 /// @subsection doc_cc_mqttsn_client_connect_cancel Cancel the "Connect" Operation.
 /// While the handle returned by the @b cc_mqttsn_client_connect_prepare() is still
@@ -825,9 +830,9 @@
 /// The valid handle can be used to @ref doc_cc_mqttsn_client_disconnect_cancel "cancel"
 /// the operation before the completion callback is invoked.
 ///
-/// @b NOTE that only single "connect" / "disconnect" operation is allowed at a time, any attempt to
+/// @b NOTE that only single "connect" / "disconnect" / "sleep" operation is allowed at a time, any attempt to
 /// prepare a new one via @b cc_mqttsn_client_disconnect_prepare() will be rejected
-/// until the "connect" operation completion callback is invoked or
+/// until the blocking operation completion callback is invoked or
 /// the operation is @ref doc_cc_mqttsn_client_disconnect_cancel "cancelled".
 ///
 /// In case there are other asynchronous operations that hasn't been completed yet,
@@ -1714,7 +1719,156 @@
 /// @endcode
 ///
 /// @section doc_cc_mqttsn_client_sleep Sleeping
-/// TODO
+/// To enter the "sleep" mode use @ref sleep "sleep" operation.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_prepare Preparing "Sleep" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnSleepHandle sleep = cc_mqttsn_client_sleep_prepare(client, &ec);
+/// if (sleep == NULL) {
+///     printf("ERROR: Sleep allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_sleep_retry_period Configuring "Sleep" Retry Period
+/// When created, the "sleep" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_sleep_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_sleep_set_retry_period(sleep, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_sleep_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_retry_count Configuring "Sleep" Retry Count
+/// When created, the "sleep" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_sleep_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_sleep_set_retry_count(sleep, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_sleep_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_config Configuration of "Sleep" Operation
+/// To configure "sleep" operation use @b cc_mqttsn_client_sleep_config() function.
+/// @code
+/// CC_MqttsnSleepConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_sleep_init_config(&config);
+///
+/// // Update the values:
+/// config.m_duration = ...;
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_sleep_config(sleep, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Sleep configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnSleepConfig structure.
+///
+/// Note that configuration of the "sleep" operation specifies duration within
+/// which the client is expected to send @b PINGREQ message to check for the
+/// accumulated messages. The library will try to perform several attempts to
+/// send @b PINGREQ and receive @b PINGRESP in return. The configured
+/// @ref CC_MqttsnSleepConfig::m_duration "duration" is expected to be longer (when translated to milliseconds)
+/// than the @ref doc_cc_mqttsn_client_retry_period multiplied by the
+/// (@ref doc_cc_mqttsn_client_retry_count + 1).
+///
+/// @subsection doc_cc_mqttsn_client_sleep_send Sending Sleep Request
+/// When the necessary configuration is performed for the allocated "sleep"
+/// operation it can be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_sleep_send() function.
+/// @code
+/// void my_sleep_complete_cb(void* data, CC_MqttsnAsyncOpStatus status)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The sleep operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///     ...
+/// }
+///
+/// ec = cc_mqttsn_client_sleep_send(sleep, &my_sleep_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send sleep request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "sleep" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_sleep_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_sleep_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_sleep_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// @b NOTE that only single "connect" / "disconnect" / "sleep" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_disconnect_prepare() will be rejected
+/// until the blocking operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_sleep_cancel "cancelled".
+///
+/// In case there are other asynchronous operations that hasn't been completed yet,
+/// their completion callback is automatically invoked with @ref CC_MqttsnAsyncOpStatus_Aborted
+/// status.
+///
+/// After the intended sleep is over the application can re-establish network connection
+/// to the gateway (if needed) and perform the @ref doc_cc_mqttsn_client_connect "connect" operation
+/// again.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_cancel Cancel the "Sleep" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_sleep_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_sleep_cancel(sleep);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel sleep with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_sleep_simplify Simplifying the "Sleep" Operation Preparation.
+/// In many use cases the "sleep" operation can be quite simple.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_sleep()
+///
+/// For example:
+/// @code
+/// ec = cc_mqttsn_client_sleep(client, &config, &my_sleep_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send sleep request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_sleep_recv Receiving Messages During "Sleep" State.
+/// When in "asleep" mode the client is expected to periodically send @b PINGREQ
+/// messages to inquire whether the gateway has accumulated pending messages for
+/// the client. The library keeps track of time and expects the application to
+/// still manage timers and notify the library about the elapsed ticks
+/// (see @ref doc_cc_mqttsn_client_time). The library will perform up to
+/// @ref doc_cc_mqttsn_client_retry_count + 1 attempts to get the @b PINGRESP
+/// back within the @ref doc_cc_mqttsn_client_retry_period and will report all the
+/// @ref doc_cc_mqttsn_client_receive "received messages" in between.
+///
+/// The application can also independently and explicitly to initiate check
+/// of the pending messages using @b cc_mqttsn_client_asleep_check_messages()
+/// function.
+///
+/// In case the gateway doesn't respond with @b PINGRESP to the sent @b PINGREQ
+/// the library will report @ref doc_cc_mqttsn_client_unsolicited_disconnect.
 ///
 /// @section doc_cc_mqttsn_client_unsolicited_disconnect Unsolicited Gateway Disconnection
 /// When broker disconnection is detected all the incomplete asynchronous operations
@@ -1724,7 +1878,7 @@
 ///
 /// @subsection doc_cc_mqttsn_client_unsolicited_disconnect_keep_alive Keep Alive Timeout
 /// When there was no message from the broker for the "keep alive" timeout (configured during the @ref connect "connect"
-/// operation) and the broker doesn't respond to the @b PINGREQ message.
+/// or the @ref sleep "sleep" operations) and the broker doesn't respond to the @b PINGREQ message.
 /// In such case the library responds in the following way:
 /// @li Terminates and invokes the callbacks of previously initiated but incomplete operations
 ///     passing the @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected as their status report.
