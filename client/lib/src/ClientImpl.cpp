@@ -262,12 +262,6 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
             break;
         }
 
-        if (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Connected) {
-            errorLog("Client is already connected.");
-            updateEc(ec, CC_MqttsnErrorCode_AlreadyConnected);
-            break;
-        }        
-
         if (m_ops.max_size() <= m_ops.size()) {
             errorLog("Cannot start connect operation, retry in next event loop iteration.");
             updateEc(ec, CC_MqttsnErrorCode_RetryLater);

@@ -98,7 +98,6 @@ std::string AppClient::toString(CC_MqttsnErrorCode val)
         /* CC_MqttsnErrorCode_NotIntitialized */ "Not Intitialized",
         /* CC_MqttsnErrorCode_Busy*/ "Busy",
         /* CC_MqttsnErrorCode_NotConnected*/ "Not Connected",
-        /* CC_MqttsnErrorCode_AlreadyConnected */ "Already Connected",
         /* CC_MqttsnErrorCode_BadParam*/ "Bad Param",
         /* CC_MqttsnErrorCode_InsufficientConfig*/ "Insufficient Config",
         /* CC_MqttsnErrorCode_OutOfMemory*/ "Out Of Memory",

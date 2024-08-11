@@ -14,6 +14,7 @@ public:
     void test4();
     void test5();
     void test6();
+    void test7();
 
 private:
     virtual void setUp() override
@@ -508,4 +509,20 @@ void UnitTestConnect::test6()
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
-// TODO: test reconnect without disconnecting
+void UnitTestConnect::test7()
+{
+    // Testing reconnection without disconnect
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);    
+
+    unitTestDoConnectBasic(client, ClientId);     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);       
+}

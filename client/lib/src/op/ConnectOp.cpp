@@ -151,7 +151,9 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
         return ec;
     }
 
-    client().sessionState().m_clientId.clear();
+    auto& sessionState = client().sessionState();
+    sessionState.m_clientId.clear();
+    sessionState.m_connectionStatus = CC_MqttsnConnectionStatus_Disconnected;
     if (m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) {
         // Don't wait for acknowledgement, assume state cleared upon send
         client().reuseState() = ReuseState();

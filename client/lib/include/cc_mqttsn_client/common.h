@@ -55,16 +55,15 @@ typedef enum
     CC_MqttsnErrorCode_NotIntitialized = 2, ///< The allocated client hasn't been initialized.
     CC_MqttsnErrorCode_Busy = 3, ///< The client library is in the middle of previous operation(s), cannot start a new one.
     CC_MqttsnErrorCode_NotConnected = 4, ///< The client library is not connected to the gateway. Returned by operations that require connection to the gateway.
-    CC_MqttsnErrorCode_AlreadyConnected = 5, ///< The client library is already connected to the gateway. Returned when cc_mqttsn_client_connect() invoked second time.
-    CC_MqttsnErrorCode_BadParam = 6, ///< Bad parameter is passed to the function.
-    CC_MqttsnErrorCode_InsufficientConfig = 7, ///< The required configuration hasn't been performed.
-    CC_MqttsnErrorCode_OutOfMemory = 8, ///< Memory allocation failed.
-    CC_MqttsnErrorCode_BufferOverflow = 9, ///< Output buffer is too short
-    CC_MqttsnErrorCode_NotSupported = 10, ///< Feature is not supported
-    CC_MqttsnErrorCode_RetryLater = 11, ///< Retry in next event loop iteration.
-    CC_MqttsnErrorCode_Disconnecting = 12, ///< The client is in "disconnecting" state, (re)connect is required in the next iteration loop.
-    CC_MqttsnErrorCode_NotSleeping = 13, ///< The client is not in ASLEEP mode.
-    CC_MqttsnErrorCode_PreparationLocked = 14, ///< Another operation is being prepared, cannot create a new one without performing "send" or "cancel".
+    CC_MqttsnErrorCode_BadParam = 5, ///< Bad parameter is passed to the function.
+    CC_MqttsnErrorCode_InsufficientConfig = 6, ///< The required configuration hasn't been performed.
+    CC_MqttsnErrorCode_OutOfMemory = 7, ///< Memory allocation failed.
+    CC_MqttsnErrorCode_BufferOverflow = 8, ///< Output buffer is too short
+    CC_MqttsnErrorCode_NotSupported = 9, ///< Feature is not supported
+    CC_MqttsnErrorCode_RetryLater = 10, ///< Retry in next event loop iteration.
+    CC_MqttsnErrorCode_Disconnecting = 11, ///< The client is in "disconnecting" state, (re)connect is required in the next iteration loop.
+    CC_MqttsnErrorCode_NotSleeping = 12, ///< The client is not in ASLEEP mode.
+    CC_MqttsnErrorCode_PreparationLocked = 13, ///< Another operation is being prepared, cannot create a new one without performing "send" or "cancel".
     CC_MqttsnErrorCode_ValuesLimit ///< Upper limit of the values
 } CC_MqttsnErrorCode;
 

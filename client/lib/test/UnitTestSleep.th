@@ -10,6 +10,7 @@ class UnitTestSleep : public CxxTest::TestSuite, public UnitTestDefaultBase
 public:
     void test1();
     void test2();
+    void test3();
 
 private:
     virtual void setUp() override
@@ -203,4 +204,97 @@ void UnitTestSleep::test2()
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Connected);    
 }
 
-// TODO: test gateway disconnection report when there is no response to PINGREQ
+void UnitTestSleep::test3()
+{
+    // Testing no response to PINGREQ
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    auto ec = apiSetDefaultRetryCount(client, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnTopicId TopicId = 123;
+    unitTestDoSubscribeTopicId(client, TopicId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);    
+
+    const unsigned SleepDurationSec = 10 * 60;
+
+    CC_MqttsnSleepConfig config;
+    apiSleepInitConfig(&config);
+
+    config.m_duration = SleepDurationSec;
+    
+    auto sleep = apiSleepPrepare(client);
+    TS_ASSERT_DIFFERS(sleep, nullptr);
+
+    ec = apiSleepConfig(sleep, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unitTestSleepSend(sleep);
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* disconnectMsg = dynamic_cast<UnitTestDisconnectMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(disconnectMsg, nullptr);
+        TS_ASSERT(disconnectMsg->field_duration().doesExist());
+        TS_ASSERT_EQUALS(disconnectMsg->field_duration().field().value(), SleepDurationSec);
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestDisconnectMsg disconnectMsg;
+        unitTestClientInputMessage(client, disconnectMsg);
+    }
+
+    TS_ASSERT(unitTestHasSleepCompleteReport());
+    auto sleepReport = unitTestSleepCompleteReport();
+    TS_ASSERT_EQUALS(sleepReport->m_status, CC_MqttsnAsyncOpStatus_Complete)
+    TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Asleep);    
+
+    TS_ASSERT(unitTestHasTickReq()); // Timer for ping
+    unitTestTick(client);
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pingreqMsg = dynamic_cast<UnitTestPingreqMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pingreqMsg, nullptr);
+        TS_ASSERT_EQUALS(pingreqMsg->field_clientId().value(), ClientId);
+        TS_ASSERT(!unitTestHasOutputData());
+    }   
+
+    TS_ASSERT(unitTestHasTickReq()); // Timeout
+    unitTestTick(client);    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pingreqMsg = dynamic_cast<UnitTestPingreqMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pingreqMsg, nullptr);
+        TS_ASSERT_EQUALS(pingreqMsg->field_clientId().value(), ClientId);
+        TS_ASSERT(!unitTestHasOutputData());
+    }      
+
+    TS_ASSERT(unitTestHasTickReq()); // Timeout
+    unitTestTick(client);        
+
+    {
+        TS_ASSERT(unitTestHasGwDisconnectReport());
+        auto disconnectReport = unitTestGetGwDisconnectReport();
+        TS_ASSERT_EQUALS(disconnectReport->m_reason, CC_MqttsnGatewayDisconnectReason_NoGatewayResponse);
+    }  
+}
+

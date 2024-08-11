@@ -56,7 +56,6 @@ CC_MqttsnAsyncOpStatus Op::translateErrorCodeToAsyncOpStatus(CC_MqttsnErrorCode 
         /* CC_MqttsnErrorCode_NotIntitialized */ CC_MqttsnAsyncOpStatus_InternalError,
         /* CC_MqttsnErrorCode_Busy */ CC_MqttsnAsyncOpStatus_InternalError,
         /* CC_MqttsnErrorCode_NotConnected */ CC_MqttsnAsyncOpStatus_InternalError,
-        /* CC_MqttsnErrorCode_AlreadyConnected */ CC_MqttsnAsyncOpStatus_InternalError,
         /* CC_MqttsnErrorCode_BadParam */ CC_MqttsnAsyncOpStatus_BadParam,
         /* CC_MqttsnErrorCode_InsufficientConfig */ CC_MqttsnAsyncOpStatus_InternalError,
         /* CC_MqttsnErrorCode_OutOfMemory */ CC_MqttsnAsyncOpStatus_OutOfMemory,
