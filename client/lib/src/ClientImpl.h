@@ -64,7 +64,7 @@ public:
 
     // -------------------- API Calls -----------------------------
     void tick(unsigned ms);
-    void processData(const std::uint8_t* iter, unsigned len);
+    void processData(const std::uint8_t* iter, unsigned len, CC_MqttsnDataOrigin origin);
 
     op::SearchOp* searchPrepare(CC_MqttsnErrorCode* ec);
     op::ConnectOp* connectPrepare(CC_MqttsnErrorCode* ec);

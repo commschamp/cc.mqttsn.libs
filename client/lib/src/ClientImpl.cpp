@@ -156,10 +156,11 @@ void ClientImpl::tick(unsigned ms)
     doApiExit();
 }
 
-void ClientImpl::processData(const std::uint8_t* iter, unsigned len)
+void ClientImpl::processData(const std::uint8_t* iter, unsigned len, CC_MqttsnDataOrigin origin)
 {
     auto guard = apiEnter();
 
+    m_sessionState.m_lastOrigin = origin;
     ProtFrame::MsgPtr msgPtr;
     auto es = comms::processSingleWithDispatch(iter, len, m_frame, msgPtr, *this);
     if (es != comms::ErrorStatus::Success) {
@@ -709,6 +710,11 @@ void ClientImpl::handle(AdvertiseMsg& msg)
 
 void ClientImpl::handle(SearchgwMsg& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_Any) {
+        errorLog("SEARCHGW message from connected gateway, ignoring...");
+        return;
+    }
+
     static_assert(Config::HasGatewayDiscovery);
     if (m_gwinfoDelayReqCb == nullptr) {
         // The application didn't provide a callback to inquire about the delay for resonditing to SEARCHGW
@@ -830,6 +836,10 @@ void ClientImpl::handle(GwinfoMsg& msg)
 
 void ClientImpl::handle(RegisterMsg& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_ConnectedGw) {
+        return;
+    }
+
     if ((m_sessionState.m_disconnecting) || 
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
@@ -866,6 +876,10 @@ void ClientImpl::handle(RegisterMsg& msg)
 
 void ClientImpl::handle(PublishMsg& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_ConnectedGw) {
+        return;
+    }
+
     if ((m_sessionState.m_disconnecting) || 
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
@@ -1050,6 +1064,10 @@ void ClientImpl::handle(PublishMsg& msg)
 
 void ClientImpl::handle(PubackMsg& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_ConnectedGw) {
+        return;
+    }
+
     if ((m_sessionState.m_disconnecting) || 
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
@@ -1100,6 +1118,10 @@ void ClientImpl::handle(PubackMsg& msg)
 #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 void ClientImpl::handle(PubrelMsg& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_ConnectedGw) {
+        return;
+    }
+
     if ((m_sessionState.m_disconnecting) || 
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
@@ -1126,6 +1148,10 @@ void ClientImpl::handle(PubrelMsg& msg)
 
 void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_ConnectedGw) {
+        return;
+    }
+
     if ((m_sessionState.m_disconnecting) || 
         (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Connected)) {
         return;
@@ -1138,6 +1164,10 @@ void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
 
 void ClientImpl::handle(DisconnectMsg& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_ConnectedGw) {
+        return;
+    }
+
     if ((m_sessionState.m_disconnecting) || 
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
@@ -1155,6 +1185,10 @@ void ClientImpl::handle(DisconnectMsg& msg)
 
 void ClientImpl::handle([[maybe_unused]] ProtMessage& msg)
 {
+    if (m_sessionState.m_lastOrigin != CC_MqttsnDataOrigin_ConnectedGw) {
+        return;
+    }
+
     if (m_sessionState.m_disconnecting) {
         return;
     }

@@ -144,10 +144,10 @@ void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms)
     clientFromHandle(client)->tick(ms);
 }
 
-void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen)
+void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen, CC_MqttsnDataOrigin origin)
 {
     COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->processData(buf, bufLen);    
+    clientFromHandle(client)->processData(buf, bufLen, origin);    
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_period(CC_MqttsnClientHandle client, unsigned value)

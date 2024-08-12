@@ -358,7 +358,12 @@ bool AppClient::createSession()
         {
             assert(m_client);
             m_lastAddr = addr;
-            ::cc_mqttsn_client_process_data(m_client.get(), buf, static_cast<unsigned>(bufLen));
+            auto origin = CC_MqttsnDataOrigin_Any;
+            if (addr == m_gwAddr) {
+                origin = CC_MqttsnDataOrigin_ConnectedGw;
+            }
+
+            ::cc_mqttsn_client_process_data(m_client.get(), buf, static_cast<unsigned>(bufLen), origin);
         });
 
     m_session->setNetworkErrorReportCb(

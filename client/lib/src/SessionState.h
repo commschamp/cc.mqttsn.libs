@@ -20,6 +20,7 @@ struct SessionState
     ClientIdStr m_clientId;
     unsigned m_keepAliveMs = 0U;
     CC_MqttsnConnectionStatus m_connectionStatus = CC_MqttsnConnectionStatus_Disconnected;
+    CC_MqttsnDataOrigin m_lastOrigin = CC_MqttsnDataOrigin_Any;
     bool m_disconnecting = false;
 };
 

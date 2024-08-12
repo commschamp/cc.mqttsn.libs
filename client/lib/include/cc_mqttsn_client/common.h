@@ -124,6 +124,15 @@ typedef enum
     CC_MqttsnConnectionStatus_ValuesLimit ///< Limit for the values
 } CC_MqttsnConnectionStatus;
 
+/// @brief Data origin
+/// @ingroup global
+typedef enum
+{
+    CC_MqttsnDataOrigin_Any = 0, ///< Data comes from any node on the network
+    CC_MqttsnDataOrigin_ConnectedGw = 1, ///< Data comes from the connected gateway
+    CC_MqttsnDataOrigin_ValuesLimit ///< Limit for the values
+} CC_MqttsnDataOrigin;
+
 /// @brief Declaration of struct for the @ref CC_MqttsnClientHandle;
 /// @ingroup client
 struct CC_MqttsnClient;

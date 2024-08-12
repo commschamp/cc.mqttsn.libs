@@ -17,7 +17,7 @@ public:
         CC_MqttsnClientHandle (*m_alloc)() = nullptr;
         void (*m_free)(CC_MqttsnClientHandle) = nullptr;
         void (*m_tick)(CC_MqttsnClientHandle, unsigned) = nullptr;
-        void (*m_process_data)(CC_MqttsnClientHandle, const unsigned char*, unsigned) = nullptr;
+        void (*m_process_data)(CC_MqttsnClientHandle, const unsigned char*, unsigned, CC_MqttsnDataOrigin) = nullptr;
         CC_MqttsnErrorCode (*m_set_default_retry_period)(CC_MqttsnClientHandle, unsigned) = nullptr;
         unsigned (*m_get_default_retry_period)(CC_MqttsnClientHandle) = nullptr;
         CC_MqttsnErrorCode (*m_set_default_retry_count)(CC_MqttsnClientHandle, unsigned) = nullptr;
@@ -375,8 +375,8 @@ public:
     void unitTestTearDown();
 
     UnitTestClientPtr unitTestAllocClient(bool enableLog = false);
-    void unitTestClientInputData(CC_MqttsnClient* client, const UnitTestData& data);
-    void unitTestClientInputMessage(CC_MqttsnClient* client, const UnitTestMessage& msg);
+    void unitTestClientInputData(CC_MqttsnClient* client, const UnitTestData& data, CC_MqttsnDataOrigin origin);
+    void unitTestClientInputMessage(CC_MqttsnClient* client, const UnitTestMessage& msg, CC_MqttsnDataOrigin origin = CC_MqttsnDataOrigin_ConnectedGw);
     void unitTestPushSearchgwResponseDelay(unsigned val);
 
     static CC_MqttsnTopicId unitTestShortTopicNameToId(const std::string& topic);
@@ -448,7 +448,7 @@ public:
     bool unitTestHasReceivedMessage() const;
     UnitTestMessageInfoPtr unitTestReceivedMessage(bool mustExist = true);
 
-    void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen);
+    void apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen, CC_MqttsnDataOrigin origin);
     CC_MqttsnErrorCode apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value);
     unsigned apiGetDefaultRetryPeriod(CC_MqttsnClientHandle client);
     CC_MqttsnErrorCode apiSetDefaultRetryCount(CC_MqttsnClient* client, unsigned value);

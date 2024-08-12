@@ -41,7 +41,7 @@ void UnitTestGwDiscover::test1()
     UnitTestAdvertiseMsg advertiseMsg;
     advertiseMsg.field_gwId().setValue(GwId);
     comms::units::setMinutes(advertiseMsg.field_duration(), AdvDurationMin);
-    unitTestClientInputMessage(client, advertiseMsg);
+    unitTestClientInputMessage(client, advertiseMsg, CC_MqttsnDataOrigin_Any);
 
     {
         auto gwInfoReport = unitTestGetGwInfoReport();
@@ -96,7 +96,7 @@ void UnitTestGwDiscover::test2()
     const std::uint8_t GwId = 1U;
     UnitTestGwinfoMsg gwinfoMsg;
     gwinfoMsg.field_gwId().setValue(GwId);
-    unitTestClientInputMessage(client, gwinfoMsg);
+    unitTestClientInputMessage(client, gwinfoMsg, CC_MqttsnDataOrigin_Any);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
     auto searchCompleteReport = unitTestSearchCompleteReport();
@@ -136,7 +136,7 @@ void UnitTestGwDiscover::test3()
     UnitTestGwinfoMsg gwinfoMsg;
     gwinfoMsg.field_gwId().setValue(GwId);
     comms::util::assign(gwinfoMsg.field_gwAdd().value(), Addr.begin(), Addr.end());
-    unitTestClientInputMessage(client, gwinfoMsg);
+    unitTestClientInputMessage(client, gwinfoMsg, CC_MqttsnDataOrigin_Any);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
     auto searchCompleteReport = unitTestSearchCompleteReport();
@@ -179,7 +179,7 @@ void UnitTestGwDiscover::test4()
     UnitTestAdvertiseMsg advertiseMsg;
     advertiseMsg.field_gwId().setValue(GwId);
     comms::units::setMinutes(advertiseMsg.field_duration(), AdvDurationMin);
-    unitTestClientInputMessage(client, advertiseMsg);
+    unitTestClientInputMessage(client, advertiseMsg, CC_MqttsnDataOrigin_Any);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
     auto searchCompleteReport = unitTestSearchCompleteReport();
@@ -306,7 +306,7 @@ void UnitTestGwDiscover::test6()
     const std::uint8_t GwId = 1U;
     UnitTestGwinfoMsg gwinfoMsg;
     gwinfoMsg.field_gwId().setValue(GwId);
-    unitTestClientInputMessage(client, gwinfoMsg);
+    unitTestClientInputMessage(client, gwinfoMsg, CC_MqttsnDataOrigin_Any);
 
     TS_ASSERT(unitTestHasSearchCompleteReport());
     auto searchCompleteReport = unitTestSearchCompleteReport();
@@ -336,7 +336,7 @@ void UnitTestGwDiscover::test7()
         UnitTestAdvertiseMsg advertiseMsg;
         advertiseMsg.field_gwId().setValue(GwId);
         comms::units::setMinutes(advertiseMsg.field_duration(), AdvDurationMin);
-        unitTestClientInputMessage(client, advertiseMsg);
+        unitTestClientInputMessage(client, advertiseMsg, CC_MqttsnDataOrigin_Any);
     }
 
     {
@@ -364,7 +364,7 @@ void UnitTestGwDiscover::test7()
     {
         UnitTestSearchgwMsg searchgwMsg;
         searchgwMsg.field_radius().value() = BroadcastRadius;
-        unitTestClientInputMessage(client, searchgwMsg);
+        unitTestClientInputMessage(client, searchgwMsg, CC_MqttsnDataOrigin_Any);
     }
 
     unitTestTick(client); // Tiemout to send GWINFO

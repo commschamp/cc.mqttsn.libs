@@ -294,12 +294,12 @@ UnitTestCommonBase::UnitTestClientPtr UnitTestCommonBase::unitTestAllocClient(bo
     return client;
 }
 
-void UnitTestCommonBase::unitTestClientInputData(CC_MqttsnClient* client, const UnitTestData& data)
+void UnitTestCommonBase::unitTestClientInputData(CC_MqttsnClient* client, const UnitTestData& data, CC_MqttsnDataOrigin origin)
 {
-    apiProcessData(client, data.data(), static_cast<unsigned>(data.size()));
+    apiProcessData(client, data.data(), static_cast<unsigned>(data.size()), origin);
 }
 
-void UnitTestCommonBase::unitTestClientInputMessage(CC_MqttsnClient* client, const UnitTestMessage& msg)
+void UnitTestCommonBase::unitTestClientInputMessage(CC_MqttsnClient* client, const UnitTestMessage& msg, CC_MqttsnDataOrigin origin)
 {
     UnitTestData data;
     UnitTestsFrame frame;
@@ -307,7 +307,7 @@ void UnitTestCommonBase::unitTestClientInputMessage(CC_MqttsnClient* client, con
     auto writeIter = comms::writeIteratorFor<UnitTestMessage>(data.data());
     auto ec = frame.write(msg, writeIter, data.size());
     test_assert(ec == comms::ErrorStatus::Success);
-    unitTestClientInputData(client, data);
+    unitTestClientInputData(client, data, origin);
 }
 
 void UnitTestCommonBase::unitTestPushSearchgwResponseDelay(unsigned val)
@@ -849,9 +849,9 @@ UnitTestCommonBase::UnitTestMessageInfoPtr UnitTestCommonBase::unitTestReceivedM
     return ptr;    
 }
 
-void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen)
+void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen, CC_MqttsnDataOrigin origin)
 {
-    m_funcs.m_process_data(client, buf, bufLen);
+    m_funcs.m_process_data(client, buf, bufLen, origin);
 }
 
 CC_MqttsnErrorCode UnitTestCommonBase::apiSetDefaultRetryPeriod(CC_MqttsnClient* client, unsigned value)

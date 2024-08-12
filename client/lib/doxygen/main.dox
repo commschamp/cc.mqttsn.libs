@@ -187,20 +187,26 @@
 /// See also the documentation of the @ref CC_MqttsnErrorLogCb callback function definition.
 ///
 /// @section doc_cc_mqttsn_client_data Reporting Incoming Data
-/// It is the responsibility of the application to receive data from the gateway
+/// It is the responsibility of the application to receive data from the other nodes on the network
 /// and report it to the library. The report is performed using the
 /// @b cc_mqttsn_client_process_data() function.
 /// @code
 /// uint8_t buf[MAX_BUF_SIZE];
 /// ... // Receive data into buffer
 /// unsigned bufLen = ...; // Amount of received bytes in the buffer.
-/// cc_mqttsn_client_process_data(client, buf, bufLen);
+/// CC_MqttsnDataOrigin origin = ...;
+/// cc_mqttsn_client_process_data(client, buf, bufLen, origin);
 /// @endcode
 /// The application is responsible to maintain the input buffer.
 /// The MQTT-SN protocol assumes datagram packets, where each packets
 /// contains a valid single MQTT-SN message. The client library decodes
 /// and processes the message at the beginning of the reported buffer and
 /// discards any extra bytes that might follow.
+///
+/// The application is also responsible to allow input from multiple sources and
+/// determine the @ref CC_MqttsnDataOrigin "origin" of the input data. It allows
+/// the library to differentiate between the messages from the legit gateway to
+/// which the application is connected and other nodes on the network.
 ///
 /// When new data chunk is reported the library may invoke several callbacks,
 /// such as reporting received message, sending new data out, as well as canceling

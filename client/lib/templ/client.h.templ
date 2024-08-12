@@ -66,11 +66,12 @@ void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms);
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] buf Pointer to the buffer of data to process.
 /// @param[in] bufLen Number of bytes in the data buffer.
+/// @param[in] origin Origin of the data, helps to ignore unsolicited messages on the network.
 /// @note According to the MQTT-SN specification every message should be sent in a separate
 ///     single datagram packet. This function assumes such behaviour and "consumes"
 ///     all the provided data discarding any additional bytes after the message (if exist).
 /// @ingroup client
-void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen);
+void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen, CC_MqttsnDataOrigin origin);
 
 /// @brief Set retry period to wait between resending unacknowledged message to the gateway (@b T<sub>retry</sub> from spec).
 /// @details Some messages, sent to the gateway, may require acknowledgement by 

@@ -74,6 +74,11 @@ protected:
         return m_lastAddr;
     }
 
+    void setGwAddr(const Addr& addr)
+    {
+        m_gwAddr = addr;
+    }
+
     static std::string toString(CC_MqttsnAsyncOpStatus val);
 
 private:
@@ -100,6 +105,7 @@ private:
     ClientPtr m_client;
     SessionPtr m_session;
     Addr m_lastAddr;
+    Addr m_gwAddr;
 };
 
 } // namespace cc_mqttsn_client_app
