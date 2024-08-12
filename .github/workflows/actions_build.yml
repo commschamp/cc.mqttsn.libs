@@ -50,7 +50,8 @@ jobs:
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
         -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
-        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON \
+        -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
       env:
         CC: gcc-${{matrix.cc_ver}}
         CXX: g++-${{matrix.cc_ver}}
@@ -118,7 +119,8 @@ jobs:
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
         -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
-        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{env.WITH_SANITIZERS}}
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{env.WITH_SANITIZERS}} \
+        -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
       env:
         CC: clang-${{matrix.cc_ver}}
         CXX: clang++-${{matrix.cc_ver}}
@@ -178,7 +180,7 @@ jobs:
         cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
           -DBoost_USE_STATIC_LIBS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
-          -DCC_MQTTSN_CLIENT_APPS=OFF -DCC_MQTTSN_GATEWAY_APPS=ON
+          -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="%GITHUB_WORKSPACE%/client/lib/script/BareMetalTestConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/NoGwDiscoverConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos1Config.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos0Config.cmake" 
 
     - name: Build Target 
       working-directory: ${{runner.workspace}}/build
@@ -235,7 +237,8 @@ jobs:
         cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
           -DBoost_USE_STATIC_LIBS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
-          -DCC_MQTTSN_CLIENT_APPS=OFF -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}}
+          -DCC_MQTTSN_CLIENT_APPS=${{env.HAS_BOOST}} -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}} ^
+          -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="%GITHUB_WORKSPACE%/client/lib/script/BareMetalTestConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/NoGwDiscoverConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos1Config.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos0Config.cmake" 
       env:
         HAS_BOOST: "${{ matrix.arch == 'x64' && 'ON' || 'OFF' }}"          
 

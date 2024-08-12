@@ -273,7 +273,6 @@ void SendOp::handle(RegackMsg& msg)
     }
 }
 
-#if CC_MQTTSN_CLIENT_MAX_QOS > 0
 void SendOp::handle(PubackMsg& msg)
 {
     if ((m_suspended) ||
@@ -330,7 +329,7 @@ void SendOp::handle(PubackMsg& msg)
     completeOpInternal(status, &info);
 }
 
-#if CC_MQTTSN_CLIENT_MAX_QOS > 1
+#if CC_MQTTSN_CLIENT_MAX_QOS >=2
 void SendOp::handle(PubrecMsg& msg)
 {
     if ((m_suspended) || 
@@ -364,8 +363,7 @@ void SendOp::handle(PubcompMsg& msg)
     completeOpInternal(CC_MqttsnAsyncOpStatus_Complete);
 }
 
-#endif // #if CC_MQTTSN_CLIENT_MAX_QOS > 1
-#endif // #if CC_MQTTSN_CLIENT_MAX_QOS > 0
+#endif // #if CC_MQTTSN_CLIENT_MAX_QOS >=2
 
 Op::Type SendOp::typeImpl() const
 {

@@ -16,7 +16,7 @@ mkdir -p ${BUILD_DIR}
 ${SCRIPT_DIR}/prepare_externals.sh
 
 CONFIGS_DIR="${ROOT_DIR}/client/lib/script"
-CONFIGS="${CONFIGS_DIR}/BareMetalTestConfig.cmake;${CONFIGS_DIR}/NoGwDiscoverConfig.cmake"
+CONFIGS="${CONFIGS_DIR}/BareMetalTestConfig.cmake;${CONFIGS_DIR}/NoGwDiscoverConfig.cmake;${CONFIGS_DIR}/Qos1Config.cmake;${CONFIGS_DIR}/Qos0Config.cmake"
 
 cd ${BUILD_DIR}
 cmake .. -DCMAKE_INSTALL_PREFIX=${COMMON_INSTALL_DIR} -DCMAKE_BUILD_TYPE=Debug \

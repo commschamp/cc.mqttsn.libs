@@ -46,11 +46,11 @@ public:
 
     using Base::handle;
     void handle(RegackMsg& msg) override;
-#if CC_MQTTSN_CLIENT_MAX_QOS > 0    
     void handle(PubackMsg& msg) override;
+#if CC_MQTTSN_CLIENT_MAX_QOS >=2    
     void handle(PubrecMsg& msg) override;
     void handle(PubcompMsg& msg) override;
-#endif // #if CC_MQTTSN_CLIENT_MAX_QOS > 0    
+#endif // CC_MQTTSN_CLIENT_MAX_QOS >=2    
 
 protected:
     virtual Type typeImpl() const override;    

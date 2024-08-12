@@ -19,9 +19,9 @@ target_include_directories(
 
 ##################################
 
-function (cc_mqttsn_client_add_unit_test name test_lib)
-    set (src ${CMAKE_CURRENT_SOURCE_DIR}/${name}.th)
-    cc_cxxtest_add_test (NAME cc.mqttsn.client.${name} SRC ${src})    
+function (cc_mqttsn_client_add_unit_test src test_lib)
+    get_filename_component(name ${src} NAME_WE)
+    cc_cxxtest_add_test (NAME cc.mqttsn.client.${name} SRC ${CMAKE_CURRENT_SOURCE_DIR}/${src})    
     target_link_libraries(cc.mqttsn.client.${name} PRIVATE ${test_lib} cxxtest::cxxtest)
 endfunction ()
 
@@ -30,7 +30,7 @@ endfunction ()
 if (TARGET cc::cc_mqttsn_client)
     set (DEFAULT_BASE_LIB_NAME "UnitTestDefaultBase")
     set (DEFAULT_BASE_SRC 
-        "UnitTestDefaultBase.cpp")    
+        "default/UnitTestDefaultBase.cpp")    
 
     add_library(${DEFAULT_BASE_LIB_NAME} STATIC ${DEFAULT_BASE_SRC})
     target_link_libraries(${DEFAULT_BASE_LIB_NAME} PUBLIC ${COMMON_BASE_LIB_NAME} cc::cc_mqttsn_client)
@@ -39,24 +39,21 @@ if (TARGET cc::cc_mqttsn_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-    cc_mqttsn_client_add_unit_test(UnitTestGwDiscover ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestConnect ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestDisconnect ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestPublish ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestReceive ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestSubscribe ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestUnsubscribe ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestWill ${DEFAULT_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestSleep ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestGwDiscover.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestConnect.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestDisconnect.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestPublish.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestReceive.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestSubscribe.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestUnsubscribe.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestWill.th ${DEFAULT_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(default/UnitTestSleep.th ${DEFAULT_BASE_LIB_NAME})
 endif ()    
-
-# TODO
-return ()
 
 if (TARGET cc::cc_mqttsn_bm_client)
     set (BM_BASE_LIB_NAME "UnitTestBmBase")
     set (BM_BASE_SRC 
-        "UnitTestBmBase.cpp")    
+        "bm/UnitTestBmBase.cpp")    
 
     add_library(${BM_BASE_LIB_NAME} STATIC ${BM_BASE_SRC})
     target_link_libraries(${BM_BASE_LIB_NAME} PUBLIC ${COMMON_BASE_LIB_NAME} cc::cc_mqttsn_bm_client)
@@ -65,16 +62,17 @@ if (TARGET cc::cc_mqttsn_bm_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-    cc_mqttsn_client_add_unit_test(UnitTestBmClient ${BM_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestBmConnect ${BM_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestBmPublish ${BM_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestBmReceive ${BM_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestBmClient ${BM_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestBmConnect ${BM_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestBmPublish ${BM_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestBmReceive ${BM_BASE_LIB_NAME})
 endif ()  
+
 
 if (TARGET cc::cc_mqttsn_qos1_client)
     set (QOS1_BASE_LIB_NAME "UnitTestQos1Base")
     set (QOS1_BASE_SRC 
-        "UnitTestQos1Base.cpp")    
+        "qos1/UnitTestQos1Base.cpp")    
 
     add_library(${QOS1_BASE_LIB_NAME} STATIC ${QOS1_BASE_SRC})
     target_link_libraries(${QOS1_BASE_LIB_NAME} PUBLIC ${COMMON_BASE_LIB_NAME} cc::cc_mqttsn_qos1_client)
@@ -83,15 +81,15 @@ if (TARGET cc::cc_mqttsn_qos1_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-    cc_mqttsn_client_add_unit_test(UnitTestQos1Publish ${QOS1_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestQos1Receive ${QOS1_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestQos1Subscribe ${QOS1_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestQos1Publish ${QOS1_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestQos1Receive ${QOS1_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestQos1Subscribe ${QOS1_BASE_LIB_NAME})
 endif ()  
 
 if (TARGET cc::cc_mqttsn_qos0_client)
     set (QOS0_BASE_LIB_NAME "UnitTestQos0Base")
     set (QOS0_BASE_SRC 
-        "UnitTestQos0Base.cpp")    
+        "qos0/UnitTestQos0Base.cpp")    
 
     add_library(${QOS0_BASE_LIB_NAME} STATIC ${QOS0_BASE_SRC})
     target_link_libraries(${QOS0_BASE_LIB_NAME} PUBLIC ${COMMON_BASE_LIB_NAME} cc::cc_mqttsn_qos0_client)
@@ -100,7 +98,22 @@ if (TARGET cc::cc_mqttsn_qos0_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-    cc_mqttsn_client_add_unit_test(UnitTestQos0Publish ${QOS0_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestQos0Receive ${QOS0_BASE_LIB_NAME})
-    cc_mqttsn_client_add_unit_test(UnitTestQos0Subscribe ${QOS0_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestQos0Publish ${QOS0_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestQos0Receive ${QOS0_BASE_LIB_NAME})
+#    cc_mqttsn_client_add_unit_test(UnitTestQos0Subscribe ${QOS0_BASE_LIB_NAME})
 endif ()  
+
+if (TARGET cc::cc_mqttsn_no_gw_client)
+    set (NO_GW_BASE_LIB_NAME "UnitTestNoGwBase")
+    set (NO_GW_BASE_SRC 
+        "no_gw/UnitTestNoGwBase.cpp")    
+
+    add_library(${NO_GW_BASE_LIB_NAME} STATIC ${NO_GW_BASE_SRC})
+    target_link_libraries(${NO_GW_BASE_LIB_NAME} PUBLIC ${COMMON_BASE_LIB_NAME} cc::cc_mqttsn_no_gw_client)
+    target_include_directories(
+        ${NO_GW_BASE_LIB_NAME} INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    )
+
+
+endif () 
