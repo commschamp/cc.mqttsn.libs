@@ -27,44 +27,34 @@ AppClient* asThis(void* data)
     return reinterpret_cast<AppClient*>(data);
 }
 
-// std::string toString(CC_MqttsnQoS val)
-// {
-//     static const std::string Map[] = {
-//         /* CC_MqttsnQoS_AtMostOnceDelivery */ "QoS0 - At Most Once Delivery",
-//         /* CC_MqttsnQoS_AtLeastOnceDelivery */ "QoS1 - At Least Once Delivery",
-//         /* CC_MqttsnQoS_ExactlyOnceDelivery */ "QoS2 - Exactly Once Delivery",
-//     };
-//     static constexpr std::size_t MapSize = std::extent<decltype(Map)>::value;
-//     static_assert(MapSize == CC_MqttsnQoS_ValuesLimit);
+std::string toString(CC_MqttsnQoS val)
+{
+    static const std::string Map[] = {
+        /* CC_MqttsnQoS_AtMostOnceDelivery */ "QoS0 - At Most Once Delivery",
+        /* CC_MqttsnQoS_AtLeastOnceDelivery */ "QoS1 - At Least Once Delivery",
+        /* CC_MqttsnQoS_ExactlyOnceDelivery */ "QoS2 - Exactly Once Delivery",
+    };
+    static constexpr std::size_t MapSize = std::extent<decltype(Map)>::value;
+    static_assert(MapSize == CC_MqttsnQoS_ValuesLimit);
 
-//     auto idx = static_cast<unsigned>(val);
-//     if (MapSize <= idx) {
-//         assert(false); // Should not happen
-//         return std::to_string(val);
-//     }
+    auto idx = static_cast<unsigned>(val);
+    if (MapSize <= idx) {
+        assert(false); // Should not happen
+        return std::to_string(val);
+    }
 
-//     return Map[idx] + " (" + std::to_string(val) + ')';
-// }
+    return Map[idx] + " (" + std::to_string(val) + ')';
+}
 
-// void printQos(const char* prefix, CC_MqttsnQoS val)
-// {
-//     std::cout << "\t" << prefix << ": " << toString(val) << '\n';
-// }
+void printQos(const char* prefix, CC_MqttsnQoS val)
+{
+    std::cout << "\t" << prefix << ": " << toString(val) << '\n';
+}
 
-// void printBool(const char* prefix, bool val)
-// {
-//     std::cout << '\t' << prefix << ": " << std::boolalpha << val << '\n';
-// }
-
-// void printConnectReturnCode(CC_MqttsnConnectReturnCode val)
-// {
-//     std::cout << "\tReturn Code: " << AppClient::toString(val) << '\n';
-// }
-
-// void printSubscribeReturnCode(CC_MqttsnSubscribeReturnCode val)
-// {
-//     std::cout << "\tReturn Code: " << AppClient::toString(val) << '\n';
-// }
+void printBool(const char* prefix, bool val)
+{
+    std::cout << '\t' << prefix << ": " << std::boolalpha << val << '\n';
+}
 
 } // namespace 
     
@@ -128,52 +118,52 @@ std::string AppClient::toString(CC_MqttsnErrorCode val)
     return Map[idx] + " (" + std::to_string(val) + ')';
 }
 
-// std::string AppClient::toString(const std::uint8_t* data, unsigned dataLen, bool forceBinary)
-// {
-//     bool binary = forceBinary;
-//     if (!binary) {
-//         binary = 
-//             std::any_of(
-//                 data, data + dataLen,
-//                 [](auto byte)
-//                 {
-//                     if (std::isprint(static_cast<int>(byte)) == 0) {
-//                         return true;
-//                     }
+std::string AppClient::toString(const std::uint8_t* data, unsigned dataLen, bool forceBinary)
+{
+    bool binary = forceBinary;
+    if (!binary) {
+        binary = 
+            std::any_of(
+                data, data + dataLen,
+                [](auto byte)
+                {
+                    if (std::isprint(static_cast<int>(byte)) == 0) {
+                        return true;
+                    }
 
-//                     if (byte > 0x7e) {
-//                         return true;
-//                     }
+                    if (byte > 0x7e) {
+                        return true;
+                    }
 
-//                     return false;
-//                 });
-//     } 
+                    return false;
+                });
+    } 
 
-//     if (!binary) {
-//         return std::string(reinterpret_cast<const char*>(data), dataLen);
-//     }
+    if (!binary) {
+        return std::string(reinterpret_cast<const char*>(data), dataLen);
+    }
 
-//     std::stringstream stream;
-//     stream << std::hex;
-//     for (auto idx = 0U; idx < dataLen; ++idx) {
-//         stream << std::setw(2) << std::setfill('0') << static_cast<unsigned>(data[idx]) << ' ';
-//     }
-//     return stream.str();
-// }
+    std::stringstream stream;
+    stream << std::hex;
+    for (auto idx = 0U; idx < dataLen; ++idx) {
+        stream << std::setw(2) << std::setfill('0') << static_cast<unsigned>(data[idx]) << ' ';
+    }
+    return stream.str();
+}
 
-// void AppClient::print(const CC_MqttsnMessageInfo& info, bool printMessage)
-// {
-//     std::cout << "[INFO]: Message Info:\n";
-//     if (printMessage) {
-//         std::cout << 
-//             "\tTopic: " << info.m_topic << '\n' <<
-//             "\tData: " << toString(info.m_data, info.m_dataLen, m_opts.subBinary()) << '\n';
-//     }
+void AppClient::print(const CC_MqttsnMessageInfo& info, bool printMessage)
+{
+    std::cout << "[INFO]: Message Info:\n";
+    if (printMessage) {
+        std::cout << 
+            "\tTopic: " << info.m_topic << '\n' <<
+            "\tData: " << toString(info.m_data, info.m_dataLen, m_opts.subBinary()) << '\n';
+    }
 
-//     printQos("QoS", info.m_qos);
-//     printBool("Retained", info.m_retained);
-//     std::cout << std::endl;
-// }
+    printQos("QoS", info.m_qos);
+    printBool("Retained", info.m_retained);
+    std::cout << std::endl;
+}
 
 AppClient::AppClient(boost::asio::io_context& io, int& result) : 
     m_io(io),
@@ -191,12 +181,12 @@ AppClient::AppClient(boost::asio::io_context& io, int& result) :
 
 std::ostream& AppClient::logError()
 {
-    return std::cerr << "ERROR: ";
+    return std::cerr << "[ERROR] ";
 }
 
 std::ostream& AppClient::logInfo()
 {
-    return std::cout << "INFO: ";
+    return std::cout << "[INFO] ";
 }
 
 void AppClient::doTerminate(int result)
@@ -254,6 +244,21 @@ bool AppClient::doConnect()
     return true;
 }
 
+bool AppClient::doDisconnect()
+{
+    if (m_opts.verbose()) {
+        logInfo() << "Attempting disconnection" << std::endl;
+    }
+
+    auto ec = cc_mqttsn_client_disconnect(m_client.get(), &AppClient::disconnectCompleteCb, this);
+    if (ec != CC_MqttsnErrorCode_Success) {
+        logError() << "Failed to initiate disconnection from the gateway" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 bool AppClient::startImpl()
 {
     return true;
@@ -266,6 +271,11 @@ void AppClient::messageReceivedImpl([[maybe_unused]] const CC_MqttsnMessageInfo*
 
 void AppClient::connectCompleteImpl()
 {
+}
+
+void AppClient::disconnectCompleteImpl()
+{
+    doComplete();
 }
 
 std::vector<std::uint8_t> AppClient::parseBinaryData(const std::string& val)
@@ -467,6 +477,21 @@ void AppClient::connectCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_
     connectCompleteImpl();
 }
 
+void AppClient::disconnectCompleteInternal(CC_MqttsnAsyncOpStatus status)
+{
+    if (status != CC_MqttsnAsyncOpStatus_Complete) {
+        logError() << "Failed to disconnect with status: " << toString(status) << std::endl;
+        doTerminate();
+        return;
+    }
+
+    if (m_opts.verbose()) {
+        logInfo() << "Disconnected" << std::endl;
+    }
+
+    disconnectCompleteImpl();
+}
+
 void AppClient::sendDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
 {
     asThis(data)->sendDataInternal(buf, bufLen, broadcastRadius);
@@ -495,6 +520,11 @@ unsigned AppClient::cancelNextTickWaitCb(void* data)
 void AppClient::connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
 {
     return asThis(data)->connectCompleteInternal(status, info);
+}
+
+void AppClient::disconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status)
+{
+    return asThis(data)->disconnectCompleteInternal(status);
 }
 
 } // namespace cc_mqttsn_client_app

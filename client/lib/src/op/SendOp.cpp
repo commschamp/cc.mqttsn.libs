@@ -298,7 +298,13 @@ void SendOp::handle(PubackMsg& msg)
         }
 
         using TopicIdType = PublishMsg::Field_flags::Field_topicIdType::ValueType;
-        if (m_publishMsg.field_flags().field_topicIdType().value() != TopicIdType::Normal) {
+        auto topicIdType = m_publishMsg.field_flags().field_topicIdType().value();
+
+        if (topicIdType == TopicIdType::PredefinedTopicId) {
+            break;              
+        }        
+
+        if (topicIdType != TopicIdType::Normal) {
             errorLog("Unexpected return code for the publish");
             break;              
         }

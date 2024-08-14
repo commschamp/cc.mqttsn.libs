@@ -33,6 +33,7 @@ public:
     void addConnect();
     void addWill();
     void addPublish();
+    void addSubscribe();
 
     void printHelp();
 
@@ -68,7 +69,15 @@ public:
     std::uint16_t pubTopicId() const;
     std::string pubMessage() const;
     unsigned pubQos() const; 
-    bool pubRetain() const;       
+    bool pubRetain() const; 
+    bool pubNoDisconnect() const;    
+
+    // Subscribe Options
+    std::vector<std::string> subTopics() const;
+    std::vector<std::uint16_t> subTopicIds() const;
+    unsigned subQos() const; 
+    bool subNoRetained() const;
+    bool subBinary() const;
 
 private:
     boost::program_options::variables_map m_vm;

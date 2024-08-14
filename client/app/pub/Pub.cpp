@@ -98,7 +98,12 @@ void Pub::publishCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_Mqttsn
         logInfo() << "Publish complete" << std::endl;
     }
 
-    doComplete();
+    if (opts().pubNoDisconnect()) {
+        doComplete();
+        return;
+    }
+
+    doDisconnect();
 }
 
 void Pub::publishCompleteCb(

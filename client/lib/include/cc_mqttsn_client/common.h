@@ -43,7 +43,8 @@ typedef enum
 {
     CC_MqttsnQoS_AtMostOnceDelivery = 0, ///< QoS=0. At most once delivery.
     CC_MqttsnQoS_AtLeastOnceDelivery = 1, ///< QoS=1. At least once delivery.
-    CC_MqttsnQoS_ExactlyOnceDelivery = 2 ///< QoS=2. Exactly once delivery.
+    CC_MqttsnQoS_ExactlyOnceDelivery = 2, ///< QoS=2. Exactly once delivery.
+    CC_MqttsnQoS_ValuesLimit ///< Limit for the values
 } CC_MqttsnQoS;
 
 /// @brief Error code returned by various API functions.

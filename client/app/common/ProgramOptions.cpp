@@ -91,6 +91,21 @@ void ProgramOptions::addPublish()
         ("pub-message,m", po::value<std::string>()->default_value(std::string()), "Publish message data, use \"\\x\" prefix before hex value of each byte for binary string")
         ("pub-qos,q", po::value<unsigned>()->default_value(0U), "Publish QoS value")
         ("pub-retain", "Publish retained message")
+        ("pub-no-disconnect", "Do not gracefuly disconnect when publish is complete")
+    ;    
+
+    m_desc.add(opts);
+}
+
+void ProgramOptions::addSubscribe()
+{
+    po::options_description opts("Subscribe Options");
+    opts.add_options()
+        ("sub-topic,t", po::value<std::vector<std::string>>(), "Subscribe to topic, can be used multiple times.")
+        ("sub-topic-id,i", po::value<std::vector<std::uint16_t>>(), "Subscribe topic id, can be used multiple times")
+        ("sub-qos,q", po::value<unsigned>()->default_value(2U), "Subscribe max QoS value")
+        ("sub-no-retained", "Ignore retained messages")       
+        ("sub-binary", "Force binary output of the received message data")        
     ;    
 
     m_desc.add(opts);
@@ -208,6 +223,46 @@ unsigned ProgramOptions::pubQos() const
 bool ProgramOptions::pubRetain() const
 {
     return m_vm.count("pub-retain") > 0U;
+}
+
+bool ProgramOptions::pubNoDisconnect() const
+{
+    return m_vm.count("pub-no-disconnect") > 0U;
+}
+
+std::vector<std::string> ProgramOptions::subTopics() const
+{
+    std::vector<std::string> result;
+    if (m_vm.count("sub-topic") > 0U) {
+        result = m_vm["sub-topic"].as<std::vector<std::string>>();
+    }
+
+    return result;
+}
+
+std::vector<std::uint16_t> ProgramOptions::subTopicIds() const
+{
+    std::vector<std::uint16_t> result;
+    if (m_vm.count("sub-topic-id") > 0U) {
+        result = m_vm["sub-topic-id"].as<std::vector<std::uint16_t>>();
+    }
+
+    return result;    
+}
+
+unsigned ProgramOptions::subQos() const
+{
+    return m_vm["sub-qos"].as<unsigned>();
+}
+
+bool ProgramOptions::subNoRetained() const
+{
+    return m_vm.count("sub-no-retained") > 0U;
+}
+
+bool ProgramOptions::subBinary() const
+{
+    return m_vm.count("sub-binary") > 0U;
 }
 
 } // namespace cc_mqttsn_client_app

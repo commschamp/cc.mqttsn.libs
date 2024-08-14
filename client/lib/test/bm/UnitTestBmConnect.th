@@ -27,6 +27,6 @@ void UnitTestBmConnect::test1()
     auto* client = clientPtr.get();
 
     TS_ASSERT_DIFFERS(client, nullptr);
-    unitTestDoConnectBasic(client, __FUNCTION__);
+    unitTestDoConnectBasic(client, "test1");
 }
 

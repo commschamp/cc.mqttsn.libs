@@ -35,7 +35,8 @@ public:
 
     static std::string toString(CC_MqttsnErrorCode val);
     //static std::string toString(CC_MqttsnAsyncOpStatus val);
-    //void print(const CC_MqttsnMessageInfo& info, bool printMessage = true);
+    static std::string toString(const std::uint8_t* data, unsigned dataLen, bool forceBinary = false);
+    void print(const CC_MqttsnMessageInfo& info, bool printMessage = true);
 
 protected:
     using Timer = boost::asio::steady_timer;
@@ -65,10 +66,12 @@ protected:
     void doTerminate(int result = 1);
     void doComplete();
     bool doConnect();
+    bool doDisconnect();
 
     virtual bool startImpl();
     virtual void messageReceivedImpl(const CC_MqttsnMessageInfo* info);
     virtual void connectCompleteImpl();
+    virtual void disconnectCompleteImpl();
 
     static std::vector<std::uint8_t> parseBinaryData(const std::string& val);
 
@@ -90,6 +93,7 @@ private:
     void sendDataInternal(const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
     bool createSession();
     void connectCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
+    void disconnectCompleteInternal(CC_MqttsnAsyncOpStatus status);
 
     static void sendDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
     static void messageReceivedCb(void* data, const CC_MqttsnMessageInfo* info);
@@ -97,6 +101,7 @@ private:
     static void nextTickProgramCb(void* data, unsigned duration);
     static unsigned cancelNextTickWaitCb(void* data);
     static void connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
+    static void disconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
 
     boost::asio::io_context& m_io;
     int& m_result;
