@@ -15,8 +15,8 @@ hold strings and
 [std::vector](http://en.cppreference.com/w/cpp/container/vector) type to hold
 various lists, because there is no known and predefined limit on string length
 and/or number of elements in the list. However if such limit is specified, the
-library will use [StaticString](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticString.h)
-and [StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+library will use [comms::util::StaticString](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticString.h)
+and [comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
 from the [COMMS library](https://github.com/commschamp/comms)
 instead. These classes don't use exceptions and/or dynamic memory allocation
 and can be suitable for bare-metal systems.
@@ -26,188 +26,411 @@ This variable specifies the name of the custom client library.
 It will influence the names of the API functions. The **default** client build
 (controlled by **CC_MQTTSN_CLIENT_DEFAULT_LIB** option) prefixes all the 
 functions with `cc_mqttsn_client_`, while client with custom name will produce 
-functions having `mqttsn_<custom_name>_client_` prefix. For example having the
+functions having `cc_mqttsn_<custom_name>_client_` prefix. For example having the
 `set (CC_MQTTSN_CUSTOM_CLIENT_NAME "my_name")` statement in configuration file
 will produce a library which prefixes all API functions with 
-`mqttsn_my_name_client_`.
+`cc_mqttsn_my_name_client_`.
 
 The **CC_MQTTSN_CUSTOM_CLIENT_NAME** variable is a **must have** one, without it
 the custom build of the client library won't be possible.
 
-### CC_MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE
-The MQTT-SN needs to store the client ID string. By default it is stored using
-[std::string](http://en.cppreference.com/w/cpp/string/basic_string) type. The
-**CC_MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE** variable can be used to set
-the limit to the client ID string known at compile time, as the result the
-[StaticString](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticString.h)
-type will be used instead.
+---
+### CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC
+Specify whether usage of the dynamic memory allocation is allowed. The value
+defaults to **TRUE**. Setting the configuration to **FALSE** will ensure
+that all the necessary configuration to avoid dynamic memory allocation has
+been provided. In case some of the configuration is missing the compilation will
+fail on `static_assert()` invocation with a message of what variable hasn't been
+set property.
 ```
-# Allow up to 20 characters in client ID string
-set(CC_MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE 20)
-```
-
-### CC_MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE
-The MQTT-SN protocol defines **SEARCHGW** message, which can contain the 
-address of the gateway. The client library doesn't make any assumptions on 
-maximum length of the address information. As the result it uses
-[std::vector](http://en.cppreference.com/w/cpp/container/vector) type to
-store such information. If the limit of the address's length is known at compile
-time, use **CC_MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE** variable to
-specify the limit. It will cause 
-[StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
-to be used instead.
-```
-# The address of GW can be stored within 4 bytes (IP4 for example)
-set(CC_MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE 4)
+# Disable dynamic memory allocation
+set (CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC FALSE)
 ```
 
-### CC_MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE
-Similar to the client id, the maximum length of the topic string is not known, and
-[std::string](http://en.cppreference.com/w/cpp/string/basic_string) type is
-used as the result. Use **CC_MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE**
-option to limit the maximum length and force usage of 
-[StaticString](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticString.h)
-instead.
-```
-# The topics contain no more than 64 characters
-set(CC_MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE 64)
-```
-
-### CC_MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE
-The MQTT-SN protocol defines **PUBLISH** message, which contains binary data
-being published. If there is no known limit for the length of such data, the
-[std::vector](http://en.cppreference.com/w/cpp/container/vector) type will be
-used. However, if there is a limit known at compile time, the 
-**CC_MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE** can be used to specify the
-limit and force usage of 
-[StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h) 
-type instead.
-```
-# The message data is no more than 128 bytes long
-set(CC_MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE 128)
-```
-
-### CC_MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT
+---
+### CC_MQTTSN_CLIENT_ALLOC_LIMIT
 The client library allows allocation of multiple client managing objects
-(**cc_mqttsn_client_alloc()** function). By default, there is no limit on such
-allocations, and as a result every such object is dynamically allocated.
+(**cc_mqttsn_client_alloc()** function). By default the value is **0**,
+which means there is no limit on such
+allocations. As a result every such object is dynamically allocated.
 However, if there is a known limit for number of client managing objects, the
-library will be requested to allocate, use ***CC_MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT**
-variable to specify such limit. If the limit is specified the library will 
+library will be requested to allocate, use **CC_MQTTSN_CLIENT_ALLOC_LIMIT**
+variable to specify such limit. If the limit is specified the library will
 use static pool for allocation and won't use heap for this purpose.
 ```
-# Only 1 MQTT-SN client will be allocated
-set(CC_MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT 1)
+# Only 1 client object will be allocated
+set(CC_MQTTSN_CLIENT_ALLOC_LIMIT 1)
+```
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_ALLOC_LIMIT** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+The client library implements support for gateway discovery. When the
+**CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY** variable is set to **TRUE** (default)
+the functionality is enabled and the library allows runtime gateway discovery
+control via the API. When the **CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY** variable is
+set to **FALSE** the relevant code is removed by the compiler resulting in smaller
+code size and relevant API being stubbed.
+
+```
+# Disable gateway discovery
+set(CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY FALSE)
 ```
 
-### CC_MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT
-The client library monitors and keep information about available gateways. When
-the number of possible gateways is not known such information is stored using
-[std::vector](http://en.cppreference.com/w/cpp/container/vector) type. However,
-if there is a known limit on number of the available gateways on the nenwork,
-the client library may be compiled to use 
-[StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h) 
-instead. Use **CC_MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT** variable for this purpose.
+---
+### CC_MQTTSN_CLIENT_GATEWAY_INFOS_MAX_LIMIT
+When gateway discovery is enabled (**CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY** is set to **TRUE**)
+the client library maintains the list of discovered gateways it its internal data structures.
+When the **CC_MQTTSN_CLIENT_GATEWAY_INFOS_MAX_LIMIT** variable is set to **0** (default), it means
+that there is no limit to the amount of stored gateway infos and as the result
+`std::vector<...>` is used to store them in memory.
+When the **CC_MQTTSN_CLIENT_GATEWAY_INFOS_MAX_LIMIT**
+variable is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
 ```
-# The library doesn't need to support more than 1 gateway
-set(CC_MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT 1)
+# Allow up to 5 gateways
+set(CC_MQTTSN_CLIENT_GATEWAY_INFOS_MAX_LIMIT 5)
 ```
 
-### CC_MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT
-The MQTT-SN protocol uses topic IDs in its **PUBLISH** message, and requires
-topic strings to be registered with the gateway, which in turn is responsible
-to allocate numeric IDs for them. The client object must store the registration
-information. By default, there is no known limit on how many topics need to be
-registered. As the result the library uses 
-[std::vector](http://en.cppreference.com/w/cpp/container/vector) to store all
-the required information. However, if there is predefined limit for number of topics
-the client object must be able to keep inside, the **CC_MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT**
-variable can be used to force usage of
-[StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h) 
-type instead.
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** and
+**CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY** set to **TRUE** requires setting
+of the **CC_MQTTSN_CLIENT_GATEWAY_INFOS_MAX_LIMIT** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN
+When gateway discovery is enabled (**CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY** is set to **TRUE**)
+the client library maintains the list of discovered gateways with their respective
+node addresses it its internal data structures.
+When the **CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN** variable is set to **0** (default), it means
+that there is no limit to the length of the stored gateway address and as the result
+`std::vector<...>` is used to store it in memory.
+When the **CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN**
+variable is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
 ```
-# No need to support registration of more than 32 topic strings
-set(CC_MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT 32)
+# Allow up to 4 bytes per gateway address
+set(CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN 4)
 ```
 
-### CC_MQTTSN_CUSTOM_CLIENT_NO_STDLIB
-Sometimes the bare metal applications are compiled without standard library
-(using `-nostdlib` option with gcc compiler). To prevent the client library from
-explicitly calling functions provided by the standard library, 
-set **CC_MQTTSN_CUSTOM_CLIENT_NO_STDLIB** value to `TRUE`. 
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** and
+**CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY** set to **TRUE** requires setting
+of the **CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN
+To limit the length of the string used to store the "Client ID" information, use
+the **CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN** variable. When it is set to **0** (default),
+it means that there is no limit to the length of the string value and as the result
+`std::string` is used to store it in memory.
+When the **CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN**
+variable is set to a non-**0** value the
+[comms::util::StaticString](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticString.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
 ```
-# Don't use standard library functions.
-set(CC_MQTTSN_CUSTOM_CLIENT_NO_STDLIB TRUE)
+# Limit the max "client ID" length
+set(CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN 50)
 ```
-**NOTE**, that it doesn't prevent the library from using **STL**, and the compiler
-may still generate code invoking functions like `memcpy` or `memset`. It will
-be a responsibility of the driving code to implement required functionality.
 
-Also **NOTE**, that the library is implemented in **C++** (although it provides
-**C** API). It requires manual invocation of the global and static objects'
-constructors prior to invocation of the `main()` function. 
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN** to a non-**0** value.
 
-It is recommended to read 
-[Practical Guide to Bare Metal C++](https://arobenko.github.io/bare_metal_cpp)
-free e-book, especially 
-[Know Your Compiler Output](https://arobenko.github.io/bare_metal_cpp/#_know_your_compiler_output)
-chapter. It will guide the reader through necessary functions that may need
-to be implemented to make the bare-metal application, written in C++, work.
+---
+### CC_MQTTSN_CLIENT_HAS_WILL
+The client library implements support for will update messages. When the
+**CC_MQTTSN_CLIENT_HAS_WILL** variable is set to **TRUE** (default)
+the functionality is enabled and the library allows runtime will
+control via the API. When the **CC_MQTTSN_CLIENT_HAS_WILL** variable is
+set to **FALSE** the relevant code is removed by the compiler resulting in smaller
+code size and relevant API being stubbed.
 
-## Example for Bare-Metal Without Heap Configuration 
+```
+# Disable will functionality
+set(CC_MQTTSN_CLIENT_HAS_WILL FALSE)
+```
+
+---
+### CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN
+When the will functionality is enabled (**CC_MQTTSN_CLIENT_HAS_WILL** is set to **TRUE**)
+and the **CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN** variable is set to **0** (default), it means
+that there is no limit to the length of the will topic string and as the result
+`std::string` is used to store it in memory.
+When the **CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN**
+variable is set to a non-**0** value the
+[comms::util::StaticString](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticString.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Allow up to 32 bytes per will topic
+set(CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN 32)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** and
+**CC_MQTTSN_CLIENT_HAS_WILL** set to **TRUE** requires setting
+of the **CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN
+When the will functionality is enabled (**CC_MQTTSN_CLIENT_HAS_WILL** is set to **TRUE**)
+and the **CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN** variable is set to **0** (default), it means
+that there is no limit to the length of the will topic string and as the result
+`std::vector<...>` is used to store it in memory.
+When the **CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN**
+variable is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Allow up to 64 bytes per will topic
+set(CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN 64)
+```
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** and
+**CC_MQTTSN_CLIENT_HAS_WILL** set to **TRUE** requires setting
+of the **CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN
+When the **CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN** variable is set to **0** (default), it means
+that there is no limit to the length of the topic string used in various messages and as the result
+`std::string` is used to store it in memory.
+When the **CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN**
+variable is set to a non-**0** value the
+[comms::util::StaticString](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticString.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Allow up to 32 bytes per topic
+set(CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN 32)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN
+When the **CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN** variable is set to **0** (default), it means
+that there is no limit to the length of the binary data used in various messages and as the result
+`std::vector<...>` is used to store it in memory.
+When the **CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN**
+variable is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Allow up to 128 bytes per binary data
+set(CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN 128)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE
+When serializing the output message the client library needs to allocate an output
+buffer. When set to **0** (default), the output buffer type will be dynamic sized
+`std::vector<std::uint8_t>`. When the non-**0** value is assigned to the variable, the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Limit the length of the buffer required to store serialized message
+set (CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE 1024)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT
+The library supports issuing multiple "publish" operation in parallel (even though
+the protocol requires the messages being sent one at a time). The relevant
+information needs to be stored in memory.
+When the value of the **CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT**
+variable is **0** (default), it means that there is no limit for such operations. In such chase the
+client library uses `std::vector<...>` to store the relevant operation states in memory.
+When **CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT** is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Limit the amount allowed incomplete publish operations
+set (CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT 6)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT
+The client library allows issuing multiple asynchronous subscription operation. The operation
+state needs to be preserved in the memory until
+the appropriate acknowledgement message is received from the broker. Setting
+the **CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT** variable to **0** (default) means there
+is no limit to parallel subscription operations and their relative states are
+stored using `std::vector<...>` storage type.
+When the **CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT**
+variable is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Limit the amount of ongoing (unacknowledged) subscribe operations
+set (CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT 3)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT
+The client library allows issuing multiple asynchronous unsubscription operation. The operation
+state needs to be preserved in the memory until
+the appropriate acknowledgement message is received from the broker. Setting
+the **CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT** variable to **0** (default) means there
+is no limit to parallel unsubscription operations and their relative states are
+stored using `std::vector<...>` storage type.
+When the **CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT**
+variable is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Limit the amount of ongoing (unacknowledged) unsubscribe operations
+set (CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT 1)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT
+When receiving application messages from the gateway, the latter may issue a
+topic registration request. When the **CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT** variable
+is set to to **0** (default) the amount of such topic records is unlimited, i.e.
+stored using `std::vector<...>` storage type. When the
+**CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT** variable is set to non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Limit the amount of stored incoming registered topic IDs
+set (CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT 1)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT** to a non-**0** value.
+
+
+---
+### CC_MQTTSN_CLIENT_OUT_REG_TOPICS_LIMIT
+Similar to the **CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT** the
+**CC_MQTTSN_CLIENT_OUT_REG_TOPICS_LIMIT** variable controls the storage type
+for the topic IDs for the outgoing messages.
+
+```
+# Limit the amount of stored outgoing registered topic IDs
+set (CC_MQTTSN_CLIENT_OUT_REG_TOPICS_LIMIT 1)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
+of the **CC_MQTTSN_CLIENT_OUT_REG_TOPICS_LIMIT** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_HAS_ERROR_LOG
+The client library allows reporting various error log messages via callback.
+When **CC_MQTTSN_CLIENT_HAS_ERROR_LOG** variable is set to **TRUE** (default) such
+error reporting is enabled. Setting the **CC_MQTTSN_CLIENT_HAS_ERROR_LOG** to
+**FALSE** removes the error reporting functionality and as the result
+reduces the code size and may slightly improve the runtime performance.
+
+```
+# Disable the error logging functionality
+set (CC_MQTTSN_CLIENT_HAS_ERROR_LOG FALSE)
+```
+
+---
+### CC_MQTTSN_CLIENT_HAS_TOPIC_FORMAT_VERIFICATION
+The client library implements verification of the used topics format to be a
+valid one. When the **CC_MQTTSN_CLIENT_HAS_TOPIC_FORMAT_VERIFICATION** variable is
+set to **TRUE** (default) the functionality is enabled and the library allows
+runtime control of the feature via the API. When the **CC_MQTTSN_CLIENT_HAS_TOPIC_FORMAT_VERIFICATION**
+is set to **FALSE** the relevant verification code is removed by the compiler
+resulting in smaller code size and improved runtime performance.
+
+```
+# Disable the topic format verification functionality
+set (CC_MQTTSN_CLIENT_HAS_TOPIC_FORMAT_VERIFICATION FALSE)
+```
+
+---
+### CC_MQTTSN_CLIENT_HAS_SUB_TOPIC_VERIFICATION
+The client library implements tracking of the subscribed topics and discarding
+the "rogue" messages from the broker if the received message is not supposed to
+be received. When the **CC_MQTTSN_CLIENT_HAS_SUB_TOPIC_VERIFICATION** variable is
+set to **TRUE** (default) the functionality is enabled and the library allows
+runtime control of the feature via the API. When the **CC_MQTTSN_CLIENT_HAS_SUB_TOPIC_VERIFICATION**
+is set to **FALSE** the relevant verification code is removed by the compiler
+resulting in smaller code size and improved runtime performance.
+
+```
+# Disable the verification that the relevant subscription was performed when the message is reported from the broker
+set (CC_MQTTSN_CLIENT_HAS_SUB_TOPIC_VERIFICATION FALSE)
+```
+
+---
+### CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT
+When the subscription topic verification is enabled
+(**CC_MQTTSN_CLIENT_HAS_SUB_TOPIC_VERIFICATION** is set to **TRUE**) the client
+library needs to preserve the subscribed topics in the memory. When the
+**CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT** variable is set to **0** (default), it means
+that there is no limit to the amount of such topics and as the result
+`std::vector<...>` is used to store them in memory.
+When the **CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT**
+variable is set to a non-**0** value the
+[comms::util::StaticVector](https://github.com/commschamp/comms/blob/master/include/comms/util/StaticVector.h)
+is used instead. It can be useful for bare-metal embedded systems without heap.
+
+```
+# Limit the amount of topic filters to store when the subscription verification is enabled
+#set (CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT 20)
+```
+
+Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** and
+**CC_MQTTSN_CLIENT_HAS_TOPIC_FORMAT_VERIFICATION** set to **TRUE** requires setting
+of the **CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT** to a non-**0** value.
+
+---
+### CC_MQTTSN_CLIENT_MAX_QOS
+By default the library supports all the QoS values (0 to 2). It is possible to
+disable support for high QoS values at compile time and as the result reducing
+the library's code size. It can be useful for bare-metal embedded system with
+a small ROM size.
+
+```
+# Support only QoS0 and QoS1 messages
+set (CC_MQTTSN_CLIENT_MAX_QOS 1)
+```
+
+---
+## Example for Bare-Metal Without Heap Configuration
 The content of the custom client configuration file, which explicitly specifies
-all unknown compile time limits and constants to prevent usage of dynamic 
+all compile time limits and constants to prevent usage of dynamic
 memory allocation and STL types like [std::string](http://en.cppreference.com/w/cpp/string/basic_string)
 and [std::vector](http://en.cppreference.com/w/cpp/container/vector), may look
-like this:
-```
-# Name of the client API
-set (CC_MQTTSN_CUSTOM_CLIENT_NAME "bare_metal")
+like [this](../client/lib/script/BareMetalTestConfig.cmake):
 
-# Use up to 20 characters for client ID
-set(CC_MQTTSN_CUSTOM_CLIENT_ID_STATIC_STORAGE_SIZE 20)
-
-# The address of GW can be stored within 2 bytes
-set(CC_MQTTSN_CUSTOM_CLIENT_GW_ADDR_STATIC_STORAGE_SIZE 2)
-
-# Support only topics containing no more than 64 characters
-set(CC_MQTTSN_CUSTOM_CLIENT_TOPIC_NAME_STATIC_STORAGE_SIZE 64)
-
-# The message data is no more than 128 bytes long
-set(CC_MQTTSN_CUSTOM_CLIENT_MSG_DATA_STATIC_STORAGE_SIZE 128)
-
-# The library won't support more than 1 allocated client object
-set(CC_MQTTSN_CUSTOM_CLIENT_ALLOC_LIMIT 1)
-
-# The library doesn't need to support more than 1 gateway
-set(CC_MQTTSN_CUSTOM_CLIENT_TRACKED_GW_LIMIT 1)
-
-# No need to support registration of more than 8 topic strings
-set(CC_MQTTSN_CUSTOM_CLIENT_REGISTERED_TOPICS_LIMIT 8)
-
-# Don't use standard library functions.
-set(CC_MQTTSN_CUSTOM_CLIENT_NO_STDLIB TRUE)
-```
-As the result of such configuration, the static library `cc_mqttsn_bare_metal_client`
-will be generated, which will contain functions defined in 
-`include/cc_mqttsn_client/bare_metal_client.h" header file:
+Setting "bm" as a custom client name results in having a static library called `cc_mqtt311_bm_client`.
+All the API functions are defined in `cc_mqtt311_client/bm_client.h` header file:
 ```c
-CC_MqttsnClientHandle mqttsn_bare_metal_client_new();
+CC_Mqtt311ClientHandle cc_mqtt311_bm_client_alloc();
 
-void mqttsn_bare_metal_client_free(CC_MqttsnClientHandle client);
-
-void mqttsn_bare_metal_client_set_next_tick_program_callback(
-    CC_MqttsnClientHandle client,
-    CC_MqttsnNextTickProgramCb fn,
-    void* data);
-    
-void mqttsn_bare_metal_client_set_cancel_next_tick_wait_callback(
-    CC_MqttsnClientHandle client,
-    CC_MqttsnCancelNextTickWaitCb fn,
-    void* data);
+void cc_mqtt311_bm_client_free(CC_Mqtt311ClientHandle client);
 
 ...
-    
 ```
-**NOTE**, that all the functions have **mqttsn_bare_metal_** prefix due to the
-fact of setting value of **CC_MQTTSN_CUSTOM_CLIENT_NAME** variable to "bare_metal" string.
+

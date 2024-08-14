@@ -12,7 +12,7 @@ struct Config
     static constexpr unsigned GatewayAddrLen = ##CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN##;
     static constexpr unsigned MaxOutputPacketSize = ##CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE##;
     static constexpr bool HasWill = ##CC_MQTTSN_CLIENT_HAS_WILL_CPP##;
-    static constexpr unsigned SendOpsLimit = ##CC_MQTTSN_CLIENT_ASYNC_SEND_LIMIT##;
+    static constexpr unsigned SendOpsLimit = ##CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT##;
     static constexpr unsigned SubscribeOpsLimit = ##CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT##;
     static constexpr unsigned UnsubscribeOpsLimit = ##CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT##;
     static constexpr bool HasErrorLog = ##CC_MQTTSN_CLIENT_HAS_ERROR_LOG_CPP##;
@@ -27,7 +27,7 @@ struct Config
     static_assert(HasDynMemAlloc || (!HasGatewayDiscovery) || (GatewayAddrLen > 0U), "Must use CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN in configuration to limit length of the gateway addr");
     static_assert(HasDynMemAlloc || (!HasGatewayDiscovery) || (GatewayInfoxMaxLimit > 0U), "Must use CC_MQTTSN_CLIENT_GATEWAY_INFOS_MAX_LIMIT in configuration to limit amount of gateways to store");
     static_assert(HasDynMemAlloc || (MaxOutputPacketSize > 0U), "Must use CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE in configuration to limit packet size");
-    static_assert(HasDynMemAlloc || (SendOpsLimit > 0U), "Must use CC_MQTTSN_CLIENT_ASYNC_SEND_LIMIT in configuration to limit amount of messages to send");    
+    static_assert(HasDynMemAlloc || (SendOpsLimit > 0U), "Must use CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT in configuration to limit amount of messages to send");    
     static_assert(HasDynMemAlloc || (SubscribeOpsLimit > 0U), "Must use CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT in configuration to limit amount of unfinished subscribes.");    
     static_assert(HasDynMemAlloc || (UnsubscribeOpsLimit > 0U), "Must use CC_MQTTSN_CLIENT_ASYNC_UNSUBS_LIMIT in configuration to limit amount of unfinished unsubscribes.");    
     static_assert(HasDynMemAlloc || (!HasSubTopicVerification) || (SubFiltersLimit > 0U), "Must use CC_MQTTSN_CLIENT_SUB_FILTERS_LIMIT in configuration to limit amount of subscribe filters");    

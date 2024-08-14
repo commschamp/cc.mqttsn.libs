@@ -17,23 +17,10 @@ The provided libraries depend on several external projects:
 
 These dependencies are expected to be built independenty and access to them provided
 via standard **CMAKE_PREFIX_PATH** cmake variable. There are also scripts (
-[script/prepare_externals.sh](script/prepare_externals.sh) for Linux and
-[script/prepare_externals.bat](script/prepare_externals.bat) for Windows)
+[script/prepare_externals.sh](../script/prepare_externals.sh) for Linux and
+[script/prepare_externals.bat](../script/prepare_externals.bat) for Windows)
 which can help in preparation of these dependencies. They are also used
-in configuration of the [github actions](.github/workflows/actions_build.yml) and
-[appveyor](.appveyor.yml).  
-
-
-## Choosing C++ Standard
-Since CMake v3.1 it became possible to set version of C++ standard by setting
-**CMAKE_CXX_STANDARD** variable. If no value of this variable is set in command
-line arguments, default value **11** will be assigned to it. In order to use
-c++14 standard in compilation, set the variable value to **14**. 
-
-Please **NOTE**, that some older versions of the _clang_ compiler habe problems 
-compiling valid c++11 constructs used in this project. 
-Hence, the compilation will fail unless the compilation is
-configured to use c++14 standard.
+in configuration of the [github actions](../.github/workflows/actions_build.yml).  
 
 ## Build and Install Examples
 

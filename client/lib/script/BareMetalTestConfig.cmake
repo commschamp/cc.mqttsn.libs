@@ -32,7 +32,7 @@ set(CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN 128)
 set(CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE 512)
 
 # Limit the amount of outstanding publish (send) operations
-set (CC_MQTTSN_CLIENT_ASYNC_SEND_LIMIT 6)
+set (CC_MQTTSN_CLIENT_ASYNC_PUBS_LIMIT 6)
 
 # Limit the amount of outstanding subscribe operations
 set(CC_MQTTSN_CLIENT_ASYNC_SUBS_LIMIT 1)
