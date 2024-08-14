@@ -1,0 +1,72 @@
+#include "UnitTestNoGwBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestGwDiscover : public CxxTest::TestSuite, public UnitTestNoGwBase
+{
+public:
+    void test1();
+    void test2();
+    void test3();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+};
+
+void UnitTestGwDiscover::test1()
+{
+    // Testing ingore of the ADVERTISE message
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::uint8_t GwId = 1U;
+    const unsigned AdvDurationMin = 10U;
+
+    UnitTestAdvertiseMsg advertiseMsg;
+    advertiseMsg.field_gwId().setValue(GwId);
+    comms::units::setMinutes(advertiseMsg.field_duration(), AdvDurationMin);
+    unitTestClientInputMessage(client, advertiseMsg, CC_MqttsnDataOrigin_Any);
+    TS_ASSERT(!unitTestHasGwInfoReport());
+}
+
+void UnitTestGwDiscover::test2()
+{
+    // Testing inability to search
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    auto ec = CC_MqttsnErrorCode_ValuesLimit;
+    auto search = apiSearchPrepare(client, &ec);
+    TS_ASSERT_EQUALS(search, nullptr);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_NotSupported);
+}
+
+void UnitTestGwDiscover::test3()
+{
+    // Testing ingore of the GWINFO message
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::uint8_t GwId = 1U;
+    const UnitTestData Addr = {0, 1, 2, 3};
+    UnitTestGwinfoMsg gwinfoMsg;
+    gwinfoMsg.field_gwId().setValue(GwId);
+    comms::util::assign(gwinfoMsg.field_gwAdd().value(), Addr.begin(), Addr.end());
+    unitTestClientInputMessage(client, gwinfoMsg, CC_MqttsnDataOrigin_Any);
+
+    TS_ASSERT(!unitTestHasGwInfoReport());
+}

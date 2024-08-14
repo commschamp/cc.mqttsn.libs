@@ -62,10 +62,9 @@ if (TARGET cc::cc_mqttsn_bm_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-#    cc_mqttsn_client_add_unit_test(UnitTestBmClient ${BM_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestBmConnect ${BM_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestBmPublish ${BM_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestBmReceive ${BM_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(bm/UnitTestBmClient.th ${BM_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(bm/UnitTestBmConnect.th ${BM_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(bm/UnitTestBmPublish.th ${BM_BASE_LIB_NAME})
 endif ()  
 
 
@@ -81,9 +80,9 @@ if (TARGET cc::cc_mqttsn_qos1_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-#    cc_mqttsn_client_add_unit_test(UnitTestQos1Publish ${QOS1_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestQos1Receive ${QOS1_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestQos1Subscribe ${QOS1_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(qos1/UnitTestQos1Publish.th ${QOS1_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(qos1/UnitTestQos1Receive.th ${QOS1_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(qos1/UnitTestQos1Subscribe.th ${QOS1_BASE_LIB_NAME})
 endif ()  
 
 if (TARGET cc::cc_mqttsn_qos0_client)
@@ -98,9 +97,9 @@ if (TARGET cc::cc_mqttsn_qos0_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-#    cc_mqttsn_client_add_unit_test(UnitTestQos0Publish ${QOS0_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestQos0Receive ${QOS0_BASE_LIB_NAME})
-#    cc_mqttsn_client_add_unit_test(UnitTestQos0Subscribe ${QOS0_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(qos0/UnitTestQos0Publish.th ${QOS0_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(qos0/UnitTestQos0Receive.th ${QOS0_BASE_LIB_NAME})
+    cc_mqttsn_client_add_unit_test(qos0/UnitTestQos0Subscribe.th ${QOS0_BASE_LIB_NAME})
 endif ()  
 
 if (TARGET cc::cc_mqttsn_no_gw_client)
@@ -115,5 +114,5 @@ if (TARGET cc::cc_mqttsn_no_gw_client)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     )
 
-
+    cc_mqttsn_client_add_unit_test(no_gw/UnitTestNoGwDiscover.th ${NO_GW_BASE_LIB_NAME})
 endif () 

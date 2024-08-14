@@ -1,0 +1,55 @@
+#include "UnitTestQos1Base.h"
+#include "UnitTestProtocolDefs.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestQos1Subscribe : public CxxTest::TestSuite, public UnitTestQos1Base
+{
+public:
+    void test1();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }
+};
+
+void UnitTestQos1Subscribe::test1()
+{
+    // Rejection QoS2 subscription attempt
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    TS_ASSERT_DIFFERS(client, nullptr);
+    unitTestDoConnectBasic(client, __FUNCTION__); 
+
+    CC_MqttsnSubscribeConfig subscribeConfig;
+    apiSubscribeInitConfig(&subscribeConfig);
+    subscribeConfig.m_topic = "#";
+    subscribeConfig.m_qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+
+    auto* subscribe = apiSubscribePrepare(client, nullptr);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    auto ec = apiSubscribeConfig(subscribe, &subscribeConfig);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
+
+    subscribeConfig.m_qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    ec = apiSubscribeConfig(subscribe, &subscribeConfig);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestSubscribeSend(subscribe);
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+
+    auto sentMsg = unitTestPopOutputMessage();
+    TS_ASSERT(sentMsg);
+    TS_ASSERT_EQUALS(sentMsg->getId(), cc_mqttsn::MsgId_Subscribe);    
+    auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+}

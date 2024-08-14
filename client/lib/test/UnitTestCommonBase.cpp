@@ -279,19 +279,28 @@ void UnitTestCommonBase::unitTestTearDown()
 UnitTestCommonBase::UnitTestClientPtr UnitTestCommonBase::unitTestAllocClient(bool enableLog)
 {
     UnitTestClientPtr client(m_funcs.m_alloc(), UnitTestDeleter(m_funcs));
-    m_funcs.m_set_next_tick_program_callback(client.get(), &UnitTestCommonBase::unitTestTickProgramCb, this);
-    m_funcs.m_set_cancel_next_tick_wait_callback(client.get(), &UnitTestCommonBase::unitTestCancelTickWaitCb, this);
-    m_funcs.m_set_send_output_data_callback(client.get(), &UnitTestCommonBase::unitTestSendOutputDataCb, this);
-    m_funcs.m_set_gw_status_report_callback(client.get(), &UnitTestCommonBase::unitTestGwStatusReportCb, this);
-    m_funcs.m_set_gw_disconnect_report_callback(client.get(), &UnitTestCommonBase::unitTestGwDisconnectReportCb, this);
-    m_funcs.m_set_message_report_callback(client.get(), &UnitTestCommonBase::unitTestMessageReportCb, this);
-    m_funcs.m_set_gwinfo_delay_request_callback(client.get(), &UnitTestCommonBase::unitTestGwinfoDelayRequestCb, this);
-
-    if (enableLog) {
-        m_funcs.m_set_error_log_callback(client.get(), &UnitTestCommonBase::unitTestErrorLogCb, this);
+    if (client) {
+        unitTestAssignCallbacks(client.get(), enableLog);
     }
 
     return client;
+}
+
+void UnitTestCommonBase::unitTestAssignCallbacks(CC_MqttsnClient* client, bool enableLog)
+{
+    test_assert(client != nullptr);
+    m_funcs.m_set_next_tick_program_callback(client, &UnitTestCommonBase::unitTestTickProgramCb, this);
+    m_funcs.m_set_cancel_next_tick_wait_callback(client, &UnitTestCommonBase::unitTestCancelTickWaitCb, this);
+    m_funcs.m_set_send_output_data_callback(client, &UnitTestCommonBase::unitTestSendOutputDataCb, this);
+    m_funcs.m_set_gw_status_report_callback(client, &UnitTestCommonBase::unitTestGwStatusReportCb, this);
+    m_funcs.m_set_gw_disconnect_report_callback(client, &UnitTestCommonBase::unitTestGwDisconnectReportCb, this);
+    m_funcs.m_set_message_report_callback(client, &UnitTestCommonBase::unitTestMessageReportCb, this);
+    m_funcs.m_set_gwinfo_delay_request_callback(client, &UnitTestCommonBase::unitTestGwinfoDelayRequestCb, this);
+
+    if (enableLog) {
+        m_funcs.m_set_error_log_callback(client, &UnitTestCommonBase::unitTestErrorLogCb, this);
+    }
+
 }
 
 void UnitTestCommonBase::unitTestClientInputData(CC_MqttsnClient* client, const UnitTestData& data, CC_MqttsnDataOrigin origin)

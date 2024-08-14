@@ -1,0 +1,32 @@
+#include "UnitTestBmBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestBmConnect : public CxxTest::TestSuite, public UnitTestBmBase
+{
+public:
+    void test1();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }
+};
+
+void UnitTestBmConnect::test1()
+{
+    // Simple connect and ack
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    TS_ASSERT_DIFFERS(client, nullptr);
+    unitTestDoConnectBasic(client, __FUNCTION__);
+}
+

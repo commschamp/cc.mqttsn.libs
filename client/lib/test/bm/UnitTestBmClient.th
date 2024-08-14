@@ -1,0 +1,31 @@
+#include "UnitTestBmBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestBmClient : public CxxTest::TestSuite, public UnitTestBmBase
+{
+public:
+    void test1();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }
+};
+
+void UnitTestBmClient::test1()
+{
+    // Testing allocation
+    auto client1 = unitTestAllocClient();
+    TS_ASSERT(client1);
+
+    auto client2 = unitTestAllocClient();
+    TS_ASSERT(!client2);
+}

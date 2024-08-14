@@ -375,6 +375,7 @@ public:
     void unitTestTearDown();
 
     UnitTestClientPtr unitTestAllocClient(bool enableLog = false);
+    void unitTestAssignCallbacks(CC_MqttsnClient* client, bool enableLog = false);
     void unitTestClientInputData(CC_MqttsnClient* client, const UnitTestData& data, CC_MqttsnDataOrigin origin);
     void unitTestClientInputMessage(CC_MqttsnClient* client, const UnitTestMessage& msg, CC_MqttsnDataOrigin origin = CC_MqttsnDataOrigin_ConnectedGw);
     void unitTestPushSearchgwResponseDelay(unsigned val);
