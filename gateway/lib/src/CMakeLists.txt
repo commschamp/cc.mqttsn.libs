@@ -24,7 +24,7 @@ function (lib_mqttsn_gateway)
         session_op/WillUpdate.cpp
     )    
     
-    add_library (${name} STATIC ${src})
+    add_library (${name} ${src})
     add_library (cc::${name} ALIAS ${name})
     
     target_link_libraries(${name} PRIVATE cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
@@ -33,6 +33,10 @@ function (lib_mqttsn_gateway)
         ${name} PROPERTIES 
         INTERFACE_LINK_LIBRARIES ""
     )
+
+    if (CC_MQTTSN_GATEWAY_LIB_FORCE_PIC)
+        set_property(TARGET ${name} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    endif ()    
 
     target_include_directories(
         ${name} BEFORE

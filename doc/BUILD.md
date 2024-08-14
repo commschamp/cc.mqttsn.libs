@@ -22,42 +22,90 @@ via standard **CMAKE_PREFIX_PATH** cmake variable. There are also scripts (
 which can help in preparation of these dependencies. They are also used
 in configuration of the [github actions](../.github/workflows/actions_build.yml).  
 
-## Build and Install Examples
+The provided **applications** use [Boost](https://www.boost.org) libraries to
+parse their command line arguments as well as manage their event loop / network
+connections. In case the application are compiled and the [Boost](https://www.boost.org) libraries
+do not reside in a default system location, use [BOOST_ROOT](https://cmake.org/cmake/help/latest/module/FindBoost.html#hints)
+variable to specify their install directory. It is recommended to also use `-DBoost_USE_STATIC_LIBS=ON` parameter to force
+linkage with static Boost libraries (especially on Windows).
 
+## Choosing C++ Standard
+The default and minimal required C++ standard version to build this project is **17**. However it
+is possible to increase it using the **CMAKE_CXX_STANDARD** cmake variable.
+
+## Building as Shared Library
+By default the library is built as static one. It is possible to build it as a shared library
+by using the built-in **BUILD_SHARED_LIBS** cmake option
+
+## Forcing Position Independent Code
+When the libraries are built as **shared** ones then the position independent code is enabled
+automatically. However, when the libraries built as **static**, but will become part of
+some other shared libraries, then forcefully enabling the position independent code may be required.
+Use provided **CC_MQTTSN_CLIENT_LIB_FORCE_PIC** and/or **CC_MQTTSN_GATEWAY_LIB_FORCE_PIC** cmake
+options to enable it.
+
+Note that it is also possible to force position independent code using global
+**CMAKE_POSITION_INDEPENDENT_CODE** variable set to **ON**. In such case all the
+application will also be compiled with position independent code.
+
+## Examples of Build and Install
 The examples below are Linux/Unix system oriented, i.e. they use **make** utility
-to build the "install" target after configuration with **cmake**. 
-
-On Windows
-systems with Visual Studio compiler, the CMake utility generates Visual Studio
-solution files by default. Build "install" project. It is also possible to 
-generate Makefile-s on Windows by providing additional **-G "NMake Makefiles"** option
-to **cmake**. In this case use **nmake** utility instead of **make**.
+to build the "install" target after configuration with **cmake**. For Windows
+platforms please remember to use **-G** option to specify the generator and with
+later versions of cmake also **-A** option to specify the architecture, such as
+**-G "NMake Makefiles"** (required environment setup beforehand) or
+**cmake -G "Visual Studio 16 2019" -A x64**.
 
 Please review the examples below and use appropriate option that suites your
-needs. Remember to add **-DCMAKE_BUILD_TYPE=Release** option for release
+needs. Remember to use **-DCMAKE_BUILD_TYPE=Release** option for release
 builds.
 
-### Build MQTT-SN Client/Gateway Libraries and Applications
+
+### Build All Library and Applications
 ```
+$> mkdir build && cd build
 $> cmake .. -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install\;/path/to/cc.mqtt311.generated/install
+  -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqtt311.generated/install\;/path/to/cc.mqttsn.generated/install
+$> cmake --build . --config Release --target install
 ```
 
-### Build Two Custom Client Libraries
+### Build Only Libraries Without Applications
+```
+$> mkdir build && cd build
+$> cmake .. -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqtt311.generated/install;/path/to/cc.mqttsn.generated/install \
+    -DCC_MQTTSN_CLIENT_APPS=OFF -DCC_MQTTSN_GATEWAY_APPS=OFF
+$> cmake --build . --config Release --target install
+```
+
+### Build AS Shared Libraries
+```
+$> mkdir build && cd build
+$> cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqtt311.generated/install;/path/to/cc.mqttsn.generated/install
+$> cmake --build . --config Release --target install
+```
+
+### Build Static Libraries With Position Independent Code
+```
+$> mkdir build && cd build
+$> cmake .. -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqtt311.generated/install;/path/to/cc.mqttsn.generated/install \
+    -DCC_MQTTSN_CLIENT_LIB_FORCE_PIC=ON -DCC_MQTTSN_GATEWAY_LIB_FORCE_PIC=ON
+$> cmake --build . --config Release --target install
+```
+
+### Build Two Custom Client Libraries Without Gateway
 See [custom_client_build.md](custom_client_build.md)
 for details on custom build configuration
 ```
-$> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
-    -DCC_MQTTSN_GATEWAY=OFF \
+$> mkdir build && cd build
+$> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF -DCC_MQTTSN_GATEWAY=OFF \
     -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES=config1.cmake\;config2.cmake \
     -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install
+$> cmake --build . --config Release --target install
 ```
 
-### Build Gateway Library and Application(s)
-```
-$> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF \
-  -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install\;/path/to/cc.mqtt311.generated/install
-```
 
 
 

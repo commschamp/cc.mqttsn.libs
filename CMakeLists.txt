@@ -3,13 +3,18 @@ project ("cc_mqttsn_libs")
 
 option (CC_MQTTSN_WARN_AS_ERR "Do NOT treat warning as error" ON)
 option (CC_MQTTSN_CLIENT_DEFAULT_LIB "Build and install default variant of MQTT-SN Client library" ON)
+option (CC_MQTTSN_CLIENT_LIB_FORCE_PIC "Force Position Independent Code (PIC) when compiling client library(ies)" OFF)
 option (CC_MQTTSN_GATEWAY "Build and install MQTT-SN client library(ies) and applications" ON)
+option (CC_MQTTSN_GATEWAY_LIB_FORCE_PIC "Force Position Independent Code (PIC) when compiling gateway library" OFF)
 option (CC_MQTTSN_CLIENT_APPS "Build and install client applications" ${CC_MQTTSN_CLIENT_DEFAULT_LIB})
 option (CC_MQTTSN_GATEWAY_APPS "Build and install gateway applications" ${CC_MQTTSN_GATEWAY})
 option (CC_MQTTSN_BUILD_UNIT_TESTS "Build unittests." OFF)
 option (CC_MQTTSN_UNIT_TEST_WITH_VALGRIND "Disable valgrind in unittests." OFF)
 option (CC_MQTTSN_USE_CCACHE "Use ccache on unix system" OFF)
 option (CC_MQTTSN_WITH_SANITIZERS "Build with sanitizers" OFF)
+
+# CMake built-in options
+option (BUILD_SHARED_LIBS "Build as shared libraries" OFF)
 
 # Extra variables
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
