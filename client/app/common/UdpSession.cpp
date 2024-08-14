@@ -121,7 +121,12 @@ void UdpSession::doRead()
 
             auto remoteAddr = m_senderEndpoint.address().to_v4().to_bytes();
             Addr addrToReport(remoteAddr.begin(), remoteAddr.end());
-            reportData(addrToReport, m_inBuf.data(), bytesCount);
+            auto origin = CC_MqttsnDataOrigin_Any;
+            if (m_senderEndpoint == m_remoteEndpoint) {
+                origin = CC_MqttsnDataOrigin_ConnectedGw;
+            }
+
+            reportData(m_inBuf.data(), bytesCount, addrToReport, origin);
             doRead();
         });    
 }

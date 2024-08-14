@@ -225,8 +225,8 @@ typedef struct
     const char* m_topic; ///< Topic the message was published with. May be NULL if message is reported with predefined topic ID.
     const unsigned char* m_data; ///< Pointer to reported message binary data.
     unsigned m_dataLen; ///< Number of bytes in reported message binary data.
-    CC_MqttsnQoS m_qos; ///< QoS level the message was received with.
     CC_MqttsnTopicId m_topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.    
+    CC_MqttsnQoS m_qos; ///< QoS level the message was received with.
     bool m_retained; ///< Retain flag of the message.
 } CC_MqttsnMessageInfo;
 
@@ -296,9 +296,9 @@ typedef struct
 typedef struct
 {
     const char* m_topic; ///< Publish topic.
-    CC_MqttsnTopicId m_topicId; ///< Pre-defined topic ID, should be @b 0 when topic is not NULL.
     const unsigned char* m_data; ///< Publish data (message).
     unsigned m_dataLen; ///< Publish data (message) length.
+    CC_MqttsnTopicId m_topicId; ///< Pre-defined topic ID, should be @b 0 when topic is not NULL.
     CC_MqttsnQoS m_qos; ///< Publish message QoS.
     bool m_retain; ///< Publish message retain configuration.
 } CC_MqttsnPublishConfig;

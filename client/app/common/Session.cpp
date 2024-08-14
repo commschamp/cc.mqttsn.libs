@@ -44,10 +44,10 @@ std::ostream& Session::logError()
     return std::cerr << "ERROR: ";
 }
 
-void Session::reportData(const Addr& addr, const std::uint8_t* buf, std::size_t bufLen)
+void Session::reportData(const std::uint8_t* buf, std::size_t bufLen, const Addr& addr, CC_MqttsnDataOrigin origin)
 {
     assert(m_dataReportCb);
-    m_dataReportCb(addr, buf, bufLen);
+    m_dataReportCb(buf, bufLen, addr, origin);
 }
 
 void Session::reportNetworkError()

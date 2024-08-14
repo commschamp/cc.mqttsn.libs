@@ -86,6 +86,13 @@ bool AppClient::start(int argc, const char* argv[])
         return false;
     }
 
+    if (m_opts.connectNoCleanSession()) {
+        auto ec = cc_mqttsn_client_set_verify_incoming_msg_subscribed(m_client.get(), false);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            logError() << "Failed to disable incoming message subscribed verification" << std::endl;
+        }
+    }
+
     return startImpl();
 }   
 
@@ -187,6 +194,11 @@ std::ostream& AppClient::logError()
     return std::cerr << "ERROR: ";
 }
 
+std::ostream& AppClient::logInfo()
+{
+    return std::cout << "INFO: ";
+}
+
 void AppClient::doTerminate(int result)
 {
     m_result = result;
@@ -195,21 +207,51 @@ void AppClient::doTerminate(int result)
 
 void AppClient::doComplete()
 {
-    // if (m_opts.willTopic().empty()) {
-    //     auto ec = ::cc_mqttsn_client_disconnect(m_client.get());
-    //     if (ec != CC_MqttsnErrorCode_Success) {
-    //         logError() << "Failed to send disconnect with ec=" << toString(ec) << std::endl;
-    //         doTerminate();
-    //         return;
-    //     }       
-    // }
-
     boost::asio::post(
         m_io,
         [this]()
         {
             doTerminate(0);
         });
+}
+
+bool AppClient::doConnect()
+{
+    auto config = CC_MqttsnConnectConfig();
+    cc_mqttsn_client_connect_init_config(&config);
+
+    auto clientId = m_opts.connectClientId();
+    if (!clientId.empty()) {
+        config.m_clientId = clientId.c_str();
+    }
+
+    config.m_duration = m_opts.connectKeepAlive();
+    config.m_cleanSession = !m_opts.connectNoCleanSession();
+
+    auto willConfig = CC_MqttsnWillConfig();
+    CC_MqttsnWillConfig* willConfigPtr = nullptr;
+    auto willTopic = m_opts.willTopic();
+    auto willData = parseBinaryData(m_opts.willMessage());
+    if (!willTopic.empty()) {
+        cc_mqttsn_client_connect_init_config_will(&willConfig);
+        willConfig.m_topic = willTopic.c_str();
+        willConfig.m_data = willData.data();
+        willConfig.m_dataLen = static_cast<decltype(willConfig.m_dataLen)>(willData.size());
+        willConfig.m_qos = static_cast<decltype(willConfig.m_qos)>(m_opts.willQos());
+        willConfigPtr = &willConfig;
+    }
+
+    if (m_opts.verbose()) {
+        logInfo() << "Attempting connection" << std::endl;
+    }
+
+    auto ec = cc_mqttsn_client_connect(m_client.get(), &config, willConfigPtr, &AppClient::connectCompleteCb, this);
+    if (ec != CC_MqttsnErrorCode_Success) {
+        logError() << "Failed to initiate connection to the gateway" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 bool AppClient::startImpl()
@@ -219,6 +261,10 @@ bool AppClient::startImpl()
 
 
 void AppClient::messageReceivedImpl([[maybe_unused]] const CC_MqttsnMessageInfo* info)
+{
+}
+
+void AppClient::connectCompleteImpl()
 {
 }
 
@@ -308,6 +354,28 @@ std::string AppClient::toString(CC_MqttsnAsyncOpStatus val)
     return Map[idx] + " (" + std::to_string(val) + ')';
 }
 
+
+std::string AppClient::toString(CC_MqttsnReturnCode val)
+{
+    static const std::string Map[] = {
+        /* CC_MqttsnReturnCode_Accepted */ "Accepted",
+        /* CC_MqttsnReturnCode_Conjestion */ "Conjestion",
+        /* CC_MqttsnReturnCode_InvalidTopicId */ "Invalid Topic ID",
+        /* CC_MqttsnReturnCode_NotSupported */ "Not supported",
+    };
+
+    static constexpr std::size_t MapSize = std::extent<decltype(Map)>::value;
+    static_assert(MapSize == CC_MqttsnReturnCode_ValuesLimit);
+
+    auto idx = static_cast<unsigned>(val);
+    if (MapSize <= idx) {
+        assert(false); // Should not happen
+        return std::to_string(val);
+    }
+
+    return Map[idx] + " (" + std::to_string(val) + ')';
+}
+
 void AppClient::nextTickProgramInternal(unsigned duration)
 {
     m_lastWaitProgram = Clock::now();
@@ -354,15 +422,10 @@ bool AppClient::createSession()
     }
 
     m_session->setDataReportCb(
-        [this](const Addr& addr, const std::uint8_t* buf, std::size_t bufLen)
+        [this](const std::uint8_t* buf, std::size_t bufLen, const Addr& addr, CC_MqttsnDataOrigin origin)
         {
             assert(m_client);
             m_lastAddr = addr;
-            auto origin = CC_MqttsnDataOrigin_Any;
-            if (addr == m_gwAddr) {
-                origin = CC_MqttsnDataOrigin_ConnectedGw;
-            }
-
             ::cc_mqttsn_client_process_data(m_client.get(), buf, static_cast<unsigned>(bufLen), origin);
         });
 
@@ -380,6 +443,28 @@ bool AppClient::createSession()
     }
 
     return true;
+}
+
+void AppClient::connectCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+{
+    if (status != CC_MqttsnAsyncOpStatus_Complete) {
+        logError() << "Failed to connect with status: " << toString(status) << std::endl;
+        doTerminate();
+        return;
+    }
+
+    assert(info != nullptr);
+    if (info->m_returnCode != CC_MqttsnReturnCode_Accepted) {
+        logError() << "Connection rejected with return code: " << toString(info->m_returnCode) << std::endl;
+        doTerminate();
+        return;
+    }
+
+    if (m_opts.verbose()) {
+        logInfo() << "Connection established" << std::endl;
+    }
+
+    connectCompleteImpl();
 }
 
 void AppClient::sendDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
@@ -405,6 +490,11 @@ void AppClient::nextTickProgramCb(void* data, unsigned duration)
 unsigned AppClient::cancelNextTickWaitCb(void* data)
 {
     return asThis(data)->cancelNextTickWaitInternal();
+}
+
+void AppClient::connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+{
+    return asThis(data)->connectCompleteInternal(status, info);
 }
 
 } // namespace cc_mqttsn_client_app

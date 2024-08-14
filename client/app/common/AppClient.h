@@ -60,12 +60,15 @@ protected:
     }
 
     static std::ostream& logError();
+    static std::ostream& logInfo();
 
     void doTerminate(int result = 1);
     void doComplete();
+    bool doConnect();
 
     virtual bool startImpl();
     virtual void messageReceivedImpl(const CC_MqttsnMessageInfo* info);
+    virtual void connectCompleteImpl();
 
     static std::vector<std::uint8_t> parseBinaryData(const std::string& val);
 
@@ -74,12 +77,8 @@ protected:
         return m_lastAddr;
     }
 
-    void setGwAddr(const Addr& addr)
-    {
-        m_gwAddr = addr;
-    }
-
     static std::string toString(CC_MqttsnAsyncOpStatus val);
+    static std::string toString(CC_MqttsnReturnCode val);
 
 private:
     using ClientPtr = std::unique_ptr<CC_MqttsnClient, ClientDeleter>;
@@ -90,12 +89,14 @@ private:
     unsigned cancelNextTickWaitInternal();
     void sendDataInternal(const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
     bool createSession();
+    void connectCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
 
     static void sendDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
     static void messageReceivedCb(void* data, const CC_MqttsnMessageInfo* info);
     static void logMessageCb(void* data, const char* msg);
     static void nextTickProgramCb(void* data, unsigned duration);
     static unsigned cancelNextTickWaitCb(void* data);
+    static void connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
 
     boost::asio::io_context& m_io;
     int& m_result;
@@ -105,7 +106,6 @@ private:
     ClientPtr m_client;
     SessionPtr m_session;
     Addr m_lastAddr;
-    Addr m_gwAddr;
 };
 
 } // namespace cc_mqttsn_client_app

@@ -556,7 +556,15 @@ void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_Mqt
         auto* connectMsg = dynamic_cast<UnitTestConnectMsg*>(sentMsg.get());
         test_assert(connectMsg != nullptr);
         if (config != nullptr) {
-            test_assert(connectMsg->field_clientId().value() == config->m_clientId);
+            if (config->m_clientId != nullptr) {
+                if (connectMsg->field_clientId().value() != config->m_clientId) {
+                    std::cerr << "FAILURE: \"" << connectMsg->field_clientId().value().c_str() << "\" != \"" << config->m_clientId << "\"" << std::endl;
+                }
+                test_assert(connectMsg->field_clientId().value() == config->m_clientId);
+            }
+            else {
+                test_assert(connectMsg->field_clientId().value().empty());
+            }
             test_assert(connectMsg->field_duration().value() == config->m_duration);
             test_assert(connectMsg->field_flags().field_mid().getBitValue_CleanSession() == config->m_cleanSession);
         }

@@ -30,6 +30,9 @@ public:
     void addCommon();
     void addNetwork();
     void addDiscover();
+    void addConnect();
+    void addWill();
+    void addPublish();
 
     void printHelp();
 
@@ -49,6 +52,23 @@ public:
     // Discover Options
     bool discoverExitOnFirst() const;
     unsigned discoverTimeout() const;
+
+    // Connect Options
+    std::string connectClientId() const;
+    unsigned connectKeepAlive() const;
+    bool connectNoCleanSession() const;    
+
+    // Will Options
+    std::string willTopic() const;
+    std::string willMessage() const;
+    unsigned willQos() const;       
+
+    // Publish Options
+    std::string pubTopic() const;
+    std::uint16_t pubTopicId() const;
+    std::string pubMessage() const;
+    unsigned pubQos() const; 
+    bool pubRetain() const;       
 
 private:
     boost::program_options::variables_map m_vm;

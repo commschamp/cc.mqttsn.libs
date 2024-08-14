@@ -20,5 +20,5 @@ set (COMMON_APPS_LIB "cc_mqttsn_client_apps_lib")
 
 add_subdirectory (common)
 add_subdirectory (gw_discover)
-#add_subdirectory (pub)
+add_subdirectory (pub)
 #add_subdirectory (sub)

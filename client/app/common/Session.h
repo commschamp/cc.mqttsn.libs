@@ -9,6 +9,8 @@
 
 #include "ProgramOptions.h"
 
+#include "cc_mqttsn_client/common.h"
+
 #include <boost/asio.hpp>
 
 #include <cstdint>
@@ -38,7 +40,7 @@ public:
         sendDataImpl(buf, bufLen, broadcastRadius);
     }
 
-    using DataReportCb = std::function<void (const Addr& addr, const std::uint8_t* buf, std::size_t bufLen)>;
+    using DataReportCb = std::function<void (const std::uint8_t* buf, std::size_t bufLen, const Addr& addr, CC_MqttsnDataOrigin origin)>;
     template <typename TFunc>
     void setDataReportCb(TFunc&& func)
     {
@@ -68,7 +70,7 @@ protected:
 
     static std::ostream& logError();
 
-    void reportData(const Addr& addr, const std::uint8_t* buf, std::size_t bufLen);
+    void reportData(const std::uint8_t* buf, std::size_t bufLen, const Addr& addr, CC_MqttsnDataOrigin origin);
     void reportNetworkError();
 
     virtual bool startImpl() = 0;
