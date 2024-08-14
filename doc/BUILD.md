@@ -61,7 +61,7 @@ needs. Remember to use **-DCMAKE_BUILD_TYPE=Release** option for release
 builds.
 
 
-### Build All Library and Applications
+### Build All Libraries and Applications
 ```
 $> mkdir build && cd build
 $> cmake .. -DCMAKE_BUILD_TYPE=Release \
@@ -78,7 +78,7 @@ $> cmake .. -DCMAKE_BUILD_TYPE=Release \
 $> cmake --build . --config Release --target install
 ```
 
-### Build AS Shared Libraries
+### Build as Shared Libraries
 ```
 $> mkdir build && cd build
 $> cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON \
@@ -100,7 +100,7 @@ See [custom_client_build.md](custom_client_build.md)
 for details on custom build configuration
 ```
 $> mkdir build && cd build
-$> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF -DCC_MQTTSN_GATEWAY=OFF \
+$> cmake .. -DCMAKE_BUILD_TYPE=Release -DCC_MQTTSN_CLIENT_DEFAULT_LIB=OFF -DCC_MQTTSN_GATEWAY_LIB=OFF \
     -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES=config1.cmake\;config2.cmake \
     -DCMAKE_PREFIX_PATH=/path/to/comms/install\;/path/to/cc.mqttsn.generated/install
 $> cmake --build . --config Release --target install

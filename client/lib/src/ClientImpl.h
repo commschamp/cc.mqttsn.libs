@@ -262,7 +262,6 @@ private:
 
 
     using OpPtrsList = ObjListType<op::Op*, ExtConfig::OpsLimit>;
-    // using OpToDeletePtrsList = ObjListType<const op::Op*, ExtConfig::OpsLimit>;
     using OutputBuf = ObjListType<std::uint8_t, ExtConfig::MaxOutputPacketSize>;
 
     void doApiEnter();
