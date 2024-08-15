@@ -1,0 +1,68 @@
+#include "UnitTestQos0Base.h"
+#include "UnitTestProtocolDefs.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestQos0Publish : public CxxTest::TestSuite, public UnitTestQos0Base
+{
+public:
+    void test1();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }
+};
+
+void UnitTestQos0Publish::test1()
+{
+    // Rejecting Qos1 and Qos2 configuration
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    TS_ASSERT_DIFFERS(client, nullptr);
+    unitTestDoConnectBasic(client, __FUNCTION__); 
+
+    const CC_MqttsnTopicId TopicId = 123;
+    const UnitTestData Data = { 0x1, 0x2, 0x3, 0x4, 0x5};
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topicId = TopicId;
+    config.m_data = &Data[0];
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+
+    auto* publish = apiPublishPrepare(client, nullptr);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
+
+    config.m_qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
+
+
+    config.m_qos = CC_MqttsnQoS_AtMostOnceDelivery;
+    ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto report = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(report->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasOutputData());
+    auto sentMsg = unitTestPopOutputMessage();
+    TS_ASSERT(sentMsg);      
+}

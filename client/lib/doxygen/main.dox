@@ -1,0 +1,1923 @@
+/// @mainpage MQTT-SN Client Library
+/// @tableofcontents
+/// @section doc_cc_mqttsn_client_overview Overview
+/// The <b>MQTT-SN Client Library</b> from the <a href="https://commschamp.github.io/">CommsChampion Ecosystem</a>
+/// provides simple, asynchronous, non-blocking,
+/// and easy to use interface to operate MQTT-SN client. The library doesn't
+/// make any assumption on the system it is running on, as well as on the type
+/// of I/O link being used to communicate its data to the MQTT-SN gateway.
+///
+/// It is a responsibility of the calling application to manage network connectivity
+/// as well as measure time required for the correct operation of the MQTT-SN protocol.
+///
+/// The library allows the application to have a full control over the raw data for
+/// any extra analysis and/or manipulation, such as encryption or extra framing.
+///
+/// @section doc_cc_mqttsn_client_version Version of the Library
+/// The version is of the library applicable to this documentation is defined in
+/// the @ref common.h "cc_mqttsn_client/common.h" file using the following defines:
+/// @li @ref CC_MQTTSN_CLIENT_MAJOR_VERSION
+/// @li @ref CC_MQTTSN_CLIENT_MINOR_VERSION
+/// @li @ref CC_MQTTSN_CLIENT_PATCH_VERSION
+///
+/// @section cc_mqttsn_client_header Header
+/// To use this <b>MQTT-SN Client Library</b> use the following single include statement:
+/// @code
+/// #include "cc_mqttsn_client/client.h"
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_allocation Client Allocation
+/// The library supports multiple independent MQTT-SN client sessions. The
+/// allocation of data structures relevant to a single client is performed
+/// using @b cc_mqttsn_client_alloc() function.
+/// @code
+/// CC_MqttsnClientHandle client = cc_mqttsn_client_alloc();
+/// @endcode
+/// All other functions are client specific, they receive the returned handle
+/// as their first parameter.
+///
+/// When work with allocated client is complete, it must be freed using
+/// @b cc_mqttsn_client_free() function.
+/// @code
+/// cc_mqttsn_client_free(client);
+/// @endcode
+///
+/// When working with C++ it is advised to use a smart pointer with a custom deleter.
+/// @code
+/// struct MyDeleter
+/// {
+///     void operator()(CC_MqttsnClient* ptr)
+///     {
+///         ::cc_mqttsn_client_free(ptr);
+///     }
+/// };
+///
+/// using MyClientPtr = std::unique_ptr<CC_MqttsnClient, MyDeleter>;
+///
+/// MyClientPtr clientPtr(::cc_mqttsn_client_alloc());
+/// CC_MqttsnClientHandle client = clientPtr.get();
+/// @endcode
+///
+/// @b IMPORTANT: The function @b cc_mqttsn_client_free() must @b NOT
+/// be called from within a callback. Use next event loop iteration.
+///
+/// @section doc_cc_mqttsn_client_callbacks "Must Have" Callbacks Registration
+/// In order to properly function the library requires setting several callbacks.
+///
+/// @subsection doc_cc_mqttsn_client_callbacks_send_data Sending Data To Gateway
+/// To client application must assign a callback for the library to be able to send
+/// binary data out to the connected gateway.
+/// @code
+/// void my_send_data_cb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
+/// {
+///     if (broadcastRadius > 0) {
+///         ... // broadcast the message data
+///     }
+///     else {
+///         ... // unicast the message data to a known gateway address
+///     }
+/// }
+///
+/// cc_mqttsn_client_set_send_output_data_callback(client, &my_send_data_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnSendOutputDataCb callback function definition.
+///
+/// In the invoked callback the application is responsible to send the provided data
+/// over the I/O link. The application can also perform extra data manipulation like
+/// encryption.
+///
+/// The reported data resides in internal data structures of the client library,
+/// which can be updated / deleted right after the callback function returns.
+/// It means the data may need to be copied into some other buffer, which will be
+/// held intact until the send over I/O link operation is complete.
+///
+/// @subsection doc_cc_mqttsn_client_callbacks_gateway_disconnect Reporting Unsolicited Gateway Disconnection
+/// The client application must assign a callback for the library to report
+/// discovered gateway disconnection.
+/// @code
+/// void my_gateway_disconnected_cb(void* data, CC_MqttsnGatewayDisconnectReason reason)
+/// {
+///     ... /* handle gatewau disconnection */
+/// }
+///
+/// cc_mqttsn_client_set_gw_disconnect_report_callback(client, &my_gateway_disconnected_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnGwDisconnectedReportCb callback function definition.
+///
+/// See also @ref doc_cc_mqttsn_client_unsolicited_disconnect
+/// below for details.
+///
+/// @subsection doc_cc_mqttsn_client_callbacks_message Reporting Received Message
+/// The client application must assign a callback for the library to report
+/// application level messages received from the gateway.
+/// @code
+/// void my_message_received_cb(void* data, const CC_MqttsnMessageInfo* info)
+/// {
+///     ... /* handle the received message */
+/// }
+///
+/// cc_mqttsn_client_set_message_report_callback(client, &my_message_received_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnMessageReportCb callback function definition.
+///
+/// @section doc_cc_mqttsn_client_time Time Measurement
+/// For the correct operation of the MQTT-SN client side of the protocol, the library
+/// requires an ability to measure time. This responsibility is delegated to the
+/// application.
+///
+/// The easiest (although not very efficient or very precise) method is to periodically (say every 20ms - 50ms)
+/// call the @b cc_mqttsn_client_tick() function reporting the amount of elapsed milliseconds:
+/// @code
+/// cc_mqttsn_client_tick(client, 50U);
+/// @endcode
+/// The library will check if some inner timer has expired and may initiate some
+/// response via invocation one of the registered callbacks.
+///
+/// Another (recommended) method is to register a callback so the library
+/// may request the time measurement from the application, and when the
+/// requested time expires, the application is expected to call the
+/// @b cc_mqttsn_client_tick() function reporting amount of elapsed milliseconds.
+/// @code
+/// void my_tick_program_cb(void* data, unsigned ms)
+/// {
+///     ... // program appropriate timer
+/// }
+///
+/// cc_mqttsn_client_set_next_tick_program_callback(client, &my_tick_program_cb, data);
+/// @endcode
+/// It is allowed to invoke the @b cc_mqttsn_client_tick() before the actual requested timeout has
+/// expired, just make sure that the correct amount of elapsed milliseconds is reported. When
+/// the @b cc_mqttsn_client_tick() is invoked, it is assumed that the previously requested tick
+/// programming has been cancelled and the registered callback requesting to re-program
+/// the timer may be invoked again from within the
+/// @b cc_mqttsn_client_tick().
+///
+/// See also the documentation of the @ref CC_MqttsnNextTickProgramCb callback function definition.
+///
+/// In case of callback approach for time measurement is chosen, another callback function
+/// (in addition to requesting the new timer programming) to
+/// allow interruption of the previously programmed timer must also to be registered.
+/// @code
+/// unsigned my_cancel_tick_program_cb(void* data)
+/// {
+///     ...
+///     return ... // return amount of elapsed milliseconds since last tick program
+/// }
+///
+/// cc_mqttsn_client_set_cancel_next_tick_wait_callback(client, &my_cancel_tick_program_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnCancelNextTickWaitCb callback function definition.
+///
+/// Usually the callbacks of canceling the previously programmed tick and programming a new one
+/// will be invoked as a side effect of other events, like report of the incoming data or
+/// client requesting to perform one of the available operations.
+///
+/// @section doc_cc_mqttsn_client_log Error Logging
+/// Sometimes the library may exhibit unexpected behaviour, like rejecting some of the parameters.
+/// To allow getting extra guidance information of what went wrong it is possible to register
+/// optional error logging callback.
+/// @code
+/// void my_error_log_cb(void* data, const char* msg)
+/// {
+///     printf("ERROR: %s\n", msg);
+/// }
+///
+/// cc_mqttsn_client_set_error_log_callback(client, &my_error_log_cb, data);
+/// @endcode
+/// See also the documentation of the @ref CC_MqttsnErrorLogCb callback function definition.
+///
+/// @section doc_cc_mqttsn_client_data Reporting Incoming Data
+/// It is the responsibility of the application to receive data from the other nodes on the network
+/// and report it to the library. The report is performed using the
+/// @b cc_mqttsn_client_process_data() function.
+/// @code
+/// uint8_t buf[MAX_BUF_SIZE];
+/// ... // Receive data into buffer
+/// unsigned bufLen = ...; // Amount of received bytes in the buffer.
+/// CC_MqttsnDataOrigin origin = ...;
+/// cc_mqttsn_client_process_data(client, buf, bufLen, origin);
+/// @endcode
+/// The application is responsible to maintain the input buffer.
+/// The MQTT-SN protocol assumes datagram packets, where each packets
+/// contains a valid single MQTT-SN message. The client library decodes
+/// and processes the message at the beginning of the reported buffer and
+/// discards any extra bytes that might follow.
+///
+/// The application is also responsible to allow input from multiple sources and
+/// determine the @ref CC_MqttsnDataOrigin "origin" of the input data. It allows
+/// the library to differentiate between the messages from the legit gateway to
+/// which the application is connected and other nodes on the network.
+///
+/// When new data chunk is reported the library may invoke several callbacks,
+/// such as reporting received message, sending new data out, as well as canceling
+/// the old and programming new tick timeout.
+///
+/// @section doc_cc_mqttsn_client_concepts Operating Concepts
+/// The library abstracts away multiple MQTT-SN protocol based "operations". Every such operation
+/// has multiple stages:
+/// @li @b prepare - The operation is "allocated" and relevant handle is returned.
+/// @li @b configure - Apply one or multiple configurations to the prepared operation.
+/// @li @b send - Send the configured operation message to the gateway.
+///
+/// During the @b send stage the application is expected to provide the callback to
+/// report to the application when the operation is complete. One of the parameters
+/// of the callback is always "status" of the @ref CC_MqttsnAsyncOpStatus type. It
+/// indicates whether the operation was successfully complete. In addition to the
+/// status it reports some extra information reported by the gateway. The information
+/// from the gateway is available <b>if and only if</b> the status is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// The @b send stage function also returns @ref CC_MqttsnErrorCode value to indicate
+/// whether the @b send was successfully performed. The provided callback will
+/// be invoked <b>if and only if</b> the @b send returns @ref CC_MqttsnErrorCode_Success.
+///
+/// After the @b send stage the handle returned in the @b prepare stage can be discarded
+/// (no explicit de-allocation is needed / supported) regardless of the return code.
+/// After successful @b send the handle still remains valid until the callback invocation and can be used
+/// to @b cancel the operation. Note that in case the appropriate message has already be
+/// @b sent to the gateway, cancelling the outstanding operation can be dangerous. When
+/// gateway sends a response and client is not expecting it any more, unexpected
+/// behaviour may happen.
+///
+/// In case something went wrong during the @b configure stage, it is possible to de-allocate
+/// the prepared operation using the @b cancel request. After performing the @b cancel
+/// stage the allocated handle is no longer valid.
+///
+/// <b>IMPORTANT LIBRARY LIMITATION</b>: Once an operation is @b prepared,
+/// it must be be immediately @b configured and @b sent (or @b cancelled) before
+/// any other other operation can be @b prepared. For example:
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnConnectHandle connect = cc_mqttsn_client_search_prepare(...);
+/// assert(connect != NULL);
+///
+/// // The following attempt to prepare the "subscribe" operation will fail because
+/// // previously allocated "search" hasn't been sent or cancelled yet.
+/// CC_MqttsnSubscribeHandle subscribe = cc_mqttsn_client_subscribe_prepare(...);
+/// assert(subscribe == NULL);
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_retry_period Default Retry Period
+/// After sending any operation request to the gateway, the client library has to allow
+/// some time for the gateway to process the request (@b T<sub>retry</sub> from the spec).
+/// If it takes too much time, the
+/// client must retry it several times (see @ref doc_cc_mqttsn_client_retry_count)
+/// and report that operation has failed via the set callback in case there is no response.
+/// By default the client
+/// library allows @b 10 seconds for such response to arrive. Changing this default value
+/// is possible using the @b cc_mqttsn_client_set_default_retry_period() function,
+/// and retrieving of the currently configured value can be done using the
+/// @b cc_mqttsn_client_get_default_retry_period() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_retry_period(client, 15000 /* in ms */);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_retry_count Default Retry Count
+/// As was mentioned in the @ref doc_cc_mqttsn_client_retry_period section above
+/// the client library retries to send unacknowledged messaged several times
+/// before giving up (@b N<sub>retry</sub> from the spec).
+/// By default the client library allows @b 3 times to re-send the message. Changing this default value
+/// is possible using the @b cc_mqttsn_client_set_default_retry_count() function,
+/// and retrieving of the currently configured value can be done using the
+/// @b cc_mqttsn_client_get_default_retry_count() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_retry_count(client, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// Note that the function specify number of @b retries, i.e. when number of retries is @b 1
+/// the relevant message will be sent twice before reporting failure (in case there is no response of course):
+/// once when the send is explicitly requested and the second time is an actual retry.
+/// Following the same logic, when the configured number of retries is @b 0, the message will be send only
+/// once (when the request is issued) and will not try to re-send it when the
+/// response is not received in time.
+///
+/// @section doc_cc_mqttsn_client_broadcast_radius Default Broadcast Radius
+/// The MQTT-SN protocol defines several messages that are broadcasted. When
+/// requesting to broadcast the message, the client library also specifies the
+/// broadcast radius. The default broadcast radius value is @b 3.
+/// To change the default configuration value
+/// use @b cc_mqttsn_client_set_default_broadcast_radius() function. To retrieve
+/// the current configuration use @b cc_mqttsn_client_get_default_broadcast_radius().
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_broadcast_radius(client, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_gateway_discovery Gateway Discovery
+/// The MQTT-SN protocol supports having multiple gateway on the same network
+/// and their discovery. When the application @ref doc_cc_mqttsn_client_allocation "allocates"
+/// the client object, it can either connect directly to the gateway (if such is
+/// known) or initiate gateway discovery by using @ref search "search" operation.
+/// The MQTT-SN specification recommends to wait some time (up to @b T<sub>searchgw</sub>)
+/// to prevent sending broadcast storm of the @b SEARCHGW messages when all
+/// clients start at once. It is up to the application to decide whether and when
+/// to issue the @ref search "search" operation.
+///
+/// @subsection doc_cc_mqttsn_client_search_prepare Preparing "Search" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnSearchHandle search = cc_mqttsn_client_search_prepare(client, &ec);
+/// if (search == NULL) {
+///     printf("ERROR: Search allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_search_retry_period Configuring "Search" Retry Period
+/// When created, the "search" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_search_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_search_set_retry_period(search, 15000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured retry period use the @b cc_mqttsn_client_search_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_search_retry_count Configuring "Search" Retry Count
+/// When created, the "search" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_search_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_search_set_retry_count(search, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured retry count use the @b cc_mqttsn_client_search_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_search_broadcast_radius Configuring "Search" Broadcast Radius
+/// The "search" operation is expected to broadcast the @b SEARCHGW message.
+/// When created, the "search" operation inherits the @ref doc_cc_mqttsn_client_broadcast_radius
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_search_set_broadcast_radius() function.
+/// @code
+/// ec = cc_mqttsn_client_search_set_broadcast_radius(search, 5);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured retry count use the @b cc_mqttsn_client_search_get_broadcast_radius() function.
+///
+/// @subsection doc_cc_mqttsn_client_search_send Sending Search Gateway Request
+/// When all the necessary configurations are performed for the allocated "search"
+/// operation it can actually be sent on the network. To initiate sending
+/// use the @b cc_mqttsn_client_search_send() function.
+/// @code
+/// void my_search_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The search operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze found gateway information.
+/// }
+///
+/// ec = cc_mqttsn_client_search_send(search, &my_search_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send search request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "search" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_search_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_search_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_search_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// When the "search" operation completion callback is invoked the reported
+/// "info" information is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @b NOTE that only single "search" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_search_prepare() will be rejected
+/// until the "search" operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_search_cancel "cancelled".
+///
+/// The "search" operation is complete when the valid @b GWINFO message is received.
+/// Such message can be sent either by the gateway itself or by another client
+/// on behalf of the gateway. When they @b GWINFO message is sent by another
+/// client it specifies the actual address of the gateway
+/// (reported via the @ref CC_MqttsnGatewayInfo::m_addr and @ref CC_MqttsnGatewayInfo::m_addrLen).
+/// When the @b GWINFO message is sent by the gateway itself, the address information
+/// inside the reported @ref CC_MqttsnGatewayInfo structure will be empty.
+///
+/// Upon reception of any new data packet from the I/O link, the application is expected
+/// to detect and save the origin address of the sender. In case the reported
+/// gateway address is empty, the application is expected to use the saved
+/// origin address of the data packet as the one of the gateway.
+/// The application is also expected to update the address info stored by the
+/// library using the @b cc_mqttsn_client_set_available_gateway_info() function.
+/// The details are in the @ref doc_cc_mqttsn_client_gateway_monitoring section below.
+///
+/// @subsection doc_cc_mqttsn_client_search_cancel Cancel the "Search" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_search_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_search_cancel(search);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel search with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_search_send() function was successfully
+/// called before the @b cc_mqttsn_client_search_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_search_simplify Simplifying the "Search" Operation Preparation
+/// In many use cases the "search" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides the @b cc_mqttsn_client_search() wrapper function.
+///
+/// For example:
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_search(client, &my_search_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send search request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper functions do NOT expose the handle returned by the
+/// @b cc_mqttsn_client_search_prepare(). It means that it's not possible to
+/// cancel the "search" operation before its completion.
+///
+/// @section doc_cc_mqttsn_client_gateway_monitoring Monitoring and Managing Available Gateways
+/// The MQTT-SN gateways are also expected to periodically advertise their presence.
+/// The client library keeps track of the discovered gateways on the network. It
+/// is possible to retrieve the information on the available gateways at any time.
+/// @code
+/// unsigned numOfAvailableGateways = cc_mqttsn_client_get_available_gateways_count(client);
+/// for (idx=0; idx < numOfAvailableGateways; ++idx) {
+///     CC_MqttsnGatewayInfo info;
+///     CC_MqttsnErrorCode ec = cc_mqttsn_client_get_available_gateway_info(client, idx, &info);
+///     if (ec != CC_MqttsnErrorCode_Success) {
+///         printf("Something is wrong\n");
+///         continue;
+///     }
+///
+///     ... // Process updated info.
+/// }
+/// @endcode
+///
+/// The application can receive ongoing notifications if a status of any gateway changes.
+/// @code
+/// void my_gw_status_report_cb(void* data, CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info)
+/// {
+///     ...
+/// }
+///
+/// cc_mqttsn_client_set_gw_status_report_callback(client, &my_gw_status_report_cb, data);
+/// @endcode
+/// The @b status parameter to the callback function indicates the status of the
+/// gateway, while @b info reports the currently stored gateway information.
+/// The callback (if registered) is invoked every time the @b ADVERTISE as well as @b GWINFO
+/// messages are received or not received in time. The @ref CC_MqttsnGwStatus "status" value indicates
+/// of whether the gateway information is newly added, updated or the old info is confirmed.
+///
+/// When the expected @b ADVERTISE message doesn't arrive in time, it can be due to
+/// packet loss on the network rather than the gateway itself going offline. The
+/// library allows configuration of allowed losses of the @b ADVERTISE message before
+/// the gateway is reported to be @ref CC_MqttsnGwStatus_Removed and its info removed from
+/// the internal data structures.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_allowed_adv_losses(client, 2);
+/// @endcode
+/// The configured count is how many @b ADVERTISE messages can be @b lost, i.e. when
+/// configured to be @b 0, the gateway info is removed on the first missing @b ADVERTISE packet.
+/// When configured to be @b 1 (or greater), the reported gateway status will
+/// be @ref CC_MqttsnGwStatus_Tentative when the expected advertising packet doesn't
+/// arrive in time until the inner count of allowed losses goes to @b 0 and then
+/// the gateway status is reported to be @ref CC_MqttsnGwStatus_Removed. The default
+/// allowed count of the @b ADVERTISE losses is @b 1. The current configuration
+/// can be retrieved using @b cc_mqttsn_client_get_allowed_adv_losses(). When
+/// the @b ADVERTISE or @b GWINFO from the gateway message arrive, the library reports
+/// @ref CC_MqttsnGwStatus_Alive as the status gateway.
+///
+/// Upon reception of the @b ADVERTISE or @b GWINFO from the gateway, the address information
+/// may be missing (or wrong). The application is expected to record the origin of
+/// the recent message and this information can be used to update the recorded information.
+/// The application can invoke the @b cc_mqttsn_client_set_available_gateway_info()
+/// function at any time to update / override the stored address information about the
+/// gateway. It is also applicable to the @ref doc_cc_mqttsn_client_search_send "search"
+/// operation. The @b cc_mqttsn_client_set_available_gateway_info() can be called
+/// from withing the operation completion callback to update the stored gateway address.
+/// @code
+/// CC_MqttsnGatewayInfo info;
+/// cc_mqttsn_client_init_gateway_info(&info);
+/// info.m_gwId = ...;
+/// info.m_addr = ...;
+/// info.m_addrLen = ...;
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_available_gateway_info(client, &info);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+/// It is recommended to initialize @ref CC_MqttsnGatewayInfo structure using the
+/// @b cc_mqttsn_client_init_gateway_info() function before update, even though all
+/// the member fields are assigned new values.
+///
+/// The application can force the library to discard the available gateway information
+/// by issuing the @b cc_mqttsn_client_discard_available_gateway_info() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_discard_available_gateway_info(client, 1 /* gateway id */);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+///
+/// It is possible to discard information on all the gateways in one go:
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_discard_all_gateway_infos(client);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+///
+/// When the client receives @b GWINFO message before @b ADVERTISE, the
+/// advertising period of the gateway is not known yet. For the gateway tracking
+/// and management functionality there is a need to assume some kind of default
+/// duration. The default value is <b>15 minutes</b>. To update it use
+/// @b cc_mqttsn_client_set_default_gw_adv_duration() function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_default_gw_adv_duration(client, 20 * 60 * 1000 /* 20 minutes in milliseconds */);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("Something is wrong");
+/// }
+/// @endcode
+/// To retrieve the current configuration use @b cc_mqttsn_client_get_default_gw_adv_duration() function.
+///
+/// @section doc_cc_mqttsn_client_connect Connecting to Gateway
+/// To connect to gateway use @ref connect "connect" operation.
+///
+/// @subsection doc_cc_mqttsn_client_connect_prepare Preparing "Connect" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnConnectHandle connect = cc_mqttsn_client_connect_prepare(client, &ec);
+/// if (connect == NULL) {
+///     printf("ERROR: Connect allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+/// @b NOTE that the @b cc_mqttsn_client_connect_prepare() cannot be called from within a callback.
+/// For example, if the gateway disconnection is reported via @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "callback"
+/// then the @b cc_mqttsn_client_connect_prepare() cannot be invoked right away.
+/// It needs to be postponed until the next event loop iteration.
+///
+/// @subsection doc_cc_mqttsn_client_connect_retry_period Configuring "Connect" Retry Period
+/// When created, the "connect" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_connect_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_connect_set_retry_period(connect, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_connect_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_connect_retry_count Configuring "Connect" Retry Count
+/// When created, the "connect" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_connect_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_connect_set_retry_count(connect, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_connect_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_connect_basic Configuration of "Connect" Operation
+/// To configure "connect" operation use @b cc_mqttsn_client_connect_config() function.
+/// @code
+/// CC_MqttsnConnectConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_connect_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_clientId = "some_client";
+/// config.m_cleanSession = true;
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_connect_config(connect, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Connect configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// **IMPORTANT**: MQTT-SN specification allows reconnection to the gateway while
+/// requesting previous session restoration (via "clean session" bit). By default,
+/// the client library verifies that the message received from the gateway was
+/// actually subscribed to before reporting the message to the application
+/// (see @ref doc_cc_mqttsn_client_receive for details). To prevent
+/// potential errors of the client and gateway inner states being out of sync, the
+/// @b first "connect" operation requires setting the @ref CC_MqttsnConnectConfig::m_cleanSession
+/// value to @b true. The only exception to this rule is when the subscription
+/// verification on message reception was disabled (described in the
+/// @ref doc_cc_mqttsn_client_receive section below). In case the subscription
+/// verification is still enabled and the @ref CC_MqttsnConnectConfig::m_cleanSession
+/// value is @b NOT set to @b true, the function rejects the configuration
+/// with the @ref CC_MqttsnErrorCode_BadParam error code. Any subsequent reconnection attempts will allow
+/// setting the value to @b false.
+///
+/// See also documentation of the @ref CC_MqttsnConnectConfig structure.
+///
+/// @subsection doc_cc_mqttsn_client_connect_will Will Configuration
+/// To perform will configuration use the @b cc_mqttsn_client_connect_config_will() function.
+/// @code
+/// CC_MqttsnWillConfig willConfig;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_connect_init_config_will(&willConfig);
+///
+/// // Update values if needed
+/// willConfig.m_topic = "some/topic";
+/// willConfig.m_data = ...;
+/// willConfig.m_dataLen = ...;
+/// ...
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_connect_config_will(connect, &willConfig);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Will configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnWillConfig structure.
+///
+/// @subsection doc_cc_mqttsn_client_connect_send Sending Connection Request
+/// When all the necessary configurations are performed for the allocated "connect"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_connect_send() function.
+/// @code
+/// void my_connect_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The connection operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze info values.
+/// }
+///
+/// ec = cc_mqttsn_client_connect_send(connect, &my_connect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send connect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "connect" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_connect_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_connect_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_connect_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// When the "connect" operation completion callback is invoked the reported
+/// "info" is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @b NOTE that only single "connect" / "disconnect" / "sleep" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_connect_prepare() will be rejected
+/// until the blocking operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_connect_cancel "cancelled".
+///
+/// When the callback reporting the connection status is invoked, it is responsibility
+/// of the application to check the @ref CC_MqttsnConnectInfo::m_returnCode value.
+/// If it's not @ref CC_MqttsnReturnCode_Accepted, the application
+/// is responsible retry the "connect" operation later. The same should be
+/// done when the "connect" operation is not properly completed, i.e. the
+/// reported status is @b NOT @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// The "connect" operation can be @ref doc_cc_mqttsn_client_connect_send "sent" at
+/// any time, even if it's already @ref doc_cc_mqttsn_client_connect_check "connected".
+/// However, upon failing attempt to re-connect the assumed inner state becomes
+/// @ref CC_MqttsnConnectionStatus_Disconnected.
+///
+/// @subsection doc_cc_mqttsn_client_connect_cancel Cancel the "Connect" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_connect_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_connect_cancel(connect);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel connect with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_connect_send() function was successfully
+/// called before the @b cc_mqttsn_client_connect_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_connect_simplify Simplifying the "Connect" Operation Preparation.
+/// In many use cases the "connect" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_connect()
+///
+/// For example:
+/// @code
+/// CC_MqttsnConnectConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_connect_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_clientId = "some_client";
+/// config.m_cleanSession = true;
+///
+/// ec = cc_mqttsn_client_connect(client, config, null, &my_connect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send connect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_connect_prepare(). It means that it's not possible to
+/// cancel the "connect" operation before its completion.
+///
+/// @subsection doc_cc_mqttsn_client_connect_check Check The Library Remains Connected
+/// At any time it is possible to check the internal state of the library of
+/// whether it's properly connected to the gateway.
+/// @code
+/// CC_MqttsnConnectionStatus connStatus = cc_mqttsn_client_get_connection_status(client);
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_disconnect Disconnecting From Gateway
+/// To intentionally disconnect from gateway use @ref disconnect "disconnect" operation. The
+/// unsolicited disconnection from the gateway is described in ref
+/// @ref doc_cc_mqttsn_client_unsolicited_disconnect section below.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_prepare Preparing "Disconnect" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnDisconnectHandle disconnect = cc_mqttsn_client_disconnect_prepare(client, &ec);
+/// if (disconnect == NULL) {
+///     printf("ERROR: Disconnect allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_retry_period Configuring "Disconnect" Retry Period
+/// When created, the "disconnect" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_disconnect_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_disconnect_set_retry_period(disconnect, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_disconnect_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_retry_count Configuring "Disconnect" Retry Count
+/// When created, the "disconnect" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_disconnect_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_disconnect_set_retry_count(disconnect, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_disconnect_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_send Sending Disconnection Request
+/// When the necessary configuration is performed for the allocated "disconnect"
+/// operation it can be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_disconnect_send() function.
+/// @code
+/// void my_disconnect_complete_cb(void* data, CC_MqttsnAsyncOpStatus status)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The disconnection operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///     ...
+/// }
+///
+/// ec = cc_mqttsn_client_disconnect_send(disconnect, &my_disconnect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send disconnect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "disconnect" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_disconnect_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_disconnect_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_disconnect_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// @b NOTE that only single "connect" / "disconnect" / "sleep" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_disconnect_prepare() will be rejected
+/// until the blocking operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_disconnect_cancel "cancelled".
+///
+/// In case there are other asynchronous operations that hasn't been completed yet,
+/// their completion callback is automatically invoked with @ref CC_MqttsnAsyncOpStatus_Aborted
+/// status.
+///
+/// @b IMPORTANT: In case of sending the explicit disconnection request the
+/// @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "registered unsolicited disconnection callback"
+/// is @b NOT invoked.
+///
+/// After the disconnection the application can re-establish network connection
+/// to the gateway (if needed) and perform the @ref doc_cc_mqttsn_client_connect "connect" operation
+/// again.
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_cancel Cancel the "Disconnect" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_disconnect_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_disconnect_cancel(disconnect);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel disconnect with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_disconnect_simplify Simplifying the "Disconnect" Operation Preparation.
+/// In many use cases the "disconnect" operation can be quite simple.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_disconnect()
+///
+/// For example:
+/// @code
+/// ec = cc_mqttsn_client_disconnect(client, &my_disconnect_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send disconnect request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_subscribe Subscribing to Receive Messages
+/// To subscribe to receive incoming messages use @ref subscribe "subscribe" operation.
+/// The application can issue multiple "subscribe" operations in parallel.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_prepare Preparing "Subscribe" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnSubscribeHandle subscribe = cc_mqttsn_client_subscribe_prepare(client, &ec);
+/// if (subscribe == NULL) {
+///     printf("ERROR: Subscribe allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_retry_period Configuring "Subscribe" Retry Period
+/// When created, the "subscribe" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_subscribe_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_subscribe_set_retry_period(subscribe, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_subscribe_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_retry_count Configuring "Subscribe" Retry Count
+/// When created, the "subscribe" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_subscribe_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_subscribe_set_retry_count(subscribe, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_subscribe_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_config Subscribe Configuration
+/// To configure "subscribe" operation use @b cc_mqttsn_client_subscribe_config() function.
+/// @code
+/// CC_MqttsnSubscribeConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_subscribe_init_config(&config);
+/// assert(config.m_qos == CC_MqttsnQoS_ExactlyOnceDelivery); // Initialization puts the maximum allowed QoS
+///
+/// // Update values if needed
+/// config.m_topic = "some/topic";
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_subscribe_config(subscribe, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Topic configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// When there is a need to use a predefined topic id instead of the topic string
+/// use @ref CC_MqttsnSubscribeConfig::m_topicId "m_topicId" member instead
+/// of @ref CC_MqttsnSubscribeConfig::m_topic "m_topic".
+/// @code
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_subscribe_init_config(&config);
+///
+/// // Update values if needed
+/// config.m_topicId = 123;
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnSubscribeConfig structure.
+///
+/// The MQTT-SN specification also specifies short topics of 2 byte length. The
+/// library detects this case by analysing the string assigned to the
+/// @ref CC_MqttsnSubscribeConfig::m_topic "m_topic" member and uses appropriate
+/// message configuration if needed.
+///
+/// By default the library will perform the analysis of the submitted topic format and
+/// reject it if topic format is incorrect. However, for performance reasons
+/// it is possible to disable such verification when client application
+/// ensures that no invalid topics are used.
+/// @code
+/// ec = cc_mqttsn_client_set_verify_outgoing_topic_enabled(client, false);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something is wrong */
+/// }
+/// @endcode
+/// @b NOTE that the configuration is global per client and not per "subscribe"
+/// operation.
+///
+/// Also @b note that the same function controls the verification of the
+/// "subscribe", "unsubscribe" and "publish" topic formats.
+///
+/// To retrieve the current configuration use @b cc_mqttsn_client_get_verify_outgoing_topic_enabled()
+/// function.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_send Sending Subscription Request
+/// When all the necessary configurations are performed for the allocated "subscribe"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_subscribe_send() function.
+/// @code
+/// void my_subscribe_complete_cb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The subscription operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze response values.
+/// }
+///
+/// ec = cc_mqttsn_client_subscribe_send(subscribe, &my_subscribe_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send subscribe request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "subscribe" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_subscribe_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_subscribe_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_subscribe_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// The MQTT-SN spec demands that the @b SUBSCRIBE transactions be issued one at
+/// a time. However, the library allows @ref doc_cc_mqttsn_client_subscribe_prepare "preparing"
+/// and @ref doc_cc_mqttsn_client_subscribe_send "sending" multiple subscription
+/// requests in parallel before completion of the first one. The library will
+/// retain the requested "subscribe" operation requests internally and will
+/// issue them one after another to comply with the specification.
+///
+/// Note that the callback function receives the "subscribe" operation handle as
+/// its second parameter. Although the handle is already invalid and cannot be
+/// used in any other function, it allows the application to identify the
+/// original "subscribe" request if multiple have been issued in parallel
+/// and use the same callback function for all of them.
+///
+/// When the "subscribe" operation completion callback is invoked the reported
+/// response information is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_cancel Cancel the "Subscribe" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_subscribe_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_subscribe_cancel(subscribe);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel subscribe with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_subscribe_send() function was successfully
+/// called before the @b cc_mqttsn_client_subscribe_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_subscribe_simplify Simplifying the "Subscribe" Operation Preparation.
+/// In many use cases the "subscribe" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function that can be used:
+/// @li @b cc_mqttsn_client_subscribe()
+///
+/// For example:
+/// @code
+/// CC_MqttsnSubscribeConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_subscribe_init_config(&config);
+///
+/// // Update values if needed
+/// config.m_topic = "some/topic";
+///
+/// ec = cc_mqttsn_client_subscribe(client, &config, &my_subscribe_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send subscribe request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_subscribe_prepare(). It means that it's not possible to
+/// cancel the "subscribe" operation before its completion or identify the
+/// subscribe operation by the reported handle when the completion callback
+/// is invoked.
+///
+/// @section doc_cc_mqttsn_client_unsubscribe Unsubscribing from Receiving Messages
+/// To unsubscribe to receive incoming messages use @ref unsubscribe "unsubscribe" operation.
+/// The application can issue multiple "unsubscribe" operations in parallel.
+///
+/// @subsection doc_cc_mqttsn_client_unsubscribe_prepare Preparing "Unsubscribe" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnUnsubscribeHandle unsubscribe = cc_mqttsn_client_unsubscribe_prepare(client, &ec);
+/// if (unsubscribe == NULL) {
+///     printf("ERROR: Unsubscribe allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_unsubscribe_retry_period Configuring "Unsubscribe" Retry Period
+/// When created, the "unsubscribe" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_unsubscribe_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_unsubscribe_set_retry_period(unsubscribe, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_unsubscribe_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_unsubscribe_retry_count Configuring "Unsubscribe" Retry Count
+/// When created, the "unsubscribe" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_unsubscribe_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_unsubscribe_set_retry_count(unsubscribe, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_unsubscribe_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_unsubscribe_config Unsubscribe Configuration
+/// To configure "unsubscribe" operation use @b cc_mqttsn_client_unsubscribe_config() function.
+/// @code
+/// CC_MqttsnUnsubscribeConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_unsubscribe_init_config(&config);
+///
+/// // Update values if needed
+/// config.m_topic = "some/topic";
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_unsubscribe_config(unsubscribe, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Topic configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// When there is a need to use a predefined topic id instead of the topic string
+/// use @ref CC_MqttsnUnsubscribeConfig::m_topicId "m_topicId" member instead
+/// of @ref CC_MqttsnUnsubscribeConfig::m_topic "m_topic".
+/// @code
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_unsubscribe_init_config(&config);
+///
+/// // Update values if needed
+/// config.m_topicId = 123;
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnUnsubscribeConfig structure.
+///
+/// The MQTT-SN specification also specifies short topics of 2 byte length. The
+/// library detects this case by analysing the string assigned to the
+/// @ref CC_MqttsnUnsubscribeConfig::m_topic "m_topic" member and uses appropriate
+/// message configuration if needed.
+///
+/// By default the library will perform the analysis of the submitted topic format and
+/// reject it if topic format is incorrect. However, for performance reasons
+/// it is possible to disable such verification when client application
+/// ensures that no invalid topics are used.
+/// @code
+/// ec = cc_mqttsn_client_set_verify_outgoing_topic_enabled(client, false);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something is wrong */
+/// }
+/// @endcode
+/// @b NOTE that the configuration is global per client and not per "unsubscribe"
+/// operation.
+///
+/// Also @b note that the same function controls the verification of the
+/// "subscribe", "subscribe" and "publish" topic formats.
+///
+/// To retrieve the current configuration use @b cc_mqttsn_client_get_verify_outgoing_topic_enabled()
+/// function.
+///
+/// @subsection doc_cc_mqttsn_client_unsubscribe_send Sending Unsubscription Request
+/// When all the necessary configurations are performed for the allocated "unsubscribe"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_unsubscribe_send() function.
+/// @code
+/// void my_unsubscribe_complete_cb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The subscription operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+/// }
+///
+/// ec = cc_mqttsn_client_unsubscribe_send(unsubscribe, &my_unsubscribe_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send unsubscribe request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "unsubscribe" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_unsubscribe_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_unsubscribe_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_unsubscribe_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// The MQTT-SN spec demands that the @b UNSUBSCRIBE transactions be issued one at
+/// a time. However, the library allows @ref doc_cc_mqttsn_client_unsubscribe_prepare "preparing"
+/// and @ref doc_cc_mqttsn_client_unsubscribe_send "sending" multiple unsubscription
+/// requests in parallel before completion of the first one. The library will
+/// retain the requested "unsubscribe" operation requests internally and will
+/// issue them one after another to comply with the specification.
+///
+/// Note that the callback function receives the "unsubscribe" operation handle as
+/// its second parameter. Although the handle is already invalid and cannot be
+/// used in any other function, it allows the application to identify the
+/// original "unsubscribe" request if multiple have been issued in parallel
+/// and use the same callback function for all of them.
+///
+/// @subsection doc_cc_mqttsn_client_unsubscribe_cancel Cancel the "Unsubscribe" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_unsubscribe_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_unsubscribe_cancel(unsubscribe);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel unsubscribe with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_unsubscribe_send() function was successfully
+/// called before the @b cc_mqttsn_client_unsubscribe_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_unsubscribe_simplify Simplifying the "Unsubscribe" Operation Preparation.
+/// In many use cases the "unsubscribe" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function that can be used:
+/// @li @b cc_mqttsn_client_unsubscribe()
+///
+/// For example:
+/// @code
+/// CC_MqttsnUnsubscribeConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_unsubscribe_init_config(&config);
+///
+/// // Update values if needed
+/// config.m_topic = "some/topic";
+///
+/// ec = cc_mqttsn_client_unsubscribe(client, &config, &my_unsubscribe_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send unsubscribe request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_unsubscribe_prepare(). It means that it's not possible to
+/// cancel the "unsubscribe" operation before its completion or identify the
+/// unsubscribe operation by the reported handle when the completion callback
+/// is invoked.
+///
+/// @section doc_cc_mqttsn_client_publish Publishing Messages
+/// To publish messages to the gateway use @ref publish "publish" operation.
+///
+/// @subsection doc_cc_mqttsn_client_publish_prepare Preparing "Publish" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnPublishHandle publish = cc_mqttsn_client_publish_prepare(client, &ec);
+/// if (publish == NULL) {
+///     printf("ERROR: Publish allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_publish_retry_period Configuring "Publish" Retry Period
+/// When created, the "publish" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_publish_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_publish_set_retry_period(publish, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_publish_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_publish_retry_count Configuring "Publish" Retry Count
+/// When created, the "publish" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_publish_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_unsubscribe_set_retry_count(publish, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_publish_get_retry_count() function.
+///
+/// The publish operation can exchange multiple messages in a single transaction. For example, when
+/// publishing @b QoS2 messages which require registration, the client will send @b REGISTER,
+/// @b PUBLISH, and @b PUBREL messages and will expect @b REGACK, @b PUBREC, and @b PUBCOMP
+/// messages as their respective acknowledgements. The configuration of the retry count
+/// is per such single message exchange. In other words when 2 retries are allowed, the client will
+/// allow 2 retries for @b REGISTER <-> @b REGACK, 2 retries for @b PUBLISH <-> @b PUBREC
+/// and 2 retries for @b PUBREL <-> @b PUBCOMP exchanges.
+///
+/// @subsection doc_cc_mqttsn_client_publish_config Configuration of "Publish" Operation
+/// @code
+/// CC_MqttsnPublishConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_publish_init_config(&config);
+///
+/// // Update the required values
+/// config.m_topic = "some/topic";
+/// config.m_data = &some_buf[0];
+/// config.m_dataLen = ...;
+/// config.m_qos = ...;
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_publish_config(publish, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnPublishConfig structure.
+///
+/// Similar to the @ref doc_cc_mqttsn_client_subscribe "subscribe" operation it
+/// is possible to use predefined topic id by setting @ref CC_MqttsnPublishConfig::m_topicId "topicId"
+/// member instead of @ref CC_MqttsnPublishConfig::m_topic "m_topic".
+/// @code
+/// // Update the required values
+/// config.m_topicId = 123;
+/// @endcode
+///
+/// By default the library will perform the analysis of the submitted topic format and
+/// reject it if topic format is incorrect. However, for performance reasons
+/// it is possible to disable such verification when client application
+/// ensures that no invalid topics are used.
+/// @code
+/// ec = cc_mqttsn_client_set_verify_outgoing_topic_enabled(client, false);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something is wrong */
+/// }
+/// @endcode
+/// To retrieve the current configuration use the @b cc_mqttsn_client_get_verify_outgoing_topic_enabled()
+/// function.
+///
+/// @b NOTE that the configuration is global per client and not per "publish"
+/// operation.
+///
+/// Also @b note that the same function controls the verification of the
+/// "subscribe", "unsubscribe", and "publish" filter / topic formats.
+///
+/// @subsection doc_cc_mqttsn_client_publish_send Sending Publish Request
+/// When all the necessary configurations are performed for the allocated "publish"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_publish_send() function.
+/// @code
+/// void my_publish_complete_cb(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The publish operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     if (info != NULL) {
+///         ... // Analyse return code
+///     }
+///     ...
+/// }
+///
+/// ec = cc_mqttsn_client_publish_send(publish, &my_publish_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send publish request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "publish" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// When QoS value is @ref CC_MqttsnQoS_AtMostOnceDelivery and no registration stage
+/// is required, there is no gateway response to wait for and the callback is invoked right away
+/// after sending the serialized data.
+///
+/// When the callback is invoked with @ref CC_MqttsnAsyncOpStatus_Complete status
+/// the "info" parameter may or may not be @b NULL. If it's @b NULL then
+/// the operation is successful. If its not @b NULL, then extra analysis of the
+/// @ref CC_MqttsnPublishInfo::m_returnCode "m_returnCode" data member value is
+/// expected to be performed by the application.
+/// @li If the return code reports
+///     @ref CC_MqttsnReturnCode_Conjestion, then it's up to the application to retry
+///     the re-send later (specification requires waiting @b T<sub>wait</sub> time before
+///     retrying). The retry is performed by issuing another @ref doc_cc_mqttsn_client_publish "publish"
+///     operation.
+/// @li If the return code reports @ref CC_MqttsnReturnCode_InvalidTopicId then
+///     it's a case when the gateway rejected used topic ID (probably pre-defined one)
+///     and the client library cannot silently perform re-registration because
+///     the topic information was missing in the @ref doc_cc_mqttsn_client_publish_config "configuration".
+///
+/// The handle returned by the @b cc_mqttsn_client_publish_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_publish_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_publish_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// The MQTT-SN spec demands that the @b PUBLISH transactions be issued one at
+/// a time. However, the library allows @ref doc_cc_mqttsn_client_publish_prepare "preparing"
+/// and @ref doc_cc_mqttsn_client_publish_send "sending" multiple publish
+/// requests in parallel before completion of the first one. The library will
+/// retain the requested "publish" operation requests internally and will
+/// issue them one after another to comply with the specification.
+///
+/// Note that the callback function receives the "publish" operation handle as
+/// its second parameter. Although the handle is already invalid and cannot be
+/// used in any other function, it allows the application to identify the
+/// original "publish" request if multiple have been issued in parallel
+/// and use the same callback function for all of them.
+///
+/// @subsection doc_cc_mqttsn_client_publish_cancel Cancel the "Publish" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_publish_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_publish_cancel(publish);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel publish with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_publish_send() function was successfully
+/// called before the @b cc_mqttsn_client_publish_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_publish_simplify Simplifying the "Publish" Operation Preparation.
+/// In many use cases the "publish" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function that can be used:
+/// @li @b cc_mqttsn_client_publish()
+///
+/// For example:
+/// @code
+/// CC_MqttsnPublishConfig config;
+///
+/// // Assign default values to the configuration
+/// cc_mqttsn_client_publish_init_config(&config);
+///
+/// // Update values
+/// config.m_topic = "some/topic";
+/// config.m_data = ...;
+/// ...
+///
+/// ec = cc_mqttsn_client_publish(client, &config, &my_publish_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send publish request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_publish_prepare(). It means that it's not possible to
+/// cancel the "publish" operation before its completion or identify the
+/// publish operation by the reported handle when the completion callback
+/// is invoked.
+///
+/// @subsection doc_cc_mqttsn_client_publish_reg_limit Limiting Stored Outgoing Topic IDs
+/// When a client attempts to publish a message with non-short topic (length of which
+/// is not equal to 2 characters), the topic needs to be registered against the
+/// gateway, and receive a numeric topic ID in response. Such topic ID is preserved
+/// for future use to avoid registration process before the required message is
+/// actually <b>PUBLISH</b>-ed. Depending on the amount of various topic strings that
+/// the end application generates there might be a need to limit the uncontrolled growth of
+/// internal storage. To do so use @b cc_mqttsn_client_set_outgoing_topic_id_storage_limit()
+/// function
+/// @code
+/// ec = cc_mqttsn_client_set_outgoing_topic_id_storage_limit(client, 10);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to limit the outgoing topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// When the set limit is reached the least recently used topic id record is dropped
+/// to free space for the newly registered one.
+///
+/// To get the current limit use @b cc_mqttsn_client_get_outgoing_topic_id_storage_limit()
+/// function.
+///
+/// To remove the previously set limit, i.e. reset it to the default pass @b 0 as
+/// the limit value to @b cc_mqttsn_client_set_outgoing_topic_id_storage_limit().
+/// @code
+/// ec = cc_mqttsn_client_set_outgoing_topic_id_storage_limit(client, 0);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to reset the limit the outgoing topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_will Updating Will
+/// To update will after the connection established use @ref will "will" operation.
+///
+/// @subsection doc_cc_mqttsn_client_will_prepare Preparing "Will" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnConnectHandle will = cc_mqttsn_client_will_prepare(client, &ec);
+/// if (will == NULL) {
+///     printf("ERROR: Will update allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_will_retry_period Configuring "Will" Retry Period
+/// When created, the "will" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_will_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_will_set_retry_period(will, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_will_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_will_retry_count Configuring "Will" Retry Count
+/// When created, the "will" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_will_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_will_set_retry_count(will, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_will_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_will_config Configuration of "Will" Operation
+/// To configure "will" operation use @b cc_mqttsn_client_will_config() function.
+/// @code
+/// CC_MqttsnWillConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_will_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_topic = "some_topic";
+/// config.m_data = ...;
+/// config.m_dataLen = ...;
+/// ...
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_will_config(will, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Will configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnWillConfig structure.
+///
+/// To remove the previously set will, just assign @b NULL (done by the
+/// invocation of the @b cc_mqttsn_client_will_init_config()) to
+/// @ref CC_MqttsnWillConfig::m_topic "m_topic" data member (also without assigning
+/// anything to @ref CC_MqttsnWillConfig::m_data "m_data").
+///
+/// @subsection doc_cc_mqttsn_client_will_send Sending Will Update Request
+/// When all the necessary configurations are performed for the allocated "will"
+/// operation it can actually be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_will_send() function.
+/// @code
+/// void my_will_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The will operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///
+///     // "info" is not NULL when status is CC_MqttsnAsyncOpStatus_Complete.
+///     assert(info != NULL);
+///     ... // Analyze info values.
+/// }
+///
+/// ec = cc_mqttsn_client_will_send(will, &my_will_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send will update request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "will" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_will_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_will_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_will_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// When the "will" operation completion callback is invoked the reported
+/// "info" is present <b>if and only if</b> the "status" is
+/// @ref CC_MqttsnAsyncOpStatus_Complete.
+///
+/// @b NOTE that only single "will" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_will_prepare() will be rejected
+/// until the "will" operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_will_cancel "cancelled".
+///
+/// The will update operation can be split into up to 2 stages:
+/// @li @b WILLTOPICUPD <-> @b WILLTOPICRESP messages exchange
+/// @li @b WILLMSGUPD <-> @b WILLMSGRESP messages exchange
+///
+/// The library monitors the currently set will configuration and may skip one or
+/// more of the stages. When the will update operation is issued, but no
+/// will update is actually needed, the callback passed to the
+/// @b cc_mqttsn_client_will_send() will be invoked right away.
+///
+/// When the callback reporting the will update status is invoked, it is responsibility
+/// of the application to check the @ref CC_MqttsnWillInfo::m_topicUpdReturnCode and
+/// @ref CC_MqttsnWillInfo::m_msgUpdReturnCode values. If the value of any of
+/// them is @ref CC_MqttsnReturnCode_ValuesLimit, then the relevant operation didn't take
+/// place. Otherwise, if the value is not @ref CC_MqttsnReturnCode_Accepted, then the
+/// relevant operation stage has failed.
+///
+/// For example if any of the return codes is reported to be @ref CC_MqttsnReturnCode_Conjestion,
+/// it means that the gateway may still be processing the previous will update stage
+/// and cannot process the next one. The application is responsible to re-issue
+/// the the same will update request a bit later. If one of the stages was successful
+/// (acknowledged by the gateway), then the appropriate stage will be skipped by the
+/// library and the failing stage is going to be repeated.
+///
+/// @subsection doc_cc_mqttsn_client_will_cancel Cancel the "Will" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_will_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_will_cancel(will);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel will with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// In case the @b cc_mqttsn_client_will_send() function was successfully
+/// called before the @b cc_mqttsn_client_will_cancel(), the operation is
+/// cancelled @b without callback invocation.
+///
+/// @subsection doc_cc_mqttsn_client_will_simplify Simplifying the "Will" Operation Preparation.
+/// In many use cases the "will" operation can be quite simple with a lot of defaults.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_will()
+///
+/// For example:
+/// @code
+/// CC_MqttsnWillConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_will_init_config(&config);
+///
+/// // Update the values if needed:
+/// config.m_topic = "some_topic";
+/// config.m_data = ...;
+/// config.m_dataLen = ...;
+///
+/// ec = cc_mqttsn_client_will(client, config, &my_will_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send will request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// Note that the wrapper function does NOT expose the handle returned by the
+/// @b cc_mqttsn_client_will_prepare(). It means that it's not possible to
+/// cancel the "will" operation before its completion.
+///
+///
+/// @section doc_cc_mqttsn_client_receive Receiving Messages
+/// Right after the successful "connect" operation, the library starts expecting
+/// the arrival of the new messages and reports it via the @ref doc_cc_mqttsn_client_callbacks_message
+/// "registered callback". <b>By default</b> the library monitors the topics the client
+/// application @ref doc_cc_mqttsn_client_subscribe "subscribed" to and does not
+/// report "rogue" messages from the gateway.
+///
+/// @b Note that only topics themselves
+/// are monitored, and not the requested maximal @b QoS values. It means that if
+/// application requested maximal @b QoS1 for a particular subscription, but the
+/// gateway sends message using the @b QoS2, the message is still going to be
+/// reported to the application.
+///
+/// However, if the gateway is trusted to do the right thing, i.e. fully comply to
+/// the specification, it is possible to enable / disable the incoming topics check using the
+/// @b cc_mqttsn_client_set_verify_incoming_msg_subscribed() for performance reasons.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_verify_incoming_msg_subscribed(client, false);
+/// @endcode
+/// To retrieve the current configuration use the @b cc_mqttsn_client_get_verify_incoming_msg_subscribed() function.
+///
+/// @b WARNING: When the incoming message subscription verification is disabled, the
+/// library does @b NOT track any new @ref doc_cc_mqttsn_client_subscribe "subscription"
+/// requests, which can result in dropping legit messages and not reporting them to the application
+/// after the subscription verification is re-enabled later.
+///
+/// Similarly, the library also <b>by default</b> verifies the incoming topic format, that it doesn't contain
+/// wildcard characters. To enable / disable such verification use the @b cc_mqttsn_client_set_verify_incoming_topic_enabled()
+/// function.
+/// @code
+/// CC_MqttsnErrorCode ec = cc_mqttsn_client_set_verify_incoming_topic_enabled(client, false);
+/// @endcode
+/// To retrieve the current configuration use the @b cc_mqttsn_client_get_verify_incoming_topic_enabled() function.
+///
+/// The
+/// @ref doc_cc_mqttsn_client_callbacks_message "message report callback" is invoked immediately on
+/// reception of the @b PUBLISH message even for QoS2 message. Just like it is shown as "Method B" in the "Figure 4.3" of the
+/// MQTT v3.1.1 specification. For QoS2 messages the packet ID is stored and the
+/// rest of the relevant QoS2 messages are exchanged in the background.
+///
+/// When a gateway attempts to publish a message with non-short topic (length of which
+/// is not equal to 2 characters), the topic needs to be registered against the
+/// client with allocated topic ID. Such topic ID is preserved
+/// for future use to avoid redundant registration process in the future.
+/// Depending on the amount of various topic strings that
+/// the end application may receive there might be a need to limit the uncontrolled growth of
+/// internal storage. To do so use @b cc_mqttsn_client_set_incoming_topic_id_storage_limit()
+/// function
+/// @code
+/// ec = cc_mqttsn_client_set_incoming_topic_id_storage_limit(client, 10);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to limit the incoming topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// When the set limit is reached the least recently used topic id record is dropped
+/// to free space for the newly registered one.
+///
+/// To get the current limit use @b cc_mqttsn_client_get_incoming_topic_id_storage_limit()
+/// function.
+///
+/// To remove the previously set limit, i.e. reset it to the default pass @b 0 as
+/// the limit value to @b cc_mqttsn_client_set_incoming_topic_id_storage_limit().
+/// @code
+/// ec = cc_mqttsn_client_set_incoming_topic_id_storage_limit(client, 0);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to reset the limit the incoming topic ids storage with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @section doc_cc_mqttsn_client_sleep Sleeping
+/// To enter the "sleep" mode use @ref sleep "sleep" operation.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_prepare Preparing "Sleep" Operation.
+/// @code
+/// CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_Success;
+/// CC_MqttsnSleepHandle sleep = cc_mqttsn_client_sleep_prepare(client, &ec);
+/// if (sleep == NULL) {
+///     printf("ERROR: Sleep allocation failed with ec=%d\n", ec);
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_sleep_retry_period Configuring "Sleep" Retry Period
+/// When created, the "sleep" operation inherits the @ref doc_cc_mqttsn_client_retry_period
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_sleep_set_retry_period() function.
+/// @code
+/// ec = cc_mqttsn_client_sleep_set_retry_period(sleep, 1000);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_sleep_get_retry_period() function.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_retry_count Configuring "Sleep" Retry Count
+/// When created, the "sleep" operation inherits the @ref doc_cc_mqttsn_client_retry_count
+/// configuration. It can be changed for the allocated operation using the
+/// @b cc_mqttsn_client_sleep_set_retry_count() function.
+/// @code
+/// ec = cc_mqttsn_client_sleep_set_retry_count(sleep, 2);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     ... /* Something went wrong */
+/// }
+/// @endcode
+/// To retrieve the configured response timeout use the @b cc_mqttsn_client_sleep_get_retry_count() function.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_config Configuration of "Sleep" Operation
+/// To configure "sleep" operation use @b cc_mqttsn_client_sleep_config() function.
+/// @code
+/// CC_MqttsnSleepConfig config;
+///
+/// // Assign default values to the "config"
+/// cc_mqttsn_client_sleep_init_config(&config);
+///
+/// // Update the values:
+/// config.m_duration = ...;
+///
+/// // Perform the configuration
+/// ec = cc_mqttsn_client_sleep_config(sleep, &config);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Sleep configuration failed with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// See also documentation of the @ref CC_MqttsnSleepConfig structure.
+///
+/// Note that configuration of the "sleep" operation specifies duration within
+/// which the client is expected to send @b PINGREQ message to check for the
+/// accumulated messages. The library will try to perform several attempts to
+/// send @b PINGREQ and receive @b PINGRESP in return. The configured
+/// @ref CC_MqttsnSleepConfig::m_duration "duration" is expected to be longer (when translated to milliseconds)
+/// than the @ref doc_cc_mqttsn_client_retry_period multiplied by the
+/// (@ref doc_cc_mqttsn_client_retry_count + 1).
+///
+/// @subsection doc_cc_mqttsn_client_sleep_send Sending Sleep Request
+/// When the necessary configuration is performed for the allocated "sleep"
+/// operation it can be sent to the gateway. To initiate sending
+/// use the @b cc_mqttsn_client_sleep_send() function.
+/// @code
+/// void my_sleep_complete_cb(void* data, CC_MqttsnAsyncOpStatus status)
+/// {
+///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
+///         printf("ERROR: The sleep operation has failed with status=%d\n", status);
+///         ... // handle error.
+///         return;
+///     }
+///     ...
+/// }
+///
+/// ec = cc_mqttsn_client_sleep_send(sleep, &my_sleep_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send sleep request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+/// The provided callback will be invoked when the "sleep" operation is complete
+/// <b> if and only if</b> the function returns @ref CC_MqttsnErrorCode_Success.
+///
+/// The handle returned by the @b cc_mqttsn_client_sleep_prepare() function
+/// can be discarded (there is no free / de-allocation) right after the
+/// @b cc_mqttsn_client_sleep_send() invocation
+/// regardless of the returned error code. However, the handle remains valid until
+/// the callback is called (in case the @ref CC_MqttsnErrorCode_Success was returned).
+/// The valid handle can be used to @ref doc_cc_mqttsn_client_sleep_cancel "cancel"
+/// the operation before the completion callback is invoked.
+///
+/// @b NOTE that only single "connect" / "disconnect" / "sleep" operation is allowed at a time, any attempt to
+/// prepare a new one via @b cc_mqttsn_client_disconnect_prepare() will be rejected
+/// until the blocking operation completion callback is invoked or
+/// the operation is @ref doc_cc_mqttsn_client_sleep_cancel "cancelled".
+///
+/// In case there are other asynchronous operations that hasn't been completed yet,
+/// their completion callback is automatically invoked with @ref CC_MqttsnAsyncOpStatus_Aborted
+/// status.
+///
+/// After the intended sleep is over the application can re-establish network connection
+/// to the gateway (if needed) and perform the @ref doc_cc_mqttsn_client_connect "connect" operation
+/// again.
+///
+/// @subsection doc_cc_mqttsn_client_sleep_cancel Cancel the "Sleep" Operation.
+/// While the handle returned by the @b cc_mqttsn_client_sleep_prepare() is still
+/// valid it is possible to cancel / discard the operation.
+/// @code
+/// ec = cc_mqttsn_client_sleep_cancel(sleep);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to cancel sleep with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_sleep_simplify Simplifying the "Sleep" Operation Preparation.
+/// In many use cases the "sleep" operation can be quite simple.
+/// To simplify the sequence of the operation preparation and handling of errors,
+/// the library provides wrapper function(s) that can be used:
+/// @li @b cc_mqttsn_client_sleep()
+///
+/// For example:
+/// @code
+/// ec = cc_mqttsn_client_sleep(client, &config, &my_sleep_complete_cb, data);
+/// if (ec != CC_MqttsnErrorCode_Success) {
+///     printf("ERROR: Failed to send sleep request with ec=%d\n", ec);
+///     ...
+/// }
+/// @endcode
+///
+/// @subsection doc_cc_mqttsn_client_sleep_recv Receiving Messages During "Sleep" State.
+/// When in "asleep" mode the client is expected to periodically send @b PINGREQ
+/// messages to inquire whether the gateway has accumulated pending messages for
+/// the client. The library keeps track of time and expects the application to
+/// still manage timers and notify the library about the elapsed ticks
+/// (see @ref doc_cc_mqttsn_client_time). The library will perform up to
+/// @ref doc_cc_mqttsn_client_retry_count + 1 attempts to get the @b PINGRESP
+/// back within the @ref doc_cc_mqttsn_client_retry_period and will report all the
+/// @ref doc_cc_mqttsn_client_receive "received messages" in between.
+///
+/// The application can also independently and explicitly to initiate check
+/// of the pending messages using @b cc_mqttsn_client_asleep_check_messages()
+/// function.
+///
+/// In case the gateway doesn't respond with @b PINGRESP to the sent @b PINGREQ
+/// the library will report @ref doc_cc_mqttsn_client_unsolicited_disconnect.
+///
+/// @section doc_cc_mqttsn_client_unsolicited_disconnect Unsolicited Gateway Disconnection
+/// When broker disconnection is detected all the incomplete asynchronous operations
+/// will be terminated with the an appropriate @ref CC_MqttsnAsyncOpStatus "status" report.
+///
+/// The unsolicited broker disconnection can happen in one of the following scenarios:
+///
+/// @subsection doc_cc_mqttsn_client_unsolicited_disconnect_keep_alive Keep Alive Timeout
+/// When there was no message from the broker for the "keep alive" timeout (configured during the @ref connect "connect"
+/// or the @ref sleep "sleep" operations) and the broker doesn't respond to the @b PINGREQ message.
+/// In such case the library responds in the following way:
+/// @li Terminates and invokes the callbacks of previously initiated but incomplete operations
+///     passing the @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected as their status report.
+/// @li Invokes the @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "disconnection report callback"
+///     registered using the @b cc_mqttsn_client_set_gw_disconnect_report_callback() function
+///     reporting @ref CC_MqttsnGatewayDisconnectReason_NoGatewayResponse as the disconnection reason.
+///
+/// @subsection doc_cc_mqttsn_client_unsolicited_disconnect_message Receiving DISCONNECT message
+/// When something goes wrong the gateway is allowed to send @b DISCONNECT message to
+/// the client at any time.
+/// In such case the library responds in the following way:
+/// @li Terminates and invokes the callbacks of all other previously initiated but incomplete operations
+///     passing the @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected as their status report.
+/// @li Invokes the @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "disconnection report callback"
+///     registered using the @b cc_mqttsn_client_set_gw_disconnect_report_callback() function
+///     reporting @ref CC_MqttsnGatewayDisconnectReason_DisconnectMsg as the disconnection reason.
+///
+/// With all said above it means that if application receives
+/// @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected status in the operation callback, then
+/// the application is expected to wait for the @ref doc_cc_mqttsn_client_callbacks_gateway_disconnect "disconnection report callback"
+/// which will follow.
+///
+/// @section doc_cc_mqttsn_client_thread_safety Thread Safety
+/// In general the library is @b NOT thread safe. To support multi-threading the application
+/// is expected to use appropriate locking mechanisms before calling relevant API functions.
+/// However, if each thread operates on a separate allocated
+/// @ref doc_cc_mqttsn_client_allocation "client", then the locking is required only
+/// for the @ref doc_cc_mqttsn_client_allocation "client allocation logic".
+///
+/// @section doc_cc_mqttsn_client_debug_build Debug Build
+/// The client library uses <a href="https://commschamp.github.io/comms_doc/page_use_prot.html#page_use_prot_error_handling">COMMS_ASSERT()</a>
+/// macro to check some internal pre- and post-conditions. It is a bug if the assertion fails, please report if
+/// encountered. By default it is like standard
+/// <a href="https://en.cppreference.com/w/cpp/error/assert">assert()</a> but allows overriding
+/// the default failure behavour, which can be more suitable for bare-metal systems. Please
+/// refer to the <a href="https://commschamp.github.io/comms_doc/page_assert.html">documentation</a> for details.

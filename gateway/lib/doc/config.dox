@@ -1,0 +1,451 @@
+/// @page cc_mqttsn_gw_config_page Config
+/// @tableofcontents
+/// The @b Config object is responsible to provide a common way to parse the 
+/// configuration file and provide a convenient interface to retrieve any 
+/// configuration values, which can later be applied to the @b Gateway and/or 
+/// @b Session objects. The format of the configuration file is described in the
+/// example config file provided with the project.
+///
+/// @section cc_mqttsn_gw_config_page_alloc Allocation
+/// When using @b C++ interface, just instantiate object of cc_mqttsn_gateway::Config
+/// class. The destruction of the object will clean up all acquired resources.
+/// @code
+/// cc_mqttsn_gateway::Config config;
+/// @endcode
+///
+/// When using @b C interface, the allocation is performed using cc_mqttsn_gw_config_alloc()
+/// @code
+/// CC_MqttsnConfigHandle handle = cc_mqttsn_gw_config_alloc();
+/// @endcode
+/// and de-allocation is performed using cc_mqttsn_gw_config_free() functions.
+/// @code
+/// cc_mqttsn_gw_config_free(handle);
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_parse Read and Parse Configuration
+/// The gateway application may have multiple configuration options. These
+/// options and their parameters may be listed in a special configuration file.
+/// The expected format of the file is as following:
+/// 
+/// - The comment starts with @b '#' symbol and ends with new line chracter.
+///     The comments are ignored when parsing the file
+/// - The configuration option contains with key and value pair. The first
+///     word (until the first white space character) in the configuration line
+///     is considered to be a key, all the rest (until the end of the line) is
+///     considered to be a value.
+///
+/// The @b Config object assigns various default values to all the configuration
+/// options when constructed. It may be requested to read and parse the configuration
+/// file. In this case, the @b Config object will update the configuration values,
+/// recorded in its internal state, with new values read from file. If some 
+/// option does not appear to be listed in the file, the default value will
+/// be reported when inquired.
+///
+/// @b C++ interface allows usage any of standard input streams:
+/// @code
+/// std::ifstream stream("/path/to/config/file");
+/// config.read(stream);
+/// @endcode
+///
+/// @b C interface also allows either reading from file:
+/// @code
+/// cc_mqttsn_gw_config_read(handle, "/path/to/config/file");
+/// @endcode
+/// or parsing the string, if configuration file contents have been read from 
+/// file into a buffer earlier:
+/// @code
+/// char buf[4096] = {0};
+/// ... /* read data from buf into buf, put \0 at the end */
+/// cc_mqttsn_gw_config_parse(handle, buf);
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_id Gateway ID
+/// Both @ref cc_mqttsn_gw_gateway_page (see @ref cc_mqttsn_gw_gateway_page_gw)
+/// and @ref cc_mqttsn_gw_session_page (see @ref cc_mqttsn_gw_session_page_id) objects require
+/// knowledge of gateway numeric ID to be able to properly report it to the
+/// client(s).
+///
+/// @b C++ interface:
+/// @code
+/// std::uint8_t id = config.gatewayId();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned char id = cc_mqttsn_gw_config_id(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Gateway ID, reported in ADVERTISE and GWINFO messages. Default value is 0.
+/// mqttsn_gw_id 0
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_advertise Advertise Period
+/// The @ref cc_mqttsn_gw_gateway_page object sends @b ADVERTISE message periodically.
+/// It needs to be configured with propere period value
+/// (see @ref cc_mqttsn_gw_gateway_page_adv_period). Use the following interface
+/// to retrieve this value from the @b Config object.
+///
+/// @b C++ interface:
+/// @code
+/// std::uint16_t period = config.advertisePeriod();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned short period = cc_mqttsn_gw_config_advertise_period(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Advertise period (in seconds), when gateway is expected to advertise its
+/// # presence by broadcasting ADVERTISE message. Default value is 900 (=15 min).
+/// # This value can be set to 0, which will indicate that gateway supports only
+/// # direct connections and doesn't advertise its presence to others.
+/// mqttsn_advertise 900
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_retry Retry Configuration
+/// The @ref cc_mqttsn_gw_session_page object can be configured with period between
+/// its retry attempts as well as number of such attempts (see
+/// @ref cc_mqttsn_gw_session_page_retry). Use the following interface of the
+/// @b Config object to retreive these values:
+///
+/// @b C++ interface:
+/// @code
+/// unsigned period = config.retryPeriod();
+/// unsigned attempts = config.retryCount();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned period = cc_mqttsn_gw_config_retry_period(handle);
+/// unsigned attempts = cc_mqttsn_gw_config_retry_count(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Time in seconds to wait before re-sending message, acknowledgement of which
+/// # needs to be received. The same time interval is used to resend messages to
+/// # both client / broker directions. Default value is 10 seconds.
+/// mqttsn_retry_period 10
+///
+/// # Number of attempts to try to re-send a message, acknowledgement of which needs
+/// # to be received. Default value is 3.
+/// mqttsn_retry_count 3
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_default_client Default Client ID
+/// Can be used in @ref cc_mqttsn_gw_session_page object configuration (see
+/// @ref cc_mqttsn_gw_session_page_default_client_id).
+///
+/// @b C++ interface:
+/// @code
+/// const std::string& clientId = config.defaultClientId();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// const char* clientId = cc_mqttsn_gw_config_default_client_id(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # In some use-cases, with interfaces such as RS-232 and/or some bluetooth links,
+/// # there is only one MQTT-SN client that can be connected to the gateway. In this
+/// # case the client may omit its client ID information in the CONNECT message
+/// # to save the amount of traffic. When forwarding the connection request to the
+/// # broker, gateway may replace empty client ID with some predefined value. Use
+/// # "mqttsn_default_client_id" option to specify such default client ID.
+/// mqttsn_default_client_id some_id
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_pub_only_keep_alive Keep Alive Period for Publish Only Clients
+/// Can be used in @ref cc_mqttsn_gw_session_page object configuration (see
+/// @ref cc_mqttsn_gw_session_page_publish_only).
+///
+/// @b C++ interface:
+/// @code
+/// std::uint16_t keepAlivePeriod = config.pubOnlyKeepAlive();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned short keepAlivePeriod = cc_mqttsn_gw_config_pub_only_keep_alive(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # The gateway supports "publish only" clients, that do not attempt to connect
+/// # to the gateway, and don't subscribe to any topics. Such clients are allowed to
+/// # publish predefined topics with QoS=-1. The gateway connects to broker on
+/// # behalf to such client. In addition to setting "mqttsn_default_client_id" value
+/// # the gateway may be configured to set "keep alive" period in which client must
+/// # send at least one message. Use "mqttsn_pub_only_keep_alive" option to set
+/// # the value keep alive period in seconds. The default value is 60.
+/// mqttsn_pub_only_keep_alive 60
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_sleeping_client_msg_limit Limit Messages for Sleeping Clients
+/// Can be used in @ref cc_mqttsn_gw_session_page object configuration (see
+/// @ref cc_mqttsn_gw_session_page_sleep).
+///
+/// @b C++ interface:
+/// @code
+/// std::size_t limit = config.sleepingClientMsgLimit();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned limit = cc_mqttsn_gw_config_sleeping_client_msg_limit(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Gateway may support sleeping clients. When client is sleeping, the broker
+/// # may publish the message to the client. The gateway is responsible to store
+/// # these messages and report them to the client, when the latter wakes up. It
+/// # is possible to set a limit on number of such stored messages using
+/// # "mqttsn_sleeping_client_msg_limit" option.
+/// mqttsn_sleeping_client_msg_limit 1024
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_predefined_topics Predefined Topics
+/// The @ref cc_mqttsn_gw_session_page object can be configured with
+/// number of predefined topics (see @ref cc_mqttsn_gw_session_page_predefined_topics).
+/// Retrieve this information from the @b Config object using the following
+/// API.
+///
+/// @b C++ interface:
+/// @code
+/// const cc_mqttsn_gateway::Config::PredefinedTopicsList& list = config.predefinedTopics();
+/// ... // iterate over the list and assign values to @b Session object(s).
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// CC_MqttsnPredefinedTopicInfo infos[100];
+/// unsigned count = cc_mqttsn_gw_config_get_predefined_topics(handle, infos, 100);
+/// unsigned idx;
+/// for (idx = 0; idx < count; idx++) {
+///     const CC_MqttsnPredefinedTopicInfo* elem = infos[idx];
+///     ... /* assign elem info to @b Session object(s).
+/// }
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # List of predefined ids can be specified using multiple
+/// # "mqttsn_predefined_topic" options. This option is expected to have 3
+/// # parameters: client ID, topic string, and topic ID. The common predefined
+/// # topic ID for all the possible clients may be specified using '*' as
+/// # client ID parameter.
+/// mqttsn_predefined_topic client1 predefined/topic/client1 1
+/// mqttsn_predefined_topic * common/predefined/topic 2
+/// @endcode
+///
+/// @b C interface also allows to retrieve number of predefined topics in case
+/// there is no known limit for the buffer upfront and it needs to be dynamically
+/// allocated:
+/// @code
+/// unsigned count = cc_mqttsn_gw_config_available_predefined_topics(handle);
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_client_auth Authentication Information
+/// The @ref cc_mqttsn_gw_session_page object can inquire authentication information
+/// when some client attempts connection (see @ref cc_mqttsn_gw_session_page_client_auth).
+/// Retrieve this information from the @b Config object using the following
+/// API.
+///
+/// @b C++ interface:
+/// @code
+/// const cc_mqttsn_gateway::Config::AuthInfosList& list = config.authInfos();
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// CC_MqttsnAuthInfo infos[100];
+/// unsigned count = cc_mqttsn_gw_config_get_auth_infos(handle, infos, 100);
+/// ... // use up to count infos.
+/// @endcode
+///
+/// @b C interface also allows to retrieve total number of authentication infos available.
+/// It can be useful in case
+/// there is no known limit for the buffer upfront and it needs to be dynamically
+/// allocated:
+/// @code
+/// unsigned count = cc_mqttsn_gw_config_available_auth_infos(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # MQTT protocol supports client authentication using username and password,
+/// # while MQTT-SN doesn't have such option. The gateway may be configured to
+/// # use some authentication information when forwarding connection requests to
+/// # the broker. Such authentication information may be specified using
+/// # "mqttsn_auth" option. This option is expected to have 3 parameters:
+/// # client ID, username string, password string. Note, that MQTT protocol
+/// # specifies password as binary data. The password string parameter will be used
+/// # as is unless it uses "\x" prefix for every binary byte. Just like with
+/// # "mqttsn_predefined_topic" option, the client ID may also be a wildcard ('*').
+/// mqttsn_auth client1 username1 ascii_password
+/// mqttsn_auth client2 username2 \x00\x01\x02\x03\x04\x05
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_topic_id_range Topic ID Allocation Range
+/// The @ref cc_mqttsn_gw_session_page object can be configured to limit its
+/// range of topic IDs, which are allocated for newly registered topic strings
+/// (see @ref cc_mqttsn_gw_session_page_topics_registration).
+/// Retrieve this information from the @b Config object using the following
+/// API.
+///
+/// @b C++ interface:
+/// @code
+/// const cc_mqttsn_gateway::Config::TopicIdsRange range = config.topicIdAllocRange();
+/// std::uint16_t minTopicId = range.first;
+/// std::uint16_t maxTopicId = range.second;
+/// @endcode
+///
+/// @b C interface:
+/// @code
+/// unsigned short minTopicId = 0;
+/// unsigned short maxTopicId = 0;
+/// cc_mqttsn_gw_config_topic_id_alloc_range(handle, &minTopicId, &maxTopicId);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # The gateway is responsible to allocate topic IDs for published topics. It is
+/// # possible to limit the range of such ID values using
+/// # "mqttsn_topic_id_alloc_range" option. It receives two parameters of minimal
+/// # and maximal numeric ID. Note, that valid IDs must be in range [1 - 65534].
+/// mqttsn_topic_id_alloc_range 1000 5000
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_broker_addr Broker Address and Port
+/// The MQTT-SN gateway application must connect and forward traffic to 
+/// MQTT broker. Below are API functions that can be used to retrieve the
+/// TCP/IP address and port of the broker.
+///
+/// @b C++ interface
+/// @code
+/// const std::string& addr = config.brokerTcpHostAddress();
+/// std::uint16_t port = config.brokerTcpHostPort();
+/// @endcode
+///
+/// @b C interface
+/// @code
+/// const char* addr = cc_mqttsn_gw_config_broker_address(handle);
+/// unsigned short port = cc_mqttsn_gw_config_broker_port(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # The connection to MQTT broker is usually performed over TCP/IP link.
+/// # Use "mqttsn_broker" option to specify the address of the broker.
+/// # The option receives two parameters: address and port. The default values are
+/// # 127.0.0.1 and 1883 respectively.
+/// mqttsn_broker 127.0.0.1 1883
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_log_file Log File
+/// The gateway application can produce various information and/or error
+/// messages. These messages can be stored in a special log file. To retrieve
+/// the relevant configuration information use the following API functions:
+///
+/// @b C++ interface
+/// @code
+/// const std::string& logFile = config.logFile();
+/// @endcode
+///
+/// @b C interface
+/// @code
+/// const char* logFile = cc_mqttsn_gw_config_log_file(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Log file is expected be either an absolute path or one of the
+/// # special values: stdout (default), stderr.
+/// mqttsn_log_file stdout
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_client_socket Client I/O Socket Type
+/// The MQTT-SN gateway application can support multiple client communication I/O
+/// socket types. Below are API function that can retrieve such information.
+///
+/// @b C++ interface
+/// @code
+/// cc_mqttsn_gateway::Config::ClientConnectionType type = config.clientConnectionType();
+/// @endcode
+///
+/// @b C interface
+/// @code
+/// CC_MqttsnClientConnectionType type = cc_mqttsn_gw_config_client_connection_type(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Use "mqttsn_client_socket" option to specify the type of the client side I/O link socket
+/// # to use. Supported values are: "udp" (default)
+/// mqttsn_client_socket udp
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_broker_socket Broker I/O Socket Type
+/// The MQTT-SN gateway application can support multiple broker communication I/O
+/// socket types. Below are API function that can retrieve such information.
+///
+/// @b C++ interface
+/// @code
+/// cc_mqttsn_gateway::Config::BrokerConnectionType type = config.brokerConnectionType();
+/// @endcode
+///
+/// @b C interface
+/// @code
+/// CC_MqttsnBrokerConnectionType type = cc_mqttsn_gw_config_broker_connection_type(handle);
+/// @endcode
+///
+/// Applicable configuration file contents:
+/// @code{.unparsed}
+/// # Use "mqttsn_broker_socket" option to specify the type of the broker side I/O link socket
+/// # to use. Supported values are: "tcp" (default)
+/// mqttsn_client_socket udp
+/// @endcode
+///
+/// @section cc_mqttsn_gw_config_page_custom Custom Configuration Values
+/// The @b Config object has a list of predefined options it recognises in the
+/// configuration file. It also accumulates all the options it doesn't recognise.
+/// As a reminder: the first word (until the first white character) in the
+/// configuration line is considered to be a key, and the rest of the string 
+/// (from the next non-white character until the end of the line) is considered
+/// to be a value. The @b Config option allows access to such values for the
+/// driving code to parse and use.
+///
+/// @b C++ interface
+/// @code
+/// const cc_mqttsn_gateway::Config::ConfigMap map = config.configMap();
+/// auto iters = map.equal_range("my_custom_config");
+/// for (auto iter = iters.first; iter != iters.second; ++iter) {
+///     const std::string& value = iter->second;
+///     ... // Parse and use the value
+/// }
+/// @endcode
+/// @b NOTE, that cc_mqttsn_gateway::Config::ConfigMap type is a @b multimap, 
+/// it allows multiple entries for the same key.
+///
+/// @b C interface: @n
+/// First, retrieve the number of available entries for the provided configuration
+/// key:
+/// @code
+/// unsigned count = cc_mqttsn_gw_config_values_count(handle, "my_custom_config");
+/// @endcode
+/// Then, access the available configuration values:
+/// @code
+/// unsigned idx;
+/// for (idx = 0; idx < count; idx++) {
+///     const char* value = cc_mqttsn_gw_config_get_value(handle, "my_custom_config", idx);
+///     ... /* Parse and use the value */
+/// }
+/// @endcode
+

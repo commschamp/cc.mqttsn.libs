@@ -1,0 +1,2363 @@
+#include "UnitTestDefaultBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestPublish : public CxxTest::TestSuite, public UnitTestDefaultBase
+{
+public:
+    void test1();
+    void test2();
+    void test3();
+    void test4();
+    void test5();
+    void test6();
+    void test7();
+    void test8();
+    void test9();
+    void test10();
+    void test11();
+    void test12();
+    void test13();
+    void test14();
+    void test15();
+    void test16();
+    void test17();
+    void test18();
+    void test19();
+    void test20();
+    void test21();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+
+    using TopicIdType = UnitTestPublishMsg::Field_flags::Field_topicIdType::ValueType;
+};
+
+void UnitTestPublish::test1()
+{
+    // Testing basic Qos0 publish with pre-defined topic ID
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnTopicId TopicId = 1U;
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const bool Retain = true;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_topic, nullptr);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_AtMostOnceDelivery);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_retain = Retain;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    TS_ASSERT(unitTestHasOutputData());
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(publishMsg, nullptr);
+    TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+    TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtMostOnceDelivery);
+    TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+    TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+    TS_ASSERT(!unitTestHasOutputData());
+
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test2()
+{
+    // Testing Qos1 publish with pre-defined topic ID
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnTopicId TopicId = 1U;
+    CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const bool Retain = true;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+    config.m_retain = Retain;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    TS_ASSERT(unitTestHasOutputData());
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(publishMsg, nullptr);
+    TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+    TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+    TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+    TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+    TS_ASSERT(!unitTestHasOutputData());
+
+    TS_ASSERT(!unitTestHasPublishCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    UnitTestPubackMsg pubackMsg;
+    pubackMsg.field_topicId().setValue(TopicId);
+    pubackMsg.field_msgId().setValue(publishMsg->field_msgId().value());
+    pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+    unitTestClientInputMessage(client, pubackMsg);
+
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(publishReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test3()
+{
+    // Testing Qos2 publish with pre-defined topic ID
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnTopicId TopicId = 1U;
+    CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const bool Retain = true;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+    config.m_retain = Retain;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+        pubMsgId = publishMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(!unitTestHasPublishCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestPubrecMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubrecMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrelMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrelMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(!unitTestHasOutputData());
+    }   
+
+    TS_ASSERT(!unitTestHasPublishCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestPubcompMsg pubcompMsg;
+        pubcompMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubcompMsg);
+    }
+
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test4()
+{
+    // Testing Qos0 publish with short topic name
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("ab");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_topic, nullptr);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_AtMostOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    TS_ASSERT(unitTestHasOutputData());
+    auto sentMsg = unitTestPopOutputMessage();
+    auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+    TS_ASSERT_DIFFERS(publishMsg, nullptr);
+    TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
+    TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), unitTestShortTopicNameToId(Topic));
+    TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+    TS_ASSERT(!unitTestHasOutputData());
+
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test5()
+{
+    // Testing Qos0 publish with topic registration
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_topic, nullptr);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_AtMostOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);    
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);  
+
+    // Repeating publish with the same topic
+    auto publish2 = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish2, nullptr);
+
+    ec = apiPublishConfig(publish2, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish2);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_handle, publish2);
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);    
+    }
+}
+
+void UnitTestPublish::test6()
+{
+    // Testing Qos0 publish with topic registration rejection
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnReturnCode RejectCode = CC_MqttsnReturnCode_Conjestion;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_topic, nullptr);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_AtMostOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);    
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId);
+        regackMsg.field_returnCode().setValue(RejectCode);
+        unitTestClientInputMessage(client, regackMsg);
+    }
+
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(publishReport->m_info.m_returnCode, RejectCode);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test7()
+{
+    // Testing Qos2 publish with topic registration and rejection
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+    const CC_MqttsnReturnCode RejectCode = CC_MqttsnReturnCode_Conjestion;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_topic, nullptr);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_AtMostOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_msgId().setValue(regMsgId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }
+    
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+        pubMsgId = publishMsg->field_msgId().value();
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_msgId().setValue(pubMsgId);
+        pubackMsg.field_returnCode().setValue(RejectCode);
+        unitTestClientInputMessage(client, pubackMsg);
+    }        
+
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(publishReport->m_info.m_returnCode, RejectCode);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test8()
+{
+    // Testing Qos1 publish with topic registration and timeouts
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_topic, nullptr);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_AtMostOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT_EQUALS(registerMsg->field_msgId().value(), regMsgId);
+        TS_ASSERT(!unitTestHasOutputData());    
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_msgId().setValue(regMsgId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }
+    
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+        pubMsgId = publishMsg->field_msgId().value();
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT_EQUALS(publishMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+    }      
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_msgId().setValue(pubMsgId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, pubackMsg);
+    }        
+
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(publishReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test9()
+{
+    // Testing Qos2 publish with topic registration and timeouts
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT_EQUALS(registerMsg->field_msgId().value(), regMsgId);
+        TS_ASSERT(!unitTestHasOutputData());    
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_msgId().setValue(regMsgId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }
+    
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+        pubMsgId = publishMsg->field_msgId().value();
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT_EQUALS(publishMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+    }      
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestPubrecMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubrecMsg);
+    }       
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrelMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrelMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(!unitTestHasOutputData());
+    }      
+
+    TS_ASSERT(unitTestHasTickReq()); 
+    unitTestTick(client); // Timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrelMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrelMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    {
+        UnitTestPubcompMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubrecMsg);
+    }       
+
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());    
+}
+
+void UnitTestPublish::test10()
+{
+    // Testing Qos0 publish with topic registration getting lost
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtMostOnceDelivery;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+    auto ec = apiPublishSetRetryCount(publish, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT_EQUALS(registerMsg->field_msgId().value(), regMsgId);
+        TS_ASSERT(!unitTestHasOutputData());    
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test11()
+{
+    // Testing Qos1, PUBLISH is not acked
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+    auto ec = apiPublishSetRetryCount(publish, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+    
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }    
+
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+        pubMsgId = publishMsg->field_msgId().value();
+    }      
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT_EQUALS(publishMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test12()
+{
+    // Testing Qos2, PUBCOMP is not received
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topic = Topic.c_str();
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+    auto ec = apiPublishSetRetryCount(publish, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    unsigned regMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+    
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }    
+
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+        pubMsgId = publishMsg->field_msgId().value();
+    }      
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT_EQUALS(publishMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(publishMsg->field_flags().field_high().getBitValue_Dup());
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+    
+    {
+        UnitTestPubrecMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubrecMsg);
+    }     
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrelMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrelMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(!unitTestHasOutputData());
+    }        
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrelMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrelMsg->field_msgId().value(), pubMsgId);
+        TS_ASSERT(!unitTestHasOutputData());
+    }     
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout    
+
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    TS_ASSERT_EQUALS(publishReport->m_handle, publish);
+    TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test13()
+{
+    // Testing PUBACK instead of PUBREC
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());        
+        pubMsgId = publishMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_msgId().setValue(pubMsgId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, pubackMsg);        
+    }
+
+    // PUBACK is expected to be ignored
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(!unitTestHasPublishCompleteReport()); 
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test14()
+{
+    // Testing PUBREC instead of PUBACK
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());        
+        pubMsgId = publishMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubrecMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubrecMsg);        
+    }
+
+    // PUBREC is expected to be ignored
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(!unitTestHasPublishCompleteReport()); 
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test15()
+{
+    // Testing PUBACK with invalid msg id
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());        
+        pubMsgId = publishMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_msgId().setValue(pubMsgId + 1U);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, pubackMsg);        
+    }
+
+    // PUBACK is expected to be ignored
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(!unitTestHasPublishCompleteReport()); 
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test16()
+{
+    // Testing PUBREC with invalid msg id
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 123;
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topicId = TopicId;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+    config.m_qos = Qos;
+
+    auto publish = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish, nullptr);
+
+    auto ec = apiPublishConfig(publish, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestPublishSend(publish);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+
+    unsigned pubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());        
+        pubMsgId = publishMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubrecMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId + 1U);
+        unitTestClientInputMessage(client, pubrecMsg);        
+    }
+
+    // PUBREC is expected to be ignored
+    TS_ASSERT(!unitTestHasOutputData());
+    TS_ASSERT(!unitTestHasPublishCompleteReport()); 
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test17()
+{
+    // Testing multiple publish ops issued one after another
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic1("abcd");
+    const UnitTestData Data1 = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos1 = CC_MqttsnQoS_AtMostOnceDelivery;
+    const CC_MqttsnTopicId TopicId1 = 1;
+
+    const std::string Topic2("ab");
+    const UnitTestData Data2 = {1, 2, 3};
+    const CC_MqttsnQoS Qos2 = CC_MqttsnQoS_AtLeastOnceDelivery;
+
+    const UnitTestData Data3 = {4, 5, 6};
+    const CC_MqttsnQoS Qos3 = CC_MqttsnQoS_ExactlyOnceDelivery;    
+    const CC_MqttsnTopicId TopicId3 = 3;
+
+    auto publish1 = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish1, nullptr);
+
+    {
+        CC_MqttsnPublishConfig config1;
+        apiPublishInitConfig(&config1);
+
+        config1.m_topic = Topic1.c_str();
+        config1.m_qos = Qos1;
+        config1.m_data = Data1.data();
+        config1.m_dataLen = static_cast<decltype(config1.m_dataLen)>(Data1.size());
+
+        auto ec = apiPublishConfig(publish1, &config1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);       
+    }
+
+    unsigned regMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic1);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId1 = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1);    
+
+    auto publish2 = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish2, nullptr);    
+
+    {
+        CC_MqttsnPublishConfig config2;
+        apiPublishInitConfig(&config2);
+
+        config2.m_topic = Topic2.c_str();
+        config2.m_qos = Qos2;
+        config2.m_data = Data2.data();
+        config2.m_dataLen = static_cast<decltype(config2.m_dataLen)>(Data2.size());
+
+        auto ec = apiPublishConfig(publish2, &config2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);       
+
+        TS_ASSERT(!unitTestHasOutputData());
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1);      
+
+    auto publish3 = apiPublishPrepare(client);
+    TS_ASSERT_DIFFERS(publish3, nullptr);  
+    {
+        CC_MqttsnPublishConfig config3;
+        apiPublishInitConfig(&config3);
+
+        config3.m_topicId = TopicId3;
+        config3.m_qos = Qos3;
+        config3.m_data = Data3.data();
+        config3.m_dataLen = static_cast<decltype(config3.m_dataLen)>(Data3.size());
+
+        auto ec = apiPublishConfig(publish3, &config3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);       
+
+        TS_ASSERT(!unitTestHasOutputData());
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId1);
+        regackMsg.field_topicId().setValue(TopicId1);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }    
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos1);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId1);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data1);
+    } 
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_handle, publish1);
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }
+
+    // Second publish is sent right away
+    unsigned pubMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos2);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), unitTestShortTopicNameToId(Topic2));
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data2);
+        TS_ASSERT(!unitTestHasOutputData());  
+
+        pubMsgId2 = publishMsg->field_msgId().value();      
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(unitTestShortTopicNameToId(Topic2));
+        pubackMsg.field_msgId().setValue(pubMsgId2);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, pubackMsg);        
+    }   
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_handle, publish2);
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }    
+
+    // Third publish is sent right away
+    unsigned pubMsgId3 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos3);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId3);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data3);
+        TS_ASSERT(!unitTestHasOutputData());  
+
+        pubMsgId3 = publishMsg->field_msgId().value();      
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubrecMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId3);
+        unitTestClientInputMessage(client, pubrecMsg);        
+    }   
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(pubrelMsg, nullptr);
+        TS_ASSERT_EQUALS(pubrelMsg->field_msgId().value(), pubMsgId3);
+        TS_ASSERT(!unitTestHasOutputData());  
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestPubcompMsg pubcompMsg;
+        pubcompMsg.field_msgId().setValue(pubMsgId3);
+        unitTestClientInputMessage(client, pubcompMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_handle, publish3);
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }       
+}
+
+void UnitTestPublish::test18()
+{
+    // Testing registration invalidation by the gateway with Qos0 messages
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtMostOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 1;    
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topic = Topic.c_str();
+    config.m_qos = Qos;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+
+    {
+        auto publish1 = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish1, nullptr);
+
+        auto ec = apiPublishConfig(publish1, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);       
+    }
+
+    unsigned regMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId1 = registerMsg->field_msgId().value();
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId1);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }     
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+    } 
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);      
+
+    {
+        auto publish2 = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish2, nullptr);
+
+        auto ec = apiPublishConfig(publish2, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);   
+    }  
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+    } 
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }  
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);          
+
+    // Invalidating topic ID from the gateway
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_InvalidTopicId);
+        unitTestClientInputMessage(client, pubackMsg);        
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);     
+
+    {
+        auto publish3 = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish3, nullptr);
+
+        auto ec = apiPublishConfig(publish3, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);   
+    }      
+
+
+    unsigned regMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId2 = registerMsg->field_msgId().value();
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId2);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }     
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+    } 
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());    
+}
+
+void UnitTestPublish::test19()
+{
+    // Testing registration invalidation by the gateway with Qos1 messages
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 1;    
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topic = Topic.c_str();
+    config.m_qos = Qos;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+
+    {
+        auto publish1 = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish1, nullptr);
+
+        auto ec = apiPublishConfig(publish1, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);       
+    }
+
+    unsigned regMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId1 = registerMsg->field_msgId().value();
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId1);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }     
+
+    unsigned pubMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+
+        pubMsgId1 = publishMsg->field_msgId().value();
+    } 
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);       
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_msgId().setValue(pubMsgId1);
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, pubackMsg);
+    }   
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }        
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);      
+
+    {
+        auto publish2 = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish2, nullptr);
+
+        auto ec = apiPublishConfig(publish2, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);   
+    }  
+
+    unsigned pubMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        pubMsgId2 = publishMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(pubMsgId2, pubMsgId1);
+    } 
+
+    // Rejecting topic id
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_msgId().setValue(pubMsgId2);
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_InvalidTopicId);
+        unitTestClientInputMessage(client, pubackMsg);
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }    
+
+    unsigned regMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId2 = registerMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(regMsgId1, regMsgId2);
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId2);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }   
+
+    unsigned pubMsgId3 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        pubMsgId3 = publishMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(pubMsgId3, pubMsgId2);
+    } 
+
+    // Invalidating topic ID from the gateway
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_msgId().setValue(pubMsgId3);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, pubackMsg);        
+    }               
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test20()
+{
+    // Testing loop of gateway accepting registration, but rejecting topic id
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    auto ec = apiSetDefaultRetryCount(client, 1U);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);       
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("abcd");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnQoS Qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    const CC_MqttsnTopicId TopicId = 1;    
+
+    CC_MqttsnPublishConfig config;
+    apiPublishInitConfig(&config);
+
+    config.m_topic = Topic.c_str();
+    config.m_qos = Qos;
+    config.m_data = Data.data();
+    config.m_dataLen = static_cast<decltype(config.m_dataLen)>(Data.size());
+
+    {
+        auto publish = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish, nullptr);
+
+        ec = apiPublishConfig(publish, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);       
+    }
+
+    unsigned regMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId1 = registerMsg->field_msgId().value();
+    }    
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId1);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }     
+
+    unsigned pubMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        pubMsgId1 = publishMsg->field_msgId().value();
+    } 
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);       
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_msgId().setValue(pubMsgId1);
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_InvalidTopicId);
+        unitTestClientInputMessage(client, pubackMsg);
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }  
+
+    unsigned regMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId2 = registerMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(regMsgId2, regMsgId1);
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);       
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId2);
+        regackMsg.field_topicId().setValue(TopicId);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }  
+
+    unsigned pubMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(publishMsg->field_flags().field_qos().value()), Qos);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        pubMsgId2 = publishMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(pubMsgId2, pubMsgId1);
+    } 
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);         
+
+    {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_msgId().setValue(pubMsgId2);
+        pubackMsg.field_topicId().setValue(TopicId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_InvalidTopicId);
+        unitTestClientInputMessage(client, pubackMsg);
+    }          
+
+    {
+        TS_ASSERT(!unitTestHasOutputData());    
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(publishReport->m_info.m_returnCode, CC_MqttsnReturnCode_InvalidTopicId);        
+        TS_ASSERT(!unitTestHasPublishCompleteReport());
+    }        
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestPublish::test21()
+{
+    // Test dropping the storage of previously registered topics
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    auto ec = apiSetOutgoingTopicIdStorageLimit(client, 1);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic1("dead");
+    const std::string Topic2("beef");
+    const UnitTestData Data = {1, 2, 3, 4, 5};
+    const CC_MqttsnTopicId TopicId1 = 123;
+    const CC_MqttsnTopicId TopicId2 = 321;
+
+    CC_MqttsnPublishConfig config1;
+    apiPublishInitConfig(&config1);
+
+    config1.m_topic = Topic1.c_str();
+    config1.m_data = Data.data();
+    config1.m_dataLen = static_cast<decltype(config1.m_dataLen)>(Data.size());
+
+    CC_MqttsnPublishConfig config2;
+    apiPublishInitConfig(&config2);
+
+    config2.m_topic = Topic2.c_str();
+    config2.m_data = Data.data();
+    config2.m_dataLen = static_cast<decltype(config2.m_dataLen)>(Data.size());    
+
+    {
+        auto publish = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish, nullptr);
+
+        ec = apiPublishConfig(publish, &config1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    unsigned regMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic1);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId1 = registerMsg->field_msgId().value();
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId1);
+        regackMsg.field_topicId().setValue(TopicId1);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId1);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);  
+
+    {
+        auto publish = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish, nullptr);
+
+        ec = apiPublishConfig(publish, &config2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }    
+
+    unsigned regMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic2);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId2 = registerMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(regMsgId2, regMsgId1);
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId2);
+        regackMsg.field_topicId().setValue(TopicId2);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }  
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId2);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }      
+
+
+    // Repeating Topic1, the previous registration is expected to be invalidated
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);     
+
+    {
+        auto publish = apiPublishPrepare(client);
+        TS_ASSERT_DIFFERS(publish, nullptr);
+
+        ec = apiPublishConfig(publish, &config1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestPublishSend(publish);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    unsigned regMsgId3 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(registerMsg, nullptr);
+        TS_ASSERT_EQUALS(registerMsg->field_topicId().value(), 0U);
+        TS_ASSERT_EQUALS(registerMsg->field_topicName().value(), Topic1);
+        TS_ASSERT(!unitTestHasOutputData());    
+
+        regMsgId3 = registerMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(regMsgId3, regMsgId2);
+        TS_ASSERT_DIFFERS(regMsgId3, regMsgId1);
+    }
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    {
+        UnitTestRegackMsg regackMsg;
+        regackMsg.field_msgId().setValue(regMsgId3);
+        regackMsg.field_topicId().setValue(TopicId1);
+        regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, regackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(publishMsg, nullptr);
+        TS_ASSERT_EQUALS(publishMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(publishMsg->field_topicId().value(), TopicId1);
+        TS_ASSERT_EQUALS(publishMsg->field_data().value(), Data);
+        TS_ASSERT(!unitTestHasOutputData());
+    }
+
+    {
+        TS_ASSERT(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }    
+}

@@ -1,0 +1,599 @@
+#include "UnitTestDefaultBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestUnsubscribe : public CxxTest::TestSuite, public UnitTestDefaultBase
+{
+public:
+    void test1();
+    void test2();
+    void test3();
+    void test4();
+    void test5();
+    void test6();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+
+    using TopicIdType = UnitTestUnsubscribeMsg::Field_flags::Field_topicIdType::ValueType;
+};
+
+void UnitTestUnsubscribe::test1()
+{
+    // Testing basic topic unsubscribe
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("#");
+
+    unitTestDoSubscribeTopic(client, Topic);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto unsubscribe = apiUnsubscribePrepare(client);
+    TS_ASSERT_DIFFERS(unsubscribe, nullptr);
+
+    CC_MqttsnUnsubscribeConfig config;
+    apiUnsubscribeInitConfig(&config);
+    config.m_topic = Topic.c_str();
+
+    auto ec = apiUnsubscribeConfig(unsubscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestUnsubscribeSend(unsubscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto unsubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT(unsubscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(unsubscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_topicName().field().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestUnsubackMsg unsubackMsg;
+        unsubackMsg.field_msgId().setValue(unsubMsgId);
+        unitTestClientInputMessage(client, unsubackMsg);
+    }
+
+    TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+    auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+    TS_ASSERT_EQUALS(unsubscribeReport->m_handle, unsubscribe);
+    TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestUnsubscribe::test2()
+{
+    // Testing basic topic id unsubscribe
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const CC_MqttsnTopicId TopicId = 123;
+
+    unitTestDoSubscribeTopicId(client, TopicId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto unsubscribe = apiUnsubscribePrepare(client);
+    TS_ASSERT_DIFFERS(unsubscribe, nullptr);
+
+    CC_MqttsnUnsubscribeConfig config;
+    apiUnsubscribeInitConfig(&config);
+    config.m_topicId = TopicId;
+
+    auto ec = apiUnsubscribeConfig(unsubscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestUnsubscribeSend(unsubscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto unsubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT(unsubscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(unsubscribeMsg->field_topicName().isMissing());
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_topicId().field().value(), TopicId);
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestUnsubackMsg unsubackMsg;
+        unsubackMsg.field_msgId().setValue(unsubMsgId);
+        unitTestClientInputMessage(client, unsubackMsg);
+    }
+
+    TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+    auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+    TS_ASSERT_EQUALS(unsubscribeReport->m_handle, unsubscribe);
+    TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestUnsubscribe::test3()
+{
+    // Testing short topic name unsubscribe
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("ab");
+
+    unitTestDoSubscribeTopic(client, Topic);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto unsubscribe = apiUnsubscribePrepare(client);
+    TS_ASSERT_DIFFERS(unsubscribe, nullptr);
+
+    CC_MqttsnUnsubscribeConfig config;
+    apiUnsubscribeInitConfig(&config);
+    config.m_topic = Topic.c_str();
+
+    auto ec = apiUnsubscribeConfig(unsubscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestUnsubscribeSend(unsubscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto unsubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
+        TS_ASSERT(unsubscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(unsubscribeMsg->field_topicName().isMissing());
+        auto topicId = unsubscribeMsg->field_topicId().field().value();
+        TS_ASSERT_EQUALS((topicId >> 8U) & 0xff, static_cast<unsigned>(Topic[0]));
+        TS_ASSERT_EQUALS(topicId & 0xff, static_cast<unsigned>(Topic[1]));
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestUnsubackMsg unsubackMsg;
+        unsubackMsg.field_msgId().setValue(unsubMsgId);
+        unitTestClientInputMessage(client, unsubackMsg);
+    }
+
+    TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+    auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+    TS_ASSERT_EQUALS(unsubscribeReport->m_handle, unsubscribe);
+    TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestUnsubscribe::test4()
+{
+    // Testing unsubscribe that hasn't been subscribed before
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic("ab");
+
+    auto unsubscribe = apiUnsubscribePrepare(client);
+    TS_ASSERT_DIFFERS(unsubscribe, nullptr);
+
+    CC_MqttsnUnsubscribeConfig config;
+    apiUnsubscribeInitConfig(&config);
+    config.m_topic = Topic.c_str();
+
+    auto ec = apiUnsubscribeConfig(unsubscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
+
+    ec = apiSetVerifyIncomingMsgSubscribed(client, false);
+    ec = apiUnsubscribeConfig(unsubscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestUnsubscribeSend(unsubscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto unsubMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
+        TS_ASSERT(unsubscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(unsubscribeMsg->field_topicName().isMissing());
+        auto topicId = unsubscribeMsg->field_topicId().field().value();
+        TS_ASSERT_EQUALS((topicId >> 8U) & 0xff, static_cast<unsigned>(Topic[0]));
+        TS_ASSERT_EQUALS(topicId & 0xff, static_cast<unsigned>(Topic[1]));
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    {
+        UnitTestUnsubackMsg unsubackMsg;
+        unsubackMsg.field_msgId().setValue(unsubMsgId);
+        unitTestClientInputMessage(client, unsubackMsg);
+    }
+
+    TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+    auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+    TS_ASSERT_EQUALS(unsubscribeReport->m_handle, unsubscribe);
+    TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestUnsubscribe::test5()
+{
+    // Testing multiple unsubscribe operations.
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic1("abcde");
+    const std::string Topic2("fg");
+    const CC_MqttsnTopicId TopicId3 = 123;
+
+    unitTestDoSubscribeTopic(client, Topic1);
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);    
+
+    unitTestDoSubscribeTopic(client, Topic2);
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);        
+
+    unitTestDoSubscribeTopicId(client, TopicId3);
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);   
+
+    {
+        auto unsubscribe1 = apiUnsubscribePrepare(client);
+        TS_ASSERT_DIFFERS(unsubscribe1, nullptr);
+
+        CC_MqttsnUnsubscribeConfig config1;
+        apiUnsubscribeInitConfig(&config1);
+
+        config1.m_topic = Topic1.c_str();
+
+        auto ec = apiUnsubscribeConfig(unsubscribe1, &config1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestUnsubscribeSend(unsubscribe1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    auto unsubMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT(unsubscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(unsubscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_topicName().field().value(), Topic1);
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId1 = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId1, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);
+
+    {
+        auto unsubscribe2 = apiUnsubscribePrepare(client);
+        TS_ASSERT_DIFFERS(unsubscribe2, nullptr);
+
+        CC_MqttsnUnsubscribeConfig config2;
+        apiUnsubscribeInitConfig(&config2);
+
+        config2.m_topic = Topic2.c_str();
+
+        auto ec = apiUnsubscribeConfig(unsubscribe2, &config2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestUnsubscribeSend(unsubscribe2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+        TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous unsubscribe is complete
+    }
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);    
+
+    {
+        auto unsubscribe3 = apiUnsubscribePrepare(client);
+        TS_ASSERT_DIFFERS(unsubscribe3, nullptr);    
+
+        CC_MqttsnUnsubscribeConfig config3;
+        apiUnsubscribeInitConfig(&config3);
+
+        config3.m_topicId = TopicId3;
+
+        auto ec = apiUnsubscribeConfig(unsubscribe3, &config3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestUnsubscribeSend(unsubscribe3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+        TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous unsubscribe is complete    
+    }
+
+    {
+        UnitTestUnsubackMsg unsubackMsg1;
+        unsubackMsg1.field_msgId().setValue(unsubMsgId1);
+        unitTestClientInputMessage(client, unsubackMsg1);
+    }
+
+    {
+        TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+        auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+        TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }
+
+    auto unsubMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
+        TS_ASSERT(unsubscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(unsubscribeMsg->field_topicName().isMissing());
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId2 = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId2, 0U);
+        TS_ASSERT_DIFFERS(unsubMsgId2, unsubMsgId1);
+    }      
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);     
+
+    {
+        UnitTestUnsubackMsg unsubackMsg2;
+        unsubackMsg2.field_msgId().setValue(unsubMsgId2);
+        unitTestClientInputMessage(client, unsubackMsg2);
+    }
+
+    {
+        TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+        auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+        TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }
+
+    auto unsubMsgId3 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(unsubscribeMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtMostOnceDelivery);
+        TS_ASSERT(unsubscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(unsubscribeMsg->field_topicName().isMissing());
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_topicId().field().value(), TopicId3);
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId3 = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId3, 0U);
+        TS_ASSERT_DIFFERS(unsubMsgId3, unsubMsgId2);
+        TS_ASSERT_DIFFERS(unsubMsgId3, unsubMsgId1);
+    }       
+
+    TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);   
+
+    {
+        UnitTestUnsubackMsg unsubackMsg;
+        unsubackMsg.field_msgId().setValue(unsubMsgId3);
+        unitTestClientInputMessage(client, unsubackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+        auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+        TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }       
+
+    TS_ASSERT(unitTestHasTickReq());       
+}
+
+void UnitTestUnsubscribe::test6()
+{
+    // Testing subscribe and unsubscribe issues one after another
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic1("abcde");
+    const std::string Topic2("a/+");
+
+    unitTestDoSubscribeTopic(client, Topic1);
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);    
+
+    {
+        auto subscribe = apiSubscribePrepare(client);
+        TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+        CC_MqttsnSubscribeConfig config;
+        apiSubscribeInitConfig(&config);
+        TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+        config.m_topic = Topic2.c_str();
+
+        auto ec = apiSubscribeConfig(subscribe, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestSubscribeSend(subscribe);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    auto subMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic2);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId1 = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId1, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);    
+
+    {
+        auto unsubscribe = apiUnsubscribePrepare(client);
+        TS_ASSERT_DIFFERS(unsubscribe, nullptr);
+
+        CC_MqttsnUnsubscribeConfig config;
+        apiUnsubscribeInitConfig(&config);
+
+        config.m_topic = Topic1.c_str();
+
+        auto ec = apiUnsubscribeConfig(unsubscribe, &config);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestUnsubscribeSend(unsubscribe);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+        TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous subscribe is complete
+    }
+
+    const auto AckQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId1);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }  
+
+    {
+        TS_ASSERT(unitTestHasSubscribeCompleteReport());
+        auto subscribeReport = unitTestSubscribeCompleteReport();
+        TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
+    }    
+
+    auto unsubMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* unsubscribeMsg = dynamic_cast<UnitTestUnsubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(unsubscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT(unsubscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(unsubscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(unsubscribeMsg->field_topicName().field().value(), Topic1);
+        TS_ASSERT(!unitTestHasOutputData());
+        unsubMsgId1 = unsubscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(unsubMsgId1, 0U);
+        TS_ASSERT_DIFFERS(unsubMsgId1, subMsgId1);
+    }    
+
+    {
+        UnitTestUnsubackMsg unsubackMsg;
+        unsubackMsg.field_msgId().setValue(unsubMsgId1);
+        unitTestClientInputMessage(client, unsubackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
+        auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
+        TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    }          
+}
+

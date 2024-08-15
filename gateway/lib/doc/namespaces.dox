@@ -1,0 +1,4 @@
+/// @namespace cc_mqttsn_gateway
+/// @brief Main namespace for all classes / functions of the gateway library.
+
+

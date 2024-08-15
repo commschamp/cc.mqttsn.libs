@@ -1,0 +1,644 @@
+#include "UnitTestDefaultBase.h"
+#include "UnitTestProtocolDefs.h"
+
+#include "comms/units.h"
+
+#include <cxxtest/TestSuite.h>
+
+class UnitTestSubscribe : public CxxTest::TestSuite, public UnitTestDefaultBase
+{
+public:
+    void test1();
+    void test2();
+    void test3();
+    void test4();
+    void test5();
+    void test6();
+    void test7();
+
+private:
+    virtual void setUp() override
+    {
+        unitTestSetUp();
+    }
+
+    virtual void tearDown() override
+    {
+        unitTestTearDown();
+    }    
+
+    using TopicIdType = UnitTestSubscribeMsg::Field_flags::Field_topicIdType::ValueType;
+};
+
+void UnitTestSubscribe::test1()
+{
+    // Testing basic subscribe
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto subscribe = apiSubscribePrepare(client);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    const std::string Topic("#");
+
+    CC_MqttsnSubscribeConfig config;
+    apiSubscribeInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+
+    auto ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestSubscribeSend(subscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto subMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), config.m_qos);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    const auto AckQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    TS_ASSERT(unitTestHasSubscribeCompleteReport());
+    auto subscribeReport = unitTestSubscribeCompleteReport();
+    TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestSubscribe::test2()
+{
+    // Testing basic short topic name subscribe
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto subscribe = apiSubscribePrepare(client);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    const std::string Topic("ab");
+
+    CC_MqttsnSubscribeConfig config;
+    apiSubscribeInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+
+    auto ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestSubscribeSend(subscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto subMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), config.m_qos);
+        TS_ASSERT(subscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(subscribeMsg->field_topicName().isMissing());
+
+        auto topicId = subscribeMsg->field_topicId().field().value();
+        TS_ASSERT_EQUALS((topicId >> 8U) & 0xff, static_cast<unsigned>(Topic[0]));
+        TS_ASSERT_EQUALS(topicId & 0xff, static_cast<unsigned>(Topic[1]));
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    const unsigned AckTopicId = 16;
+    const auto AckQos = CC_MqttsnQoS_AtMostOnceDelivery;
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_topicId().setValue(AckTopicId);
+        subackMsg.field_msgId().setValue(subMsgId);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    TS_ASSERT(unitTestHasSubscribeCompleteReport());
+    auto subscribeReport = unitTestSubscribeCompleteReport();
+    TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestSubscribe::test3()
+{
+    // Testing pre-defined topic ID subscribe
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto subscribe = apiSubscribePrepare(client);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    const CC_MqttsnTopicId TopicId = 100;
+
+    CC_MqttsnSubscribeConfig config;
+    apiSubscribeInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    config.m_topicId = TopicId;
+
+    auto ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestSubscribeSend(subscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto subMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::PredefinedTopicId);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), config.m_qos);
+        TS_ASSERT(subscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(subscribeMsg->field_topicName().isMissing());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicId().field().value(), TopicId);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);
+
+    const auto AckQos = CC_MqttsnQoS_ExactlyOnceDelivery;
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_topicId().setValue(TopicId);
+        subackMsg.field_msgId().setValue(subMsgId);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    TS_ASSERT(unitTestHasSubscribeCompleteReport());
+    auto subscribeReport = unitTestSubscribeCompleteReport();
+    TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestSubscribe::test4()
+{
+    // Testing subscribe with lost packet
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto subscribe = apiSubscribePrepare(client);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    const std::string Topic("#");
+
+    CC_MqttsnSubscribeConfig config;
+    apiSubscribeInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+
+    auto ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestSubscribeSend(subscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto subMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), config.m_qos);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), config.m_qos);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+        TS_ASSERT_EQUALS(subscribeMsg->field_msgId().value(), subMsgId);
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 100);         
+
+    const auto AckQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    TS_ASSERT(unitTestHasSubscribeCompleteReport());
+    auto subscribeReport = unitTestSubscribeCompleteReport();
+    TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+    TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestSubscribe::test5()
+{
+    // Testing subscribe with timeout
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    auto ec = apiSetDefaultRetryCount(client, 1U);
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto subscribe = apiSubscribePrepare(client);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    const std::string Topic("#");
+
+    CC_MqttsnSubscribeConfig config;
+    apiSubscribeInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    config.m_topic = Topic.c_str();
+
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    ec = unitTestSubscribeSend(subscribe);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+    auto subMsgId = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), config.m_qos);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout
+
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), config.m_qos);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic);
+        TS_ASSERT(!unitTestHasOutputData());
+        TS_ASSERT_EQUALS(subscribeMsg->field_msgId().value(), subMsgId);
+    }   
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client); // timeout   
+
+    TS_ASSERT(unitTestHasSubscribeCompleteReport());
+    auto subscribeReport = unitTestSubscribeCompleteReport();
+    TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestSubscribe::test6()
+{
+    // Testing multiple subscribes 
+
+    auto clientPtr = unitTestAllocClient(true);
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    const std::string Topic1("a/+");
+    const std::string Topic2("cd");
+    const std::string Topic3("e/+");    
+
+    {
+        auto subscribe1 = apiSubscribePrepare(client);
+        TS_ASSERT_DIFFERS(subscribe1, nullptr);
+
+        CC_MqttsnSubscribeConfig config1;
+        apiSubscribeInitConfig(&config1);
+        TS_ASSERT_EQUALS(config1.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+        config1.m_topic = Topic1.c_str();
+        config1.m_qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+
+        auto ec = apiSubscribeConfig(subscribe1, &config1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestSubscribeSend(subscribe1);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+    }
+
+    auto subMsgId1 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtLeastOnceDelivery);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic1);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId1 = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId1, 0U);
+    }   
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);
+
+    {
+        auto subscribe2 = apiSubscribePrepare(client);
+        TS_ASSERT_DIFFERS(subscribe2, nullptr);
+
+        CC_MqttsnSubscribeConfig config2;
+        apiSubscribeInitConfig(&config2);
+        TS_ASSERT_EQUALS(config2.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+        config2.m_topic = Topic2.c_str();
+        config2.m_qos = CC_MqttsnQoS_AtLeastOnceDelivery;
+
+        auto ec = apiSubscribeConfig(subscribe2, &config2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestSubscribeSend(subscribe2);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+        TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous subscribe is complete
+    }
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);    
+
+    {
+        auto subscribe3 = apiSubscribePrepare(client);
+        TS_ASSERT_DIFFERS(subscribe3, nullptr);    
+
+        CC_MqttsnSubscribeConfig config3;
+        apiSubscribeInitConfig(&config3);
+        TS_ASSERT_EQUALS(config3.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+        config3.m_topic = Topic3.c_str();
+        config3.m_qos = CC_MqttsnQoS_AtMostOnceDelivery;
+
+        auto ec = apiSubscribeConfig(subscribe3, &config3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+
+        ec = unitTestSubscribeSend(subscribe3);
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+        TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous subscribe is complete    
+    }
+
+    const auto AckQos = CC_MqttsnQoS_AtLeastOnceDelivery;
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId1);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasSubscribeCompleteReport());
+        auto subscribeReport = unitTestSubscribeCompleteReport();
+        TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
+    }
+
+    auto subMsgId2 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::ShortTopicName);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtLeastOnceDelivery);
+        TS_ASSERT(subscribeMsg->field_topicId().doesExist());
+        TS_ASSERT(subscribeMsg->field_topicName().isMissing());
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId2 = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId2, 0U);
+        TS_ASSERT_DIFFERS(subMsgId2, subMsgId1);
+    }      
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);     
+
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId2);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasSubscribeCompleteReport());
+        auto subscribeReport = unitTestSubscribeCompleteReport();
+        TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
+    }
+
+    auto subMsgId3 = 0U;
+    {
+        TS_ASSERT(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
+        TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
+        TS_ASSERT_EQUALS(subscribeMsg->field_flags().field_topicIdType().value(), TopicIdType::Normal);
+        TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(subscribeMsg->field_flags().field_qos().value()), CC_MqttsnQoS_AtMostOnceDelivery);
+        TS_ASSERT(subscribeMsg->field_topicId().isMissing());
+        TS_ASSERT(subscribeMsg->field_topicName().doesExist());
+        TS_ASSERT_EQUALS(subscribeMsg->field_topicName().field().value(), Topic3);
+        TS_ASSERT(!unitTestHasOutputData());
+        subMsgId3 = subscribeMsg->field_msgId().value();
+        TS_ASSERT_DIFFERS(subMsgId3, 0U);
+        TS_ASSERT_DIFFERS(subMsgId3, subMsgId2);
+        TS_ASSERT_DIFFERS(subMsgId3, subMsgId1);
+    }       
+
+    TS_ASSERT(!unitTestHasSubscribeCompleteReport());
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 10);   
+
+    {
+        UnitTestSubackMsg subackMsg;
+        subackMsg.field_flags().field_qos().setValue(AckQos);
+        subackMsg.field_msgId().setValue(subMsgId3);
+        subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, subackMsg);
+    }
+
+    {
+        TS_ASSERT(unitTestHasSubscribeCompleteReport());
+        auto subscribeReport = unitTestSubscribeCompleteReport();
+        TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
+    }       
+
+    TS_ASSERT(unitTestHasTickReq());
+}
+
+void UnitTestSubscribe::test7()
+{
+    // Testing invalid topics subscribe
+
+    auto clientPtr = unitTestAllocClient();
+    auto* client = clientPtr.get();
+
+    const std::string ClientId("bla");
+    unitTestDoConnectBasic(client, ClientId);
+
+    TS_ASSERT(unitTestHasTickReq());
+    unitTestTick(client, 1000);
+
+    auto subscribe = apiSubscribePrepare(client);
+    TS_ASSERT_DIFFERS(subscribe, nullptr);
+
+    CC_MqttsnSubscribeConfig config;
+    apiSubscribeInitConfig(&config);
+    TS_ASSERT_EQUALS(config.m_qos, CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    config.m_topic = "++";
+    auto ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
+
+    config.m_topic = "#+";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);    
+
+    config.m_topic = "#/hello";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "hello+/bla";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "#hello";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "+hello";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);     
+
+    config.m_topic = "";
+    ec = apiSubscribeConfig(subscribe, &config);
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);  
+
+    ec = apiSubscribeCancel(subscribe);    
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+}

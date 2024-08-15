@@ -1,0 +1,74 @@
+#pragma once
+
+#include "cc_mqttsn/options/ClientDefaultOptions.h"
+#include "cc_mqttsn/Version.h"
+
+#include <tuple>
+
+namespace cc_mqttsn_client
+{
+
+class ProtocolOptions : public cc_mqttsn::options::ClientDefaultOptions
+{
+    using BaseImpl = cc_mqttsn::options::ClientDefaultOptions;
+
+public:
+    struct field : public BaseImpl::field
+    {
+        using ClientId =
+            std::tuple<
+                ##FIELD_CLIENT_ID##,
+                BaseImpl::field::ClientId
+            >;
+
+        using Data =
+            std::tuple<
+                ##FIELD_DATA##,
+                BaseImpl::field::Data
+            >; 
+
+        using GwAdd =
+            std::tuple<
+                ##FIELD_GW_ADD##,
+                BaseImpl::field::GwAdd
+            >;
+
+        using TopicName =
+            std::tuple<
+                ##FIELD_TOPIC##,
+                BaseImpl::field::TopicName
+            >; 
+
+        using WillMsg =
+            std::tuple<
+                ##FIELD_WILL_DATA##,
+                BaseImpl::field::WillMsg
+            >; 
+
+        using WillTopic =
+            std::tuple<
+                ##FIELD_WILL_TOPIC##,
+                BaseImpl::field::WillTopic
+            >; 
+    }; // struct field
+
+    struct frame : public BaseImpl::frame
+    {
+        struct FrameLayers : public BaseImpl::frame::FrameLayers
+        {
+            using Data =
+                std::tuple<
+                    ##MAX_PACKET_SIZE##,
+                    BaseImpl::frame::FrameLayers::Data
+                >;
+
+            using Id =
+                std::tuple<
+                    ##MSG_ALLOC_OPT##,
+                    BaseImpl::frame::FrameLayers::Id
+                >;
+        }; // struct FrameLayers
+    }; // struct frame    
+};
+
+} // namespace cc_mqttsn_client
