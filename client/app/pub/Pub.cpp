@@ -8,6 +8,7 @@
 #include "Pub.h"
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <iterator>
 #include <type_traits>
@@ -27,7 +28,8 @@ Pub* asThis(void* data)
     
 
 Pub::Pub(boost::asio::io_context& io, int& result) : 
-    Base(io, result)
+    Base(io, result),
+    m_timer(io)
 {
     opts().addCommon();
     opts().addNetwork();
@@ -50,10 +52,21 @@ bool Pub::startImpl()
         return false;        
     }
 
+    m_remCount = opts().pubCount();
+    if (m_remCount == 0U) {
+        logError() << "Amount of requested publishes needs to be at least 1." << std::endl;
+        return false;          
+    }
+
     return doConnect();
 }
 
 void Pub::connectCompleteImpl()
+{
+    doPublish();
+}
+
+void Pub::doPublish()
 {
     auto config = CC_MqttsnPublishConfig();
     cc_mqttsn_client_publish_init_config(&config);
@@ -77,7 +90,17 @@ void Pub::connectCompleteImpl()
     }
 
     logError() << "Failed to initiate publish operation with error code: " << toString(ec) << std::endl;
-    doTerminate(); 
+    doTerminate();
+}
+
+void Pub::doCompleteInternal()
+{
+    if (opts().pubNoDisconnect()) {
+        doComplete();
+        return;
+    }
+
+    doDisconnect();
 }
 
 void Pub::publishCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info)
@@ -98,12 +121,32 @@ void Pub::publishCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_Mqttsn
         logInfo() << "Publish complete" << std::endl;
     }
 
-    if (opts().pubNoDisconnect()) {
-        doComplete();
+    assert(m_remCount > 0U);
+    --m_remCount;
+
+    if (m_remCount == 0U) {
+        doCompleteInternal();
         return;
     }
 
-    doDisconnect();
+    auto delay = opts().pubDelay();
+    if (delay == 0U) {
+        doPublish();
+        return;
+    }
+
+    m_timer.expires_after(std::chrono::milliseconds(delay));
+    m_timer.async_wait(
+        [this](const boost::system::error_code& ec)
+        {
+            if (ec == boost::asio::error::operation_aborted) {
+                return;
+            }
+
+            assert(!ec);
+            doPublish();
+        }
+    );
 }
 
 void Pub::publishCompleteCb(

@@ -70,7 +70,9 @@ public:
     std::string pubMessage() const;
     unsigned pubQos() const; 
     bool pubRetain() const; 
-    bool pubNoDisconnect() const;    
+    bool pubNoDisconnect() const;   
+    unsigned pubCount() const; 
+    unsigned pubDelay() const;
 
     // Subscribe Options
     std::vector<std::string> subTopics() const;

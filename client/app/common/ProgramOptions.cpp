@@ -92,6 +92,8 @@ void ProgramOptions::addPublish()
         ("pub-qos,q", po::value<unsigned>()->default_value(0U), "Publish QoS value")
         ("pub-retain", "Publish retained message")
         ("pub-no-disconnect", "Do not gracefuly disconnect when publish is complete")
+        ("pub-count", po::value<unsigned>()->default_value(1U), "Number of publishes to perform")
+        ("pub-delay", po::value<unsigned>()->default_value(100U), "Delay in ms between publishes")
     ;    
 
     m_desc.add(opts);
@@ -228,6 +230,16 @@ bool ProgramOptions::pubRetain() const
 bool ProgramOptions::pubNoDisconnect() const
 {
     return m_vm.count("pub-no-disconnect") > 0U;
+}
+
+unsigned ProgramOptions::pubCount() const
+{
+    return m_vm["pub-count"].as<unsigned>();
+}
+
+unsigned ProgramOptions::pubDelay() const
+{
+    return m_vm["pub-delay"].as<unsigned>();
 }
 
 std::vector<std::string> ProgramOptions::subTopics() const
