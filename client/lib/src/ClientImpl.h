@@ -173,6 +173,8 @@ public:
     void allowNextPrepare();
     void storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
     bool removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);    
+    CC_MqttsnTopicId findInRegTopicId(const char* topic);
+    void storeOutRegTopic(const char* topic, CC_MqttsnTopicId topicId);
 
     TimerMgr& timerMgr()
     {

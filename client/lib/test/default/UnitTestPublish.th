@@ -2361,3 +2361,5 @@ void UnitTestPublish::test21()
         TS_ASSERT_EQUALS(publishReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
     }    
 }
+
+// TODO: publish on the same topic after reception of the message, test reuse of the topic ID

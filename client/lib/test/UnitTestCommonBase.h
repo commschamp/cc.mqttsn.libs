@@ -319,6 +319,12 @@ public:
     using UnitTestPublishCompleteReportPtr = std::unique_ptr<UnitTestPublishCompleteReport>;
     using UnitTestPublishCompleteReportList = std::list<UnitTestPublishCompleteReportPtr>;    
 
+    struct UnitTestPublishResponseConfig
+    {
+        CC_MqttsnTopicId m_regTopicId = 0U;
+        CC_MqttsnReturnCode m_pubackRetCode = CC_MqttsnReturnCode_Accepted;
+    };       
+
     struct UnitTestWillInfo
     {
         CC_MqttsnReturnCode m_topicUpdReturnCode = CC_MqttsnReturnCode_ValuesLimit;
@@ -434,6 +440,7 @@ public:
     bool unitTestHasPublishCompleteReport() const;
     UnitTestPublishCompleteReportPtr unitTestPublishCompleteReport(bool mustExist = true);
 
+    void unitTestDoPublish(CC_MqttsnClient* client, const CC_MqttsnPublishConfig* config, const UnitTestPublishResponseConfig* respConfig = nullptr);
     CC_MqttsnErrorCode unitTestPublishSend(CC_MqttsnPublishHandle publish);    
 
     bool unitTestHasWillCompleteReport() const;
