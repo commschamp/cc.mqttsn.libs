@@ -26,7 +26,8 @@ if ("${CMAKE_CXX_STANDARD}" STREQUAL "")
     set(CMAKE_CXX_STANDARD 17)
 endif ()
 
-if ("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "3.30")
+if (("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "3.30") AND
+    (NOT DEFINED CMAKE_POLICY_DEFAULT_CMP0167))
     # Find boost cmake configuration from the boost installation
     cmake_policy(SET CMP0167 NEW)
 endif ()
