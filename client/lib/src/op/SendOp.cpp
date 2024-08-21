@@ -129,7 +129,7 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
 
         auto inTopicId = client().findInRegTopicId(config->m_topic);
         if (inTopicId != 0U) {
-            m_publishMsg.field_topicId().setValue(outIter->m_topicId);
+            m_publishMsg.field_topicId().setValue(inTopicId);
             m_stage = Stage_Publish;
             client().storeOutRegTopic(config->m_topic, inTopicId);
             break;
