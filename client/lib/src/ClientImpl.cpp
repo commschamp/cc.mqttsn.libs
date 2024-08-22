@@ -1554,7 +1554,8 @@ CC_MqttsnErrorCode ClientImpl::initInternal()
     auto guard = apiEnter();
 
     if ((m_sendOutputDataCb == nullptr) ||
-        (m_messageReceivedReportCb == nullptr)) {
+        (m_messageReceivedReportCb == nullptr) ||
+        (m_gatewayDisconnectedReportCb == nullptr)) {
         errorLog("Hasn't set all must have callbacks");
         return CC_MqttsnErrorCode_NotIntitialized;
     }

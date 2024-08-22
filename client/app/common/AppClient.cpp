@@ -46,6 +46,26 @@ std::string toString(CC_MqttsnQoS val)
     return Map[idx] + " (" + std::to_string(val) + ')';
 }
 
+
+std::string toStringInternal(CC_MqttsnGatewayDisconnectReason val)
+{
+    static const std::string Map[] = {
+        /* CC_MqttsnGatewayDisconnectReason_DisconnectMsg */ "DISCONNECT Message",
+        /* CC_MqttsnGatewayDisconnectReason_NoGatewayResponse */ "No Response",
+    };
+
+    static constexpr std::size_t MapSize = std::extent<decltype(Map)>::value;
+    static_assert(MapSize == CC_MqttsnGatewayDisconnectReason_ValuesLimit);
+
+    auto idx = static_cast<unsigned>(val);
+    if (MapSize <= idx) {
+        assert(false); // Should not happen
+        return std::to_string(val);
+    }
+
+    return Map[idx] + " (" + std::to_string(val) + ')';
+}
+
 void printQos(const char* prefix, CC_MqttsnQoS val)
 {
     std::cout << "\t" << prefix << ": " << toString(val) << '\n';
@@ -173,6 +193,7 @@ AppClient::AppClient(boost::asio::io_context& io, int& result) :
 {
     assert(m_client);
     ::cc_mqttsn_client_set_send_output_data_callback(m_client.get(), &AppClient::sendDataCb, this);
+    ::cc_mqttsn_client_set_gw_disconnect_report_callback(m_client.get(), &AppClient::gwDisconnectedReportCb, this);
     ::cc_mqttsn_client_set_message_report_callback(m_client.get(), &AppClient::messageReceivedCb, this);
     ::cc_mqttsn_client_set_error_log_callback(m_client.get(), &AppClient::logMessageCb, this);
     ::cc_mqttsn_client_set_next_tick_program_callback(m_client.get(), &AppClient::nextTickProgramCb, this);
@@ -278,6 +299,11 @@ void AppClient::disconnectCompleteImpl()
     doComplete();
 }
 
+void AppClient::gwDisconnectedReportImpl()
+{
+    doTerminate();
+}
+
 std::vector<std::uint8_t> AppClient::parseBinaryData(const std::string& val)
 {
     std::vector<std::uint8_t> result;
@@ -363,7 +389,6 @@ std::string AppClient::toString(CC_MqttsnAsyncOpStatus val)
 
     return Map[idx] + " (" + std::to_string(val) + ')';
 }
-
 
 std::string AppClient::toString(CC_MqttsnReturnCode val)
 {
@@ -492,6 +517,12 @@ void AppClient::disconnectCompleteInternal(CC_MqttsnAsyncOpStatus status)
     disconnectCompleteImpl();
 }
 
+void AppClient::gwDisconnectedReportInternal(CC_MqttsnGatewayDisconnectReason reason)
+{
+    logInfo() << "Gateway disconnected with reason: " << toStringInternal(reason) << std::endl;
+    gwDisconnectedReportImpl();
+}
+
 void AppClient::sendDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
 {
     asThis(data)->sendDataInternal(buf, bufLen, broadcastRadius);
@@ -519,12 +550,17 @@ unsigned AppClient::cancelNextTickWaitCb(void* data)
 
 void AppClient::connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
 {
-    return asThis(data)->connectCompleteInternal(status, info);
+    asThis(data)->connectCompleteInternal(status, info);
 }
 
 void AppClient::disconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status)
 {
-    return asThis(data)->disconnectCompleteInternal(status);
+    asThis(data)->disconnectCompleteInternal(status);
+}
+
+void AppClient::gwDisconnectedReportCb(void* data, CC_MqttsnGatewayDisconnectReason reason)
+{
+    asThis(data)->gwDisconnectedReportInternal(reason);
 }
 
 } // namespace cc_mqttsn_client_app
