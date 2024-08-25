@@ -22,11 +22,7 @@ class GatewayIoClientSocket_Udp final : public GatewayIoClientSocket
 public:
     using Endpoint = boost::asio::ip::udp::endpoint;
 
-    explicit GatewayIoClientSocket_Udp(boost::asio::io_context& io, GatewayLogger& logger, const Endpoint& endpoint) : 
-        Base(io, logger),
-        m_endpoint(endpoint)
-    {
-    };
+    explicit GatewayIoClientSocket_Udp(boost::asio::io_context& io, GatewayLogger& loggerParam, const Endpoint& endpoint);
 
     virtual ~GatewayIoClientSocket_Udp();
 

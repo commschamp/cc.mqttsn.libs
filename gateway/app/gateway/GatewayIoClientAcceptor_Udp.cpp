@@ -179,6 +179,7 @@ void GatewayIoClientAcceptor_Udp::doAccept()
                     }
 
                     // Received previous broadcast, ignoring...
+                    logger().info() << "Ignoring received recently broadcast gateway data, not valid input" << std::endl;
                     m_lastBroadcastData.clear();
                     doAccept();
                     return;

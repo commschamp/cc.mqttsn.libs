@@ -44,13 +44,27 @@ public:
         const cc_mqttsn_gateway::Config& config, 
         cc_mqttsn_gateway::Session* session);        
 
+    ~GatewaySession();
+
     bool start();
 
-    using TermpReqCb = std::function<void ()>;
+    const std::string& clientId() const
+    {
+        return m_clientId;
+    }
+
+    using TermReqCb = std::function<void ()>;
     template <typename TFunc>
-    void setTermpReqCb(TFunc&& func)
+    void setTermReqCb(TFunc&& func)
     {
         m_termReqCb = std::forward<TFunc>(func);
+    }
+
+    using ClientIdReportCb = std::function<void (const std::string& clientId)>;
+    template <typename TFunc>
+    void setClientIdReportCb(TFunc&& func)
+    {
+        m_clientIdReportCb = std::forward<TFunc>(func);
     }
 
 private:
@@ -70,11 +84,14 @@ private:
     GatewayLogger& m_logger;
     const cc_mqttsn_gateway::Config& m_config;
     Timer m_timer;
+    Timer m_reconnectTimer;
     GatewayIoClientSocketPtr m_clientSocket;
     GatewayIoBrokerSocketPtr m_brokerSocket;
     std::unique_ptr<cc_mqttsn_gateway::Session> m_sessionPtr;
     cc_mqttsn_gateway::Session* m_session = nullptr;
-    TermpReqCb m_termReqCb;
+    TermReqCb m_termReqCb;
+    ClientIdReportCb m_clientIdReportCb;
+    std::string m_clientId;
     DataBuf m_brokerData;
     Timestamp m_tickReqTs;
     std::list<Ptr> m_fwdEncSessions;

@@ -27,6 +27,7 @@ GatewaySession::GatewaySession(
     m_logger(logger),
     m_config(config),
     m_timer(io),
+    m_reconnectTimer(io),
     m_clientSocket(std::move(clientSocket)),
     m_sessionPtr(std::make_unique<cc_mqttsn_gateway::Session>()),
     m_session(m_sessionPtr.get())
@@ -42,8 +43,14 @@ GatewaySession::GatewaySession(
     m_logger(logger),
     m_config(config),
     m_timer(io),
+    m_reconnectTimer(io),
     m_session(session)
 {
+}
+
+GatewaySession::~GatewaySession()
+{
+    m_logger.info() << "Terminating session for client: " << m_clientId << std::endl;
 }
 
 bool GatewaySession::start()  
@@ -125,6 +132,7 @@ void GatewaySession::doBrokerConnect()
         [this]()
         {
             m_session->setBrokerConnected(true);
+            m_brokerConnected = true;
         }
     );        
 
@@ -135,6 +143,7 @@ void GatewaySession::doBrokerConnect()
                 m_session->setBrokerConnected(false);
             }
             
+            m_brokerConnected = false;
             doBrokerReconnect();
         });    
 
@@ -147,10 +156,14 @@ void GatewaySession::doBrokerConnect()
 
 void GatewaySession::doBrokerReconnect()
 {
-    boost::asio::post(
-        m_io,
-        [this]()
+    m_reconnectTimer.expires_after(std::chrono::milliseconds(100));
+    m_reconnectTimer.async_wait(
+        [this](const boost::system::error_code& ec)
         {
+            if (ec == boost::asio::error::operation_aborted) {
+                return;
+            }
+
             doBrokerConnect();
         });
 }
@@ -212,6 +225,12 @@ bool GatewaySession::startSession()
     m_session->setClientConnectedReportCb(
         [this](const std::string& clientId)
         {
+            m_logger.info() << "Connected client: " << clientId << std::endl;
+
+            m_clientId = clientId;
+            assert(m_clientIdReportCb);
+            m_clientIdReportCb(clientId);
+
             auto& predefinedTopics = m_config.predefinedTopics();
 
             auto applyForClient = 
