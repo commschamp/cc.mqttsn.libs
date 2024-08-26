@@ -55,7 +55,7 @@ void updateEc(CC_MqttsnErrorCode* ec, CC_MqttsnErrorCode val)
     }
 }
 
-InRegTopicsMap::iterator findInRegTopicInfo(CC_MqttsnTopicId topicId, InRegTopicsMap& map)
+InRegTopicsMap::iterator findInRegTopicInfoInternal(CC_MqttsnTopicId topicId, InRegTopicsMap& map)
 {
     return 
         std::lower_bound(
@@ -65,7 +65,7 @@ InRegTopicsMap::iterator findInRegTopicInfo(CC_MqttsnTopicId topicId, InRegTopic
             });
 }
 
-InRegTopicsMap::iterator findInRegTopicInfo(const char* topic, InRegTopicsMap& map)
+InRegTopicsMap::iterator findInRegTopicInfoInternal(const char* topic, InRegTopicsMap& map)
 {
     return 
         std::find_if(
@@ -76,6 +76,46 @@ InRegTopicsMap::iterator findInRegTopicInfo(const char* topic, InRegTopicsMap& m
             });
 }
 
+OutRegTopicsMap::iterator findOutRegTopicInfoInternal(CC_MqttsnTopicId topicId, OutRegTopicsMap& map)
+{
+    return 
+        std::find_if(
+            map.begin(), map.end(),
+            [topicId](auto& info)
+            {
+                return info.m_topicId == topicId;
+            });
+}
+
+OutRegTopicsMap::iterator findOutRegTopicInfoInternal(const char* topic, InRegTopicsMap& map)
+{
+    return 
+        std::lower_bound(
+            map.begin(), map.end(), topic,
+            [](auto& info, const char* topicParam) {
+                return info.m_topic < topicParam;
+            });
+}
+
+template <typename TMap>
+bool removeLeastRecentlyUsedRegTopicInfoIfNeeded(TMap& map, std::size_t limit)
+{
+    if (map.size() < limit) {
+        return false;
+    }
+
+    auto eraseIter = 
+        std::min_element(
+            map.begin(), map.end(),
+            [](auto& info1, auto& info2)
+            {
+                return info1.m_timestamp < info2.m_timestamp;
+            });
+
+    COMMS_ASSERT(eraseIter != map.end());
+    map.erase(eraseIter);  
+    return true;  
+}
 
 bool isTopicMatch(std::string_view filter, std::string_view topic)
 {
@@ -917,17 +957,34 @@ void ClientImpl::handle(PublishMsg& msg)
     CC_MqttsnTopicId topicId = msg.field_topicId().value();
     using TopicIdType = std::decay_t<decltype(topicIdType)>;
 
-    if (topicIdType == TopicIdType::Normal) {
-        auto& regMap = m_reuseState.m_inRegTopics;
-        auto iter = findInRegTopicInfo(topicId, regMap);
-        if ((iter == regMap.end()) || (iter->m_topicId != topicId)) {
-            sendPuback(ReturnCode::InvalidTopicId);
-            return;
+    do {
+        if (topicIdType != TopicIdType::Normal) {
+            break;
         }
 
-        COMMS_ASSERT(!iter->m_topic.empty());
-        topic = std::string_view(iter->m_topic.c_str(), iter->m_topic.size());
-    }
+        auto& inRegMap = m_reuseState.m_inRegTopics;
+        auto inIter = findInRegTopicInfoInternal(topicId, inRegMap);
+        if ((inIter != inRegMap.end()) && (inIter->m_topicId == topicId)) {
+            COMMS_ASSERT(!inIter->m_topic.empty());
+            topic = std::string_view(inIter->m_topic.c_str(), inIter->m_topic.size());            
+            break;
+        }
+
+        auto& outRegMap = m_reuseState.m_outRegTopics;
+        auto outIter = findOutRegTopicInfoInternal(topicId, outRegMap);
+        if ((outIter != outRegMap.end()) && (outIter->m_topicId == topicId)) {
+            COMMS_ASSERT(!outIter->m_topic.empty());
+            topic = std::string_view(outIter->m_topic.c_str(), outIter->m_topic.size());   
+
+            // For future use, copy it into input topics as well
+            storeInRegTopic(outIter->m_topic.c_str(), topicId);
+            break;
+        }
+
+        // Didn't fine in either map
+        sendPuback(ReturnCode::InvalidTopicId);
+        return;
+    } while (false);
 
     if (topicIdType == TopicIdType::ShortTopicName) {
         shortTopicName[0] = static_cast<char>((topicId >> 8U) & 0xff);
@@ -1325,31 +1382,17 @@ void ClientImpl::allowNextPrepare()
 
 void ClientImpl::storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
 {
+    COMMS_ASSERT(topic != nullptr);
     auto& map = m_reuseState.m_inRegTopics;
-    auto iter = findInRegTopicInfo(topicId, map);
+    auto iter = findInRegTopicInfoInternal(topicId, map);
     if ((iter != map.end()) && (iter->m_topicId == topicId)) {
         iter->m_topic = topic;
         iter->m_timestamp = m_clientState.m_timestamp;
         return;
     }
 
-    if (m_clientState.m_inRegTopicsLimit <= map.size()) {
-        auto eraseIter = 
-            std::min_element(
-                map.begin(), map.end(),
-                [](auto& info1, auto& info2)
-                {
-                    return info1.m_timestamp < info2.m_timestamp;
-                });
-
-        COMMS_ASSERT(eraseIter != map.end());
-        map.erase(eraseIter);
-        iter = findInRegTopicInfo(topicId, map); // The location can change after erase
-    }
-
-    if (topic == nullptr) {
-        map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, TopicNameStr(), topicId});    
-        return;
+    if (removeLeastRecentlyUsedRegTopicInfoIfNeeded(map, m_clientState.m_inRegTopicsLimit)) {
+        iter = findInRegTopicInfoInternal(topicId, map); // The location can change after erase
     }
 
     map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, topic, topicId});        
@@ -1359,7 +1402,7 @@ bool ClientImpl::removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
 {
     auto& map = m_reuseState.m_inRegTopics;
     if (op::Op::isValidTopicId(topicId)) {
-        auto iter = findInRegTopicInfo(topicId, map);
+        auto iter = findInRegTopicInfoInternal(topicId, map);
         if ((iter != map.end()) && (iter->m_topicId == topicId)) {
             map.erase(iter);
             return true;
@@ -1372,13 +1415,42 @@ bool ClientImpl::removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
         return false;
     }
 
-    auto iter = findInRegTopicInfo(topic, map);
+    auto iter = findInRegTopicInfoInternal(topic, map);
     if (iter == map.end()) {
         return false;
     }
 
     map.erase(iter);
     return true;
+}
+
+CC_MqttsnTopicId ClientImpl::findInRegTopicId(const char* topic)
+{
+    auto& map = m_reuseState.m_inRegTopics;
+    auto iter = findInRegTopicInfoInternal(topic, map);
+    if ((iter == map.end()) || (iter->m_topic != topic)) {
+        return 0;
+    }
+
+    return iter->m_topicId;
+}
+
+void ClientImpl::storeOutRegTopic(const char* topic, CC_MqttsnTopicId topicId)
+{
+    COMMS_ASSERT(topic != nullptr);
+    auto& map = m_reuseState.m_outRegTopics;
+    auto iter = findOutRegTopicInfoInternal(topic, map);
+    if ((iter != map.end()) && (iter->m_topic == topic)) {
+        iter->m_topicId = topicId;
+        iter->m_timestamp = m_clientState.m_timestamp;
+        return;
+    }
+
+    if (removeLeastRecentlyUsedRegTopicInfoIfNeeded(map, m_clientState.m_outRegTopicsLimit)) {
+        iter = findOutRegTopicInfoInternal(topic, map); // The location can change after erase
+    }
+
+    map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, topic, topicId});        
 }
 
 void ClientImpl::doApiEnter()
@@ -1482,7 +1554,8 @@ CC_MqttsnErrorCode ClientImpl::initInternal()
     auto guard = apiEnter();
 
     if ((m_sendOutputDataCb == nullptr) ||
-        (m_messageReceivedReportCb == nullptr)) {
+        (m_messageReceivedReportCb == nullptr) ||
+        (m_gatewayDisconnectedReportCb == nullptr)) {
         errorLog("Hasn't set all must have callbacks");
         return CC_MqttsnErrorCode_NotIntitialized;
     }

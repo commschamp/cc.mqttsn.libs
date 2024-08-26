@@ -45,7 +45,7 @@ CC_MqttsnErrorCode ConnectOp::config(const CC_MqttsnConnectConfig* config)
         return CC_MqttsnErrorCode_BadParam;
     }
 
-    if (client().clientState().m_firstConnect && (!config->m_cleanSession)) {
+    if (client().clientState().m_firstConnect && (!config->m_cleanSession) && client().configState().m_verifySubFilter) {
         errorLog("First connect must force clean session");
         return CC_MqttsnErrorCode_BadParam;
     }    
@@ -130,7 +130,8 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
     }
 
     if ((!m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) && 
-        (client().clientState().m_firstConnect)) {
+        (client().clientState().m_firstConnect) && 
+        (client().configState().m_verifySubFilter)) {
         errorLog("Clean session flag needs to be set on the first connection attempt, perform configuration first.");
         return CC_MqttsnErrorCode_InsufficientConfig;
     }      

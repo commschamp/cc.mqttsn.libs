@@ -800,6 +800,121 @@ UnitTestCommonBase::UnitTestPublishCompleteReportPtr UnitTestCommonBase::unitTes
     return ptr;
 }
 
+void UnitTestCommonBase::unitTestDoPublish(
+    CC_MqttsnClient* client, 
+    const CC_MqttsnPublishConfig* config, 
+    const UnitTestPublishResponseConfig* respConfig)
+{
+    auto ec = m_funcs.m_publish(client, config, &UnitTestCommonBase::unitTestPublishCompleteCb, this);
+    test_assert(ec == CC_MqttsnErrorCode_Success);
+
+    unsigned topicId = 0U;
+    if ((respConfig != nullptr) && (respConfig->m_regTopicId != 0U)) {
+        auto regMsgId = 0U;
+        {
+            test_assert(unitTestHasOutputData());
+            auto sentMsg = unitTestPopOutputMessage();
+            auto* registerMsg = dynamic_cast<UnitTestRegisterMsg*>(sentMsg.get());
+            test_assert(registerMsg != nullptr);
+            test_assert(registerMsg->field_topicName().value() == config->m_topic);
+            test_assert(!unitTestHasOutputData());
+
+            regMsgId = registerMsg->field_msgId().value();
+        } 
+
+        test_assert(unitTestHasTickReq());
+        unitTestTick(client, 100);    
+
+        {
+            UnitTestRegackMsg regackMsg;
+            regackMsg.field_msgId().setValue(regMsgId);
+            regackMsg.field_topicId().setValue(respConfig->m_regTopicId);
+            regackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+            unitTestClientInputMessage(client, regackMsg);
+
+            topicId = respConfig->m_regTopicId;
+        }
+    }    
+
+    unsigned pubMsgId = 0U;
+    {
+        test_assert(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* publishMsg = dynamic_cast<UnitTestPublishMsg*>(sentMsg.get());
+        test_assert(publishMsg != nullptr);
+        test_assert(!unitTestHasOutputData());
+
+        pubMsgId = publishMsg->field_msgId().value();
+    } 
+
+    if (config->m_qos == CC_MqttsnQoS_AtMostOnceDelivery) {
+        test_assert(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        test_assert(publishReport->m_status == CC_MqttsnAsyncOpStatus_Complete);
+    }
+   
+    if ((respConfig != nullptr) && (respConfig->m_pubackRetCode != CC_MqttsnReturnCode_Accepted)) {
+        test_assert(unitTestHasTickReq());
+        unitTestTick(client, 100); 
+
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(topicId);
+        pubackMsg.field_msgId().setValue(pubMsgId);
+        pubackMsg.field_returnCode().setValue(respConfig->m_pubackRetCode);
+        unitTestClientInputMessage(client, pubackMsg);
+        return;
+    }
+
+    if (config->m_qos == CC_MqttsnQoS_AtMostOnceDelivery) {
+        return;
+    }
+
+    test_assert(unitTestHasTickReq());
+    unitTestTick(client, 100);     
+
+    if (config->m_qos == CC_MqttsnQoS_AtLeastOnceDelivery) {
+        UnitTestPubackMsg pubackMsg;
+        pubackMsg.field_topicId().setValue(topicId);
+        pubackMsg.field_msgId().setValue(pubMsgId);
+        pubackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
+        unitTestClientInputMessage(client, pubackMsg);
+
+        test_assert(unitTestHasPublishCompleteReport());
+        auto publishReport = unitTestPublishCompleteReport();
+        test_assert(publishReport->m_status == CC_MqttsnAsyncOpStatus_Complete);
+        return;
+    }    
+
+    test_assert(config->m_qos == CC_MqttsnQoS_ExactlyOnceDelivery);
+
+    {
+        UnitTestPubrecMsg pubrecMsg;
+        pubrecMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubrecMsg);        
+    }
+
+    {
+        test_assert(unitTestHasOutputData());
+        auto sentMsg = unitTestPopOutputMessage();
+        auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
+        test_assert(pubrelMsg != nullptr);
+        test_assert(!unitTestHasOutputData());
+    }     
+
+    test_assert(unitTestHasTickReq());
+    unitTestTick(client, 100);  
+
+    {
+        UnitTestPubcompMsg pubcompMsg;
+        pubcompMsg.field_msgId().setValue(pubMsgId);
+        unitTestClientInputMessage(client, pubcompMsg);        
+    }       
+
+    test_assert(unitTestHasPublishCompleteReport());
+    auto publishReport = unitTestPublishCompleteReport();
+    test_assert(publishReport->m_status == CC_MqttsnAsyncOpStatus_Complete);
+}
+
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestPublishSend(CC_MqttsnPublishHandle publish)
 {
     return m_funcs.m_publish_send(publish, &UnitTestCommonBase::unitTestPublishCompleteCb, this);

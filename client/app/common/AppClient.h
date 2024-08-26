@@ -72,6 +72,7 @@ protected:
     virtual void messageReceivedImpl(const CC_MqttsnMessageInfo* info);
     virtual void connectCompleteImpl();
     virtual void disconnectCompleteImpl();
+    virtual void gwDisconnectedReportImpl();
 
     static std::vector<std::uint8_t> parseBinaryData(const std::string& val);
 
@@ -94,6 +95,7 @@ private:
     bool createSession();
     void connectCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
     void disconnectCompleteInternal(CC_MqttsnAsyncOpStatus status);
+    void gwDisconnectedReportInternal(CC_MqttsnGatewayDisconnectReason reason);
 
     static void sendDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius);
     static void messageReceivedCb(void* data, const CC_MqttsnMessageInfo* info);
@@ -102,6 +104,7 @@ private:
     static unsigned cancelNextTickWaitCb(void* data);
     static void connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info);
     static void disconnectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status);
+    static void gwDisconnectedReportCb(void* data, CC_MqttsnGatewayDisconnectReason reason);
 
     boost::asio::io_context& m_io;
     int& m_result;

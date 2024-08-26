@@ -109,20 +109,29 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
         }
 
         m_registerMsg.field_topicName().value() = config->m_topic;
-        auto& regMap = client().reuseState().m_outRegTopics;
-        auto iter = 
+        m_publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+        
+        auto& outRegMap = client().reuseState().m_outRegTopics;
+        auto outIter = 
             std::lower_bound(
-                regMap.begin(), regMap.end(), config->m_topic,
+                outRegMap.begin(), outRegMap.end(), config->m_topic,
                 [](auto& elem, const char* topicParam)
                 {
                     return elem.m_topic < topicParam;
                 });   
 
-        if ((iter != regMap.end()) && (iter->m_topic == config->m_topic)) {
-            m_publishMsg.field_topicId().setValue(iter->m_topicId);
-            m_publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
+        if ((outIter != outRegMap.end()) && (outIter->m_topic == config->m_topic)) {
+            m_publishMsg.field_topicId().setValue(outIter->m_topicId);
             m_stage = Stage_Publish;
-            iter->m_timestamp = client().clientState().m_timestamp;
+            outIter->m_timestamp = client().clientState().m_timestamp;
+            break;
+        }
+
+        auto inTopicId = client().findInRegTopicId(config->m_topic);
+        if (inTopicId != 0U) {
+            m_publishMsg.field_topicId().setValue(inTopicId);
+            m_stage = Stage_Publish;
+            client().storeOutRegTopic(config->m_topic, inTopicId);
             break;
         }
 

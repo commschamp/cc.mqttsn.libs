@@ -68,7 +68,7 @@ bool GatewayApp::start(int argc, const char* argv[])
         {
             auto session = std::make_unique<GatewaySession>(m_io, m_logger, m_config, std::move(clientSocket));
 
-            session->setTermpReqCb(
+            session->setTermReqCb(
                 [this, sessionPtr = session.get()]()
                 {
                     auto iter = 
@@ -85,6 +85,31 @@ bool GatewayApp::start(int argc, const char* argv[])
                     }
 
                     m_sessions.erase(iter);
+                });
+
+            session->setClientIdReportCb(
+                [this, sessionPtr = session.get()](const std::string& clientId)
+                {
+                    auto iter = 
+                        std::find_if(
+                            m_sessions.begin(), m_sessions.end(),
+                            [sessionPtr, &clientId](auto& s)
+                            {
+                                assert(s);
+                                return (s.get() != sessionPtr) && (clientId == s->clientId());
+                            });
+
+                    if (iter == m_sessions.end()) {
+                        return;
+                    }
+
+                    boost::asio::post(
+                        m_io,
+                        [this, iter]()
+                        {
+                            m_sessions.erase(iter);
+                        });
+
                 });
 
             if (!session->start()) {

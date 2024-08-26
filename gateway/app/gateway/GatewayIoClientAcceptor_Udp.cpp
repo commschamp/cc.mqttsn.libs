@@ -164,6 +164,27 @@ void GatewayIoClientAcceptor_Udp::doAccept()
                     break;
                 }
 
+                do {
+                    if (m_lastBroadcastData.empty()) {
+                        break;
+                    }
+
+                    if (m_senderEndpoint.port() != m_socket.local_endpoint().port()) {
+                        break;
+                    }
+
+                    if ((m_lastBroadcastData.size() != bytesCount) || 
+                        (!std::equal(m_lastBroadcastData.begin(), m_lastBroadcastData.end(), m_inBuf.begin()))) {
+                        break;
+                    }
+
+                    // Received previous broadcast, ignoring...
+                    logger().info() << "Ignoring received recently broadcast gateway data, not valid input" << std::endl;
+                    m_lastBroadcastData.clear();
+                    doAccept();
+                    return;
+                } while (false);
+
                 auto iter = m_clients.find(m_senderEndpoint);
                 if (iter != m_clients.end()) {
                     auto* socketPtr = iter->second;
@@ -250,6 +271,11 @@ void GatewayIoClientAcceptor_Udp::sendPendingWrites()
                 }
 
             } while (false);
+
+            if ((info.m_endpoint == m_broadcastEndpoint) && 
+                (m_socket.local_endpoint().port() == m_broadcastEndpoint.port())) {
+                m_lastBroadcastData = std::move(m_pendingWrites.front().m_data);
+            }
 
             m_pendingWrites.pop_front();
             sendPendingWrites();

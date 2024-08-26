@@ -177,7 +177,7 @@ void SubscribeOp::handle(SubackMsg& msg)
         topicPtr = nullptr;
     } while (false);
 
-    if (topicId != 0U) {
+    if ((topicId != 0U) && (topicPtr != nullptr)) {
         client().storeInRegTopic(topicPtr, topicId);
     }
 

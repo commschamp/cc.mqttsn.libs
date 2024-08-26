@@ -26,8 +26,13 @@ protected:
     virtual void connectCompleteImpl() override;
 
 private:
+    void doPublish();
+    void doCompleteInternal();
     void publishCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
     static void publishCompleteCb(void* data, CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info);
+
+    boost::asio::steady_timer m_timer;
+    unsigned m_remCount = 0U;
 };
 
 } // namespace cc_mqttsn_client_app

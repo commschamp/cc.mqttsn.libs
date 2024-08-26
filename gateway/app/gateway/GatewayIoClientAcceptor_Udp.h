@@ -50,6 +50,7 @@ private:
     Socket m_socket;
     Endpoint m_senderEndpoint;
     Endpoint m_broadcastEndpoint;
+    DataBuf m_lastBroadcastData;
     std::uint16_t m_acceptPort = 0U;
     std::uint16_t m_broadcastPort = 0U;
     std::string m_broadcastAddress;

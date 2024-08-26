@@ -74,6 +74,7 @@ void TimerMgr::tick(unsigned ms)
         if (info.m_timeoutMs <= ms) {
             cbList.push_back({info.m_timeoutCb, info.m_timeoutData});
             timerCancel(idx);
+            COMMS_ASSERT(!timerIsActive(idx));
             continue;
         }
 
