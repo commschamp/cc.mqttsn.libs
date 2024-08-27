@@ -274,6 +274,52 @@ bool GatewaySession::startSession()
         {
             m_fwdEncSessions.push_back(std::make_unique<GatewaySession>(m_io, m_logger, m_config, fwdEncSession));
             auto& sessionPtr = m_fwdEncSessions.back();
+            sessionPtr->setTermReqCb(
+                [this, fwdSessionPtr = sessionPtr.get()]()
+                {
+                    auto iter = 
+                        std::find_if(
+                            m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
+                            [fwdSessionPtr](auto& sPtr)
+                            {
+                                return sPtr.get() == fwdSessionPtr;
+                            });
+
+                    assert(iter != m_fwdEncSessions.end());
+                    if (iter == m_fwdEncSessions.end()) {
+                        return;
+                    }            
+
+                    m_fwdEncSessions.erase(iter);
+                });
+
+            sessionPtr->setClientIdReportCb(
+                [this, fwdSessionPtr = sessionPtr.get()](const std::string& clientId)
+                {
+                    assert(m_clientIdReportCb);
+                    m_clientIdReportCb(clientId);
+
+                    auto iter = 
+                        std::find_if(
+                            m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
+                            [fwdSessionPtr, &clientId](auto& s)
+                            {
+                                assert(s);
+                                return (s.get() != fwdSessionPtr) && (clientId == s->clientId());
+                            });
+
+                    if (iter == m_fwdEncSessions.end()) {
+                        return;
+                    }
+
+                    boost::asio::post(
+                        m_io,
+                        [this, iter]()
+                        {
+                            m_fwdEncSessions.erase(iter);
+                        });
+                });            
+
             if (!sessionPtr->start()) {
                 m_logger.error() << "Failed to start forwarder encapsulated session" << std::endl;
                 return false;
