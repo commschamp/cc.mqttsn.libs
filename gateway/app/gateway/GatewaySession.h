@@ -96,6 +96,7 @@ private:
     Timestamp m_tickReqTs;
     std::list<Ptr> m_fwdEncSessions;
     bool m_brokerConnected = false;
+    bool m_destructing = false;
 };
 
 using GatewaySessionPtr = GatewaySession::Ptr;

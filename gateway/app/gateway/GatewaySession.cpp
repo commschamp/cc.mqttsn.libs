@@ -51,6 +51,8 @@ GatewaySession::GatewaySession(
 GatewaySession::~GatewaySession()
 {
     m_logger.info() << "Terminating session for client: " << m_clientId << std::endl;
+    m_destructing = true;
+    m_fwdEncSessions.clear();
 }
 
 bool GatewaySession::start()  
@@ -333,6 +335,10 @@ bool GatewaySession::startSession()
     m_session->setFwdEncSessionDeletedReportCb(
         [this](cc_mqttsn_gateway::Session* fwdEncSession)
         {
+            if (m_destructing) {
+                return;
+            }
+            
             assert(fwdEncSession != nullptr);
             boost::asio::post(
                 m_io,
