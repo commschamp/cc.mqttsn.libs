@@ -272,8 +272,10 @@ bool GatewaySession::startSession()
     m_session->setFwdEncSessionCreatedReportCb(
         [this](cc_mqttsn_gateway::Session* fwdEncSession) -> bool
         {
+            assert(fwdEncSession != nullptr);
             m_fwdEncSessions.push_back(std::make_unique<GatewaySession>(m_io, m_logger, m_config, fwdEncSession));
             auto& sessionPtr = m_fwdEncSessions.back();
+            assert(sessionPtr->m_session == fwdEncSession);
             sessionPtr->setTermReqCb(
                 [this, fwdSessionPtr = sessionPtr.get()]()
                 {
@@ -331,6 +333,7 @@ bool GatewaySession::startSession()
     m_session->setFwdEncSessionDeletedReportCb(
         [this](cc_mqttsn_gateway::Session* fwdEncSession)
         {
+            assert(fwdEncSession != nullptr);
             boost::asio::post(
                 m_io,
                 [this, fwdEncSession]()
@@ -340,6 +343,8 @@ bool GatewaySession::startSession()
                             m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
                             [fwdEncSession](auto& sPtr)
                             {
+                                assert(sPtr);
+                                assert(sPtr->m_session != nullptr);
                                 return sPtr->m_session == fwdEncSession;
                             });
 
