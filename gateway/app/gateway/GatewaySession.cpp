@@ -32,6 +32,8 @@ GatewaySession::GatewaySession(
     m_sessionPtr(std::make_unique<cc_mqttsn_gateway::Session>()),
     m_session(m_sessionPtr.get())
 {
+
+    logInfo() << "New primary session" << std::endl;
 }    
 
 GatewaySession::GatewaySession(
@@ -46,11 +48,12 @@ GatewaySession::GatewaySession(
     m_reconnectTimer(io),
     m_session(session)
 {
+    logInfo() << "New enapsulated session" << std::endl;
 }
 
 GatewaySession::~GatewaySession()
 {
-    m_logger.info() << "Terminating session for client: " << m_clientId << std::endl;
+    logInfo() << "Terminating session for client: " << m_clientId << std::endl;
     m_destructing = true;
     m_fwdEncSessions.clear();
 }
@@ -71,7 +74,7 @@ bool GatewaySession::start()
             });    
 
         if (!m_clientSocket->start()) {
-            m_logger.error() << "Failed to start client socket" << std::endl;
+            logError() << "Failed to start client socket" << std::endl;
             return false;
         }      
     }  
@@ -95,11 +98,12 @@ void GatewaySession::doBrokerConnect()
 {
     if (m_brokerConnected) {
         m_session->setBrokerConnected(false);
+        m_brokerConnected = false;
     }
 
     m_brokerSocket = GatewayIoBrokerSocket::create(m_io, m_logger, m_config);
     if (!m_brokerSocket) {
-        m_logger.error() << "Failed to allocate broker socket " << std::endl;
+        logError() << "Failed to allocate broker socket " << std::endl;
         doTerminate();
         return;
     }    
@@ -133,8 +137,8 @@ void GatewaySession::doBrokerConnect()
     m_brokerSocket->setConnectedReportCb(
         [this]()
         {
-            m_session->setBrokerConnected(true);
             m_brokerConnected = true;
+            m_session->setBrokerConnected(true);
         }
     );        
 
@@ -150,7 +154,7 @@ void GatewaySession::doBrokerConnect()
         });    
 
     if (!m_brokerSocket->start()) {
-        m_logger.error() << "Failed to start TCP/IP socket" << std::endl;
+        logError() << "Failed to start TCP/IP socket" << std::endl;
         doTerminate();
         return;
     }
@@ -210,10 +214,10 @@ bool GatewaySession::startSession()
         }
     );    
 
-
     m_session->setSendDataBrokerReqCb(
         [this](const std::uint8_t* buf, std::size_t bufSize)
         {
+            m_hadBrokerData = true;
             assert(m_brokerSocket);
             m_brokerSocket->sendData(buf, bufSize);
         }); 
@@ -227,7 +231,7 @@ bool GatewaySession::startSession()
     m_session->setClientConnectedReportCb(
         [this](const std::string& clientId)
         {
-            m_logger.info() << "Connected client: " << clientId << std::endl;
+            logInfo() << "Connected client: " << clientId << std::endl;
 
             m_clientId = clientId;
             assert(m_clientIdReportCb);
@@ -303,6 +307,10 @@ bool GatewaySession::startSession()
                     assert(m_clientIdReportCb);
                     m_clientIdReportCb(clientId);
 
+                    if (m_clientId.empty()) {
+                        return;
+                    }
+
                     auto iter = 
                         std::find_if(
                             m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
@@ -325,7 +333,7 @@ bool GatewaySession::startSession()
                 });            
 
             if (!sessionPtr->start()) {
-                m_logger.error() << "Failed to start forwarder encapsulated session" << std::endl;
+                logError() << "Failed to start forwarder encapsulated session" << std::endl;
                 return false;
             }
 
@@ -360,13 +368,17 @@ bool GatewaySession::startSession()
                     }            
 
                     m_fwdEncSessions.erase(iter);
+
+                    if (m_fwdEncSessions.empty() && (!m_hadBrokerData)) {
+                        doTerminate();
+                    }
                 });
         }); 
 
     m_session->setErrorReportCb(
         [this](const char* msg)
         {
-            m_logger.error() << msg << std::endl;
+            logError() << msg << std::endl;
         });
 
     if (!m_sessionPtr) {
@@ -390,7 +402,7 @@ bool GatewaySession::startSession()
 
 
     if (!m_session->start()) {
-        m_logger.error() << "Failed to start client session" << std::endl;
+        logError() << "Failed to start client session" << std::endl;
         return false;
     }
 
@@ -463,6 +475,16 @@ GatewaySession::AuthInfo GatewaySession::getAuthInfoFor(const std::string& clien
     }
 
     return std::make_pair(iter->username, std::move(data));
+}
+
+std::ostream& GatewaySession::logError()
+{
+    return (m_logger.error() << "(" << this << ") ");
+}
+
+std::ostream& GatewaySession::logInfo()
+{
+    return (m_logger.info() << "(" << this << ") ");
 }
 
 } // namespace cc_mqttsn_gateway_app

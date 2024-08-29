@@ -28,6 +28,60 @@ GatewayIoBrokerSocket_Tcp::Ptr GatewayIoBrokerSocket_Tcp::create(boost::asio::io
 
 bool GatewayIoBrokerSocket_Tcp::startImpl()
 {
+    // Do lazy connect of the first send
+    boost::asio::post(
+        io(),
+        [this]()
+        {
+            reportConnected();
+        }
+    );
+    
+    return true;
+}
+
+void GatewayIoBrokerSocket_Tcp::sendDataImpl(const std::uint8_t* buf, std::size_t bufSize)
+{
+    bool sendRightAway = (m_state == State_Connected) && m_sentData.empty();
+    m_sentData.emplace_back(buf, buf + bufSize);
+
+    if (sendRightAway) {
+        sendPendingWrites();
+        return;
+    }
+
+    if (m_state == State_Disconnected) {
+        doConnect();
+        return;
+    }
+}
+
+void GatewayIoBrokerSocket_Tcp::doRead()
+{
+    assert(m_state == State_Connected);
+    m_socket.async_read_some(
+        boost::asio::buffer(m_inData),
+        [this](const boost::system::error_code& ec, std::size_t bytesCount)
+        {
+            if (ec == boost::asio::error::operation_aborted) {
+                return;
+            }
+
+            if (ec) {
+                logger().error() << "TCP/IP read error: " << ec.message() << std::endl;
+                reportError();
+                return;                
+            }
+
+            reportClientData(m_inData.data(), bytesCount);
+            doRead();
+        }
+    );
+}
+
+void GatewayIoBrokerSocket_Tcp::doConnect()
+{
+    m_state = State_TryingToConnect;
     m_resolver.async_resolve(
         m_addr, std::to_string(m_port),
         [this](const boost::system::error_code& ec, const auto& results)
@@ -63,46 +117,12 @@ bool GatewayIoBrokerSocket_Tcp::startImpl()
                         return;
                     }
 
-                    m_connected = true;
+                    m_state = State_Connected;
                     doRead();
                     sendPendingWrites();
-                    reportConnected();
                 }
-            );
-
-        });
-    return true;
-} 
-
-void GatewayIoBrokerSocket_Tcp::sendDataImpl(const std::uint8_t* buf, std::size_t bufSize)
-{
-    bool sendRightAway = m_connected && m_sentData.empty();
-    m_sentData.emplace_back(buf, buf + bufSize);
-    if (sendRightAway) {
-        sendPendingWrites();
-    }
-}
-
-void GatewayIoBrokerSocket_Tcp::doRead()
-{
-    m_socket.async_read_some(
-        boost::asio::buffer(m_inData),
-        [this](const boost::system::error_code& ec, std::size_t bytesCount)
-        {
-            if (ec == boost::asio::error::operation_aborted) {
-                return;
-            }
-
-            if (ec) {
-                logger().error() << "TCP/IP read error: " << ec.message() << std::endl;
-                reportError();
-                return;                
-            }
-
-            reportClientData(m_inData.data(), bytesCount);
-            doRead();
-        }
-    );
+            );            
+        });    
 }
 
 void GatewayIoBrokerSocket_Tcp::sendPendingWrites()
@@ -111,6 +131,7 @@ void GatewayIoBrokerSocket_Tcp::sendPendingWrites()
         return;
     }
 
+    assert(m_state == State_Connected);
     auto& buf = m_sentData.front();
     m_socket.async_write_some(
         boost::asio::buffer(buf),
