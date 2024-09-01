@@ -48,7 +48,7 @@ GatewaySession::GatewaySession(
     m_reconnectTimer(io),
     m_session(session)
 {
-    logInfo() << "New enapsulated session" << std::endl;
+    logInfo() << "New encapsulated session" << std::endl;
 }
 
 GatewaySession::~GatewaySession()
