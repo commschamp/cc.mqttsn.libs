@@ -22,6 +22,16 @@ namespace cc_mqttsn_client_app
 namespace 
 {
 
+const std::uint8_t FwdEncMsgType = 0xfe;
+
+enum FwdEncOffset : unsigned
+{
+    FwdEncOffset_Length = 0,
+    FwdEncOffset_MsgType = 1U,
+    FwdEncOffset_Ctrl = 2U,
+    FwdEncOffset_NodeId = 3U,
+};    
+
 AppClient* asThis(void* data)
 {
     return reinterpret_cast<AppClient*>(data);
@@ -91,6 +101,16 @@ bool AppClient::start(int argc, const char* argv[])
         io().stop();
         return true;
     }
+
+    auto fwdEncNodeId = parseBinaryData(m_opts.fwdEncNodeId());
+    if (!fwdEncNodeId.empty()) {
+        auto prefixLen = FwdEncOffset_NodeId + fwdEncNodeId.size();
+        m_fwdEncPrefix.resize(prefixLen);
+        m_fwdEncPrefix[FwdEncOffset_Length] = static_cast<std::uint8_t>(prefixLen);
+        m_fwdEncPrefix[FwdEncOffset_MsgType] = FwdEncMsgType;
+        m_fwdEncPrefix[FwdEncOffset_Ctrl] = 0U;
+        std::copy(fwdEncNodeId.begin(), fwdEncNodeId.end(), &m_fwdEncPrefix[FwdEncOffset_NodeId]);
+    }    
 
     if (!createSession()) {
         return false;
@@ -445,7 +465,16 @@ unsigned AppClient::cancelNextTickWaitInternal()
 void AppClient::sendDataInternal(const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
 {
     assert(m_session);
-    m_session->sendData(buf, bufLen, broadcastRadius);
+    if (m_fwdEncPrefix.empty()) {
+        m_session->sendData(buf, bufLen, broadcastRadius);
+        return;
+    }
+
+    std::vector<std::uint8_t> encData;
+    encData.reserve(m_fwdEncPrefix.size() + bufLen);
+    encData.insert(encData.end(), m_fwdEncPrefix.begin(), m_fwdEncPrefix.end());
+    encData.insert(encData.end(), buf, buf + bufLen);
+    m_session->sendData(encData.data(), encData.size(), broadcastRadius);    
 }
 
 bool AppClient::createSession()
@@ -461,7 +490,30 @@ bool AppClient::createSession()
         {
             assert(m_client);
             m_lastAddr = addr;
-            ::cc_mqttsn_client_process_data(m_client.get(), buf, static_cast<unsigned>(bufLen), origin);
+
+            if (m_fwdEncPrefix.empty()) {            
+                ::cc_mqttsn_client_process_data(m_client.get(), buf, static_cast<unsigned>(bufLen), origin);
+                return;
+            }
+
+            do {
+                if (bufLen <= m_fwdEncPrefix.size()) {
+                    break;
+                }
+
+                if (!std::equal(m_fwdEncPrefix.begin(), m_fwdEncPrefix.begin() + FwdEncOffset_Ctrl, buf)) {
+                    break;
+                }
+
+                if (!std::equal(m_fwdEncPrefix.begin() + FwdEncOffset_NodeId, m_fwdEncPrefix.end(), &buf[FwdEncOffset_NodeId])) {
+                    break;
+                }                
+
+                ::cc_mqttsn_client_process_data(m_client.get(), buf + m_fwdEncPrefix.size(), static_cast<unsigned>(bufLen - m_fwdEncPrefix.size()), origin);
+                return;
+            } while (false);
+
+            logError() << "Recieved data doesn't have appropriate forwarding encapsulation prefix, ignoring..." << std::endl;            
         });
 
     m_session->setNetworkErrorReportCb(

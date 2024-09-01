@@ -125,7 +125,7 @@ void Encapsulate::sendDataClientReqFromSession(
     unsigned broadcastRadius)
 {
     FwdMsg_SN fwdMsg;
-    fwdMsg.field_ctrl().field_radius().setValue(3); // TODO: make it configurable
+    //fwdMsg.field_ctrl().field_radius().setValue(3); // TODO: make it configurable
     comms::util::assign(fwdMsg.field_nodeId().value(), nodeId.begin(), nodeId.end());
 
     MqttsnFrame frame;

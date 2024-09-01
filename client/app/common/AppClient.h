@@ -113,6 +113,7 @@ private:
     ProgramOptions m_opts;
     ClientPtr m_client;
     SessionPtr m_session;
+    std::vector<std::uint8_t> m_fwdEncPrefix;
     Addr m_lastAddr;
 };
 

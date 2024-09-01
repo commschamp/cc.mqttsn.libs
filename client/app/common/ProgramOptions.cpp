@@ -82,6 +82,16 @@ void ProgramOptions::addWill()
     m_desc.add(opts);
 }
 
+void ProgramOptions::addEncapsulate()
+{
+    po::options_description opts("Forwarder Encapsulation");
+    opts.add_options()
+        ("fwd-enc-node-id", po::value<std::string>()->default_value(std::string()), "Emulate forwarder encapsulation with specified node ID (passed as binary data). Use \"\\x\" prefix before hex value of each byte")
+    ;    
+
+    m_desc.add(opts);
+}
+
 void ProgramOptions::addPublish()
 {
     po::options_description opts("Publish Options");
@@ -200,6 +210,11 @@ std::string ProgramOptions::willMessage() const
 unsigned ProgramOptions::willQos() const
 {
     return m_vm["will-qos"].as<unsigned>();
+}
+
+std::string ProgramOptions::fwdEncNodeId() const
+{
+    return m_vm["fwd-enc-node-id"].as<std::string>();
 }
 
 std::string ProgramOptions::pubTopic() const
