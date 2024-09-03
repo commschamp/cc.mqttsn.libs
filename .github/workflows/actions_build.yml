@@ -3,7 +3,7 @@ name: Github Actions Build
 on: [push]
 
 env:
-  COMMS_TAG: v5.2.5
+  COMMS_TAG: v5.2.6
   CC_MQTTSN_TAG: v2.8.1
   CC_MQTT311_TAG: v2.8
 
