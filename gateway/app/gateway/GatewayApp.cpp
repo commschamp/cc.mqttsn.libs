@@ -90,6 +90,10 @@ bool GatewayApp::start(int argc, const char* argv[])
             session->setClientIdReportCb(
                 [this, sessionPtr = session.get()](const std::string& clientId)
                 {
+                    if (clientId.empty()) {
+                        return;
+                    }
+                    
                     auto iter = 
                         std::find_if(
                             m_sessions.begin(), m_sessions.end(),

@@ -31,19 +31,27 @@ protected:
     virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize) override;
 
 private:
+    enum State
+    {
+        State_Disconnected,
+        State_TryingToConnect,
+        State_Connected,
+    };
+
     using Socket = boost::asio::ip::tcp::socket;
     using Resolver = boost::asio::ip::tcp::resolver;
     using DataBuf = std::vector<std::uint8_t>;
     using DataBufsList = std::list<DataBuf>;
 
     void doRead();
+    void doConnect();
     void sendPendingWrites();
 
     Socket m_socket;
     Resolver m_resolver;
     std::string m_addr;
     std::uint16_t m_port = 0;
-    bool m_connected = false;
+    State m_state = State_Disconnected;
     DataBufsList m_sentData;
     std::array<std::uint8_t, 4096> m_inData;
 };

@@ -79,6 +79,9 @@ private:
     void doBrokerReconnect();
     bool startSession();
     AuthInfo getAuthInfoFor(const std::string& clientId);
+
+    std::ostream& logError();
+    std::ostream& logInfo();
     
     boost::asio::io_context& m_io;
     GatewayLogger& m_logger;
@@ -96,6 +99,8 @@ private:
     Timestamp m_tickReqTs;
     std::list<Ptr> m_fwdEncSessions;
     bool m_brokerConnected = false;
+    bool m_destructing = false;
+    bool m_hadBrokerData = false;
 };
 
 using GatewaySessionPtr = GatewaySession::Ptr;

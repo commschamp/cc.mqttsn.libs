@@ -32,6 +32,7 @@ public:
     void addDiscover();
     void addConnect();
     void addWill();
+    void addEncapsulate();
     void addPublish();
     void addSubscribe();
 
@@ -62,7 +63,10 @@ public:
     // Will Options
     std::string willTopic() const;
     std::string willMessage() const;
-    unsigned willQos() const;       
+    unsigned willQos() const;  
+
+    // Forwarder Encapsulation options
+    std::string fwdEncNodeId() const;     
 
     // Publish Options
     std::string pubTopic() const;

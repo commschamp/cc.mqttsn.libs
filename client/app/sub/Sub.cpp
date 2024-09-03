@@ -33,6 +33,7 @@ Sub::Sub(boost::asio::io_context& io, int& result) :
     opts().addNetwork();
     opts().addConnect();
     opts().addWill();
+    opts().addEncapsulate();
     opts().addSubscribe();
 }    
 

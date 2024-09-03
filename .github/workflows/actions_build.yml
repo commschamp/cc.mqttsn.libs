@@ -3,7 +3,7 @@ name: Github Actions Build
 on: [push]
 
 env:
-  COMMS_TAG: v5.2.5
+  COMMS_TAG: v5.2.6
   CC_MQTTSN_TAG: v2.8.1
   CC_MQTT311_TAG: v2.8
 
@@ -67,6 +67,66 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: bash
       run: ctest -V       
+
+  build_gcc_ubuntu_24_04:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [Debug, Release, MinSizeRel]
+        cc_ver: [13, 14]
+        cpp: [17, 20]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prepare Install
+      run: sudo apt-get update --fix-missing    
+      
+    - name: Install Packages
+      run: sudo apt install qtbase5-dev libboost-all-dev gcc-${{matrix.cc_ver}} g++-${{matrix.cc_ver}}
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Prepare externals
+      shell: bash
+      run: $GITHUB_WORKSPACE/script/prepare_externals.sh
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        CC: gcc-${{matrix.cc_ver}}
+        CXX: g++-${{matrix.cc_ver}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
+        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON \
+        -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
+      env:
+        CC: gcc-${{matrix.cc_ver}}
+        CXX: g++-${{matrix.cc_ver}}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{matrix.type}} --target install
+      env:
+        VERBOSE: 1 
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: ctest -V        
       
   build_clang_ubuntu_22_04:
     runs-on: ubuntu-22.04
@@ -137,6 +197,66 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: bash
       run: ctest -V 
+
+  build_clang_ubuntu_24_04:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [Debug, Release, MinSizeRel]
+        cc_ver: [16, 17, 18]
+        cpp: [17, 20]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prepare Install
+      run: sudo apt-get update --fix-missing    
+      
+    - name: Install Packages
+      run: sudo apt install qtbase5-dev libboost-all-dev clang-${{matrix.cc_ver}}
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Prepare externals
+      shell: bash
+      run: $GITHUB_WORKSPACE/script/prepare_externals.sh
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        CC: clang-${{matrix.cc_ver}}
+        CXX: clang++-${{matrix.cc_ver}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}      
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
+        -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON \
+        -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
+      env:
+        CC: clang-${{matrix.cc_ver}}
+        CXX: clang++-${{matrix.cc_ver}}
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config ${{matrix.type}} --target install
+      env:
+        VERBOSE: 1 
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: ctest -V       
           
   build_msvc_2019:
     runs-on: windows-2019

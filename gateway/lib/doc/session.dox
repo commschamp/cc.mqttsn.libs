@@ -650,12 +650,12 @@
 /// {
 ///     ... // Perform the session configuration and set all the necessary callbacks
 ///     return true;
-/// });
+/// }
 ///
 /// void my_fwd_enc_session_deleted_report_cb(void* userData, CC_MqttsnSessionHandle handle)
 /// {
 ///     ... // Remove any reference to handle in the data structures
-/// });
+/// }
 ///
 /// cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(handle, &my_fwd_enc_session_created_report_cb, someDserData);
 /// cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(handle, &my_fwd_enc_session_deleted_report_cb, someDserData);
