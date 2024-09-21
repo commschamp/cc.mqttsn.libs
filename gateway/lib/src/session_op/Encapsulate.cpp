@@ -5,7 +5,18 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include "comms/CompileControl.h"
+
+COMMS_GNU_WARNING_PUSH
+
+#if defined(NDEBUG) && COMMS_IS_GCC_12_OR_ABOVE && COMMS_IS_GCC_14_OR_BELOW && (COMMS_IS_CPP20 || COMMS_IS_CPP23)
+// Suppress erroneous warning for g++-[12 - 14] when compiled with C++20/23 in Release mode.
+COMMS_GNU_WARNING_DISABLE("-Wstringop-overread")
+#endif
+
 #include "Encapsulate.h"
+
+COMMS_GNU_WARNING_POP
 
 #include <cassert>
 #include <tuple>
