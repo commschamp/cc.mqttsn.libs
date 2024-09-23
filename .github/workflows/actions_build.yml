@@ -298,7 +298,7 @@ jobs:
     - name: Install Boost
       shell: cmd
       run: |
-        choco install boost-msvc-14.2
+        choco install boost-msvc-14.2 --version=1.85.0
 
     - name: Prepare externals
       shell: cmd
