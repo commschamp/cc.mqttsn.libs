@@ -115,6 +115,7 @@ void GatewaySession::doBrokerConnect()
             auto actSize = bufSize;
 
             if (!m_brokerData.empty()) {
+                m_brokerData.reserve(m_brokerData.size() + bufSize);
                 m_brokerData.insert(m_brokerData.end(), buf, buf + bufSize);
                 actBuf = m_brokerData.data();
                 actSize = m_brokerData.size();

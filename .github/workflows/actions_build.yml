@@ -3,9 +3,9 @@ name: Github Actions Build
 on: [push]
 
 env:
-  COMMS_TAG: v5.2.6
-  CC_MQTTSN_TAG: v2.8.1
-  CC_MQTT311_TAG: v2.8
+  COMMS_TAG: v5.2.7
+  CC_MQTTSN_TAG: v2.9
+  CC_MQTT311_TAG: v2.9
 
 jobs:
   build_gcc_ubuntu_22_04:
@@ -16,6 +16,10 @@ jobs:
         type: [Debug, Release, MinSizeRel]
         cc_ver: [9, 10, 11, 12]
         cpp: [17, 20]
+        sanitize: [ON, OFF]
+        exclude:
+          - type: Debug
+            sanitize: OFF   
 
     steps:
     - uses: actions/checkout@v4
@@ -50,7 +54,7 @@ jobs:
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
         -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
-        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON \
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{matrix.sanitize}} \
         -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
       env:
         CC: gcc-${{matrix.cc_ver}}
@@ -75,7 +79,13 @@ jobs:
       matrix:
         type: [Debug, Release, MinSizeRel]
         cc_ver: [13, 14]
-        cpp: [17, 20]
+        cpp: [17, 20, 23]
+        sanitize: [ON, OFF]
+        exclude:
+          - type: Debug
+            sanitize: OFF          
+          - cc_ver: 13
+            cpp: 23  
 
     steps:
     - uses: actions/checkout@v4
@@ -110,7 +120,7 @@ jobs:
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
         -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
-        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON \
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{matrix.sanitize}} \
         -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
       env:
         CC: gcc-${{matrix.cc_ver}}
@@ -136,7 +146,10 @@ jobs:
         type: [Debug, Release, MinSizeRel]
         cc_ver: [11, 12, 13, 14, 15]
         cpp: [17, 20]
+        sanitize: [ON, OFF]
         exclude:
+          - type: Debug
+            sanitize: OFF         
           - cc_ver: 11
             cpp: 20        
           - cc_ver: 12
@@ -145,6 +158,8 @@ jobs:
             cpp: 20
           - cc_ver: 14
             cpp: 20
+          - cc_ver: 11
+            sanitize: ON 
 
     steps:
     - uses: actions/checkout@v4
@@ -179,12 +194,11 @@ jobs:
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
         -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
-        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{env.WITH_SANITIZERS}} \
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{matrix.sanitize}} \
         -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
       env:
         CC: clang-${{matrix.cc_ver}}
         CXX: clang++-${{matrix.cc_ver}}
-        WITH_SANITIZERS: "${{ (matrix.cc_ver == 11) && 'OFF' || 'ON' }}"        
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
@@ -205,7 +219,15 @@ jobs:
       matrix:
         type: [Debug, Release, MinSizeRel]
         cc_ver: [16, 17, 18]
-        cpp: [17, 20]
+        cpp: [17, 20, 23]
+        sanitize: [ON, OFF]
+        exclude:
+          - type: Debug
+            sanitize: OFF 
+          - cc_ver: 16
+            cpp: 23
+          - cc_ver: 17
+            cpp: 23  
 
     steps:
     - uses: actions/checkout@v4
@@ -240,7 +262,7 @@ jobs:
       run: |
         cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} \
         -DCMAKE_INSTALL_PREFIX=install -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install \
-        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=ON \
+        -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_WITH_SANITIZERS=${{matrix.sanitize}} \
         -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="$GITHUB_WORKSPACE/client/lib/script/BareMetalTestConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/NoGwDiscoverConfig.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos1Config.cmake;$GITHUB_WORKSPACE/client/lib/script/Qos0Config.cmake" 
       env:
         CC: clang-${{matrix.cc_ver}}
@@ -274,9 +296,10 @@ jobs:
       run: cmake -E make_directory ${{runner.workspace}}/build   
 
     - name: Install Boost
+      if: matrix.arch == 'x64'
       shell: cmd
       run: |
-        choco install boost-msvc-14.2
+        choco install boost-msvc-14.2 --version=1.85.0
 
     - name: Prepare externals
       shell: cmd
@@ -300,7 +323,10 @@ jobs:
         cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_PREFIX_PATH=${{runner.workspace}}/build/install -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
           -DCMAKE_POLICY_DEFAULT_CMP0167=OLD -DBoost_USE_STATIC_LIBS=ON -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
+          -DCC_MQTTSN_CLIENT_APPS=${{env.HAS_BOOST}} -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}} ^
           -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="%GITHUB_WORKSPACE%/client/lib/script/BareMetalTestConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/NoGwDiscoverConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos1Config.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos0Config.cmake" 
+      env:
+        HAS_BOOST: "${{ matrix.arch == 'x64' && 'ON' || 'OFF' }}"
 
     - name: Build Target 
       working-directory: ${{runner.workspace}}/build
