@@ -111,7 +111,10 @@ bool GatewayApp::start(int argc, const char* argv[])
                         m_io,
                         [this, iter]()
                         {
-                            m_sessions.erase(iter);
+                            if (iter->get())
+                            {
+                                m_sessions.erase(iter);
+                            }
                         });
 
                 });
