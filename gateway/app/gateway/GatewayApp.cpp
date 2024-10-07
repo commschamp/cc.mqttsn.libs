@@ -107,13 +107,7 @@ bool GatewayApp::start(int argc, const char* argv[])
                         return;
                     }
 
-                    boost::asio::post(
-                        m_io,
-                        [this, iter]()
-                        {
-                            m_sessions.erase(iter);
-                        });
-
+                    m_sessions.erase(iter);
                 });
 
             if (!session->start()) {
