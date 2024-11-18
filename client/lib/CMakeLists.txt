@@ -3,7 +3,6 @@ if ((NOT CC_MQTTSN_CLIENT_DEFAULT_LIB) AND
     return()
 endif ()
 
-
 ######################################################################
 
 set (HEADER_TEMPL ${CMAKE_CURRENT_SOURCE_DIR}/templ/client.h.templ)

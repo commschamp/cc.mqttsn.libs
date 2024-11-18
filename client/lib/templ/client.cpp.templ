@@ -14,15 +14,21 @@
 
 #include <limits>
 
-struct CC_MqttsnClient {};
-struct CC_MqttsnSearch {};
-struct CC_MqttsnConnect {};
-struct CC_MqttsnDisconnect {};
-struct CC_MqttsnSubscribe {};
-struct CC_MqttsnUnsubscribe {};
-struct CC_MqttsnPublish {};
-struct CC_MqttsnWill {};
-struct CC_MqttsnSleep {};
+struct alignas(alignof(cc_mqttsn_client::ClientImpl)) CC_MqttsnClient {};
+struct alignas(alignof(cc_mqttsn_client::op::ConnectOp)) CC_MqttsnConnect {};
+struct alignas(alignof(cc_mqttsn_client::op::DisconnectOp)) CC_MqttsnDisconnect {};
+struct alignas(alignof(cc_mqttsn_client::op::SubscribeOp)) CC_MqttsnSubscribe {};
+struct alignas(alignof(cc_mqttsn_client::op::UnsubscribeOp)) CC_MqttsnUnsubscribe {};
+struct alignas(alignof(cc_mqttsn_client::op::SendOp)) CC_MqttsnPublish {};
+struct alignas(alignof(cc_mqttsn_client::op::DisconnectOp)) CC_MqttsnSleep {};
+
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+struct alignas(alignof(cc_mqttsn_client::op::SearchOp)) CC_MqttsnSearch {};
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
+
+#if CC_MQTTSN_CLIENT_HAS_WILL
+struct alignas(alignof(cc_mqttsn_client::op::WillOp)) CC_MqttsnWill {};
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
 namespace
 {
