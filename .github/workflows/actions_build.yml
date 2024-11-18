@@ -1,11 +1,6 @@
 name: Github Actions Build
 
-on:
-  push:
-    branches:
-      - '**'
-    tags-ignore:
-      - '**'
+on: [push]
 
 env:
   COMMS_TAG: v5.2.7
