@@ -1,8 +1,7 @@
-if ((NOT CC_MQTTSN_CLIENT_DEFAULT_LIB) OR
+if ((NOT CC_MQTTSN_CLIENT_DEFAULT_LIB) AND
     (CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES STREQUAL ""))
     return()
 endif ()
-
 
 ######################################################################
 
