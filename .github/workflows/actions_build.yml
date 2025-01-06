@@ -8,9 +8,9 @@ on:
       - '**'
 
 env:
-  COMMS_TAG: v5.2.7
-  CC_MQTTSN_TAG: v2.9
-  CC_MQTT311_TAG: v2.9
+  COMMS_TAG: develop
+  CC_MQTTSN_TAG: develop
+  CC_MQTT311_TAG: develop
 
 jobs:
   build_gcc_ubuntu_22_04:
