@@ -455,8 +455,7 @@ void AppClient::nextTickProgramInternal(unsigned duration)
 
 unsigned AppClient::cancelNextTickWaitInternal()
 {
-    boost::system::error_code ec;
-    m_timer.cancel(ec);
+    m_timer.cancel();
     auto now = Clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastWaitProgram).count();
     return static_cast<unsigned>(diff);

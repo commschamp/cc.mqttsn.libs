@@ -206,8 +206,7 @@ bool GatewaySession::startSession()
     m_session->setCancelTickWaitReqCb(
         [this]() -> unsigned
         {
-            boost::system::error_code ec;
-            m_timer.cancel(ec);
+            m_timer.cancel();
             assert(m_tickReqTs != Timestamp());
             auto now = TimestampClock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_tickReqTs);
