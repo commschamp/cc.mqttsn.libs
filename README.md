@@ -82,7 +82,12 @@ the events loop and manage network connection(s)). Currently only UDP/IP network
 connection type is supported.
 
 # How to Build
-Detailed instructions on how to build and install all the components can be
+This project has several external dependencies. It is highly recommended to use the
+[cc.cmake](https://github.com/commschamp/cc.cmake) project to bring in all the
+necessary components of the [CommsChampion Ecosystem](https://commschamp.github.io)
+(including this one as well) into a third party project.
+
+Detailed instructions on how to build sources of **this** particular repository can be
 found in [doc/BUILD.md](doc/BUILD.md) file.
 
 # Branching Model
