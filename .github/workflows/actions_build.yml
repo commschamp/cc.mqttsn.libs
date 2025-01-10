@@ -367,7 +367,8 @@ jobs:
       if: matrix.arch == 'x64'
       shell: cmd
       run: |
-        choco install boost-msvc-14.3 --version=1.85.0
+        choco install boost-msvc-14.3 --version=${{env.WIN_BOOST_VERSION}}      
+        echo BOOST_DIR=${{env.WIN_BOOST_DIR}}/lib64-msvc-14.3/cmake >>%GITHUB_ENV%
 
     - name: Prepare externals
       shell: cmd
