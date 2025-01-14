@@ -25,9 +25,9 @@ in configuration of the [github actions](../.github/workflows/actions_build.yml)
 The provided **applications** use [Boost](https://www.boost.org) libraries to
 parse their command line arguments as well as manage their event loop / network
 connections. In case the application are compiled and the [Boost](https://www.boost.org) libraries
-do not reside in a default system location, use [BOOST_ROOT](https://cmake.org/cmake/help/latest/module/FindBoost.html#hints)
-variable to specify their install directory. It is recommended to also use `-DBoost_USE_STATIC_LIBS=ON` parameter to force
-linkage with static Boost libraries (especially on Windows).
+do not reside in a default system location, use the relevant variables described in the 
+[FindBoost](https://cmake.org/cmake/help/latest/module/FindBoost.html)
+documentation to help with finding appropriate boost libraries. 
 
 ## Choosing C++ Standard
 The default and minimal required C++ standard version to build this project is **17**. However it

@@ -56,11 +56,14 @@ public:
     {
         struct FrameLayers : public BaseImpl::frame::FrameLayers
         {
-            using Data =
-                std::tuple<
-                    ##MAX_PACKET_SIZE##,
-                    BaseImpl::frame::FrameLayers::Data
-                >;
+            struct DataMembers : public BaseImpl::frame::FrameLayers::DataMembers
+            {
+                using Field =
+                    std::tuple<
+                        ##MAX_PACKET_SIZE##,
+                        BaseImpl::frame::FrameLayers::DataMembers::Field
+                    >;
+            }; // struct DataMembers
 
             using Id =
                 std::tuple<

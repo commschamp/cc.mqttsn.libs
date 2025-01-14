@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2024 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ extern "C" {
 
 /// @brief Patch level of the library
 /// @ingroup global
-#define CC_MQTTSN_CLIENT_PATCH_VERSION 6U
+#define CC_MQTTSN_CLIENT_PATCH_VERSION 7U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define CC_MQTTSN_CLIENT_MAKE_VERSION(major_, minor_, patch_) \

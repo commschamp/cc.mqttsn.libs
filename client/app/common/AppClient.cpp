@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2024 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -455,8 +455,7 @@ void AppClient::nextTickProgramInternal(unsigned duration)
 
 unsigned AppClient::cancelNextTickWaitInternal()
 {
-    boost::system::error_code ec;
-    m_timer.cancel(ec);
+    m_timer.cancel();
     auto now = Clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastWaitProgram).count();
     return static_cast<unsigned>(diff);
