@@ -1,0 +1,956 @@
+//
+// Copyright 2023 - 2025 (C). Alex Robenko. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#include "AflFuzz.h"
+
+#include "Generator.h"
+
+#include "##NAME##client.h"
+
+#include "cc_mqttsn/Message.h"
+#include "cc_mqttsn/frame/Frame.h"
+
+#ifdef WIN32
+#include <io.h>
+#else // #ifdef WIN32
+#include <unistd.h>
+#endif // #ifdef WIN32
+
+#include <algorithm>
+#include <cassert>
+#include <cstdlib>
+
+namespace cc_mqttsn_client_afl_fuzz
+{
+
+namespace 
+{
+
+const std::size_t BufSize = 1024000;
+
+} // namespace 
+    
+
+class AflFuzzImpl
+{
+public:
+    explicit AflFuzzImpl(const ProgramOptions& opts, Logger& logger) : 
+        m_opts(opts),
+        m_logger(logger),
+        m_client(cc_mqttsn_##NAME##client_alloc()),
+        m_verbose(opts.verbose())
+    {
+    }
+
+    bool init()
+    {
+        if (!createGeneratorIfNeeded()) {
+            return false;
+        }
+
+        auto subTopics = m_opts.subTopics();
+        std::transform(
+            subTopics.begin(), subTopics.end(), std::back_inserter(m_state.m_subs),
+            [](auto& topicsList)
+            {
+                SubscribeInfo info;
+                info.m_topics = topicsList;
+                return info;
+            });
+
+        cc_mqttsn_##NAME##client_set_next_tick_program_callback(m_client.get(), &AflFuzzImpl::nextTickProgramCb, this);
+        cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(m_client.get(), &AflFuzzImpl::cancelNextTickWaitCb, this);
+        cc_mqttsn_##NAME##client_set_send_output_data_callback(m_client.get(), &AflFuzzImpl::sendOutputDataCb, this);
+        cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(m_client.get(), &AflFuzzImpl::gatewayDisconnectReportCb, this);
+        cc_mqttsn_##NAME##client_set_gw_status_report_callback(m_client.get(), &AflFuzzImpl::gwStatusReportCb, this);
+        cc_mqttsn_##NAME##client_set_message_report_callback(m_client.get(), &AflFuzzImpl::messageReceivedReportCb, this);
+        cc_mqttsn_##NAME##client_set_error_log_callback(m_client.get(), &AflFuzzImpl::errorLogCb, this);
+        return true;
+    }
+
+    void run()
+    {
+#ifndef WIN32        
+        sync();
+#endif        
+
+        std::uint8_t buf[BufSize] = {0};
+        while (true) {
+            m_logger.flush();
+
+            if (m_state.m_reinitRequired) {
+                doReinit();
+            }
+
+            do {
+                if (m_state.m_searchRequired) {
+                    doSearch();
+                    break;
+                }
+
+                /* 
+                if (m_state.m_connectRequired) {
+                    doConnect();
+                    break;
+                }
+
+                if (!cc_mqttsn_##NAME##client_is_connected(m_client.get())) {
+                    infoLog() << "Not connected yet..." << std::endl;
+                    assert(!m_state.m_connected);
+                    break;
+                }
+
+                assert(m_state.m_connected);
+                */
+
+                // doSubscribeIfNeeded();
+                // doUnsubscribeIfNeeded();
+                // doDisconnectIfNeeded();
+
+            } while (false);      
+     
+
+            int len = 0;
+            bool noMoreRead = true;
+            static_cast<void>(noMoreRead); // TODO: remove
+            if (!m_generator) {
+#ifdef WIN32
+                len = _read(0, buf, BufSize);
+#else // #ifdef WIN32
+                len = static_cast<decltype(len)>(read(0, buf, BufSize));
+#endif // #ifdef WIN32                
+                noMoreRead = (len <= 0);
+                len = std::max(len, static_cast<decltype(len)>(0));
+                infoLog() << "Read " << len << " bytes\n";
+
+                if (m_verbose) {
+                    auto& out = debugLog();
+                    out << "Read bytes: " << std::hex;
+                    std::copy_n(buf, len, std::ostream_iterator<unsigned>(out, " "));
+                    out << std::dec << std::endl;
+                }
+            }
+
+            auto dataPtr = &buf[0];
+            auto dataLen = static_cast<std::size_t>(len);
+            bool hasPrevData = false;
+            static_cast<void>(hasPrevData); // TODO: remove
+            if (!m_inData.empty()) {
+                m_inData.reserve(m_inData.size() + dataLen);
+                m_inData.insert(m_inData.end(), dataPtr, dataPtr + dataLen);
+                static const auto MaxLen = std::numeric_limits<unsigned>::max();
+
+                if (MaxLen < m_inData.size()) {
+                    m_inData.erase(m_inData.begin(), m_inData.begin() + (m_inData.size() - MaxLen));
+                }
+
+                dataPtr = m_inData.data();
+                dataLen = m_inData.size();
+                hasPrevData = true;
+            }
+
+/* TODO
+            using Interface = cc_mqttsn::Message<>;
+            using IdAndFlagsField = cc_mqttsn::frame::Frame<Interface>::Layer_idAndFlags::Field;
+            using SizeField = cc_mqttsn::frame::Frame<Interface>::Layer_size::Field;
+
+            static constexpr auto MinLen = IdAndFlagsField::minLength() + SizeField::minLength();
+            if (dataLen < MinLen) {
+                if (!noMoreRead) {
+                    continue;
+                }
+
+                if (!cc_mqttsn_##NAME##client_is_network_disconnected(m_client.get())) {
+                    infoLog() << "Insufficient data in buffer (" << dataLen << "), reporting network disconnected..." << std::endl;
+                    cc_mqttsn_##NAME##client_notify_network_disconnected(m_client.get());
+                    gatewayDisconnectReportCb(this, CC_MqttsnBrokerDisconnectReason_ValuesLimit);
+                    continue;
+                }
+
+                infoLog() << "Insufficient data in buffer (" << dataLen << "), stopping execution loop" << std::endl;
+                break;
+            }
+
+            auto iter = dataPtr;
+            std::advance(iter, IdAndFlagsField::minLength());
+
+            auto processLen = dataLen;
+            SizeField sizeField;
+            auto es = sizeField.read(iter, dataLen - IdAndFlagsField::minLength());
+            if (es == comms::ErrorStatus::Success) {
+                auto msgLen = IdAndFlagsField::minLength() + sizeField.length() + sizeField.getValue();
+                processLen = std::min(dataLen, msgLen);
+            }
+
+            auto consumed = 0U;
+            if (!cc_mqttsn_##NAME##client_is_network_disconnected(m_client.get())) {
+                infoLog() << "Processing " << processLen << " out of " << dataLen << " bytes...\n";
+                consumed = cc_mqttsn_##NAME##client_process_data(m_client.get(), dataPtr, static_cast<unsigned>(processLen));
+                infoLog() << "Consumed: " << consumed << '\n';
+            }
+            else {
+                infoLog() << "Network is disconnected, not consuming any data" << '\n';
+            }
+
+            if ((consumed == 0U) && noMoreRead) {
+                if (!cc_mqttsn_##NAME##client_is_network_disconnected(m_client.get())) {
+                    infoLog() << "No data consumed and no more input, reporting network disconnected..." << std::endl;
+                    cc_mqttsn_##NAME##client_notify_network_disconnected(m_client.get());
+                    gatewayDisconnectReportCb(this, CC_MqttsnBrokerDisconnectReason_ValuesLimit);
+                    continue;
+                }
+
+                infoLog() << "No data consumed and no more input, stopping execution loop\n";
+                break;
+            }
+
+            if ((dataLen <= consumed) && (!hasPrevData)) {
+                infoLog() << "Consumed all available bytes\n";
+                m_inData.clear();
+                continue;
+            }
+
+            if (!hasPrevData) {
+                m_inData.assign(dataPtr + consumed, dataPtr + dataLen);
+                infoLog() << "Keeping " << m_inData.size() << " bytes for the next iteration\n";
+                continue;
+            }
+
+            m_inData.erase(m_inData.begin(), m_inData.begin() + consumed);
+            infoLog() << "Keeping " << m_inData.size() << " bytes for the next iteration\n";        
+*/            
+        }
+
+        m_client.reset();
+
+        infoLog() << "------------------------------------------------" << std::endl;
+    }
+
+private:
+    struct ClientDeleter
+    {
+        void operator()(CC_MqttsnClient* ptr)
+        {
+            cc_mqttsn_##NAME##client_free(ptr);
+        }
+    }; 
+
+    using ClientPtr = std::unique_ptr<CC_MqttsnClient, ClientDeleter>;
+
+    struct SubscribeInfo
+    {
+        std::vector<std::string> m_topics;
+        CC_MqttsnSubscribeHandle m_subHandle = nullptr;
+        CC_MqttsnUnsubscribeHandle m_unsubHandle = nullptr;
+        bool m_acked = false;
+        bool m_unsubscribed = false;
+    };
+
+    struct State
+    {
+        std::vector<SubscribeInfo> m_subs;
+        std::vector<std::uint8_t> m_gateways;
+        unsigned m_nextTickDuration = 0U;
+        unsigned m_publishCount = 0U;
+        bool m_reinitRequired = true;
+        bool m_searchRequired = true;
+        bool m_connectRequired = true;
+        bool m_connected = false;
+        bool m_firstConnect = true;
+        bool m_disconnected = false;
+    };
+
+    std::ostream& debugLog()
+    {
+        return m_logger.debugLog();
+    }
+
+    std::ostream& infoLog()
+    {
+        return m_logger.infoLog();
+    }
+
+    std::ostream& errorLog()
+    {
+        return m_logger.errorLog();
+    }
+
+    void doReinit()
+    {
+        infoLog() << "(Re)Initializing..." << std::endl;
+        m_state.m_reinitRequired = false;
+        m_state.m_disconnected = false;
+        m_state.m_publishCount = 0U;
+        m_state.m_connected = false;
+    }
+
+    void doSearch()
+    {
+        infoLog() << "Searching for gateway..." << std::endl;
+        auto ec = cc_mqttsn_##NAME##client_search(m_client.get(), &AflFuzzImpl::searchCompleteCb, this);
+        if (ec == CC_MqttsnErrorCode_NotSupported) {
+            infoLog() << "Searching is not supported." << std::endl;
+            m_state.m_searchRequired = false;
+            return;
+        }
+
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Unexpected failure in attempt to perform search\n";
+            exit(-1);
+        } 
+    }
+
+/* TODO
+    void doConnect()
+    {
+        m_state.m_connected = false;
+        
+        infoLog() << "Connecting..." << std::endl;
+        CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
+        auto connect = cc_mqttsn_##NAME##client_connect_prepare(m_client.get(), &ec);
+        assert(connect != nullptr);
+        assert(ec == CC_MqttsnErrorCode_Success);
+        if (connect == nullptr) {
+            errorLog() << "Unexpected failure in connect allocation\n";
+            exit(-1);
+        }
+
+        CC_MqttsnConnectBasicConfig basicConfig;
+        cc_mqttsn_##NAME##client_connect_init_config_basic(&basicConfig);
+        basicConfig.m_cleanStart = m_state.m_firstConnect || m_opts.clientId().empty();
+
+        auto clientId = m_opts.clientId();
+        if (!clientId.empty()) {
+            basicConfig.m_clientId = clientId.c_str();
+        }
+        
+        ec = cc_mqttsn_##NAME##client_connect_config_basic(connect, &basicConfig);
+        assert(ec == CC_MqttsnErrorCode_Success);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Unexpected failure in connect basic configuration\n";
+            exit(-1);
+        }   
+
+        CC_MqttsnConnectExtraConfig extraConfig;
+        ::cc_mqttsn_##NAME##client_connect_init_config_extra(&extraConfig);
+        extraConfig.m_receiveMaximum = m_opts.receiveMax();
+        extraConfig.m_maxPacketSize = m_opts.maxPacketSize();
+        extraConfig.m_topicAliasMaximum = m_opts.topicAliasMax();
+        extraConfig.m_requestResponseInfo = m_opts.reqResponseInfo();
+        extraConfig.m_requestProblemInfo = m_opts.reqProblemInfo();
+
+        ec = ::cc_mqttsn_##NAME##client_connect_config_extra(connect, &extraConfig);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Unexpected failure in connect extra configuration\n";
+            exit(-1);
+        }              
+
+        auto authMethod = m_opts.authMethod();
+        if (!authMethod.empty()) {
+            CC_MqttsnAuthConfig authConfig;
+            ::cc_mqttsn_##NAME##client_connect_init_config_auth(&authConfig);
+            authConfig.m_authMethod = authMethod.c_str();
+            authConfig.m_authData = reinterpret_cast<const std::uint8_t*>(authMethod.data());
+            authConfig.m_authDataLen = static_cast<unsigned>(authMethod.size());
+            authConfig.m_authCb = &AflFuzzImpl::authCb;
+            authConfig.m_authCbData = this;
+
+            ec = ::cc_mqttsn_##NAME##client_connect_config_auth(connect, &authConfig);
+            if (ec != CC_MqttsnErrorCode_Success) {
+                errorLog() << "Unexpected failure in connect auth configuration\n";
+                exit(-1);
+            }              
+        }
+
+        ec = cc_mqttsn_##NAME##client_connect_send(connect, &AflFuzzImpl::connectCompleteCb, this);
+        assert(ec == CC_MqttsnErrorCode_Success);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Unexpected failure in sending connect request\n";
+            exit(-1);
+        }   
+
+        m_state.m_connectRequired = false;
+    }
+
+    void doSubscribeIfNeeded() {
+        for (auto& subInfo : m_state.m_subs) {
+            if ((subInfo.m_subHandle != nullptr) || (subInfo.m_acked)) {
+                // Request is sent
+                continue;
+            }
+
+            infoLog() << "Attempting subscribe\n";
+
+            CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
+            subInfo.m_subHandle = cc_mqttsn_##NAME##client_subscribe_prepare(m_client.get(), &ec);
+            
+            if (subInfo.m_subHandle == nullptr) {
+                errorLog() << "Unexpected failure in subscribe allocation\n";
+                subInfo.m_acked = true;
+                continue;
+            }     
+
+            assert(ec == CC_MqttsnErrorCode_Success);
+
+            for (auto& t : subInfo.m_topics) {
+                assert(!t.empty());
+                infoLog() << "Adding topic " << t << "\n";
+                CC_MqttsnSubscribeTopicConfig config;
+                cc_mqttsn_##NAME##client_subscribe_init_config_topic(&config);
+                config.m_topic = t.c_str();
+
+                while (true) {
+                    ec = cc_mqttsn_##NAME##client_subscribe_config_topic(subInfo.m_subHandle, &config);
+                    if (ec == CC_MqttsnErrorCode_Success) {
+                        break;
+                    }
+
+                    if (config.m_maxQos > CC_MqttsnQoS_AtMostOnceDelivery) {
+                        config.m_maxQos = 
+                            static_cast<decltype(config.m_maxQos)>(
+                                static_cast<unsigned>(config.m_maxQos) - 1U);
+                        continue;
+                    }
+
+                    auto whildcardPos = std::string(config.m_topic).find_first_of("#+");
+                    if (whildcardPos != std::string::npos) {
+                        config.m_topic = "some/topic";
+                        config.m_maxQos = CC_MqttsnQoS_ExactlyOnceDelivery;
+                        infoLog() << "Changing subscribe topic to " << config.m_topic << std::endl;
+                        continue;
+                    }
+
+                    errorLog() << "Unexpected failure in topic subscribe configuration\n";
+                    break;
+                }
+            }
+
+            ec = cc_mqttsn_##NAME##client_subscribe_send(subInfo.m_subHandle, &AflFuzzImpl::subscribeCompleteCb, this);
+            if (ec != CC_MqttsnErrorCode_Success) {
+                errorLog() << "Unexpected failure in sending subscribe request";
+                subInfo.m_subHandle = nullptr;
+                subInfo.m_acked = true;
+            }             
+        }
+    }
+
+    void doReauthIfNeeded()
+    {
+        if ((m_state.m_reauthComplete) || (!m_state.m_reauthRequired)) {
+            return;
+        }
+
+        m_state.m_reauthRequired = false;
+
+        CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
+        auto reauth = cc_mqttsn_##NAME##client_reauth_prepare(m_client.get(), &ec);
+        if (reauth == nullptr) {
+            errorLog() << "Unexpected failure in reauth allocation\n";
+            m_state.m_reauthComplete = true;
+            return;
+        }   
+
+        assert(ec == CC_MqttsnErrorCode_Success);  
+
+        auto authMethod = m_opts.authMethod();
+        assert(!authMethod.empty());
+        CC_MqttsnAuthConfig authConfig;
+        ::cc_mqttsn_##NAME##client_reauth_init_config_auth(&authConfig);
+        authConfig.m_authMethod = authMethod.c_str();
+        authConfig.m_authData = reinterpret_cast<const std::uint8_t*>(authMethod.data());
+        authConfig.m_authDataLen = static_cast<unsigned>(authMethod.size());
+        authConfig.m_authCb = &AflFuzzImpl::authCb;
+        authConfig.m_authCbData = this;
+        
+        ec = ::cc_mqttsn_##NAME##client_reauth_config_auth(reauth, &authConfig);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Unexpected failure in reauth configuration\n";
+            cc_mqttsn_##NAME##client_reauth_cancel(reauth);
+            m_state.m_reauthComplete = true;
+            return;
+        }           
+
+        ec = ::cc_mqttsn_##NAME##client_reauth_send(reauth, &AflFuzzImpl::reauthCompleteCb, this);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Unexpected failure in sending reauth\n";
+            m_state.m_reauthComplete = true;
+            return;
+        }            
+    }
+
+    void doUnsubscribeIfNeeded() {
+
+        if (m_state.m_publishCount < m_opts.minPubCount()) {
+            return;
+        }
+
+        bool subsComplete = 
+            std::all_of(
+                m_state.m_subs.begin(), m_state.m_subs.end(),
+                [](auto& subInfo)
+                {
+                    return subInfo.m_acked;
+                });
+
+        if (!subsComplete) {
+            return;
+        }
+
+        for (auto& subInfo : m_state.m_subs) {
+            if ((subInfo.m_unsubHandle != nullptr) || (subInfo.m_unsubscribed)) {
+                // Request is sent / completed
+                continue;
+            }
+
+            infoLog() << "Attempting unsubscribe\n";
+
+            CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
+            subInfo.m_unsubHandle = cc_mqttsn_##NAME##client_unsubscribe_prepare(m_client.get(), &ec);
+            if (subInfo.m_unsubHandle == nullptr) {
+                errorLog() << "Unexpected failure in unsubscribe allocation\n";
+                subInfo.m_unsubscribed = true;
+                continue;
+            }     
+
+            assert(ec == CC_MqttsnErrorCode_Success);
+
+            for (auto& t : subInfo.m_topics) {
+                assert(!t.empty());
+                infoLog() << "Adding topic " << t << "\n";
+                CC_MqttsnUnsubscribeTopicConfig config;
+                cc_mqttsn_##NAME##client_unsubscribe_init_config_topic(&config);
+                config.m_topic = t.c_str();
+
+                while (true) {
+                    ec = cc_mqttsn_##NAME##client_unsubscribe_config_topic(subInfo.m_unsubHandle, &config);
+                    if (ec == CC_MqttsnErrorCode_Success) {
+                        break;
+                    }
+
+                    if (!cc_mqttsn_##NAME##client_get_verify_outgoing_topic_enabled(m_client.get())) {
+                        errorLog() << "Unexpected failure in configuring unsubscribe topic\n";
+                        cc_mqttsn_##NAME##client_unsubscribe_cancel(subInfo.m_unsubHandle);
+                        break;
+                    }
+
+                    cc_mqttsn_##NAME##client_set_verify_outgoing_topic_enabled(m_client.get(), false);
+                }
+            }
+
+            ec = cc_mqttsn_##NAME##client_unsubscribe_send(subInfo.m_unsubHandle, &AflFuzzImpl::unsubscribeCompleteCb, this);
+            if (ec != CC_MqttsnErrorCode_Success) {
+                errorLog() << "Unexpected failure in sending unsubscribe request";
+                subInfo.m_unsubHandle = nullptr;
+                subInfo.m_unsubscribed = true;
+            }             
+        }
+    }
+
+    void doDisconnectIfNeeded() 
+    {
+        if (m_state.m_disconnected) {
+            return;
+        }
+
+        bool unsubsComplete = 
+            std::all_of(
+                m_state.m_subs.begin(), m_state.m_subs.end(),
+                [](auto& subInfo)
+                {
+                    return subInfo.m_unsubscribed;
+                });
+
+        if (!unsubsComplete) {
+            return;
+        }
+
+        m_state.m_disconnected = true;
+        m_state.m_reinitRequired = true;
+        m_state.m_connected = false;
+
+        CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
+        auto handle = cc_mqttsn_##NAME##client_disconnect_prepare(m_client.get(), &ec);
+        if (handle == nullptr) {
+            errorLog() << "Unexpected failure in disconnect allocation\n";
+            return;
+        }     
+
+        assert(ec == CC_MqttsnErrorCode_Success);
+
+        CC_MqttsnDisconnectConfig config;
+        cc_mqttsn_##NAME##client_disconnect_init_config(&config);
+        
+        ec = cc_mqttsn_##NAME##client_disconnect_config(handle, &config);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Failed to configure disconnect\n";
+            cc_mqttsn_##NAME##client_disconnect_cancel(handle);
+            return;
+        }
+
+        ec = cc_mqttsn_##NAME##client_disconnect_send(handle);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Failed to send disconnect\n";
+            return;
+        }     
+    }    
+*/    
+
+    bool createGeneratorIfNeeded()
+    {
+        auto inputFile = m_opts.genInputFile();
+        if (inputFile.empty()) {
+            return true;
+        }        
+
+        m_generator = std::make_unique<Generator>(m_logger, m_opts.minPubCount());
+        if (!m_generator->prepare(inputFile)) {
+            return false;
+        }
+
+        m_generator->setDataReportCb(
+            [this](const std::uint8_t* buf, std::size_t bufLen, unsigned broadcastRadius)
+            {
+                static_cast<void>(broadcastRadius); // TODO: take into account when feeding data to the library;
+            
+                m_inData.reserve(m_inData.size() + bufLen);
+                m_inData.insert(m_inData.end(), buf, buf + bufLen);
+                infoLog() << "Appended " << bufLen << " bytes to buffer, totaling " << m_inData.size() << " bytes\n";
+            });
+
+        return true;
+    }
+
+    static AflFuzzImpl* asThis(void* data)
+    {
+        return reinterpret_cast<AflFuzzImpl*>(data);
+    }
+
+    static void nextTickProgramCb(void* data, unsigned duration)
+    {
+        asThis(data)->m_state.m_nextTickDuration = duration;
+    }
+
+    static unsigned cancelNextTickWaitCb(void* data)
+    {
+        auto diff = std::min(asThis(data)->m_state.m_nextTickDuration, 1U);
+        asThis(data)->m_state.m_nextTickDuration -= diff;
+        return diff;
+    }
+
+    static void sendOutputDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
+    {
+        auto& logger = asThis(data)->m_logger;
+        logger.infoLog() << "Sending " << bufLen << " bytes (broadcast=" << broadcastRadius << ")\n";    
+        if (asThis(data)->m_verbose) {
+            auto& out = logger.debugLog();
+            out << "Sent bytes: " << std::hex;
+            std::copy_n(buf, bufLen, std::ostream_iterator<unsigned>(out, " "));
+            out << std::dec << '\n';
+        }
+
+        auto& generator = asThis(data)->m_generator;
+        if (generator) {
+            generator->processData(buf, bufLen);
+        }
+    }
+
+    static void gatewayDisconnectReportCb(void* data, [[maybe_unused]] CC_MqttsnGatewayDisconnectReason reason)
+    {
+        asThis(data)->m_logger.infoLog() << "Gateway disconnected\n";
+        auto& state = asThis(data)->m_state;
+        state.m_disconnected = true;
+        state.m_connected = false;
+        state.m_reinitRequired = true;
+        state.m_searchRequired = true;
+        state.m_connectRequired = true;
+    }
+
+    static void gwStatusReportCb(void* data, CC_MqttsnGwStatus status, const CC_MqttsnGatewayInfo* info)
+    {
+        auto thisPtr = asThis(data);
+
+        auto iter = 
+            std::find_if(
+                thisPtr->m_state.m_gateways.begin(), thisPtr->m_state.m_gateways.end(),
+                [info](auto gwId)
+                {
+                    return gwId == info->m_gwId;
+                });
+
+        if (iter == thisPtr->m_state.m_gateways.end()) {
+            static const CC_MqttsnGwStatus ExpectedStatuses[] = {
+                CC_MqttsnGwStatus_AddedByGateway,
+                CC_MqttsnGwStatus_AddedByClient
+            };
+
+            auto statusIter = std::find(std::begin(ExpectedStatuses), std::end(ExpectedStatuses), status);
+            assert(statusIter != std::end(ExpectedStatuses));
+            if (statusIter != std::end(ExpectedStatuses)) {
+                thisPtr->m_state.m_gateways.push_back(info->m_gwId);
+            }
+            return;
+        }
+
+        static const CC_MqttsnGwStatus UpdateStatuses[] = {
+            CC_MqttsnGwStatus_UpdatedByClient,
+            CC_MqttsnGwStatus_Alive,
+            CC_MqttsnGwStatus_Tentative,
+        };        
+
+        auto updateIter = std::find(std::begin(UpdateStatuses), std::end(UpdateStatuses), status);
+        if (updateIter != std::end(UpdateStatuses)) {
+            return;
+        }   
+
+        static const CC_MqttsnGwStatus RemoveStatuses[] = {
+            CC_MqttsnGwStatus_Removed
+        };
+
+        auto removeIter = std::find(std::begin(RemoveStatuses), std::end(RemoveStatuses), status);
+        assert(removeIter != std::end(RemoveStatuses));
+        if (removeIter == std::end(RemoveStatuses)) {
+            return;
+        }                        
+
+        thisPtr->m_state.m_gateways.erase(iter);
+    }
+
+    static void messageReceivedReportCb(void* data, const CC_MqttsnMessageInfo* info)
+    {
+        auto* thisPtr = asThis(data);
+        auto* client = thisPtr->m_client.get();
+        thisPtr->m_logger.infoLog() << "Message Received!\n";
+
+        assert(info != nullptr);
+
+        CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
+        auto* publish = ::cc_mqttsn_##NAME##client_publish_prepare(client, &ec);
+        assert(ec == CC_MqttsnErrorCode_Success);
+        if (publish == nullptr) {
+            thisPtr->errorLog() << "Unexpected failure in publish allocation\n";
+            return;
+        }        
+
+        CC_MqttsnPublishConfig config;
+        ::cc_mqttsn_##NAME##client_publish_init_config(&config);
+        config.m_topic = info->m_topic;
+        config.m_topicId = info->m_topicId;
+        config.m_data = info->m_data;
+        config.m_dataLen = info->m_dataLen;
+        config.m_qos = info->m_qos;
+        config.m_retain = info->m_retained;
+
+        ec = cc_mqttsn_##NAME##client_publish_config(publish, &config);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            thisPtr->errorLog() << "Unexpected failure in publish configuration\n";
+            ::cc_mqttsn_##NAME##client_publish_cancel(publish);
+            return;
+        }    
+
+        ec = cc_mqttsn_##NAME##client_publish(client, &config, &AflFuzzImpl::publishCompleteCb, thisPtr);
+        if (ec != CC_MqttsnErrorCode_Success) {
+            thisPtr->errorLog() << "Failure to publish message\n";
+        }        
+    }
+
+    static void errorLogCb(void* data, const char* msg)
+    {
+        asThis(data)->m_logger.errorLog() << msg << '\n';
+    }
+
+    static void searchCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnGatewayInfo* info)
+    {
+        auto* thisPtr = asThis(data);
+        auto& state = thisPtr->m_state;
+
+        do {
+            if (status != CC_MqttsnAsyncOpStatus_Complete) {
+                break;
+            }
+
+            assert(info != nullptr);
+            auto iter = std::find(state.m_gateways.begin(), state.m_gateways.end(), info->m_gwId);
+            if (iter == state.m_gateways.end()) {
+                state.m_gateways.push_back(info->m_gwId);
+            }
+
+            state.m_searchRequired = false;
+            return;
+        } while (false);
+
+        state.m_searchRequired = true;  
+    }
+
+/* 
+    static void connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectResponse* response)
+    {
+        auto* thisPtr = asThis(data);
+        auto& state = thisPtr->m_state;
+
+        do {
+            if (status != CC_MqttsnAsyncOpStatus_Complete) {
+                break;
+            }
+
+            assert(response != nullptr);
+            if (CC_MqttsnReasonCode_Success != response->m_reasonCode) {
+                break;
+            }
+
+            thisPtr->infoLog() << "Connected" << std::endl;
+
+            assert(cc_mqttsn_##NAME##client_is_connected(thisPtr->m_client.get()));
+
+            if (!response->m_sessionPresent) {
+                for (auto& subInfo : state.m_subs) {
+                    assert(subInfo.m_subHandle == nullptr);
+                    assert(subInfo.m_unsubHandle == nullptr);
+                    subInfo.m_acked = false;
+                    subInfo.m_unsubscribed = false;
+                }
+            }
+
+            state.m_connectRequired = false;
+            state.m_connected = true;
+            state.m_disconnected = false;
+            state.m_firstConnect = false;
+            return;
+        } while (false);
+
+        state.m_connectRequired = true;
+        state.m_connected = false;
+        state.m_reinitRequired = true;    
+    }  
+
+*/
+
+/* 
+    static void subscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeResponse* response)
+    {
+        auto* thisPtr = asThis(data);
+        auto& state = thisPtr->m_state;
+        auto iter = 
+            std::find_if(
+                state.m_subs.begin(), state.m_subs.end(),
+                [handle](auto& info)
+                {
+                    return info.m_subHandle == handle;
+                });
+        
+        if (iter == state.m_subs.end()) {
+            thisPtr->errorLog() << "Unexpected handle of the subscribe completion\n";
+            exit(-1);
+        }
+
+        assert(!iter->m_acked);
+        iter->m_subHandle = nullptr;
+        if (status != CC_MqttsnAsyncOpStatus_Complete) {
+            thisPtr->errorLog() << "Subscribe operation is terminated\n";
+            return;
+        }
+
+        assert(response != nullptr);
+        bool allOk = true;
+        for (auto idx = 0U; idx < response->m_reasonCodesCount; ++idx) {
+            if (CC_MqttsnReasonCode_UnspecifiedError <= response->m_reasonCodes[idx]) {
+                thisPtr->errorLog() << "Subscribe rejected\n";
+                allOk = false;
+                break;
+            }
+        }
+        
+        if (allOk) {
+            thisPtr->infoLog() << "The subscribe is properly acked\n";
+        }
+        iter->m_acked = allOk;
+    } 
+*/  
+
+    static void publishCompleteCb(
+        void* data, 
+        [[maybe_unused]] CC_MqttsnPublishHandle handle, 
+        CC_MqttsnAsyncOpStatus status, 
+        [[maybe_unused]] const CC_MqttsnPublishInfo* info)
+    {
+        auto* thisPtr = asThis(data);
+        if (status != CC_MqttsnAsyncOpStatus_Complete) {
+            thisPtr->errorLog() << "Publish operation is terminated\n";
+            return;
+        }
+
+        ++thisPtr->m_state.m_publishCount;
+    }          
+
+/* 
+    static void unsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnUnsubscribeResponse* response)
+    {
+        auto* thisPtr = asThis(data);
+        auto& state = thisPtr->m_state;
+        auto iter = 
+            std::find_if(
+                state.m_subs.begin(), state.m_subs.end(),
+                [handle](auto& info)
+                {
+                    return info.m_unsubHandle == handle;
+                });
+        
+        if (iter == state.m_subs.end()) {
+            thisPtr->errorLog() << "Unexpected handle of the unsubscribe completion\n";
+            exit(-1);
+        }
+
+        assert(!iter->m_unsubscribed);
+        iter->m_unsubHandle = nullptr;
+        if (status != CC_MqttsnAsyncOpStatus_Complete) {
+            thisPtr->errorLog() << "Unsubscribe operation is terminated\n";
+            return;
+        }
+
+        assert(response != nullptr);
+        bool allOk = true;
+        for (auto idx = 0U; idx < response->m_reasonCodesCount; ++idx) {
+            if (CC_MqttsnReasonCode_UnspecifiedError <= response->m_reasonCodes[idx]) {
+                thisPtr->errorLog() << "Unsubscribe rejected\n";
+                allOk = false;
+                break;
+            }
+        }
+        
+        if (allOk) {
+            thisPtr->infoLog() << "The unsubscribe is properly acked\n";
+        }
+        iter->m_unsubscribed = allOk;
+    }   
+*/       
+
+    const ProgramOptions& m_opts;
+    Logger& m_logger;
+    ClientPtr m_client;
+    GeneratorPtr m_generator;
+    std::vector<std::uint8_t> m_inData;
+    State m_state;
+    bool m_verbose = false;
+}; 
+
+AflFuzz::AflFuzz(const ProgramOptions& opts, Logger& logger) : 
+    m_impl(std::make_unique<AflFuzzImpl>(opts, logger))
+{
+}   
+
+AflFuzz::~AflFuzz() = default;
+
+bool AflFuzz::init()
+{
+    return m_impl->init();
+}
+
+void AflFuzz::run()
+{
+    m_impl->run();
+}
+
+} // namespace cc_mqttsn_client_afl_fuzz

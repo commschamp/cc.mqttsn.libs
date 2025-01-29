@@ -1877,14 +1877,14 @@
 /// the library will report @ref doc_cc_mqttsn_client_unsolicited_disconnect.
 ///
 /// @section doc_cc_mqttsn_client_unsolicited_disconnect Unsolicited Gateway Disconnection
-/// When broker disconnection is detected all the incomplete asynchronous operations
+/// When gateway disconnection is detected all the incomplete asynchronous operations
 /// will be terminated with the an appropriate @ref CC_MqttsnAsyncOpStatus "status" report.
 ///
-/// The unsolicited broker disconnection can happen in one of the following scenarios:
+/// The unsolicited gateway disconnection can happen in one of the following scenarios:
 ///
 /// @subsection doc_cc_mqttsn_client_unsolicited_disconnect_keep_alive Keep Alive Timeout
-/// When there was no message from the broker for the "keep alive" timeout (configured during the @ref connect "connect"
-/// or the @ref sleep "sleep" operations) and the broker doesn't respond to the @b PINGREQ message.
+/// When there was no message from the gateway for the "keep alive" timeout (configured during the @ref connect "connect"
+/// or the @ref sleep "sleep" operations) and the gateway doesn't respond to the @b PINGREQ message.
 /// In such case the library responds in the following way:
 /// @li Terminates and invokes the callbacks of previously initiated but incomplete operations
 ///     passing the @ref CC_MqttsnAsyncOpStatus_GatewayDisconnected as their status report.

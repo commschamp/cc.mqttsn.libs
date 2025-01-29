@@ -8,8 +8,9 @@ option (CC_MQTTSN_CLIENT_APPS "Build and install client applications" ${CC_MQTTS
 option (CC_MQTTSN_GATEWAY_LIB "Build and install MQTT-SN gateway library" ON)
 option (CC_MQTTSN_GATEWAY_LIB_FORCE_PIC "Force Position Independent Code (PIC) when compiling gateway library" OFF)
 option (CC_MQTTSN_GATEWAY_APPS "Build and install gateway applications" ${CC_MQTTSN_GATEWAY_LIB})
+option (CC_MQTTSN_AFL_FUZZ "Build and install AFL++ fuzzing application(s)" OFF)
 option (CC_MQTTSN_BUILD_UNIT_TESTS "Build unittests." OFF)
-option (CC_MQTTSN_UNIT_TEST_WITH_VALGRIND "Disable valgrind in unittests." OFF)
+option (CC_MQTTSN_UNIT_TEST_WITH_VALGRIND "Run unittests with valgrind." OFF)
 option (CC_MQTTSN_USE_CCACHE "Use ccache on unix system" OFF)
 option (CC_MQTTSN_WITH_SANITIZERS "Build with sanitizers" OFF)
 
@@ -18,7 +19,6 @@ option (BUILD_SHARED_LIBS "Build as shared libraries" OFF)
 
 # Extra variables
 # CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES - List of custom client configuration files
-# CC_MQTTSN_DEFAULT_CLIENT_CONFIG_FILE - Custom congiruation of the default client.
 
 ##########################################################################
 
@@ -33,6 +33,7 @@ if (("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "3.30") AND
 endif ()
 
 find_package(LibComms REQUIRED)
+find_package(cc_mqttsn REQUIRED)
 
 include (${PROJECT_SOURCE_DIR}/cmake/Compile.cmake)
 cc_mqttsn_compile ()
