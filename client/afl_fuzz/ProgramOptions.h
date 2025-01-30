@@ -38,6 +38,8 @@ public:
 
     // Connect options
     std::string clientId() const;
+    std::string willTopic() const;
+    std::string willData() const;
 
     // Subscribe options
     std::vector<StringsList> subTopics() const;

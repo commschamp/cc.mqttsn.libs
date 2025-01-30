@@ -28,6 +28,10 @@ ProgramOptions::ProgramOptions()
     po::options_description connectOpts("Connect Options");
     connectOpts.add_options()
         ("client-id,i", po::value<std::string>()->default_value("afl_client"), "Client ID")
+        ("will-topic", po::value<std::string>()->default_value(std::string()), 
+            "Will topic to connect with")
+        ("will-data", po::value<std::string>()->default_value(std::string("data")), 
+            "Will data to connect with, applicable only if will-topic is not empty")            
     ;  
 
     po::options_description subOpts("Subscribe Options");
@@ -89,6 +93,16 @@ std::string ProgramOptions::genInputFile() const
 std::string ProgramOptions::clientId() const
 {
     return m_vm["client-id"].as<std::string>();
+}
+
+std::string ProgramOptions::willTopic() const
+{
+    return m_vm["will-topic"].as<std::string>();
+}
+
+std::string ProgramOptions::willData() const
+{
+    return m_vm["will-data"].as<std::string>();
 }
 
 std::vector<ProgramOptions::StringsList> ProgramOptions::subTopics() const

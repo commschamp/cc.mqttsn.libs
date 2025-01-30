@@ -78,14 +78,39 @@ void Generator::handle(const MqttsnSearchgwMsg& msg)
     MqttsnAdvertiseMsg advMsg;
     advMsg.field_gwId().setValue(1);
     advMsg.field_duration().setValue(100);
-    sendMessage(outMsg, msg.field_radius().value());
+    sendMessage(advMsg, msg.field_radius().value());
 }
 
 void Generator::handle(const MqttsnConnectMsg& msg)
 {
     m_logger.infoLog() << "Processing " << msg.name() << "\n";
+
+    if (msg.field_flags().field_mid().getBitValue_Will()) {
+        MqttsnWilltopicreqMsg willTopicReqMsg;
+        sendMessage(willTopicReqMsg);    
+        return;
+    }
+
     MqttsnConnackMsg outMsg;
     sendMessage(outMsg);
+}
+
+void Generator::handle(const MqttsnWilltopicMsg& msg)
+{
+    if (msg.field_willTopic().value().empty()) {
+        MqttsnConnackMsg outMsg;
+        sendMessage(outMsg);     
+        return;   
+    }
+
+    MqttsnWillmsgreqMsg willMsgReqMsg;
+    sendMessage(willMsgReqMsg);     
+}
+
+void Generator::handle([[maybe_unused]] const MqttsnWillmsgMsg& msg)
+{
+    MqttsnConnackMsg outMsg;
+    sendMessage(outMsg);     
 }
 
 void Generator::handle(const MqttsnPublishMsg& msg)

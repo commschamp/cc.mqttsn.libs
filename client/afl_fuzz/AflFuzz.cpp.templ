@@ -92,20 +92,18 @@ public:
                     break;
                 }
 
-                /* 
                 if (m_state.m_connectRequired) {
                     doConnect();
                     break;
                 }
 
-                if (!cc_mqttsn_##NAME##client_is_connected(m_client.get())) {
+                if (cc_mqttsn_##NAME##client_get_connection_status(m_client.get()) != CC_MqttsnConnectionStatus_Connected) {
                     infoLog() << "Not connected yet..." << std::endl;
                     assert(!m_state.m_connected);
                     break;
                 }
 
                 assert(m_state.m_connected);
-                */
 
                 // doSubscribeIfNeeded();
                 // doUnsubscribeIfNeeded();
@@ -116,7 +114,6 @@ public:
 
             int len = 0;
             bool noMoreRead = true;
-            static_cast<void>(noMoreRead); // TODO: remove
             if (!m_generator) {
 #ifdef WIN32
                 len = _read(0, buf, BufSize);
@@ -138,7 +135,6 @@ public:
             auto dataPtr = &buf[0];
             auto dataLen = static_cast<std::size_t>(len);
             bool hasPrevData = false;
-            static_cast<void>(hasPrevData); // TODO: remove
             if (!m_inData.empty()) {
                 m_inData.reserve(m_inData.size() + dataLen);
                 m_inData.insert(m_inData.end(), dataPtr, dataPtr + dataLen);
@@ -153,76 +149,65 @@ public:
                 hasPrevData = true;
             }
 
-/* TODO
             using Interface = cc_mqttsn::Message<>;
-            using IdAndFlagsField = cc_mqttsn::frame::Frame<Interface>::Layer_idAndFlags::Field;
-            using SizeField = cc_mqttsn::frame::Frame<Interface>::Layer_size::Field;
+            using LengthField = cc_mqttsn::frame::Frame<Interface>::Layer_length::Field;
 
-            static constexpr auto MinLen = IdAndFlagsField::minLength() + SizeField::minLength();
-            if (dataLen < MinLen) {
+            auto iter = dataPtr;
+            auto processLen = dataLen;
+            LengthField lengthField;
+            auto es = lengthField.read(iter, dataLen);
+            if (es == comms::ErrorStatus::NotEnoughData) {
                 if (!noMoreRead) {
                     continue;
                 }
 
-                if (!cc_mqttsn_##NAME##client_is_network_disconnected(m_client.get())) {
-                    infoLog() << "Insufficient data in buffer (" << dataLen << "), reporting network disconnected..." << std::endl;
-                    cc_mqttsn_##NAME##client_notify_network_disconnected(m_client.get());
-                    gatewayDisconnectReportCb(this, CC_MqttsnBrokerDisconnectReason_ValuesLimit);
-                    continue;
-                }
-
-                infoLog() << "Insufficient data in buffer (" << dataLen << "), stopping execution loop" << std::endl;
-                break;
+                infoLog() << "Failed to read length, insufficient data in buffer (" << dataLen << "), stopping execution loop" << std::endl;
+                break;                
             }
 
-            auto iter = dataPtr;
-            std::advance(iter, IdAndFlagsField::minLength());
-
-            auto processLen = dataLen;
-            SizeField sizeField;
-            auto es = sizeField.read(iter, dataLen - IdAndFlagsField::minLength());
             if (es == comms::ErrorStatus::Success) {
-                auto msgLen = IdAndFlagsField::minLength() + sizeField.length() + sizeField.getValue();
-                processLen = std::min(dataLen, msgLen);
+                auto msgLen = lengthField.getValue();
+                processLen = lengthField.length() + msgLen;
             }
 
-            auto consumed = 0U;
-            if (!cc_mqttsn_##NAME##client_is_network_disconnected(m_client.get())) {
-                infoLog() << "Processing " << processLen << " out of " << dataLen << " bytes...\n";
-                consumed = cc_mqttsn_##NAME##client_process_data(m_client.get(), dataPtr, static_cast<unsigned>(processLen));
-                infoLog() << "Consumed: " << consumed << '\n';
-            }
-            else {
-                infoLog() << "Network is disconnected, not consuming any data" << '\n';
-            }
-
-            if ((consumed == 0U) && noMoreRead) {
-                if (!cc_mqttsn_##NAME##client_is_network_disconnected(m_client.get())) {
-                    infoLog() << "No data consumed and no more input, reporting network disconnected..." << std::endl;
-                    cc_mqttsn_##NAME##client_notify_network_disconnected(m_client.get());
-                    gatewayDisconnectReportCb(this, CC_MqttsnBrokerDisconnectReason_ValuesLimit);
+            if (dataLen < processLen) {
+                if (!noMoreRead) {
                     continue;
                 }
 
-                infoLog() << "No data consumed and no more input, stopping execution loop\n";
-                break;
+                infoLog() << "Insufficient data in buffer (" << dataLen << " requiring " << processLen << "), stopping execution loop" << std::endl;
+                break;  
             }
 
-            if ((dataLen <= consumed) && (!hasPrevData)) {
+            infoLog() << "Processing " << processLen << " out of " << dataLen << " bytes...\n";
+            CC_MqttsnDataOrigin origin = CC_MqttsnDataOrigin_ConnectedGw;
+            if (m_state.m_searchRequired) {
+                origin = CC_MqttsnDataOrigin_Any;
+            }
+
+            if (m_verbose) {
+                auto& out = debugLog();
+                out << "Processing bytes: " << std::hex;
+                std::copy_n(dataPtr, processLen, std::ostream_iterator<unsigned>(out, " "));
+                out << std::dec << std::endl;
+            }
+            
+            cc_mqttsn_##NAME##client_process_data(m_client.get(), dataPtr, static_cast<unsigned>(processLen), origin);
+
+            if ((dataLen <= processLen) && (!hasPrevData)) {
                 infoLog() << "Consumed all available bytes\n";
                 m_inData.clear();
                 continue;
             }
 
             if (!hasPrevData) {
-                m_inData.assign(dataPtr + consumed, dataPtr + dataLen);
+                m_inData.assign(dataPtr + processLen, dataPtr + dataLen);
                 infoLog() << "Keeping " << m_inData.size() << " bytes for the next iteration\n";
                 continue;
             }
 
-            m_inData.erase(m_inData.begin(), m_inData.begin() + consumed);
+            m_inData.erase(m_inData.begin(), m_inData.begin() + processLen);
             infoLog() << "Keeping " << m_inData.size() << " bytes for the next iteration\n";        
-*/            
         }
 
         m_client.reset();
@@ -304,7 +289,6 @@ private:
         } 
     }
 
-/* TODO
     void doConnect()
     {
         m_state.m_connected = false;
@@ -319,51 +303,38 @@ private:
             exit(-1);
         }
 
-        CC_MqttsnConnectBasicConfig basicConfig;
-        cc_mqttsn_##NAME##client_connect_init_config_basic(&basicConfig);
-        basicConfig.m_cleanStart = m_state.m_firstConnect || m_opts.clientId().empty();
+        CC_MqttsnConnectConfig config;
+        cc_mqttsn_##NAME##client_connect_init_config(&config);
+        config.m_cleanSession = m_state.m_firstConnect || m_opts.clientId().empty();
 
         auto clientId = m_opts.clientId();
         if (!clientId.empty()) {
-            basicConfig.m_clientId = clientId.c_str();
+            config.m_clientId = clientId.c_str();
         }
         
-        ec = cc_mqttsn_##NAME##client_connect_config_basic(connect, &basicConfig);
+        ec = cc_mqttsn_##NAME##client_connect_config(connect, &config);
         assert(ec == CC_MqttsnErrorCode_Success);
         if (ec != CC_MqttsnErrorCode_Success) {
             errorLog() << "Unexpected failure in connect basic configuration\n";
             exit(-1);
         }   
 
-        CC_MqttsnConnectExtraConfig extraConfig;
-        ::cc_mqttsn_##NAME##client_connect_init_config_extra(&extraConfig);
-        extraConfig.m_receiveMaximum = m_opts.receiveMax();
-        extraConfig.m_maxPacketSize = m_opts.maxPacketSize();
-        extraConfig.m_topicAliasMaximum = m_opts.topicAliasMax();
-        extraConfig.m_requestResponseInfo = m_opts.reqResponseInfo();
-        extraConfig.m_requestProblemInfo = m_opts.reqProblemInfo();
+        auto willTopic = m_opts.willTopic();
+        if (!willTopic.empty()) {
+            auto willData = m_opts.willData();
+            CC_MqttsnWillConfig willConfig;
+            cc_mqttsn_##NAME##client_connect_init_config_will(&willConfig);
 
-        ec = ::cc_mqttsn_##NAME##client_connect_config_extra(connect, &extraConfig);
-        if (ec != CC_MqttsnErrorCode_Success) {
-            errorLog() << "Unexpected failure in connect extra configuration\n";
-            exit(-1);
-        }              
-
-        auto authMethod = m_opts.authMethod();
-        if (!authMethod.empty()) {
-            CC_MqttsnAuthConfig authConfig;
-            ::cc_mqttsn_##NAME##client_connect_init_config_auth(&authConfig);
-            authConfig.m_authMethod = authMethod.c_str();
-            authConfig.m_authData = reinterpret_cast<const std::uint8_t*>(authMethod.data());
-            authConfig.m_authDataLen = static_cast<unsigned>(authMethod.size());
-            authConfig.m_authCb = &AflFuzzImpl::authCb;
-            authConfig.m_authCbData = this;
-
-            ec = ::cc_mqttsn_##NAME##client_connect_config_auth(connect, &authConfig);
-            if (ec != CC_MqttsnErrorCode_Success) {
-                errorLog() << "Unexpected failure in connect auth configuration\n";
-                exit(-1);
-            }              
+            willConfig.m_topic = willTopic.c_str();
+            willConfig.m_data = reinterpret_cast<const std::uint8_t*>(willData.data());
+            willConfig.m_dataLen = static_cast<decltype(willConfig.m_dataLen)>(willData.size());            
+            ec = cc_mqttsn_##NAME##client_connect_config_will(connect, &willConfig);
+            if ((ec != CC_MqttsnErrorCode_Success) && 
+                (ec != CC_MqttsnErrorCode_NotSupported)) {
+                
+                errorLog() << "Unexpected failure in configuring will\n";
+                exit(-1);                
+            }
         }
 
         ec = cc_mqttsn_##NAME##client_connect_send(connect, &AflFuzzImpl::connectCompleteCb, this);
@@ -376,6 +347,7 @@ private:
         m_state.m_connectRequired = false;
     }
 
+/* TODO
     void doSubscribeIfNeeded() {
         for (auto& subInfo : m_state.m_subs) {
             if ((subInfo.m_subHandle != nullptr) || (subInfo.m_acked)) {
@@ -679,39 +651,32 @@ private:
                 [info](auto gwId)
                 {
                     return gwId == info->m_gwId;
-                });
+                });        
 
-        if (iter == thisPtr->m_state.m_gateways.end()) {
-            static const CC_MqttsnGwStatus ExpectedStatuses[] = {
-                CC_MqttsnGwStatus_AddedByGateway,
-                CC_MqttsnGwStatus_AddedByClient
-            };
+        static const CC_MqttsnGwStatus AddStatuses[] = {
+            CC_MqttsnGwStatus_AddedByGateway,
+            CC_MqttsnGwStatus_AddedByClient
+        };
 
-            auto statusIter = std::find(std::begin(ExpectedStatuses), std::end(ExpectedStatuses), status);
-            assert(statusIter != std::end(ExpectedStatuses));
-            if (statusIter != std::end(ExpectedStatuses)) {
+        auto addIter = std::find(std::begin(AddStatuses), std::end(AddStatuses), status);
+        if (addIter != std::end(AddStatuses)) {
+            if (iter == thisPtr->m_state.m_gateways.end()) {
                 thisPtr->m_state.m_gateways.push_back(info->m_gwId);
             }
+
             return;
+        }        
+
+        if (iter == thisPtr->m_state.m_gateways.end()) {
+            thisPtr->errorLog() << "Unexpected report of gateway status when no gateway is registered" << std::endl;
+            exit(-1);
         }
-
-        static const CC_MqttsnGwStatus UpdateStatuses[] = {
-            CC_MqttsnGwStatus_UpdatedByClient,
-            CC_MqttsnGwStatus_Alive,
-            CC_MqttsnGwStatus_Tentative,
-        };        
-
-        auto updateIter = std::find(std::begin(UpdateStatuses), std::end(UpdateStatuses), status);
-        if (updateIter != std::end(UpdateStatuses)) {
-            return;
-        }   
 
         static const CC_MqttsnGwStatus RemoveStatuses[] = {
             CC_MqttsnGwStatus_Removed
         };
 
         auto removeIter = std::find(std::begin(RemoveStatuses), std::end(RemoveStatuses), status);
-        assert(removeIter != std::end(RemoveStatuses));
         if (removeIter == std::end(RemoveStatuses)) {
             return;
         }                        
@@ -785,8 +750,7 @@ private:
         state.m_searchRequired = true;  
     }
 
-/* 
-    static void connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectResponse* response)
+    static void connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
     {
         auto* thisPtr = asThis(data);
         auto& state = thisPtr->m_state;
@@ -796,16 +760,18 @@ private:
                 break;
             }
 
-            assert(response != nullptr);
-            if (CC_MqttsnReasonCode_Success != response->m_reasonCode) {
+            assert(info != nullptr);
+            if (CC_MqttsnReturnCode_Accepted != info->m_returnCode) {
                 break;
             }
 
             thisPtr->infoLog() << "Connected" << std::endl;
 
-            assert(cc_mqttsn_##NAME##client_is_connected(thisPtr->m_client.get()));
+            assert(cc_mqttsn_##NAME##client_get_connection_status(thisPtr->m_client.get()) == CC_MqttsnConnectionStatus_Connected);
 
-            if (!response->m_sessionPresent) {
+            bool cleanSession = state.m_firstConnect || thisPtr->m_opts.clientId().empty();
+
+            if (cleanSession) {
                 for (auto& subInfo : state.m_subs) {
                     assert(subInfo.m_subHandle == nullptr);
                     assert(subInfo.m_unsubHandle == nullptr);
@@ -825,8 +791,6 @@ private:
         state.m_connected = false;
         state.m_reinitRequired = true;    
     }  
-
-*/
 
 /* 
     static void subscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeResponse* response)

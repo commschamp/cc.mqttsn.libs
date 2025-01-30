@@ -59,6 +59,8 @@ public:
 
     void handle(const MqttsnSearchgwMsg& msg);
     void handle(const MqttsnConnectMsg& msg);
+    void handle(const MqttsnWilltopicMsg& msg);
+    void handle(const MqttsnWillmsgMsg& msg);
     void handle(const MqttsnPublishMsg& msg);
     void handle(const MqttsnPubrecMsg& msg);
     void handle(const MqttsnPubrelMsg& msg);
