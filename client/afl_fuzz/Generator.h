@@ -18,6 +18,7 @@
 #include <iterator>
 #include <fstream>
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -61,6 +62,7 @@ public:
     void handle(const MqttsnConnectMsg& msg);
     void handle(const MqttsnWilltopicMsg& msg);
     void handle(const MqttsnWillmsgMsg& msg);
+    void handle(const MqttsnRegackMsg& msg);
     void handle(const MqttsnPublishMsg& msg);
     void handle(const MqttsnPubrecMsg& msg);
     void handle(const MqttsnPubrelMsg& msg);
@@ -70,12 +72,18 @@ public:
 
 private:
     using MqttsnFrame = cc_mqttsn::frame::Frame<MqttsnMessage>;
+    using TopicIdType = MqttsnSubscribeMsg::Field_flags::Field_topicIdType::ValueType;
+    struct PubInfo
+    {
+        std::uint16_t m_topicId = 0U;
+        unsigned m_maxQos = 2U;
+        unsigned m_nextQos = 0U;
+        TopicIdType m_type = TopicIdType::Normal;
+    };
 
     unsigned allocPacketId();
-    unsigned allocTopicAlias(const std::string& topic);
+    std::uint16_t allocTopicId();
     void sendMessage(MqttsnMessage& msg, unsigned broadcastRadius = 0);
-    void sendConnack(const MqttsnConnectMsg& msg);
-    void sendPublish(const std::string& topic, unsigned qos);
     void doPublish();
     void doNextPublishIfNeeded();
 
@@ -86,9 +94,9 @@ private:
     MqttsnFrame m_frame;
     std::unique_ptr<MqttsnConnectMsg> m_cachedConnect;
     unsigned m_lastPacketId = 0U;
-    unsigned m_nextPubQos = 0U;
-    std::string m_lastPubTopic;
     unsigned m_pubCount = 0U;
+    std::list<PubInfo> m_pubs;
+    std::uint16_t m_lastTopicId = 100U;
 };
 
 using GeneratorPtr = std::unique_ptr<Generator>;

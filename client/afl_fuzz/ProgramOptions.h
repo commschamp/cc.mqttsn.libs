@@ -42,7 +42,7 @@ public:
     std::string willData() const;
 
     // Subscribe options
-    std::vector<StringsList> subTopics() const;
+    StringsList subTopics() const;
 
     // Publish options
     unsigned minPubCount() const;    

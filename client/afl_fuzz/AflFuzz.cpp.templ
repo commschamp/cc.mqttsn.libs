@@ -55,10 +55,15 @@ public:
         auto subTopics = m_opts.subTopics();
         std::transform(
             subTopics.begin(), subTopics.end(), std::back_inserter(m_state.m_subs),
-            [](auto& topicsList)
+            [](auto& topic)
             {
                 SubscribeInfo info;
-                info.m_topics = topicsList;
+                try {
+                    info.m_topicId = static_cast<decltype(info.m_topicId)>(std::stoul(topic));
+                }
+                catch (...) {
+                    info.m_topic = topic;
+                }
                 return info;
             });
 
@@ -105,8 +110,11 @@ public:
 
                 assert(m_state.m_connected);
 
-                // doSubscribeIfNeeded();
-                // doUnsubscribeIfNeeded();
+                doSubscribeIfNeeded();
+                // TODO: update will
+                // TODO: sleep
+                
+                doUnsubscribeIfNeeded();
                 // doDisconnectIfNeeded();
 
             } while (false);      
@@ -228,9 +236,10 @@ private:
 
     struct SubscribeInfo
     {
-        std::vector<std::string> m_topics;
+        std::string m_topic;
         CC_MqttsnSubscribeHandle m_subHandle = nullptr;
         CC_MqttsnUnsubscribeHandle m_unsubHandle = nullptr;
+        std::uint16_t m_topicId = 0U;
         bool m_acked = false;
         bool m_unsubscribed = false;
     };
@@ -347,7 +356,6 @@ private:
         m_state.m_connectRequired = false;
     }
 
-/* TODO
     void doSubscribeIfNeeded() {
         for (auto& subInfo : m_state.m_subs) {
             if ((subInfo.m_subHandle != nullptr) || (subInfo.m_acked)) {
@@ -368,90 +376,40 @@ private:
 
             assert(ec == CC_MqttsnErrorCode_Success);
 
-            for (auto& t : subInfo.m_topics) {
-                assert(!t.empty());
-                infoLog() << "Adding topic " << t << "\n";
-                CC_MqttsnSubscribeTopicConfig config;
-                cc_mqttsn_##NAME##client_subscribe_init_config_topic(&config);
-                config.m_topic = t.c_str();
+            CC_MqttsnSubscribeConfig config;
+            cc_mqttsn_##NAME##client_subscribe_init_config(&config);
 
-                while (true) {
-                    ec = cc_mqttsn_##NAME##client_subscribe_config_topic(subInfo.m_subHandle, &config);
-                    if (ec == CC_MqttsnErrorCode_Success) {
-                        break;
-                    }
+            if (!subInfo.m_topic.empty()) {
+                infoLog() << "Adding topic " << subInfo.m_topic << "\n";
+                config.m_topic = subInfo.m_topic.c_str();
+            }
+            else {
+                infoLog() << "Adding topic ID " << subInfo.m_topicId << "\n";
+                config.m_topicId = subInfo.m_topicId;
+            }
 
-                    if (config.m_maxQos > CC_MqttsnQoS_AtMostOnceDelivery) {
-                        config.m_maxQos = 
-                            static_cast<decltype(config.m_maxQos)>(
-                                static_cast<unsigned>(config.m_maxQos) - 1U);
-                        continue;
-                    }
+            auto termSubReq = 
+                [&subInfo]()
+                {
+                    cc_mqttsn_##NAME##client_subscribe_cancel(subInfo.m_subHandle);
+                    subInfo.m_subHandle = nullptr;
+                    subInfo.m_acked = true;
+                };
 
-                    auto whildcardPos = std::string(config.m_topic).find_first_of("#+");
-                    if (whildcardPos != std::string::npos) {
-                        config.m_topic = "some/topic";
-                        config.m_maxQos = CC_MqttsnQoS_ExactlyOnceDelivery;
-                        infoLog() << "Changing subscribe topic to " << config.m_topic << std::endl;
-                        continue;
-                    }
-
-                    errorLog() << "Unexpected failure in topic subscribe configuration\n";
-                    break;
-                }
+            ec = cc_mqttsn_##NAME##client_subscribe_config(subInfo.m_subHandle, &config);
+            if (ec != CC_MqttsnErrorCode_Success) {
+                errorLog() << "Unexpected failure in configuring subscription";
+                termSubReq();
+                continue;
             }
 
             ec = cc_mqttsn_##NAME##client_subscribe_send(subInfo.m_subHandle, &AflFuzzImpl::subscribeCompleteCb, this);
             if (ec != CC_MqttsnErrorCode_Success) {
                 errorLog() << "Unexpected failure in sending subscribe request";
-                subInfo.m_subHandle = nullptr;
-                subInfo.m_acked = true;
+                termSubReq();
+                continue;
             }             
         }
-    }
-
-    void doReauthIfNeeded()
-    {
-        if ((m_state.m_reauthComplete) || (!m_state.m_reauthRequired)) {
-            return;
-        }
-
-        m_state.m_reauthRequired = false;
-
-        CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
-        auto reauth = cc_mqttsn_##NAME##client_reauth_prepare(m_client.get(), &ec);
-        if (reauth == nullptr) {
-            errorLog() << "Unexpected failure in reauth allocation\n";
-            m_state.m_reauthComplete = true;
-            return;
-        }   
-
-        assert(ec == CC_MqttsnErrorCode_Success);  
-
-        auto authMethod = m_opts.authMethod();
-        assert(!authMethod.empty());
-        CC_MqttsnAuthConfig authConfig;
-        ::cc_mqttsn_##NAME##client_reauth_init_config_auth(&authConfig);
-        authConfig.m_authMethod = authMethod.c_str();
-        authConfig.m_authData = reinterpret_cast<const std::uint8_t*>(authMethod.data());
-        authConfig.m_authDataLen = static_cast<unsigned>(authMethod.size());
-        authConfig.m_authCb = &AflFuzzImpl::authCb;
-        authConfig.m_authCbData = this;
-        
-        ec = ::cc_mqttsn_##NAME##client_reauth_config_auth(reauth, &authConfig);
-        if (ec != CC_MqttsnErrorCode_Success) {
-            errorLog() << "Unexpected failure in reauth configuration\n";
-            cc_mqttsn_##NAME##client_reauth_cancel(reauth);
-            m_state.m_reauthComplete = true;
-            return;
-        }           
-
-        ec = ::cc_mqttsn_##NAME##client_reauth_send(reauth, &AflFuzzImpl::reauthCompleteCb, this);
-        if (ec != CC_MqttsnErrorCode_Success) {
-            errorLog() << "Unexpected failure in sending reauth\n";
-            m_state.m_reauthComplete = true;
-            return;
-        }            
     }
 
     void doUnsubscribeIfNeeded() {
@@ -490,38 +448,43 @@ private:
 
             assert(ec == CC_MqttsnErrorCode_Success);
 
-            for (auto& t : subInfo.m_topics) {
-                assert(!t.empty());
-                infoLog() << "Adding topic " << t << "\n";
-                CC_MqttsnUnsubscribeTopicConfig config;
-                cc_mqttsn_##NAME##client_unsubscribe_init_config_topic(&config);
-                config.m_topic = t.c_str();
+            CC_MqttsnUnsubscribeConfig config;
+            cc_mqttsn_##NAME##client_unsubscribe_init_config(&config);
 
-                while (true) {
-                    ec = cc_mqttsn_##NAME##client_unsubscribe_config_topic(subInfo.m_unsubHandle, &config);
-                    if (ec == CC_MqttsnErrorCode_Success) {
-                        break;
-                    }
-
-                    if (!cc_mqttsn_##NAME##client_get_verify_outgoing_topic_enabled(m_client.get())) {
-                        errorLog() << "Unexpected failure in configuring unsubscribe topic\n";
-                        cc_mqttsn_##NAME##client_unsubscribe_cancel(subInfo.m_unsubHandle);
-                        break;
-                    }
-
-                    cc_mqttsn_##NAME##client_set_verify_outgoing_topic_enabled(m_client.get(), false);
-                }
+            if (!subInfo.m_topic.empty()) {
+                infoLog() << "Adding topic " << subInfo.m_topic << "\n";
+                config.m_topic = subInfo.m_topic.c_str();
             }
+            else {
+                infoLog() << "Adding topic ID " << subInfo.m_topicId << "\n";
+                config.m_topicId = subInfo.m_topicId;
+            }      
+
+            auto termSubReq = 
+                [&subInfo]()
+                {
+                    cc_mqttsn_##NAME##client_unsubscribe_cancel(subInfo.m_unsubHandle);
+                    subInfo.m_unsubHandle = nullptr;
+                    subInfo.m_unsubscribed = true;
+                };
+
+            ec = cc_mqttsn_##NAME##client_unsubscribe_config(subInfo.m_unsubHandle, &config);
+            if (ec != CC_MqttsnErrorCode_Success) {
+                errorLog() << "Unexpected failure in configuring unsubscription";
+                termSubReq();
+                continue;
+            }                  
 
             ec = cc_mqttsn_##NAME##client_unsubscribe_send(subInfo.m_unsubHandle, &AflFuzzImpl::unsubscribeCompleteCb, this);
             if (ec != CC_MqttsnErrorCode_Success) {
                 errorLog() << "Unexpected failure in sending unsubscribe request";
-                subInfo.m_unsubHandle = nullptr;
-                subInfo.m_unsubscribed = true;
+                termSubReq();
+                continue;
             }             
         }
     }
 
+    /* TODO
     void doDisconnectIfNeeded() 
     {
         if (m_state.m_disconnected) {
@@ -716,7 +679,7 @@ private:
             return;
         }    
 
-        ec = cc_mqttsn_##NAME##client_publish(client, &config, &AflFuzzImpl::publishCompleteCb, thisPtr);
+        ec = cc_mqttsn_##NAME##client_publish_send(publish, &AflFuzzImpl::publishCompleteCb, thisPtr);
         if (ec != CC_MqttsnErrorCode_Success) {
             thisPtr->errorLog() << "Failure to publish message\n";
         }        
@@ -792,8 +755,7 @@ private:
         state.m_reinitRequired = true;    
     }  
 
-/* 
-    static void subscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeResponse* response)
+    static void subscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, [[maybe_unused]] const CC_MqttsnSubscribeInfo* info)
     {
         auto* thisPtr = asThis(data);
         auto& state = thisPtr->m_state;
@@ -817,22 +779,8 @@ private:
             return;
         }
 
-        assert(response != nullptr);
-        bool allOk = true;
-        for (auto idx = 0U; idx < response->m_reasonCodesCount; ++idx) {
-            if (CC_MqttsnReasonCode_UnspecifiedError <= response->m_reasonCodes[idx]) {
-                thisPtr->errorLog() << "Subscribe rejected\n";
-                allOk = false;
-                break;
-            }
-        }
-        
-        if (allOk) {
-            thisPtr->infoLog() << "The subscribe is properly acked\n";
-        }
-        iter->m_acked = allOk;
+        iter->m_acked = true;
     } 
-*/  
 
     static void publishCompleteCb(
         void* data, 
@@ -849,8 +797,7 @@ private:
         ++thisPtr->m_state.m_publishCount;
     }          
 
-/* 
-    static void unsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnUnsubscribeResponse* response)
+    static void unsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status)
     {
         auto* thisPtr = asThis(data);
         auto& state = thisPtr->m_state;
@@ -874,22 +821,8 @@ private:
             return;
         }
 
-        assert(response != nullptr);
-        bool allOk = true;
-        for (auto idx = 0U; idx < response->m_reasonCodesCount; ++idx) {
-            if (CC_MqttsnReasonCode_UnspecifiedError <= response->m_reasonCodes[idx]) {
-                thisPtr->errorLog() << "Unsubscribe rejected\n";
-                allOk = false;
-                break;
-            }
-        }
-        
-        if (allOk) {
-            thisPtr->infoLog() << "The unsubscribe is properly acked\n";
-        }
-        iter->m_unsubscribed = allOk;
+        iter->m_unsubscribed = true;
     }   
-*/       
 
     const ProgramOptions& m_opts;
     Logger& m_logger;

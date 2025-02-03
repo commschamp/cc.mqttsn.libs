@@ -113,81 +113,94 @@ void Generator::handle([[maybe_unused]] const MqttsnWillmsgMsg& msg)
     sendMessage(outMsg);     
 }
 
+void Generator::handle(const MqttsnRegackMsg& msg)
+{
+    m_logger.infoLog() << "Processing " << msg.name() << "\n";
+    doNextPublishIfNeeded();
+}
+
 void Generator::handle(const MqttsnPublishMsg& msg)
 {
     m_logger.infoLog() << "Processing " << msg.name() << "\n";
 
-    // using QosValueType = MqttsnPublishMsg::TransportField_flags::Field_qos::ValueType;
-    // auto qos = msg.transportField_flags().field_qos().value();
-    // if (qos == QosValueType::AtMostOnceDelivery) {
-    //     m_logger.infoLog() << "at most once" << "\n";
-    //     doNextPublishIfNeeded();
-    //     return;
-    // }
+    using QosValueType = MqttsnPublishMsg::Field_flags::Field_qos::ValueType;
+    auto qos = msg.field_flags().field_qos().value();
+    if (qos == QosValueType::AtMostOnceDelivery) {
+        m_logger.infoLog() << "at most once" << "\n";
+        doNextPublishIfNeeded();
+        return;
+    }
 
-    // if (qos == QosValueType::AtLeastOnceDelivery) {
-    //     MqttsnPubackMsg outMsg;
-    //     outMsg.field_msgId().setValue(msg.field_msgId().field().getValue());
-    //     sendMessage(outMsg);
-    //     doNextPublishIfNeeded();
-    //     return;
-    // }
+    if (qos == QosValueType::AtLeastOnceDelivery) {
+        MqttsnPubackMsg outMsg;
+        outMsg.field_topicId().setValue(msg.field_topicId().getValue());
+        outMsg.field_msgId().setValue(msg.field_msgId().getValue());
+        sendMessage(outMsg);
+        doNextPublishIfNeeded();
+        return;
+    }
 
-    // assert(qos == QosValueType::ExactlyOnceDelivery);
-    // MqttsnPubrecMsg outMsg;
-    // outMsg.field_msgId().setValue(msg.field_msgId().field().getValue());
-    // sendMessage(outMsg);
-    // return;
+    assert(qos == QosValueType::ExactlyOnceDelivery);
+    MqttsnPubrecMsg outMsg;
+    outMsg.field_msgId().setValue(msg.field_msgId().getValue());
+    sendMessage(outMsg);
+    return;
 }
 
 void Generator::handle(const MqttsnPubrecMsg& msg)
 {
     m_logger.infoLog() << "Processing " << msg.name() << "\n";
-    // MqttsnPubrelMsg outMsg;
-    // outMsg.field_msgId().setValue(msg.field_msgId().getValue());
-    // sendMessage(outMsg);
-    // return;    
+    MqttsnPubrelMsg outMsg;
+    outMsg.field_msgId().setValue(msg.field_msgId().getValue());
+    sendMessage(outMsg);
 }
 
 void Generator::handle(const MqttsnPubrelMsg& msg)
 {
     m_logger.infoLog() << "Processing " << msg.name() << "\n";
-    // MqttsnPubcompMsg outMsg;
-    // outMsg.field_msgId().setValue(msg.field_msgId().getValue());
-    // sendMessage(outMsg);
-    // doNextPublishIfNeeded();
-    // return;    
+    MqttsnPubcompMsg outMsg;
+    outMsg.field_msgId().setValue(msg.field_msgId().getValue());
+    sendMessage(outMsg);
+    doNextPublishIfNeeded();
 }
 
 void Generator::handle(const MqttsnSubscribeMsg& msg)
 {
     m_logger.infoLog() << "Processing " << msg.name() << "\n";
-    // auto& subsVec = msg.field_list().value();
+    MqttsnSubackMsg outMsg;
+    outMsg.field_flags().field_qos().setValue(msg.field_flags().field_qos().getValue());
+    outMsg.field_msgId().setValue(msg.field_msgId().getValue());
+    sendMessage(outMsg);     
 
-    // MqttsnSubackMsg outMsg;
-    // outMsg.field_msgId().value() = msg.field_msgId().value();
-    // auto& ackVec = outMsg.field_list().value();
-    // ackVec.resize(subsVec.size());
+    PubInfo pub;
+    pub.m_maxQos = static_cast<decltype(pub.m_maxQos)>(msg.field_flags().field_qos().getValue());
+    if (msg.field_topicName().doesExist()) {
+        pub.m_topicId = allocTopicId();
 
-    // for (auto& elem : ackVec) {
-    //     using ElemType = std::decay_t<decltype(elem)>;
-    //     elem.setValue(ElemType::ValueType::Qos2);
-    // }
+        m_pubs.push_back(pub);
 
-    // sendMessage(outMsg);
+        MqttsnRegisterMsg regMsg;
+        regMsg.field_topicId().setValue(pub.m_topicId);
+        regMsg.field_msgId().setValue(allocPacketId());
+        regMsg.field_topicName().setValue(pubTopicFromFilter(msg.field_topicName().field().getValue()));
+        sendMessage(regMsg); 
+        return;
 
-    // for (auto& subElemField : subsVec) {
-    //     m_lastPubTopic = pubTopicFromFilter(subElemField.field_topic().value());
-    //     doPublish();
-    // }
+    }
+
+    assert(msg.field_topicId().doesExist());
+    pub.m_topicId = msg.field_topicId().field().value();
+    pub.m_type = msg.field_flags().field_topicIdType().getValue();
+    m_pubs.push_back(pub);
+    doNextPublishIfNeeded();
 }
 
 void Generator::handle(const MqttsnUnsubscribeMsg& msg)
 {
     m_logger.infoLog() << "Processing " << msg.name() << "\n";
-    // MqttsnUnsubackMsg outMsg;
-    // outMsg.field_msgId().value() = msg.field_msgId().value();
-    // sendMessage(outMsg);
+    MqttsnUnsubackMsg outMsg;
+    outMsg.field_msgId().value() = msg.field_msgId().value();
+    sendMessage(outMsg);
 }
 
 void Generator::handle([[maybe_unused]] const MqttsnMessage& msg)
@@ -199,6 +212,12 @@ unsigned Generator::allocPacketId()
 {
     ++m_lastPacketId;
     return m_lastPacketId;
+}
+
+std::uint16_t Generator::allocTopicId()
+{
+    ++m_lastTopicId;
+    return m_lastTopicId;
 }
 
 void Generator::sendMessage(MqttsnMessage& msg, unsigned broadcastRadius)
@@ -217,31 +236,32 @@ void Generator::sendMessage(MqttsnMessage& msg, unsigned broadcastRadius)
     m_dataReportCb(outBuf.data(), outBuf.size(), broadcastRadius);
 }
 
-void Generator::sendPublish(const std::string& topic, unsigned qos)
-{
-    static_cast<void>(topic);
-    static_cast<void>(qos);
-    // MqttsnPublishMsg outMsg;
-
-    // outMsg.transportField_flags().field_qos().setValue(qos);
-    // outMsg.field_topic().setValue(topic);
-    // if (qos > 0U) {
-    //     outMsg.field_msgId().field().setValue(allocPacketId());
-    // }
-    // outMsg.field_payload().value().assign(topic.begin(), topic.end());
-
-    // sendMessage(outMsg);
-    // ++m_pubCount;
-}
-
 void Generator::doPublish()
 {
-    assert(!m_lastPubTopic.empty());
-    sendPublish(m_lastPubTopic, m_nextPubQos);
-    ++m_nextPubQos;
-    if (m_nextPubQos > 2) {
-        m_nextPubQos = 0;
+    assert(!m_pubs.empty());
+    auto pub = m_pubs.front();
+    m_pubs.pop_front();
+
+    m_logger.infoLog() << "Sending publish with qos=" << pub.m_nextQos << "\n";
+    MqttsnPublishMsg outMsg;
+    outMsg.field_flags().field_qos().setValue(pub.m_nextQos);
+    outMsg.field_flags().field_topicIdType().setValue(pub.m_type);
+    outMsg.field_topicId().setValue(pub.m_topicId);
+    if (pub.m_nextQos != 0) {
+        outMsg.field_msgId().setValue(allocPacketId());
     }
+
+    static const std::string data("bla");
+    comms::util::assign(outMsg.field_data().value(), data.begin(), data.end());
+
+    ++pub.m_nextQos;
+    if (pub.m_maxQos < pub.m_nextQos) {
+        pub.m_nextQos = 0;
+    }
+
+    m_pubs.push_back(pub);
+    sendMessage(outMsg);
+    ++m_pubCount;
 } 
 
 void Generator::doNextPublishIfNeeded()
