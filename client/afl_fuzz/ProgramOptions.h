@@ -47,6 +47,10 @@ public:
     // Publish options
     unsigned minPubCount() const;    
 
+    // Will update options
+    std::string willUpdTopic() const;
+    std::string willUpdData() const;
+
 private:
     StringsList stringListOpts(const std::string& name) const;
 

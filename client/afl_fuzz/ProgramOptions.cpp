@@ -28,7 +28,7 @@ ProgramOptions::ProgramOptions()
     po::options_description connectOpts("Connect Options");
     connectOpts.add_options()
         ("client-id,i", po::value<std::string>()->default_value("afl_client"), "Client ID")
-        ("will-topic", po::value<std::string>()->default_value(std::string()), 
+        ("will-topic", po::value<std::string>()->default_value(std::string("will")), 
             "Will topic to connect with")
         ("will-data", po::value<std::string>()->default_value(std::string("data")), 
             "Will data to connect with, applicable only if will-topic is not empty")            
@@ -44,11 +44,20 @@ ProgramOptions::ProgramOptions()
     subOpts.add_options()
         ("min-pub-count", po::value<unsigned>()->default_value(3U), 
             "Number of successful publish counts before unsubscribing to previously subscribed topics")
-    ;            
+    ;   
+
+    po::options_description willOpts("Will Update Options");
+    connectOpts.add_options()
+        ("will-upd-topic", po::value<std::string>()->default_value(std::string("will/update")), 
+            "Will topic to update.")
+        ("will-upd-data", po::value<std::string>()->default_value(std::string("update")), 
+            "Will data to update, applicable only if will-upd-topic is not empty")            
+    ;               
 
     m_desc.add(commonOpts);
     m_desc.add(connectOpts);  
     m_desc.add(subOpts);
+    m_desc.add(willOpts);
 }
 
 bool ProgramOptions::parseArgs(int argc, const char* argv[])
@@ -117,6 +126,16 @@ ProgramOptions::StringsList ProgramOptions::subTopics() const
 unsigned ProgramOptions::minPubCount() const
 {
     return m_vm["min-pub-count"].as<unsigned>();
+}
+
+std::string ProgramOptions::willUpdTopic() const
+{
+    return m_vm["will-upd-topic"].as<std::string>();
+}
+
+std::string ProgramOptions::willUpdData() const
+{
+    return m_vm["will-upd-data"].as<std::string>();
 }
 
 ProgramOptions::StringsList ProgramOptions::stringListOpts(const std::string& name) const

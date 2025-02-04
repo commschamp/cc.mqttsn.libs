@@ -1548,7 +1548,7 @@
 /// operation it can actually be sent to the gateway. To initiate sending
 /// use the @b cc_mqttsn_client_will_send() function.
 /// @code
-/// void my_will_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
+/// void my_will_complete_cb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info)
 /// {
 ///     if (status != CC_MqttsnAsyncOpStatus_Complete) {
 ///         printf("ERROR: The will operation has failed with status=%d\n", status);

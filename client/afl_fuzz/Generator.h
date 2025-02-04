@@ -68,6 +68,10 @@ public:
     void handle(const MqttsnPubrelMsg& msg);
     void handle(const MqttsnSubscribeMsg& msg);
     void handle(const MqttsnUnsubscribeMsg& msg);
+    void handle(const MqttsnDisconnectMsg& msg);
+    void handle(const MqttsnWilltopicupdMsg& msg);
+    void handle(const MqttsnWillmsgupdMsg& msg);
+    void handle(const MqttsnPingreqMsg& msg);
     void handle(const MqttsnMessage& msg);
 
 private:
@@ -97,6 +101,7 @@ private:
     unsigned m_pubCount = 0U;
     std::list<PubInfo> m_pubs;
     std::uint16_t m_lastTopicId = 100U;
+    bool m_asleep = false;
 };
 
 using GeneratorPtr = std::unique_ptr<Generator>;

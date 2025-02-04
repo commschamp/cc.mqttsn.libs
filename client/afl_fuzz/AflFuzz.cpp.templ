@@ -102,7 +102,7 @@ public:
                     break;
                 }
 
-                if (cc_mqttsn_##NAME##client_get_connection_status(m_client.get()) != CC_MqttsnConnectionStatus_Connected) {
+                if (cc_mqttsn_##NAME##client_get_connection_status(m_client.get()) == CC_MqttsnConnectionStatus_Disconnected) {
                     infoLog() << "Not connected yet..." << std::endl;
                     assert(!m_state.m_connected);
                     break;
@@ -111,14 +111,37 @@ public:
                 assert(m_state.m_connected);
 
                 doSubscribeIfNeeded();
-                // TODO: update will
-                // TODO: sleep
+
+                if (!!isSubscribeComplete()) {
+                    break;
+                }
+
+                if (m_state.m_publishCount < m_opts.minPubCount()) {
+                    // Not all messages have been exchanged
+                    break;
+                }
                 
+                doWillUpdateIfNeeded();
+
+                if (!m_state.m_willUpdateComplete) {
+                    break;
+                }
+
+                doSleepIfNeeded();
+
+                if (!m_state.m_sleepComplete) {
+                    break;
+                }
+
                 doUnsubscribeIfNeeded();
-                // doDisconnectIfNeeded();
+
+                if (!isUnsubscribeComplete()) {
+                    break;
+                }
+
+                doDisconnectIfNeeded();
 
             } while (false);      
-     
 
             int len = 0;
             bool noMoreRead = true;
@@ -256,6 +279,11 @@ private:
         bool m_connected = false;
         bool m_firstConnect = true;
         bool m_disconnected = false;
+        bool m_disconnectInProgress = false;
+        bool m_willUpdateComplete = false;
+        bool m_willUpdateInProgress = false;
+        bool m_sleepComplete = false;
+        bool m_sleepInProgress = false;
     };
 
     std::ostream& debugLog()
@@ -280,6 +308,10 @@ private:
         m_state.m_disconnected = false;
         m_state.m_publishCount = 0U;
         m_state.m_connected = false;
+        m_state.m_willUpdateComplete = false;
+        m_state.m_willUpdateInProgress = false;
+        m_state.m_sleepComplete = false;
+        m_state.m_sleepInProgress = false;
     }
 
     void doSearch()
@@ -329,7 +361,7 @@ private:
         }   
 
         auto willTopic = m_opts.willTopic();
-        if (!willTopic.empty()) {
+        if ((!willTopic.empty()) && m_state.m_firstConnect) {
             auto willData = m_opts.willData();
             CC_MqttsnWillConfig willConfig;
             cc_mqttsn_##NAME##client_connect_init_config_will(&willConfig);
@@ -412,23 +444,18 @@ private:
         }
     }
 
-    void doUnsubscribeIfNeeded() {
-
-        if (m_state.m_publishCount < m_opts.minPubCount()) {
-            return;
-        }
-
-        bool subsComplete = 
+    bool isSubscribeComplete()
+    {
+        return         
             std::all_of(
                 m_state.m_subs.begin(), m_state.m_subs.end(),
                 [](auto& subInfo)
                 {
                     return subInfo.m_acked;
                 });
+    }
 
-        if (!subsComplete) {
-            return;
-        }
+    void doUnsubscribeIfNeeded() {
 
         for (auto& subInfo : m_state.m_subs) {
             if ((subInfo.m_unsubHandle != nullptr) || (subInfo.m_unsubscribed)) {
@@ -484,55 +511,91 @@ private:
         }
     }
 
-    /* TODO
-    void doDisconnectIfNeeded() 
+    bool isUnsubscribeComplete()
     {
-        if (m_state.m_disconnected) {
-            return;
-        }
-
-        bool unsubsComplete = 
+        return
             std::all_of(
                 m_state.m_subs.begin(), m_state.m_subs.end(),
                 [](auto& subInfo)
                 {
                     return subInfo.m_unsubscribed;
-                });
+                });        
+    }
 
-        if (!unsubsComplete) {
+    void doDisconnectIfNeeded() 
+    {
+        if (m_state.m_disconnected || m_state.m_disconnectInProgress || (!m_state.m_connected)) {
             return;
         }
 
-        m_state.m_disconnected = true;
-        m_state.m_reinitRequired = true;
-        m_state.m_connected = false;
-
-        CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
-        auto handle = cc_mqttsn_##NAME##client_disconnect_prepare(m_client.get(), &ec);
-        if (handle == nullptr) {
-            errorLog() << "Unexpected failure in disconnect allocation\n";
-            return;
-        }     
-
-        assert(ec == CC_MqttsnErrorCode_Success);
-
-        CC_MqttsnDisconnectConfig config;
-        cc_mqttsn_##NAME##client_disconnect_init_config(&config);
-        
-        ec = cc_mqttsn_##NAME##client_disconnect_config(handle, &config);
-        if (ec != CC_MqttsnErrorCode_Success) {
-            errorLog() << "Failed to configure disconnect\n";
-            cc_mqttsn_##NAME##client_disconnect_cancel(handle);
-            return;
-        }
-
-        ec = cc_mqttsn_##NAME##client_disconnect_send(handle);
+        auto ec = cc_mqttsn_##NAME##client_disconnect(m_client.get(), &AflFuzzImpl::disconnectCompleteCb, this);
         if (ec != CC_MqttsnErrorCode_Success) {
             errorLog() << "Failed to send disconnect\n";
             return;
         }     
+
+        m_state.m_disconnectInProgress = true;
     }    
-*/    
+
+    void doWillUpdateIfNeeded()
+    {
+        if (m_state.m_willUpdateComplete || 
+            m_state.m_willUpdateInProgress || 
+            (m_state.m_publishCount < m_opts.minPubCount())) {
+            return;
+        }
+
+        auto updTopic = m_opts.willUpdTopic();
+        if (updTopic.empty()) {
+            infoLog() << "Will update is not requested\n";
+            m_state.m_willUpdateComplete = true;
+            return;
+        }
+
+        CC_MqttsnWillConfig config;
+        cc_mqttsn_##NAME##client_will_init_config(&config);
+
+        auto updData = m_opts.willUpdData();
+        config.m_topic = updTopic.c_str();
+        config.m_data = reinterpret_cast<const std::uint8_t*>(updData.data());
+        config.m_dataLen = static_cast<decltype(config.m_dataLen)>(updData.size());        
+
+        auto ec = cc_mqttsn_##NAME##client_will(m_client.get(), &config, &AflFuzzImpl::willUpdateCompleteCb, this);
+        if (ec == CC_MqttsnErrorCode_NotSupported) {
+            infoLog() << "Will update is not supported\n";
+            m_state.m_willUpdateComplete = true;
+            return;            
+        }
+
+        if (ec != CC_MqttsnErrorCode_Success) {
+            errorLog() << "Unexpected failure in sending will update request";
+            m_state.m_willUpdateComplete = true;
+            return;
+        }
+
+        m_state.m_willUpdateInProgress = true;
+    }
+
+    void doSleepIfNeeded()
+    {
+        if (m_state.m_sleepComplete || 
+            m_state.m_sleepInProgress) {
+            return;
+        }
+
+        CC_MqttsnSleepConfig config;
+        cc_mqttsn_##NAME##client_sleep_init_config(&config);
+        config.m_duration = 100;
+
+        auto ec = cc_mqttsn_##NAME##client_sleep(m_client.get(), &config, &AflFuzzImpl::sleepCompleteCb, this);
+        if (ec == CC_MqttsnErrorCode_NotSupported) {
+            infoLog() << "Sleep not supported\n";
+            m_state.m_sleepComplete = true;
+            return;            
+        }   
+
+        m_state.m_sleepInProgress = true;
+    }    
 
     bool createGeneratorIfNeeded()
     {
@@ -549,7 +612,7 @@ private:
         m_generator->setDataReportCb(
             [this](const std::uint8_t* buf, std::size_t bufLen, unsigned broadcastRadius)
             {
-                static_cast<void>(broadcastRadius); // TODO: take into account when feeding data to the library;
+                static_cast<void>(broadcastRadius);
             
                 m_inData.reserve(m_inData.size() + bufLen);
                 m_inData.insert(m_inData.end(), buf, buf + bufLen);
@@ -823,6 +886,46 @@ private:
 
         iter->m_unsubscribed = true;
     }   
+
+    static void disconnectCompleteCb(void* data, [[maybe_unused]] CC_MqttsnAsyncOpStatus status)
+    {
+        auto* thisPtr = asThis(data);
+        auto& state = thisPtr->m_state;
+        state.m_disconnectInProgress = false;
+        state.m_disconnected = true;
+        state.m_reinitRequired = true;
+        state.m_connected = false;
+    }    
+
+    static void willUpdateCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, [[maybe_unused]] const CC_MqttsnWillInfo* info)
+    {
+        auto* thisPtr = asThis(data);
+        auto& state = thisPtr->m_state;
+        state.m_willUpdateInProgress = false;
+
+        if (status != CC_MqttsnAsyncOpStatus_Complete) {
+            thisPtr->errorLog() << "Will update operation is terminated\n";
+            return;
+        }
+
+        state.m_willUpdateComplete = true;
+    }  
+
+    static void sleepCompleteCb(void* data, CC_MqttsnAsyncOpStatus status)
+    {
+        auto* thisPtr = asThis(data);
+        auto& state = thisPtr->m_state;
+        state.m_sleepInProgress = false;
+
+        if (status != CC_MqttsnAsyncOpStatus_Complete) {
+            thisPtr->errorLog() << "Sleep operation is terminated\n";
+            return;
+        }
+
+        state.m_sleepComplete = true;
+        state.m_connected = false;
+        state.m_connectRequired = true;
+    }             
 
     const ProgramOptions& m_opts;
     Logger& m_logger;

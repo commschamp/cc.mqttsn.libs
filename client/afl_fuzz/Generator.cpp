@@ -203,7 +203,41 @@ void Generator::handle(const MqttsnUnsubscribeMsg& msg)
     sendMessage(outMsg);
 }
 
-void Generator::handle([[maybe_unused]] const MqttsnMessage& msg)
+void Generator::handle(const MqttsnDisconnectMsg& msg)
+{
+    m_logger.infoLog() << "Processing " << msg.name() << "\n";
+    m_asleep = msg.field_duration().doesExist();
+    MqttsnDisconnectMsg outMsg;
+    sendMessage(outMsg);
+}
+
+void Generator::handle(const MqttsnWilltopicupdMsg& msg)
+{
+    m_logger.infoLog() << "Processing " << msg.name() << "\n";
+    MqttsnWilltopicrespMsg outMsg;
+    sendMessage(outMsg);
+}
+
+void Generator::handle(const MqttsnWillmsgupdMsg& msg)
+{
+    m_logger.infoLog() << "Processing " << msg.name() << "\n";
+    MqttsnWillmsgrespMsg outMsg;
+    sendMessage(outMsg);
+}
+
+void Generator::handle(const MqttsnPingreqMsg& msg)
+{
+    m_logger.infoLog() << "Processing " << msg.name() << "\n";
+    
+    if (m_asleep) {
+        doPublish();
+    }
+
+    MqttsnPingrespMsg outMsg;
+    sendMessage(outMsg);
+}
+
+void Generator::handle(const MqttsnMessage& msg)
 {
     m_logger.infoLog() << "Ignoring " << msg.name() << "\n";
 }
