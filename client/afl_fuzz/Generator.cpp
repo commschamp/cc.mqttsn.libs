@@ -228,9 +228,9 @@ void Generator::handle(const MqttsnWillmsgupdMsg& msg)
 void Generator::handle(const MqttsnPingreqMsg& msg)
 {
     m_logger.infoLog() << "Processing " << msg.name() << "\n";
-    
+
     if (m_asleep) {
-        doPublish();
+        doPublish(true);
     }
 
     MqttsnPingrespMsg outMsg;
@@ -270,7 +270,7 @@ void Generator::sendMessage(MqttsnMessage& msg, unsigned broadcastRadius)
     m_dataReportCb(outBuf.data(), outBuf.size(), broadcastRadius);
 }
 
-void Generator::doPublish()
+void Generator::doPublish(bool forceQos0)
 {
     assert(!m_pubs.empty());
     auto pub = m_pubs.front();
@@ -278,19 +278,21 @@ void Generator::doPublish()
 
     m_logger.infoLog() << "Sending publish with qos=" << pub.m_nextQos << "\n";
     MqttsnPublishMsg outMsg;
-    outMsg.field_flags().field_qos().setValue(pub.m_nextQos);
+    outMsg.field_flags().field_qos().setValue(forceQos0 ? 0U : pub.m_nextQos);
     outMsg.field_flags().field_topicIdType().setValue(pub.m_type);
     outMsg.field_topicId().setValue(pub.m_topicId);
-    if (pub.m_nextQos != 0) {
+    if (static_cast<unsigned>(outMsg.field_flags().field_qos().getValue()) != 0U) {
         outMsg.field_msgId().setValue(allocPacketId());
     }
 
     static const std::string data("bla");
     comms::util::assign(outMsg.field_data().value(), data.begin(), data.end());
 
-    ++pub.m_nextQos;
-    if (pub.m_maxQos < pub.m_nextQos) {
-        pub.m_nextQos = 0;
+    if (!forceQos0) {
+        ++pub.m_nextQos;
+        if (pub.m_maxQos < pub.m_nextQos) {
+            pub.m_nextQos = 0;
+        }
     }
 
     m_pubs.push_back(pub);

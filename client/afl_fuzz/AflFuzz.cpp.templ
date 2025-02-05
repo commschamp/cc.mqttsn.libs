@@ -108,11 +108,9 @@ public:
                     break;
                 }
 
-                assert(m_state.m_connected);
-
                 doSubscribeIfNeeded();
 
-                if (!!isSubscribeComplete()) {
+                if (!isSubscribeComplete()) {
                     break;
                 }
 
@@ -131,6 +129,18 @@ public:
 
                 if (!m_state.m_sleepComplete) {
                     break;
+                }
+
+                doCheckMessagesIfNeeded();
+
+                if (m_state.m_sleepCheckCount < m_opts.sleepCheckCount()) {
+                    // checks during sleep are note complete
+                    break;
+                }     
+
+                if ((!m_state.m_connected) && (!m_state.m_connectRequired)) {
+                    m_state.m_connectRequired = true;
+                    break; // will try reconnecting
                 }
 
                 doUnsubscribeIfNeeded();
@@ -273,6 +283,7 @@ private:
         std::vector<std::uint8_t> m_gateways;
         unsigned m_nextTickDuration = 0U;
         unsigned m_publishCount = 0U;
+        unsigned m_sleepCheckCount = 0U;
         bool m_reinitRequired = true;
         bool m_searchRequired = true;
         bool m_connectRequired = true;
@@ -307,6 +318,7 @@ private:
         m_state.m_reinitRequired = false;
         m_state.m_disconnected = false;
         m_state.m_publishCount = 0U;
+        m_state.m_sleepCheckCount = 0U;
         m_state.m_connected = false;
         m_state.m_willUpdateComplete = false;
         m_state.m_willUpdateInProgress = false;
@@ -540,8 +552,7 @@ private:
     void doWillUpdateIfNeeded()
     {
         if (m_state.m_willUpdateComplete || 
-            m_state.m_willUpdateInProgress || 
-            (m_state.m_publishCount < m_opts.minPubCount())) {
+            m_state.m_willUpdateInProgress) {
             return;
         }
 
@@ -583,6 +594,7 @@ private:
             return;
         }
 
+        infoLog() << "Entering sleep mode\n";
         CC_MqttsnSleepConfig config;
         cc_mqttsn_##NAME##client_sleep_init_config(&config);
         config.m_duration = 100;
@@ -591,11 +603,27 @@ private:
         if (ec == CC_MqttsnErrorCode_NotSupported) {
             infoLog() << "Sleep not supported\n";
             m_state.m_sleepComplete = true;
+            m_state.m_sleepCheckCount = m_opts.sleepCheckCount();
             return;            
         }   
 
         m_state.m_sleepInProgress = true;
-    }    
+    }  
+
+    void doCheckMessagesIfNeeded()
+    {
+        if (cc_mqttsn_##NAME##client_get_connection_status(m_client.get()) != CC_MqttsnConnectionStatus_Asleep) {
+            return;
+        }  
+
+        if (m_opts.sleepCheckCount() <= m_state.m_sleepCheckCount) {
+            return;
+        }  
+
+        infoLog() << "Checking messages in asleep mode\n";
+        cc_mqttsn_##NAME##client_asleep_check_messages(m_client.get());
+        ++m_state.m_sleepCheckCount;
+    }  
 
     bool createGeneratorIfNeeded()
     {
@@ -718,6 +746,10 @@ private:
 
         assert(info != nullptr);
 
+        if (cc_mqttsn_##NAME##client_get_connection_status(client) != CC_MqttsnConnectionStatus_Connected) {
+            return;
+        }
+
         CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
         auto* publish = ::cc_mqttsn_##NAME##client_publish_prepare(client, &ec);
         assert(ec == CC_MqttsnErrorCode_Success);
@@ -798,6 +830,7 @@ private:
             bool cleanSession = state.m_firstConnect || thisPtr->m_opts.clientId().empty();
 
             if (cleanSession) {
+                thisPtr->infoLog() << "Cleaning previous subscriptions\n";
                 for (auto& subInfo : state.m_subs) {
                     assert(subInfo.m_subHandle == nullptr);
                     assert(subInfo.m_unsubHandle == nullptr);
@@ -924,7 +957,7 @@ private:
 
         state.m_sleepComplete = true;
         state.m_connected = false;
-        state.m_connectRequired = true;
+        thisPtr->infoLog() << "Sleeping\n";
     }             
 
     const ProgramOptions& m_opts;

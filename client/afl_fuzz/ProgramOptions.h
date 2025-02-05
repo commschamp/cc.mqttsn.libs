@@ -51,6 +51,9 @@ public:
     std::string willUpdTopic() const;
     std::string willUpdData() const;
 
+    // Sleep options
+    unsigned sleepCheckCount() const;
+
 private:
     StringsList stringListOpts(const std::string& name) const;
 

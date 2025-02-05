@@ -88,7 +88,7 @@ private:
     unsigned allocPacketId();
     std::uint16_t allocTopicId();
     void sendMessage(MqttsnMessage& msg, unsigned broadcastRadius = 0);
-    void doPublish();
+    void doPublish(bool forceQos0 = false);
     void doNextPublishIfNeeded();
 
     Logger& m_logger;

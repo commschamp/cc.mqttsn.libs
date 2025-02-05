@@ -52,12 +52,19 @@ ProgramOptions::ProgramOptions()
             "Will topic to update.")
         ("will-upd-data", po::value<std::string>()->default_value(std::string("update")), 
             "Will data to update, applicable only if will-upd-topic is not empty")            
-    ;               
+    ;       
+
+    po::options_description sleepOpts("Sleep Options");
+    connectOpts.add_options()
+        ("sleep-check-count", po::value<unsigned>()->default_value(3), 
+            "Amount of times to check for messages during sleep.")
+    ;              
 
     m_desc.add(commonOpts);
     m_desc.add(connectOpts);  
     m_desc.add(subOpts);
     m_desc.add(willOpts);
+    m_desc.add(sleepOpts);
 }
 
 bool ProgramOptions::parseArgs(int argc, const char* argv[])
@@ -136,6 +143,11 @@ std::string ProgramOptions::willUpdTopic() const
 std::string ProgramOptions::willUpdData() const
 {
     return m_vm["will-upd-data"].as<std::string>();
+}
+
+unsigned ProgramOptions::sleepCheckCount() const
+{
+    return m_vm["sleep-check-count"].as<unsigned>();
 }
 
 ProgramOptions::StringsList ProgramOptions::stringListOpts(const std::string& name) const
