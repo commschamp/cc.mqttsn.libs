@@ -112,7 +112,8 @@ typedef enum
     CC_MqttsnReturnCode_Conjestion = 1, ///< Rejected due to conjesion
     CC_MqttsnReturnCode_InvalidTopicId = 2, ///< Rejected due to invalid topic ID
     CC_MqttsnReturnCode_NotSupported = 3, ///< Rejected as not supported
-    CC_MqttsnReturnCode_ValuesLimit ///< Limit for the values
+    CC_MqttsnReturnCode_ValuesLimit, ///< Limit for the values
+    CC_MqttsnReturnCode_MaxTypeValue = 255 ///< Allow safe cast between 1 byte raw value and the enum
 } CC_MqttsnReturnCode;
 
 /// @brief Connection state

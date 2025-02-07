@@ -47,7 +47,7 @@ ProgramOptions::ProgramOptions()
     ;   
 
     po::options_description willOpts("Will Update Options");
-    connectOpts.add_options()
+    willOpts.add_options()
         ("will-upd-topic", po::value<std::string>()->default_value(std::string("will/update")), 
             "Will topic to update.")
         ("will-upd-data", po::value<std::string>()->default_value(std::string("update")), 
@@ -55,7 +55,7 @@ ProgramOptions::ProgramOptions()
     ;       
 
     po::options_description sleepOpts("Sleep Options");
-    connectOpts.add_options()
+    sleepOpts.add_options()
         ("sleep-check-count", po::value<unsigned>()->default_value(3), 
             "Amount of times to check for messages during sleep.")
     ;              
