@@ -742,7 +742,9 @@ private:
     {
         auto* thisPtr = asThis(data);
         auto* client = thisPtr->m_client.get();
-        thisPtr->m_logger.infoLog() << "Message Received!\n";
+        thisPtr->m_logger.infoLog() << "Message Received: topic=\"" << 
+            std::string((info->m_topic != nullptr) ? info->m_topic : "") << 
+            "; topicId=0x" << std::hex << info->m_topicId << "; qos=" << info->m_qos << "\n";
 
         assert(info != nullptr);
 

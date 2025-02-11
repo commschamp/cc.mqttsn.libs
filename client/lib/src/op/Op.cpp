@@ -14,6 +14,7 @@
 #include "comms/cast.h"
 
 #include <algorithm>
+#include <limits>
 #include <type_traits>
 
 namespace cc_mqttsn_client
@@ -102,11 +103,12 @@ std::uint16_t Op::allocPacketId()
     auto& lastPacketId = m_client.clientState().m_lastPacketId;
     auto nextPacketId = static_cast<std::uint16_t>(lastPacketId + 1U);
 
-    if (nextPacketId == 0U) {
-        nextPacketId = 1U;
-    }
-    
     while (true) {
+        if ((nextPacketId == std::numeric_limits<decltype(nextPacketId)>::max()) ||
+            (nextPacketId == 0U)) {
+            nextPacketId = 1U;
+        }
+                
         if (allocatedPacketIds.empty() || (allocatedPacketIds.back() < nextPacketId)) {
             allocatedPacketIds.push_back(nextPacketId);
             break;
