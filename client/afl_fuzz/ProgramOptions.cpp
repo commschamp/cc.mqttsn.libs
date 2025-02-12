@@ -37,7 +37,8 @@ ProgramOptions::ProgramOptions()
     po::options_description subOpts("Subscribe Options");
     subOpts.add_options()
         ("sub-topic,t", po::value<StringsList>(), "Subscribe topic filters. Can be used multiple times. "
-            "If not specified, single subscribe to \"#\" is assumed")
+            "If not specified, single subscribe to \"#\" is assumed. Numeric values can also be used, "
+            "treated as pre-defined topic IDs.")
     ;    
 
     po::options_description pubOpts("Publish Options");
