@@ -905,10 +905,16 @@ void ClientImpl::handle(RegisterMsg& msg)
 
     auto& topic = msg.field_topicName().value();
     if ((topic.empty()) || (!verifyPubTopic(topic.c_str(), false))) {
-        errorLog("Received PUBLISH with invalid topic format.");
+        errorLog("Received REGISTER with invalid topic format.");
         retCode = RetCodeType::NotSupported;
         return; // Sends REGACK on exit
-    }         
+    }  
+
+    if (!op::Op::isValidTopicId(static_cast<CC_MqttsnTopicId>(msg.field_topicId().value()))) {
+        errorLog("Received REGISTER with invalid topic ID");
+        retCode = RetCodeType::InvalidTopicId;
+        return; // Sends REGACK on exit
+    }       
 
     storeInRegTopic(topic.c_str(), msg.field_topicId().value());
     return; // Sends REGACK on exit

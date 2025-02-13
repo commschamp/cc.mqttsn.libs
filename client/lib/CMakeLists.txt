@@ -277,7 +277,6 @@ endfunction()
 
 ######################################################################
 
-find_package(cc_mqttsn REQUIRED)
 find_package (Doxygen)
 
 install (

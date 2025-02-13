@@ -239,7 +239,10 @@ void UnsubscribeOp::handle(UnsubackMsg& msg)
 
 void UnsubscribeOp::resume()
 {
-    COMMS_ASSERT(m_suspended);
+    if (!m_suspended) {
+        return;
+    }
+
     m_suspended = false;
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {

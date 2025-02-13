@@ -218,7 +218,10 @@ void SubscribeOp::handle(SubackMsg& msg)
 
 void SubscribeOp::resume()
 {
-    COMMS_ASSERT(m_suspended);
+    if (!m_suspended) {
+        return;
+    }
+
     m_suspended = false;
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {

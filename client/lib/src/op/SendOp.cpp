@@ -192,7 +192,10 @@ CC_MqttsnErrorCode SendOp::cancel()
 
 void SendOp::resume()
 {
-    COMMS_ASSERT(m_suspended);
+    if (!m_suspended) {
+        return;
+    }
+
     m_suspended = false;
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
@@ -443,7 +446,9 @@ CC_MqttsnErrorCode SendOp::sendInternal_Register()
 
 CC_MqttsnErrorCode SendOp::sendInternal_Publish()
 {
-    COMMS_ASSERT(isValidTopicId(m_publishMsg.field_topicId().value()));
+    COMMS_ASSERT(
+        (m_publishMsg.field_flags().field_topicIdType().value() == PublishMsg::Field_flags::Field_topicIdType::ValueType::ShortTopicName) ||
+        (isValidTopicId(m_publishMsg.field_topicId().value())));
 
     if constexpr (0 < Config::MaxQos) {
         if (getRetryCount() < m_origRetryCount) {

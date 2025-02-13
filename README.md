@@ -90,6 +90,16 @@ necessary components of the [CommsChampion Ecosystem](https://commschamp.github.
 Detailed instructions on how to build sources of **this** particular repository can be
 found in [doc/BUILD.md](doc/BUILD.md) file.
 
+# How to Fuzz Test
+The provided MQTT-SN client library as well as its dependencies from the
+[CommsChampion Ecosystem](https://commschamp.github.io/) have been designed with
+reliability in mind and to be able to safely handle malformed data as well as
+withstand unexpected behaviour from a gateway. In order to
+verify the library's reliability it is highly recommended to perform
+[AFL++](https://github.com/AFLplusplus/AFLplusplus) based fuzz testing.
+The detailed instruction on how to fuzz test the
+library can be found in [doc/client_fuzz_test.md](doc/client_fuzz_test.md) file.
+
 # Branching Model
 This repository will follow the 
 [Successful Git Branching Model](http://nvie.com/posts/a-successful-git-branching-model/).

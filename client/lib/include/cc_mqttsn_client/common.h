@@ -26,7 +26,7 @@ extern "C" {
 
 /// @brief Patch level of the library
 /// @ingroup global
-#define CC_MQTTSN_CLIENT_PATCH_VERSION 8U
+#define CC_MQTTSN_CLIENT_PATCH_VERSION 9U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define CC_MQTTSN_CLIENT_MAKE_VERSION(major_, minor_, patch_) \
@@ -112,7 +112,8 @@ typedef enum
     CC_MqttsnReturnCode_Conjestion = 1, ///< Rejected due to conjesion
     CC_MqttsnReturnCode_InvalidTopicId = 2, ///< Rejected due to invalid topic ID
     CC_MqttsnReturnCode_NotSupported = 3, ///< Rejected as not supported
-    CC_MqttsnReturnCode_ValuesLimit ///< Limit for the values
+    CC_MqttsnReturnCode_ValuesLimit, ///< Limit for the values
+    CC_MqttsnReturnCode_MaxTypeValue = 255 ///< Allow safe cast between 1 byte raw value and the enum
 } CC_MqttsnReturnCode;
 
 /// @brief Connection state
