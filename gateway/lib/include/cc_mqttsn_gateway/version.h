@@ -17,7 +17,7 @@
 #define CC_MQTTSN_GW_MINOR_VERSION 0U
 
 /// @brief Patch level of the library
-#define CC_MQTTSN_GW_PATCH_VERSION 10U
+#define CC_MQTTSN_GW_PATCH_VERSION 11U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define CC_MQTTSN_GW_MAKE_VERSION(major_, minor_, patch_) \
