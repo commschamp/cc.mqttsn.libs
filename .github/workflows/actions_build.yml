@@ -8,9 +8,9 @@ on:
       - '**'
 
 env:
-  COMMS_TAG: v5.3
-  CC_MQTTSN_TAG: v3.0.2
-  CC_MQTT311_TAG: v3.0.2
+  COMMS_TAG: v5.4.2
+  CC_MQTTSN_TAG: v3.0.3
+  CC_MQTT311_TAG: v3.0.3
   WIN_BOOST_VERSION: "1.87.0"
   WIN_BOOST_DIR: "C:/local/boost_1_87_0"
 
