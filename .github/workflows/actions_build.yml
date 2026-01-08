@@ -229,67 +229,6 @@ jobs:
       shell: bash
       run: ctest -V       
           
-  build_msvc_2019:
-    runs-on: windows-2019
-    strategy:
-      fail-fast: false
-      matrix:
-        type: [Debug, Release]
-        arch: [Win32, x64]
-        cpp: [17]
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build   
-
-    - name: Install Boost
-      if: matrix.arch == 'x64'
-      shell: cmd
-      run: |
-        choco install boost-msvc-14.2 --version=${{env.WIN_BOOST_VERSION}}      
-        echo BOOST_DIR=${{env.WIN_BOOST_DIR}}/lib64-msvc-14.2/cmake >>%GITHUB_ENV%   
-
-    - name: Prepare externals
-      shell: cmd
-      run: |
-        %GITHUB_WORKSPACE%\script\prepare_externals.bat
-      env:
-        BUILD_DIR: ${{runner.workspace}}/build
-        PLATFORM: ${{matrix.arch}}
-        EXTERNALS_DIR: ${{runner.workspace}}/externals
-        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
-        COMMON_BUILD_TYPE: ${{matrix.type}}
-        COMMON_CXX_STANDARD: ${{matrix.cpp}}
-        COMMS_TAG: ${{env.COMMS_TAG}}
-        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
-        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
-
-    - name: Configure CMake
-      shell: cmd
-      working-directory: ${{runner.workspace}}/build
-      run: |
-        cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
-          -DCMAKE_PREFIX_PATH="${{runner.workspace}}/build/install;%BOOST_DIR%" -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
-          -DCMAKE_POLICY_DEFAULT_CMP0167=NEW -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
-          -DCC_MQTTSN_CLIENT_APPS=${{env.HAS_BOOST}} -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}} ^
-          -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="%GITHUB_WORKSPACE%/client/lib/script/BareMetalTestConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/NoGwDiscoverConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos1Config.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos0Config.cmake" 
-      env:
-        HAS_BOOST: "${{ matrix.arch == 'x64' && 'ON' || 'OFF' }}"
-
-    - name: Build Target 
-      working-directory: ${{runner.workspace}}/build
-      shell: cmd
-      run: cmake --build . --config ${{matrix.type}}
-      env:
-        VERBOSE: 1 
-
-    - name: Testing
-      working-directory: ${{runner.workspace}}/build
-      shell: cmd
-      run: ctest -V
-
   build_msvc_2022:
     runs-on: windows-2022
     strategy:
@@ -350,3 +289,64 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: cmd
       run: ctest -V
+
+  build_msvc_2025:
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [Debug, Release]
+        arch: [Win32, x64]
+        cpp: [17, 20]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build   
+
+    - name: Install Boost
+      if: matrix.arch == 'x64'
+      shell: cmd
+      run: |
+        choco install boost-msvc-14.3 --version=${{env.WIN_BOOST_VERSION}}      
+        echo BOOST_DIR=${{env.WIN_BOOST_DIR}}/lib64-msvc-14.3/cmake >>%GITHUB_ENV%
+
+    - name: Prepare externals
+      shell: cmd
+      run: |
+        %GITHUB_WORKSPACE%\script\prepare_externals.bat
+      env:
+        BUILD_DIR: ${{runner.workspace}}/build
+        PLATFORM: ${{matrix.arch}}
+        EXTERNALS_DIR: ${{runner.workspace}}/externals
+        COMMON_INSTALL_DIR: ${{runner.workspace}}/build/install
+        COMMON_BUILD_TYPE: ${{matrix.type}}
+        COMMON_CXX_STANDARD: ${{matrix.cpp}}
+        COMMS_TAG: ${{env.COMMS_TAG}}
+        CC_MQTT311_TAG: ${{env.CC_MQTT311_TAG}}
+        CC_MQTTSN_TAG: ${{env.CC_MQTTSN_TAG}}
+
+    - name: Configure CMake
+      shell: cmd
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
+          -DCMAKE_PREFIX_PATH="${{runner.workspace}}/build/install;%BOOST_DIR%" -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
+          -DCMAKE_POLICY_DEFAULT_CMP0167=NEW -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
+          -DCC_MQTTSN_CLIENT_APPS=${{env.HAS_BOOST}} -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}} ^
+          -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="%GITHUB_WORKSPACE%/client/lib/script/BareMetalTestConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/NoGwDiscoverConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos1Config.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos0Config.cmake" 
+      env:
+        HAS_BOOST: "${{ matrix.arch == 'x64' && 'ON' || 'OFF' }}"          
+
+    - name: Build Target 
+      working-directory: ${{runner.workspace}}/build
+      shell: cmd
+      run: cmake --build . --config ${{matrix.type}}
+      env:
+        VERBOSE: 1 
+
+    - name: Testing
+      working-directory: ${{runner.workspace}}/build
+      shell: cmd
+      run: ctest -V      
