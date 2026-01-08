@@ -69,7 +69,6 @@ private:
         std::uint16_t msgId,
         ReturnCodeVal rc);
 
-
     SubsInProgressList m_subs;
     NoGwPubInfosList m_pubs;
     std::uint16_t m_lastPubTopicId = 0;

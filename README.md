@@ -1,36 +1,36 @@
 # Overview
-The [MQTT-SN](https://www.oasis-open.org/committees/download.php/66091/MQTT-SN_spec_v1.2.pdf) 
-protocol is a sibling of [MQTT](http://mqtt.org). While **MQTT** is designed to be 
+The [MQTT-SN](https://www.oasis-open.org/committees/download.php/66091/MQTT-SN_spec_v1.2.pdf)
+protocol is a sibling of [MQTT](http://mqtt.org). While **MQTT** is designed to be
 used over a **reliable stream** transport protocol (such as TCP/IP), the **MQTT-SN**
 was designed to be used over a **datagram** transport protocol. It means, that
 if a message is received by the other end on the communication link, it is
-received **in full** and **correctly**. 
+received **in full** and **correctly**.
 
-There are multiple implementations of MQTT-SN client libraries and/or gateway 
+There are multiple implementations of MQTT-SN client libraries and/or gateway
 applications. Most of them support only UDP/IP and/or ZigBee transport
 layers. However, it is possible to use MQTT-SN protocol with any other I/O link, such as
-RS-232 serial or CAN bus, as long as additional "packatisation" of the native 
+RS-232 serial or CAN bus, as long as additional "packatisation" of the native
 MQTT-SN message is provided, to insure the message is delivered **in full**
-and **without errors**. 
+and **without errors**.
 
 This repository provides **single threaded**, **asynchronous**, **non-blocking**, easy to
-use, suitable for **embedded** platforms, well documented libraries 
+use, suitable for **embedded** platforms, well documented libraries
 of MQTT-SN **client** and **gateway**, which are
-completely generic and allow usage of MQTT-SN protocol over any I/O link. See 
+completely generic and allow usage of MQTT-SN protocol over any I/O link. See
 details below.
 
 # Client Library
-This repository provides the MQTT-SN **client** library. It is implemented 
+This repository provides the MQTT-SN **client** library. It is implemented
 using C++(17) programming language, but provides **C** interface. The library's
 code doesn't use [RTTI](https://en.wikipedia.org/wiki/Run-time_type_information)
 or exceptions. By default
-the library's implementation uses C++ STL data types, such as 
-[std::string](http://en.cppreference.com/w/cpp/string/basic_string) and 
+the library's implementation uses C++ STL data types, such as
+[std::string](http://en.cppreference.com/w/cpp/string/basic_string) and
 [std::vector](http://en.cppreference.com/w/cpp/container/vector). However,
 it is possible to compile the library not to use any dynamic memory allocation,
 and make it suitable for bare-metal environment without any heap. Please
 refer to [doc/custom_client_build.md](doc/custom_client_build.md) for instructions on
-how to do it. 
+how to do it.
 
 The doxygen generated documentation of the library with its full tutorial can
 be downloaded from the [release artefacts](releases) or browsed
@@ -55,7 +55,7 @@ connection type is supported.
 Just like the [Client Library](#client-library) allows additional data
 packatisation for correct delivery, the gateway application must implement
 the same functionality. As the result there is a need for a gateway library,
-which provides the required core functionality and allows implementation of any 
+which provides the required core functionality and allows implementation of any
 gateway application, suitable for the type
 of I/O link to the client(s) being used.
 
@@ -101,7 +101,7 @@ The detailed instruction on how to fuzz test the
 library can be found in [doc/client_fuzz_test.md](doc/client_fuzz_test.md) file.
 
 # Branching Model
-This repository will follow the 
+This repository will follow the
 [Successful Git Branching Model](http://nvie.com/posts/a-successful-git-branching-model/).
 
 The **master** branch will always point to the latest release, the

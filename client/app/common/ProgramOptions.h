@@ -48,8 +48,8 @@ public:
     // Network Options
     std::string networkAddress() const;
     std::string networkBroadcastAddress() const;
-    std::uint16_t networkRemotePort() const;    
-    std::uint16_t networkLocalPort() const;    
+    std::uint16_t networkRemotePort() const;
+    std::uint16_t networkLocalPort() const;
 
     // Discover Options
     bool discoverExitOnFirst() const;
@@ -58,30 +58,30 @@ public:
     // Connect Options
     std::string connectClientId() const;
     unsigned connectKeepAlive() const;
-    bool connectNoCleanSession() const;    
+    bool connectNoCleanSession() const;
 
     // Will Options
     std::string willTopic() const;
     std::string willMessage() const;
-    unsigned willQos() const;  
+    unsigned willQos() const;
 
     // Forwarder Encapsulation options
-    std::string fwdEncNodeId() const;     
+    std::string fwdEncNodeId() const;
 
     // Publish Options
     std::string pubTopic() const;
     std::uint16_t pubTopicId() const;
     std::string pubMessage() const;
-    unsigned pubQos() const; 
-    bool pubRetain() const; 
-    bool pubNoDisconnect() const;   
-    unsigned pubCount() const; 
+    unsigned pubQos() const;
+    bool pubRetain() const;
+    bool pubNoDisconnect() const;
+    unsigned pubCount() const;
     unsigned pubDelay() const;
 
     // Subscribe Options
     std::vector<std::string> subTopics() const;
     std::vector<std::uint16_t> subTopicIds() const;
-    unsigned subQos() const; 
+    unsigned subQos() const;
     bool subNoRetained() const;
     bool subBinary() const;
 

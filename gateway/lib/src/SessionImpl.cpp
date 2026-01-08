@@ -84,7 +84,6 @@ bool SessionImpl::start()
     return true;
 }
 
-
 void SessionImpl::tick()
 {
     if ((!isRunning()) || m_state.m_terminating) {
@@ -119,7 +118,7 @@ std::size_t SessionImpl::dataFromClient(const std::uint8_t* buf, std::size_t len
         if (m_state.m_encapsulatedMsg) {
             bufTmp += m_encapsulateOp->encapsulatedData(bufTmp, remLen);
             continue;
-        }        
+        }
 
         using MsgPtr = typename MqttsnFrame::MsgPtr;
         using MsgType = typename MsgPtr::element_type;
@@ -447,5 +446,4 @@ auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&S
 #endif // #ifdef _MSC_VER
 
 }  // namespace cc_mqttsn_gateway
-
 

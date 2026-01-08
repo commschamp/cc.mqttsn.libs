@@ -40,13 +40,13 @@ CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES(, Msg, ProtMessage, ProtocolOptions)
 
 using ProtInputMessages =
     std::tuple<
-#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
         cc_mqttsn::message::Advertise<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Searchgw<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Gwinfo<ProtMessage, ProtocolOptions>,
-#endif // CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
+#endif // CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
         cc_mqttsn::message::Connack<ProtMessage, ProtocolOptions>,
-#if CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL
         cc_mqttsn::message::Willtopicreq<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Willmsgreq<ProtMessage, ProtocolOptions>,
 #endif // #if CC_MQTTSN_CLIENT_HAS_WILL
@@ -54,7 +54,7 @@ using ProtInputMessages =
         cc_mqttsn::message::Regack<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Publish<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Puback<ProtMessage, ProtocolOptions>,
-#if CC_MQTTSN_CLIENT_MAX_QOS >= 2                
+#if CC_MQTTSN_CLIENT_MAX_QOS >= 2
         cc_mqttsn::message::Pubcomp<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Pubrec<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Pubrel<ProtMessage, ProtocolOptions>,
@@ -64,11 +64,11 @@ using ProtInputMessages =
         cc_mqttsn::message::Pingreq<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Pingresp<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Disconnect<ProtMessage, ProtocolOptions>
-#if CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL
         ,
         cc_mqttsn::message::Willtopicresp<ProtMessage, ProtocolOptions>,
         cc_mqttsn::message::Willmsgresp<ProtMessage, ProtocolOptions>
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL        
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
     >;
 
 using ProtFrame = cc_mqttsn::frame::Frame<ProtMessage, ProtInputMessages, ProtocolOptions>;

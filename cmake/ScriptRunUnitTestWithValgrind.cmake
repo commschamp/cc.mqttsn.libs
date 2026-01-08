@@ -29,6 +29,5 @@ endif ()
 
 if ("${_output}" MATCHES "[.]*==[0-9]*== [.]*")
     message (FATAL_ERROR "Valgrind reported errors.")
-endif ()    
-
+endif ()
 

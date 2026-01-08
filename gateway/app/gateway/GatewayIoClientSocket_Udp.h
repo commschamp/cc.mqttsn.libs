@@ -43,7 +43,7 @@ public:
     }
 
 protected:
-    
+
     virtual bool startImpl() override;
     virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius) override;
 
@@ -59,6 +59,5 @@ private:
     SendDataCb m_sendDataCb;
     SocketDeletedCb m_socketDeletedCb;
 };
-
 
 } // namespace cc_mqttsn_gateway_app

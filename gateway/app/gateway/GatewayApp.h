@@ -33,7 +33,7 @@ public:
 private:
     using SessionsList = std::list<GatewaySessionPtr>;
 
-    boost::asio::io_context& m_io; 
+    boost::asio::io_context& m_io;
     cc_mqttsn_gateway::Config m_config;
     GatewayLogger m_logger;
     GatewayIoClientAcceptorPtr m_acceptor;

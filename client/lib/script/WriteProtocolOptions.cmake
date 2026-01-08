@@ -51,43 +51,43 @@ endif ()
 
 if (NOT ${CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN} EQUAL 0)
     set (FIELD_GW_ADD "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN}>")
-elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})    
+elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})
     message (FATAL_ERROR "When dynamic memory allocation is disabled, the CC_MQTTSN_CLIENT_GATEWAY_ADDR_FIXED_LEN needs to be set")
 endif ()
 
 if (NOT ${CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN} EQUAL 0)
     set (FIELD_CLIENT_ID "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN}>")
-elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})    
+elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})
     message (FATAL_ERROR "When dynamic memory allocation is disabled, the CC_MQTTSN_CLIENT_CLIENT_ID_FIELD_FIXED_LEN needs to be set")
 endif ()
 
 if (NOT ${CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN} EQUAL 0)
     set (FIELD_WILL_TOPIC "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN}>")
-elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})    
+elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})
     message (FATAL_ERROR "When dynamic memory allocation is disabled, the CC_MQTTSN_CLIENT_WILL_TOPIC_FIELD_FIXED_LEN needs to be set")
 endif ()
 
 if (NOT ${CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN} EQUAL 0)
     set (FIELD_WILL_DATA "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN}>")
-elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})    
+elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})
     message (FATAL_ERROR "When dynamic memory allocation is disabled, the CC_MQTTSN_CLIENT_WILL_DATA_FIELD_FIXED_LEN needs to be set")
 endif ()
 
 if (NOT ${CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN} EQUAL 0)
     set (FIELD_TOPIC "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN}>")
-elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})    
+elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})
     message (FATAL_ERROR "When dynamic memory allocation is disabled, the CC_MQTTSN_CLIENT_TOPIC_FIELD_FIXED_LEN needs to be set")
 endif ()
 
 if (NOT ${CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN} EQUAL 0)
     set (FIELD_DATA "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN}>")
-elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})    
+elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})
     message (FATAL_ERROR "When dynamic memory allocation is disabled, the CC_MQTTSN_CLIENT_DATA_FIELD_FIXED_LEN needs to be set")
 endif ()
 
 if (NOT ${CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE} EQUAL 0)
     set (MAX_PACKET_SIZE "comms::option::app::FixedSizeStorage<${CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE}>")
-elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})    
+elseif (NOT ${CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC})
     message (FATAL_ERROR "When dynamic memory allocation is disabled, the CC_MQTTSN_CLIENT_MAX_OUTPUT_PACKET_SIZE needs to be set")
 endif ()
 
@@ -106,10 +106,8 @@ replace_in_text (MSG_ALLOC_OPT)
 file (WRITE "${OUT_FILE}.tmp" "${text}")
 
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OUT_FILE}.tmp" "${OUT_FILE}")    
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OUT_FILE}.tmp" "${OUT_FILE}")
 
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E rm -rf "${OUT_FILE}.tmp")      
-
-
+    COMMAND ${CMAKE_COMMAND} -E rm -rf "${OUT_FILE}.tmp")
 

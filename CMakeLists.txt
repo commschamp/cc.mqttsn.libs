@@ -46,7 +46,7 @@ while (TRUE)
     endif ()
 
     message (STATUS "Unittests are enabled")
-    
+
     if (CMAKE_CROSSCOMPILING)
         message (STATUS "Not building unittests when cross-compiling")
         break()
@@ -62,8 +62,8 @@ while (TRUE)
 
     if ((NOT CC_MQTTSN_WITH_SANITIZERS) AND (CC_MQTTSN_UNIT_TEST_WITH_VALGRIND))
         find_program(VALGRIND_EXECUTABLE NAMES "valgrind")
-    endif ()    
-    
+    endif ()
+
     break()
 endwhile ()
 

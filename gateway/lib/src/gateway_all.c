@@ -7,4 +7,3 @@
 
 #include "cc_mqttsn_gateway/gateway_all.h"
 
-

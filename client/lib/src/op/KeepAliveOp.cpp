@@ -14,7 +14,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline KeepAliveOp* asKeepAliveOp(void* data)
@@ -22,9 +22,9 @@ inline KeepAliveOp* asKeepAliveOp(void* data)
     return reinterpret_cast<KeepAliveOp*>(data);
 }
 
-} // namespace     
+} // namespace
 
-KeepAliveOp::KeepAliveOp(ClientImpl& client) : 
+KeepAliveOp::KeepAliveOp(ClientImpl& client) :
     Base(client),
     m_pingTimer(client.timerMgr().allocTimer()),
     m_recvTimer(client.timerMgr().allocTimer()),
@@ -35,7 +35,7 @@ KeepAliveOp::KeepAliveOp(ClientImpl& client) :
     COMMS_ASSERT(m_respTimer.isValid());
 
     restartPingTimer();
-}    
+}
 
 void KeepAliveOp::forceSendPing()
 {

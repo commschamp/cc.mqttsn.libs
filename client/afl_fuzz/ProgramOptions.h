@@ -45,7 +45,7 @@ public:
     StringsList subTopics() const;
 
     // Publish options
-    unsigned minPubCount() const;    
+    unsigned minPubCount() const;
 
     // Will update options
     std::string willUpdTopic() const;

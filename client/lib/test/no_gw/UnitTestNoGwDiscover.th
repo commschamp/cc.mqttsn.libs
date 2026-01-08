@@ -21,7 +21,7 @@ private:
     virtual void tearDown() override
     {
         unitTestTearDown();
-    }    
+    }
 };
 
 void UnitTestGwDiscover::test1()

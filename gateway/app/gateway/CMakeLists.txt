@@ -1,6 +1,6 @@
 function (bin_cc_mqttsn_gateway_app)
     set (name "cc_mqttsn_gateway_app")
-    
+
     set (src
         main.cpp
         GatewayApp.cpp
@@ -15,10 +15,10 @@ function (bin_cc_mqttsn_gateway_app)
         GatewaySession.cpp
         GatewayWrapper.cpp
     )
-    
+
     add_executable(${name} ${src})
     target_link_libraries(${name} cc::${MQTTSN_GATEWAY_LIB_NAME} Boost::system Boost::program_options ${EXTRA_BOOST_TARGETS} ${CMAKE_THREAD_LIBS_INIT})
-    
+
     install (
         TARGETS ${name}
         DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -26,8 +26,8 @@ function (bin_cc_mqttsn_gateway_app)
     install (
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/etc/
         DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/cc_mqttsn_gateway
-    )        
-        
+    )
+
 endfunction ()
 
 ###########################################################

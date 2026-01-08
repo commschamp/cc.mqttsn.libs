@@ -21,16 +21,16 @@
 namespace cc_mqttsn_client
 {
 
-namespace 
+namespace
 {
 
 static constexpr char MultLevelWildcard = '#';
-static constexpr char SingleLevelWildcard = '+';    
+static constexpr char SingleLevelWildcard = '+';
 
 template <typename TList>
 unsigned eraseFromList(const op::Op* op, TList& list)
 {
-    auto iter = 
+    auto iter =
         std::find_if(
             list.begin(), list.end(),
             [op](auto& opPtr)
@@ -57,7 +57,7 @@ void updateEc(CC_MqttsnErrorCode* ec, CC_MqttsnErrorCode val)
 
 InRegTopicsMap::iterator findInRegTopicInfoInternal(CC_MqttsnTopicId topicId, InRegTopicsMap& map)
 {
-    return 
+    return
         std::lower_bound(
             map.begin(), map.end(), topicId,
             [](auto& info, CC_MqttsnTopicId topicIdParam) {
@@ -67,7 +67,7 @@ InRegTopicsMap::iterator findInRegTopicInfoInternal(CC_MqttsnTopicId topicId, In
 
 InRegTopicsMap::iterator findInRegTopicInfoInternal(const char* topic, InRegTopicsMap& map)
 {
-    return 
+    return
         std::find_if(
             map.begin(), map.end(),
             [topic](auto& info)
@@ -78,7 +78,7 @@ InRegTopicsMap::iterator findInRegTopicInfoInternal(const char* topic, InRegTopi
 
 OutRegTopicsMap::iterator findOutRegTopicInfoInternal(CC_MqttsnTopicId topicId, OutRegTopicsMap& map)
 {
-    return 
+    return
         std::find_if(
             map.begin(), map.end(),
             [topicId](auto& info)
@@ -89,7 +89,7 @@ OutRegTopicsMap::iterator findOutRegTopicInfoInternal(CC_MqttsnTopicId topicId, 
 
 OutRegTopicsMap::iterator findOutRegTopicInfoInternal(const char* topic, InRegTopicsMap& map)
 {
-    return 
+    return
         std::lower_bound(
             map.begin(), map.end(), topic,
             [](auto& info, const char* topicParam) {
@@ -104,7 +104,7 @@ bool removeLeastRecentlyUsedRegTopicInfoIfNeeded(TMap& map, std::size_t limit)
         return false;
     }
 
-    auto eraseIter = 
+    auto eraseIter =
         std::min_element(
             map.begin(), map.end(),
             [](auto& info1, auto& info2)
@@ -113,8 +113,8 @@ bool removeLeastRecentlyUsedRegTopicInfoIfNeeded(TMap& map, std::size_t limit)
             });
 
     COMMS_ASSERT(eraseIter != map.end());
-    map.erase(eraseIter);  
-    return true;  
+    map.erase(eraseIter);
+    return true;
 }
 
 bool isTopicMatch(std::string_view filter, std::string_view topic)
@@ -130,14 +130,14 @@ bool isTopicMatch(std::string_view filter, std::string_view topic)
     auto filterSepPos = filter.find_first_of("/");
     auto topicSepPos = topic.find_first_of("/");
 
-    if ((filterSepPos == std::string_view::npos) && 
+    if ((filterSepPos == std::string_view::npos) &&
         (topicSepPos != std::string_view::npos)) {
         return false;
     }
 
     if (topicSepPos != std::string_view::npos) {
         COMMS_ASSERT(filterSepPos != std::string_view::npos);
-        if (((filter[0] == '+') && (filterSepPos == 1U)) || 
+        if (((filter[0] == '+') && (filterSepPos == 1U)) ||
             (filter.substr(0, filterSepPos) == topic.substr(0, topicSepPos))) {
             return isTopicMatch(filter.substr(filterSepPos + 1U), topic.substr(topicSepPos + 1U));
         }
@@ -152,7 +152,7 @@ bool isTopicMatch(std::string_view filter, std::string_view topic)
             return false;
         }
 
-        if (((filter[0] == '+') && (filterSepPos == 1U)) || 
+        if (((filter[0] == '+') && (filterSepPos == 1U)) ||
             (filter.substr(0, filterSepPos) == topic)) {
             return isTopicMatch(filter.substr(filterSepPos + 1U), std::string_view());
         }
@@ -163,20 +163,19 @@ bool isTopicMatch(std::string_view filter, std::string_view topic)
     COMMS_ASSERT(filterSepPos == std::string_view::npos);
     COMMS_ASSERT(topicSepPos == std::string_view::npos);
 
-    return 
-        (((filter[0] == '+') && (filter.size() == 1U)) || 
+    return
+        (((filter[0] == '+') && (filter.size() == 1U)) ||
          (filter == topic));
 }
 
+} // namespace
 
-} // namespace 
-
-ClientImpl::ClientImpl() : 
+ClientImpl::ClientImpl() :
     m_gwDiscoveryTimer(m_timerMgr.allocTimer()),
     m_sendGwinfoTimer(m_timerMgr.allocTimer())
 {
     // Set the limits to maximum allowed
-    setOutgoingRegTopicsLimit(0); 
+    setOutgoingRegTopicsLimit(0);
     setIncomingRegTopicsLimit(0);
 }
 
@@ -185,7 +184,6 @@ ClientImpl::~ClientImpl()
     COMMS_ASSERT(m_apiEnterCount == 0U);
     terminateOps(CC_MqttsnAsyncOpStatus_Aborted);
 }
-
 
 void ClientImpl::tick(unsigned ms)
 {
@@ -227,7 +225,7 @@ op::SearchOp* ClientImpl::searchPrepare(CC_MqttsnErrorCode* ec)
                 break;
             }
         }
-                
+
         if (!m_searchOps.empty()) {
             // Already allocated
             errorLog("Another search operation is in progress.");
@@ -243,7 +241,7 @@ op::SearchOp* ClientImpl::searchPrepare(CC_MqttsnErrorCode* ec)
 
         if (m_preparationLocked) {
             errorLog("Another operation is being prepared, cannot prepare \"search\" without \"send\" or \"cancel\" of the previous.");
-            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);
             break;
         }
 
@@ -263,7 +261,7 @@ op::SearchOp* ClientImpl::searchPrepare(CC_MqttsnErrorCode* ec)
 
     return op;
 }
-#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 
 op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
 {
@@ -282,7 +280,7 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
                 break;
             }
         }
-                
+
         if (!m_connectOps.empty()) {
             // Already allocated
             errorLog("Another connect operation is in progress.");
@@ -295,7 +293,7 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
             errorLog("Another disconnect or sleep operation is in progress.");
             updateEc(ec, CC_MqttsnErrorCode_Busy);
             break;
-        }        
+        }
 
         if (m_sessionState.m_disconnecting) {
             errorLog("Session disconnection is in progress, cannot initiate connection.");
@@ -311,7 +309,7 @@ op::ConnectOp* ClientImpl::connectPrepare(CC_MqttsnErrorCode* ec)
 
         if (m_preparationLocked) {
             errorLog("Another operation is being prepared, cannot prepare \"connect\" without \"send\" or \"cancel\" of the previous.");
-            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);
             break;
         }
 
@@ -346,14 +344,14 @@ op::DisconnectOp* ClientImpl::disconnectPrepare(CC_MqttsnErrorCode* ec)
             errorLog("Another disconnect or sleep operation is in progress.");
             updateEc(ec, CC_MqttsnErrorCode_Busy);
             break;
-        }      
+        }
 
         if (!m_connectOps.empty()) {
             // Already allocated
             errorLog("Another connect operation is in progress.");
             updateEc(ec, CC_MqttsnErrorCode_Busy);
             break;
-        }          
+        }
 
         if (m_sessionState.m_disconnecting) {
             errorLog("Session disconnection is in progress, cannot initiate disconnection.");
@@ -365,13 +363,13 @@ op::DisconnectOp* ClientImpl::disconnectPrepare(CC_MqttsnErrorCode* ec)
             errorLog("Cannot start disconnect operation, retry in next event loop iteration.");
             updateEc(ec, CC_MqttsnErrorCode_RetryLater);
             break;
-        }   
+        }
 
         if (m_preparationLocked) {
             errorLog("Another operation is being prepared, cannot prepare \"disconnect\" without \"send\" or \"cancel\" of the previous.");
-            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);
             break;
-        }            
+        }
 
         auto ptr = m_disconnectOpsAlloc.alloc(*this);
         if (!ptr) {
@@ -410,13 +408,13 @@ op::SubscribeOp* ClientImpl::subscribePrepare(CC_MqttsnErrorCode* ec)
             errorLog("Cannot start subscribe operation, retry in next event loop iteration.");
             updateEc(ec, CC_MqttsnErrorCode_RetryLater);
             break;
-        }  
+        }
 
         if (m_preparationLocked) {
             errorLog("Another operation is being prepared, cannot prepare \"subscribe\" without \"send\" or \"cancel\" of the previous.");
-            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);
             break;
-        }            
+        }
 
         auto ptr = m_subscribeOpsAlloc.alloc(*this);
         if (!ptr) {
@@ -461,13 +459,13 @@ op::UnsubscribeOp* ClientImpl::unsubscribePrepare(CC_MqttsnErrorCode* ec)
             errorLog("Cannot start unsubscribe operation, retry in next event loop iteration.");
             updateEc(ec, CC_MqttsnErrorCode_RetryLater);
             break;
-        }  
+        }
 
         if (m_preparationLocked) {
             errorLog("Another operation is being prepared, cannot prepare \"unsubscribe\" without \"send\" or \"cancel\" of the previous.");
-            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);
             break;
-        }            
+        }
 
         auto ptr = m_unsubscribeOpsAlloc.alloc(*this);
         if (!ptr) {
@@ -512,7 +510,7 @@ op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
             errorLog("Cannot start publish operation, retry in next event loop iteration.");
             updateEc(ec, CC_MqttsnErrorCode_RetryLater);
             break;
-        }        
+        }
 
         auto ptr = m_sendOpsAlloc.alloc(*this);
         if (!ptr) {
@@ -523,9 +521,9 @@ op::SendOp* ClientImpl::publishPrepare(CC_MqttsnErrorCode* ec)
 
         if (m_preparationLocked) {
             errorLog("Another operation is being prepared, cannot prepare \"unsubscribe\" without \"send\" or \"cancel\" of the previous.");
-            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);
             break;
-        }          
+        }
 
         m_preparationLocked = true;
         m_ops.push_back(ptr.get());
@@ -559,7 +557,7 @@ op::WillOp* ClientImpl::willPrepare(CC_MqttsnErrorCode* ec)
             updateEc(ec, CC_MqttsnErrorCode_Disconnecting);
             break;
         }
-                
+
         if (!m_willOps.empty()) {
             // Already allocated
             errorLog("Another will operation is in progress.");
@@ -572,14 +570,14 @@ op::WillOp* ClientImpl::willPrepare(CC_MqttsnErrorCode* ec)
             errorLog("Another connect operation is in progress.");
             updateEc(ec, CC_MqttsnErrorCode_Busy);
             break;
-        }        
+        }
 
         if (!m_disconnectOps.empty()) {
             // Already allocated
             errorLog("Another disconnect operation is in progress.");
             updateEc(ec, CC_MqttsnErrorCode_Busy);
             break;
-        }        
+        }
 
         if (m_sessionState.m_disconnecting) {
             errorLog("Session disconnection is in progress, cannot initiate will update.");
@@ -595,7 +593,7 @@ op::WillOp* ClientImpl::willPrepare(CC_MqttsnErrorCode* ec)
 
         if (m_preparationLocked) {
             errorLog("Another operation is being prepared, cannot prepare \"will\" without \"send\" or \"cancel\" of the previous.");
-            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);            
+            updateEc(ec, CC_MqttsnErrorCode_PreparationLocked);
             break;
         }
 
@@ -683,25 +681,25 @@ CC_MqttsnErrorCode ClientImpl::asleepCheckMessages()
 void ClientImpl::handle(AdvertiseMsg& msg)
 {
     static_assert(Config::HasGatewayDiscovery);
-    
+
     m_gwDiscoveryTimer.cancel();
 
-    CC_MqttsnGwStatus gwStatus = CC_MqttsnGwStatus_ValuesLimit; 
+    CC_MqttsnGwStatus gwStatus = CC_MqttsnGwStatus_ValuesLimit;
     const ClientState::GwInfo* gwInfo = nullptr;
     auto onExit =
-        comms::util::makeScopeGuard( 
+        comms::util::makeScopeGuard(
             [this, &gwStatus, &gwInfo, &msg]()
             {
-                // When advertise arrives before GWINFO and the search is present, 
-                // report search completion     
+                // When advertise arrives before GWINFO and the search is present,
+                // report search completion
                 for (auto& searchOp : m_searchOps) {
                     COMMS_ASSERT(searchOp);
                     searchOp->handle(msg);
                 }
-                                
-                // Reporting the gateway status after 
+
+                // Reporting the gateway status after
                 // dispatching to the search operation.
-                                
+
                 if ((gwStatus < CC_MqttsnGwStatus_ValuesLimit) &&
                     (gwInfo != nullptr)) {
                     reportGwStatus(gwStatus, *gwInfo);
@@ -710,7 +708,7 @@ void ClientImpl::handle(AdvertiseMsg& msg)
                 monitorGatewayExpiry();
             });
 
-    auto iter = 
+    auto iter =
         std::find_if(
             m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
             [&msg](auto& info)
@@ -728,7 +726,7 @@ void ClientImpl::handle(AdvertiseMsg& msg)
         gwStatus = CC_MqttsnGwStatus_Alive;
         gwInfo = &(*iter);
         return; // Geport gateway status on exit
-    }    
+    }
 
     if (m_clientState.m_gwInfos.max_size() <= m_clientState.m_gwInfos.size()) {
         // Ignore new gateways if they cannot be stored
@@ -744,7 +742,7 @@ void ClientImpl::handle(AdvertiseMsg& msg)
     info.m_allowedAdvLosses = m_configState.m_allowedAdvLosses;
 
     gwStatus = CC_MqttsnGwStatus_AddedByGateway;
-    gwInfo = &info;    
+    gwInfo = &info;
     // Geport gateway status on exit
 }
 
@@ -781,12 +779,12 @@ void ClientImpl::handle(GwinfoMsg& msg)
     static_assert(Config::HasGatewayDiscovery);
     m_sendGwinfoTimer.cancel(); // Do not send GWINFO if pending
 
-    CC_MqttsnGwStatus gwStatus = CC_MqttsnGwStatus_ValuesLimit; 
+    CC_MqttsnGwStatus gwStatus = CC_MqttsnGwStatus_ValuesLimit;
     const ClientState::GwInfo* gwInfo = nullptr;
 
-    // Reporting the gateway status after 
+    // Reporting the gateway status after
     // dispatching to the search operation.
-    auto reportGwStatusOnExit = 
+    auto reportGwStatusOnExit =
         comms::util::makeScopeGuard(
             [this, &gwStatus, &gwInfo]()
             {
@@ -800,7 +798,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
     // the gateway information in the internal data structures.
     // It will allow updating of the gateway address by the application
     // from within the search op callback
-    auto handleSearchOpOnExit = 
+    auto handleSearchOpOnExit =
         comms::util::makeScopeGuard(
             [this, &msg]()
             {
@@ -810,7 +808,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
                 }
             });
 
-    auto iter = 
+    auto iter =
         std::find_if(
             m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
             [&msg](auto& info)
@@ -835,7 +833,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
             return;
         }
 
-        if ((addr.size() == iter->m_addr.size()) && 
+        if ((addr.size() == iter->m_addr.size()) &&
             (std::equal(addr.begin(), addr.end(), iter->m_addr.begin()))) {
             // The address is already recorded.
             return;
@@ -851,7 +849,7 @@ void ClientImpl::handle(GwinfoMsg& msg)
         // Not enough space
         errorLog("Failed to store the new gateway information, due to insufficient storage");
         return;
-    }    
+    }
 
     m_clientState.m_gwInfos.resize(m_clientState.m_gwInfos.size() + 1U);
     auto& info = m_clientState.m_gwInfos.back();
@@ -867,12 +865,12 @@ void ClientImpl::handle(GwinfoMsg& msg)
     if (!addr.empty()) {
         info.m_addr.assign(addr.begin(), addr.end());
         gwStatus = CC_MqttsnGwStatus_AddedByClient;
-    }    
+    }
 
     monitorGatewayExpiry();
     // Report geteway status on exit
 }
-#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 
 void ClientImpl::handle(RegisterMsg& msg)
 {
@@ -880,19 +878,19 @@ void ClientImpl::handle(RegisterMsg& msg)
         return;
     }
 
-    if ((m_sessionState.m_disconnecting) || 
+    if ((m_sessionState.m_disconnecting) ||
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
-    } 
+    }
 
     for (auto& opPtr : m_keepAliveOps) {
         msg.dispatch(*opPtr);
-    }  
+    }
 
     using RetCodeType = RegackMsg::Field_returnCode::ValueType;
     auto retCode = RetCodeType::Accepted;
 
-    auto sendRegackOnExit = 
+    auto sendRegackOnExit =
         comms::util::makeScopeGuard(
             [this, &msg, &retCode]()
             {
@@ -908,13 +906,13 @@ void ClientImpl::handle(RegisterMsg& msg)
         errorLog("Received REGISTER with invalid topic format.");
         retCode = RetCodeType::NotSupported;
         return; // Sends REGACK on exit
-    }  
+    }
 
     if (!op::Op::isValidTopicId(static_cast<CC_MqttsnTopicId>(msg.field_topicId().value()))) {
         errorLog("Received REGISTER with invalid topic ID");
         retCode = RetCodeType::InvalidTopicId;
         return; // Sends REGACK on exit
-    }       
+    }
 
     storeInRegTopic(topic.c_str(), msg.field_topicId().value());
     return; // Sends REGACK on exit
@@ -926,17 +924,17 @@ void ClientImpl::handle(PublishMsg& msg)
         return;
     }
 
-    if ((m_sessionState.m_disconnecting) || 
+    if ((m_sessionState.m_disconnecting) ||
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     }
 
     for (auto& opPtr : m_keepAliveOps) {
         msg.dispatch(*opPtr);
-    }   
+    }
 
     using ReturnCode = PubackMsg::Field_returnCode::ValueType;
-    auto sendPuback = 
+    auto sendPuback =
         [this, &msg](ReturnCode retCode)
         {
             PubackMsg pubackMsg;
@@ -954,8 +952,8 @@ void ClientImpl::handle(PublishMsg& msg)
     auto qos = msg.field_flags().field_qos().value();
     if (Config::MaxQos < static_cast<unsigned>(qos)) {
         sendPuback(ReturnCode::NotSupported);
-        return;        
-    }        
+        return;
+    }
 
     char shortTopicName[3] = {0};
     std::string_view topic;
@@ -972,7 +970,7 @@ void ClientImpl::handle(PublishMsg& msg)
         auto inIter = findInRegTopicInfoInternal(topicId, inRegMap);
         if ((inIter != inRegMap.end()) && (inIter->m_topicId == topicId)) {
             COMMS_ASSERT(!inIter->m_topic.empty());
-            topic = std::string_view(inIter->m_topic.c_str(), inIter->m_topic.size());            
+            topic = std::string_view(inIter->m_topic.c_str(), inIter->m_topic.size());
             break;
         }
 
@@ -980,7 +978,7 @@ void ClientImpl::handle(PublishMsg& msg)
         auto outIter = findOutRegTopicInfoInternal(topicId, outRegMap);
         if ((outIter != outRegMap.end()) && (outIter->m_topicId == topicId)) {
             COMMS_ASSERT(!outIter->m_topic.empty());
-            topic = std::string_view(outIter->m_topic.c_str(), outIter->m_topic.size());   
+            topic = std::string_view(outIter->m_topic.c_str(), outIter->m_topic.size());
 
             // For future use, copy it into input topics as well
             storeInRegTopic(outIter->m_topic.c_str(), topicId);
@@ -996,9 +994,9 @@ void ClientImpl::handle(PublishMsg& msg)
         shortTopicName[0] = static_cast<char>((topicId >> 8U) & 0xff);
         shortTopicName[1] = static_cast<char>(topicId & 0xff);
         topic = std::string_view(&shortTopicName[0], 2U);
-    }    
+    }
 
-    if constexpr (Config::HasSubTopicVerification) {    
+    if constexpr (Config::HasSubTopicVerification) {
         do {
             if (!m_configState.m_verifySubFilter) {
                 break;
@@ -1007,13 +1005,13 @@ void ClientImpl::handle(PublishMsg& msg)
             auto& subFilters = m_reuseState.m_subFilters;
 
             if (topicIdType == TopicIdType::PredefinedTopicId) {
-                auto iter = 
+                auto iter =
                     std::find_if(
                         subFilters.begin(), subFilters.end(),
                         [topicId](const auto& info)
                         {
-                            return 
-                                (info.m_topicId == topicId) && 
+                            return
+                                (info.m_topicId == topicId) &&
                                 (info.m_topic.empty());
                         });
 
@@ -1031,7 +1029,7 @@ void ClientImpl::handle(PublishMsg& msg)
                 return;
             }
 
-            auto iter = 
+            auto iter =
                 std::find_if(
                     subFilters.begin(), subFilters.end(),
                     [&topic](auto& info)
@@ -1041,13 +1039,13 @@ void ClientImpl::handle(PublishMsg& msg)
 
             if (iter == subFilters.end()) {
                 errorLog("Received PUBLISH on non-subscribed topic");
-                return;                
+                return;
             }
 
         } while (false);
     }
 
-    auto reportMsgOnExit = 
+    auto reportMsgOnExit =
         comms::util::makeScopeGuard(
             [this, &msg, topic, topicId]()
             {
@@ -1069,21 +1067,21 @@ void ClientImpl::handle(PublishMsg& msg)
             });
 
     if (qos == op::Op::Qos::AtMostOnceDelivery) {
-        return; 
+        return;
     }
 
     if constexpr (1U <= Config::MaxQos) {
         if (qos == op::Op::Qos::AtLeastOnceDelivery) {
             m_reuseState.m_lastRecvMsgId = 0U;
             sendPuback(ReturnCode::Accepted);
-            return; 
+            return;
         }
     }
 
     if constexpr (2U <= Config::MaxQos) {
 
         auto msgId = msg.field_msgId().value();
-        auto sendPubrec = 
+        auto sendPubrec =
             [this, msgId]()
             {
                 PubrecMsg pubrecMsg;
@@ -1109,7 +1107,7 @@ void ClientImpl::handle(PublishMsg& msg)
                 reportMsgOnExit.release();
                 return;
             }
-                
+
             sendPubrec();
             reportMsgOnExit.release();
             return;
@@ -1121,7 +1119,7 @@ void ClientImpl::handle(PublishMsg& msg)
     }
 
     // Not expected to reach this point
-    COMMS_ASSERT(false); 
+    COMMS_ASSERT(false);
     reportMsgOnExit.release();
 }
 
@@ -1131,18 +1129,18 @@ void ClientImpl::handle(PubackMsg& msg)
         return;
     }
 
-    if ((m_sessionState.m_disconnecting) || 
+    if ((m_sessionState.m_disconnecting) ||
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     }
 
     for (auto& opPtr : m_keepAliveOps) {
         msg.dispatch(*opPtr);
-    }  
+    }
 
     auto iter = m_sendOps.end();
     if constexpr (Config::MaxQos >= 1) {
-        iter = 
+        iter =
             std::find_if(
                 m_sendOps.begin(), m_sendOps.end(),
                 [&msg](auto& opPtr)
@@ -1158,7 +1156,7 @@ void ClientImpl::handle(PubackMsg& msg)
         auto topicId = msg.field_topicId().value();
         map.erase(
             std::remove_if(
-                map.begin(), map.end(), 
+                map.begin(), map.end(),
                 [topicId](auto& elem)
                 {
                     return topicId == elem.m_topicId;
@@ -1166,7 +1164,7 @@ void ClientImpl::handle(PubackMsg& msg)
             map.end());
     }
 
-    if ((iter == m_sendOps.end()) && 
+    if ((iter == m_sendOps.end()) &&
         (msg.field_msgId().value() != 0U)) {
         errorLog("PUBACK with uknown msg id");
         return;
@@ -1185,7 +1183,7 @@ void ClientImpl::handle(PubrelMsg& msg)
         return;
     }
 
-    if ((m_sessionState.m_disconnecting) || 
+    if ((m_sessionState.m_disconnecting) ||
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
     }
@@ -1194,7 +1192,7 @@ void ClientImpl::handle(PubrelMsg& msg)
     if (m_reuseState.m_lastRecvMsgId == msgId) {
         // Expected completion
         m_reuseState.m_lastRecvMsgId = 0U;
-    } 
+    }
     else if (m_reuseState.m_lastRecvMsgId != 0U) {
         // Previous Qos2 reception is incomplete while unexpected PUBREL arrives
         errorLog("Unexpected PUBREL message received");
@@ -1205,7 +1203,7 @@ void ClientImpl::handle(PubrelMsg& msg)
     auto ec = sendMessage(pubcompMsg);
     if (ec != CC_MqttsnErrorCode_Success) {
         errorLog("Failed to send PUBCOMP message");
-    }   
+    }
 }
 #endif // #if CC_MQTTSN_CLIENT_MAX_QOS >= 2
 
@@ -1215,14 +1213,14 @@ void ClientImpl::handle([[maybe_unused]] PingreqMsg& msg)
         return;
     }
 
-    if ((m_sessionState.m_disconnecting) || 
+    if ((m_sessionState.m_disconnecting) ||
         (m_sessionState.m_connectionStatus != CC_MqttsnConnectionStatus_Connected)) {
         return;
     }
 
     for (auto& opPtr : m_keepAliveOps) {
         msg.dispatch(*opPtr);
-    }       
+    }
 }
 
 void ClientImpl::handle(DisconnectMsg& msg)
@@ -1231,10 +1229,10 @@ void ClientImpl::handle(DisconnectMsg& msg)
         return;
     }
 
-    if ((m_sessionState.m_disconnecting) || 
+    if ((m_sessionState.m_disconnecting) ||
         (m_sessionState.m_connectionStatus == CC_MqttsnConnectionStatus_Disconnected)) {
         return;
-    }   
+    }
 
     if (m_disconnectOps.empty()) {
         gatewayDisconnected(CC_MqttsnGatewayDisconnectReason_DisconnectMsg);
@@ -1243,7 +1241,7 @@ void ClientImpl::handle(DisconnectMsg& msg)
 
     for (auto& opPtr : m_disconnectOps) {
         msg.dispatch(*opPtr);
-    }     
+    }
 }
 
 void ClientImpl::handle([[maybe_unused]] ProtMessage& msg)
@@ -1258,7 +1256,7 @@ void ClientImpl::handle([[maybe_unused]] ProtMessage& msg)
 
     // During the dispatch to callbacks can be called and new ops issues,
     // the m_ops vector can be resized and iterators invalidated.
-    // As the result, the iteration needs to be performed using indices 
+    // As the result, the iteration needs to be performed using indices
     // instead of iterators.
     // Also do not dispatch the message to new ops.
     auto count = m_ops.size();
@@ -1274,10 +1272,10 @@ void ClientImpl::handle([[maybe_unused]] ProtMessage& msg)
 
         // After message dispatching the whole session may be in terminating state
         // Don't continue iteration
-        
+
         if (m_sessionState.m_disconnecting) {
             break;
-        }    
+        }
     }
 }
 
@@ -1348,17 +1346,17 @@ void ClientImpl::gatewayConnected()
 {
     m_clientState.m_firstConnect = false;
     m_sessionState.m_connectionStatus = CC_MqttsnConnectionStatus_Connected;
-    createKeepAliveOpIfNeeded();    
+    createKeepAliveOpIfNeeded();
 }
 
 void ClientImpl::gatewayDisconnected(
-    CC_MqttsnGatewayDisconnectReason reason, 
+    CC_MqttsnGatewayDisconnectReason reason,
     CC_MqttsnAsyncOpStatus status)
 {
     m_clientState.m_initialized = false; // Require re-initialization
     m_sessionState.m_connectionStatus = CC_MqttsnConnectionStatus_Disconnected;
     m_sessionState.m_disconnecting = true;
-    terminateOps(status);    
+    terminateOps(status);
 
     if (reason < CC_MqttsnGatewayDisconnectReason_ValuesLimit) {
         COMMS_ASSERT(m_gatewayDisconnectedReportCb != nullptr);
@@ -1376,7 +1374,7 @@ void ClientImpl::enterSleepMode(unsigned durationMs)
 
     auto diff = m_configState.m_retryPeriod * (m_configState.m_retryCount + 1U);
     auto maxDuration = std::max(durationMs, diff + 1U);
-    m_sessionState.m_keepAliveMs = maxDuration - diff;    
+    m_sessionState.m_keepAliveMs = maxDuration - diff;
     createKeepAliveOpIfNeeded();
 }
 
@@ -1401,7 +1399,7 @@ void ClientImpl::storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
         iter = findInRegTopicInfoInternal(topicId, map); // The location can change after erase
     }
 
-    map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, topic, topicId});        
+    map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, topic, topicId});
 }
 
 bool ClientImpl::removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId)
@@ -1456,7 +1454,7 @@ void ClientImpl::storeOutRegTopic(const char* topic, CC_MqttsnTopicId topicId)
         iter = findOutRegTopicInfoInternal(topic, map); // The location can change after erase
     }
 
-    map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, topic, topicId});        
+    map.insert(iter, FullRegTopicInfo{m_clientState.m_timestamp, topic, topicId});
 }
 
 void ClientImpl::doApiEnter()
@@ -1508,7 +1506,7 @@ void ClientImpl::createKeepAliveOpIfNeeded()
     if (!ptr) {
         COMMS_ASSERT(false); // Should not happen
         return;
-    }    
+    }
 
     COMMS_ASSERT(m_ops.size() < m_ops.max_size());
     m_ops.push_back(ptr.get());
@@ -1566,12 +1564,12 @@ CC_MqttsnErrorCode ClientImpl::initInternal()
         return CC_MqttsnErrorCode_NotIntitialized;
     }
 
-    bool hasTimerCallbacks = 
+    bool hasTimerCallbacks =
         (m_nextTickProgramCb != nullptr) ||
         (m_cancelNextTickWaitCb != nullptr);
 
     if (hasTimerCallbacks) {
-        bool hasAllTimerCallbacks = 
+        bool hasAllTimerCallbacks =
             (m_nextTickProgramCb != nullptr) &&
             (m_cancelNextTickWaitCb != nullptr);
 
@@ -1581,7 +1579,7 @@ CC_MqttsnErrorCode ClientImpl::initInternal()
         }
     }
 
-    if ((!m_gwDiscoveryTimer.isValid()) || 
+    if ((!m_gwDiscoveryTimer.isValid()) ||
         (!m_sendGwinfoTimer.isValid())) {
         errorLog("Some timers haven't been allocated properly");
         return CC_MqttsnErrorCode_OutOfMemory;
@@ -1616,7 +1614,7 @@ bool ClientImpl::verifyPubTopicInternal(const char* topic, bool outgoing)
 
         auto pos = 0U;
         while (topic[pos] != '\0') {
-            auto incPosGuard = 
+            auto incPosGuard =
                 comms::util::makeScopeGuard(
                     [&pos]()
                     {
@@ -1625,7 +1623,7 @@ bool ClientImpl::verifyPubTopicInternal(const char* topic, bool outgoing)
 
             auto ch = topic[pos];
 
-            if ((ch == MultLevelWildcard) || 
+            if ((ch == MultLevelWildcard) ||
                 (ch == SingleLevelWildcard)) {
                 errorLog("Wildcards cannot be used in publish topic");
                 return false;
@@ -1645,7 +1643,7 @@ void ClientImpl::opComplete_Search([[maybe_unused]] const op::Op* op)
 {
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     eraseFromList(op, m_searchOps);
-#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
 void ClientImpl::opComplete_Connect(const op::Op* op)
@@ -1681,7 +1679,7 @@ void ClientImpl::opComplete_Send(const op::Op* op)
 
     if (m_sendOps.empty()) {
         return;
-    }    
+    }
 
     COMMS_ASSERT(m_sendOps.front());
     m_sendOps.front()->resume();
@@ -1691,7 +1689,7 @@ void ClientImpl::opComplete_Will([[maybe_unused]] const op::Op* op)
 {
 #if CC_MQTTSN_CLIENT_HAS_WILL
     eraseFromList(op, m_willOps);
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 void ClientImpl::finaliseSupUnsubOp()
@@ -1703,15 +1701,15 @@ void ClientImpl::finaliseSupUnsubOp()
     if ((!m_subscribeOps.empty()) && (m_unsubscribeOps.empty())) {
         COMMS_ASSERT(m_subscribeOps.front());
         m_subscribeOps.front()->resume();
-        return;        
+        return;
     }
 
     if (m_subscribeOps.empty()) {
         COMMS_ASSERT(!m_unsubscribeOps.empty());
         COMMS_ASSERT(m_unsubscribeOps.front());
         m_unsubscribeOps.front()->resume();
-        return;        
-    }    
+        return;
+    }
 
     COMMS_ASSERT(!m_subscribeOps.empty());
     COMMS_ASSERT(!m_unsubscribeOps.empty());
@@ -1730,14 +1728,14 @@ void ClientImpl::finaliseSupUnsubOp()
             auto* unsubscribeOp = static_cast<op::UnsubscribeOp*>(op);
             unsubscribeOp->resume();
             return;
-        }        
+        }
     }
 }
 
 void ClientImpl::monitorGatewayExpiry()
 {
     if constexpr (Config::HasGatewayDiscovery) {
-        auto iter = 
+        auto iter =
             std::min_element(
                 m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
                 [](const auto& first, const auto& second)
@@ -1807,7 +1805,7 @@ void ClientImpl::reportGwStatus(CC_MqttsnGwStatus status, const ClientState::GwI
 void ClientImpl::sendGwinfo()
 {
     if constexpr (Config::HasGatewayDiscovery) {
-        auto iter = 
+        auto iter =
             std::max_element(
                 m_clientState.m_gwInfos.begin(), m_clientState.m_gwInfos.end(),
                 [](auto& first, auto& second)
@@ -1824,7 +1822,7 @@ void ClientImpl::sendGwinfo()
                     return first.m_expiryTimestamp < second.m_expiryTimestamp;
                 });
 
-        if ((iter == m_clientState.m_gwInfos.end()) || 
+        if ((iter == m_clientState.m_gwInfos.end()) ||
             (iter->m_addr.empty())) {
             // None of the gateways have known address
             return;

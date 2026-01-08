@@ -62,7 +62,7 @@ public:
     void setRetryPeriod(unsigned ms)
     {
         m_retryPeriod = ms;
-    }   
+    }
 
     unsigned getRetryCount() const
     {
@@ -72,18 +72,18 @@ public:
     void setRetryCount(unsigned value)
     {
         m_retryCount = value;
-    }        
+    }
 
-    inline 
+    inline
     static bool verifyQosValid(Qos qos)
     {
         return (qos <= static_cast<decltype(qos)>(Config::MaxQos));
-    }    
+    }
 
     ClientImpl& client()
     {
         return m_client;
-    }    
+    }
 
     static bool isValidTopicId(CC_MqttsnTopicId id);
 
@@ -105,7 +105,7 @@ protected:
     const ClientImpl& client() const
     {
         return m_client;
-    }    
+    }
 
     inline void errorLog(const char* msg)
     {
@@ -122,7 +122,7 @@ protected:
         else {
             return true;
         }
-    }    
+    }
 
     static constexpr std::size_t maxStringLen()
     {
@@ -133,7 +133,7 @@ private:
     void errorLogInternal(const char* msg);
     bool verifySubFilterInternal(const char* filter);
 
-    ClientImpl& m_client;    
+    ClientImpl& m_client;
     unsigned m_retryPeriod = 0U;
     unsigned m_retryCount = 0U;
 };

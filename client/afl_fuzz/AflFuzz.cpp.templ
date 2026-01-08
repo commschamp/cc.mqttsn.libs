@@ -27,18 +27,17 @@
 namespace cc_mqttsn_client_afl_fuzz
 {
 
-namespace 
+namespace
 {
 
 const std::size_t BufSize = 1024000;
 
-} // namespace 
-    
+} // namespace
 
 class AflFuzzImpl
 {
 public:
-    explicit AflFuzzImpl(const ProgramOptions& opts, Logger& logger) : 
+    explicit AflFuzzImpl(const ProgramOptions& opts, Logger& logger) :
         m_opts(opts),
         m_logger(logger),
         m_client(cc_mqttsn_##NAME##client_alloc()),
@@ -79,9 +78,9 @@ public:
 
     void run()
     {
-#ifndef WIN32        
+#ifndef WIN32
         sync();
-#endif        
+#endif
 
         std::uint8_t buf[BufSize] = {0};
         while (true) {
@@ -118,7 +117,7 @@ public:
                     // Not all messages have been exchanged
                     break;
                 }
-                
+
                 doWillUpdateIfNeeded();
 
                 if (!m_state.m_willUpdateComplete) {
@@ -136,7 +135,7 @@ public:
                 if (m_state.m_sleepCheckCount < m_opts.sleepCheckCount()) {
                     // checks during sleep are note complete
                     break;
-                }     
+                }
 
                 if ((!m_state.m_connected) && (!m_state.m_connectRequired)) {
                     m_state.m_connectRequired = true;
@@ -151,7 +150,7 @@ public:
 
                 doDisconnectIfNeeded();
 
-            } while (false);      
+            } while (false);
 
             int len = 0;
             bool noMoreRead = true;
@@ -160,7 +159,7 @@ public:
                 len = _read(0, buf, BufSize);
 #else // #ifdef WIN32
                 len = static_cast<decltype(len)>(read(0, buf, BufSize));
-#endif // #ifdef WIN32                
+#endif // #ifdef WIN32
                 noMoreRead = (len <= 0);
                 len = std::max(len, static_cast<decltype(len)>(0));
                 infoLog() << "Read " << len << " bytes\n";
@@ -203,7 +202,7 @@ public:
                 }
 
                 infoLog() << "Failed to read length, insufficient data in buffer (" << dataLen << "), stopping execution loop" << std::endl;
-                break;                
+                break;
             }
 
             if (es == comms::ErrorStatus::Success) {
@@ -217,7 +216,7 @@ public:
                 }
 
                 infoLog() << "Insufficient data in buffer (" << dataLen << " requiring " << processLen << "), stopping execution loop" << std::endl;
-                break;  
+                break;
             }
 
             infoLog() << "Processing " << processLen << " out of " << dataLen << " bytes...\n";
@@ -232,7 +231,7 @@ public:
                 std::copy_n(dataPtr, processLen, std::ostream_iterator<unsigned>(out, " "));
                 out << std::dec << std::endl;
             }
-            
+
             cc_mqttsn_##NAME##client_process_data(m_client.get(), dataPtr, static_cast<unsigned>(processLen), origin);
 
             if ((dataLen <= processLen) && (!hasPrevData)) {
@@ -248,7 +247,7 @@ public:
             }
 
             m_inData.erase(m_inData.begin(), m_inData.begin() + processLen);
-            infoLog() << "Keeping " << m_inData.size() << " bytes for the next iteration\n";        
+            infoLog() << "Keeping " << m_inData.size() << " bytes for the next iteration\n";
         }
 
         m_client.reset();
@@ -263,7 +262,7 @@ private:
         {
             cc_mqttsn_##NAME##client_free(ptr);
         }
-    }; 
+    };
 
     using ClientPtr = std::unique_ptr<CC_MqttsnClient, ClientDeleter>;
 
@@ -339,13 +338,13 @@ private:
         if (ec != CC_MqttsnErrorCode_Success) {
             errorLog() << "Unexpected failure in attempt to perform search\n";
             exit(-1);
-        } 
+        }
     }
 
     void doConnect()
     {
         m_state.m_connected = false;
-        
+
         infoLog() << "Connecting..." << std::endl;
         CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
         auto connect = cc_mqttsn_##NAME##client_connect_prepare(m_client.get(), &ec);
@@ -364,13 +363,13 @@ private:
         if (!clientId.empty()) {
             config.m_clientId = clientId.c_str();
         }
-        
+
         ec = cc_mqttsn_##NAME##client_connect_config(connect, &config);
         assert(ec == CC_MqttsnErrorCode_Success);
         if (ec != CC_MqttsnErrorCode_Success) {
             errorLog() << "Unexpected failure in connect basic configuration\n";
             exit(-1);
-        }   
+        }
 
         auto willTopic = m_opts.willTopic();
         if ((!willTopic.empty()) && m_state.m_firstConnect) {
@@ -380,13 +379,13 @@ private:
 
             willConfig.m_topic = willTopic.c_str();
             willConfig.m_data = reinterpret_cast<const std::uint8_t*>(willData.data());
-            willConfig.m_dataLen = static_cast<decltype(willConfig.m_dataLen)>(willData.size());            
+            willConfig.m_dataLen = static_cast<decltype(willConfig.m_dataLen)>(willData.size());
             ec = cc_mqttsn_##NAME##client_connect_config_will(connect, &willConfig);
-            if ((ec != CC_MqttsnErrorCode_Success) && 
+            if ((ec != CC_MqttsnErrorCode_Success) &&
                 (ec != CC_MqttsnErrorCode_NotSupported)) {
-                
+
                 errorLog() << "Unexpected failure in configuring will\n";
-                exit(-1);                
+                exit(-1);
             }
         }
 
@@ -395,7 +394,7 @@ private:
         if (ec != CC_MqttsnErrorCode_Success) {
             errorLog() << "Unexpected failure in sending connect request\n";
             exit(-1);
-        }   
+        }
 
         m_state.m_connectRequired = false;
     }
@@ -411,12 +410,12 @@ private:
 
             CC_MqttsnErrorCode ec = CC_MqttsnErrorCode_ValuesLimit;
             subInfo.m_subHandle = cc_mqttsn_##NAME##client_subscribe_prepare(m_client.get(), &ec);
-            
+
             if (subInfo.m_subHandle == nullptr) {
                 errorLog() << "Unexpected failure in subscribe allocation\n";
                 subInfo.m_acked = true;
                 continue;
-            }     
+            }
 
             assert(ec == CC_MqttsnErrorCode_Success);
 
@@ -432,7 +431,7 @@ private:
                 config.m_topicId = subInfo.m_topicId;
             }
 
-            auto termSubReq = 
+            auto termSubReq =
                 [&subInfo]()
                 {
                     cc_mqttsn_##NAME##client_subscribe_cancel(subInfo.m_subHandle);
@@ -452,13 +451,13 @@ private:
                 errorLog() << "Unexpected failure in sending subscribe request";
                 termSubReq();
                 continue;
-            }             
+            }
         }
     }
 
     bool isSubscribeComplete()
     {
-        return         
+        return
             std::all_of(
                 m_state.m_subs.begin(), m_state.m_subs.end(),
                 [](auto& subInfo)
@@ -483,7 +482,7 @@ private:
                 errorLog() << "Unexpected failure in unsubscribe allocation\n";
                 subInfo.m_unsubscribed = true;
                 continue;
-            }     
+            }
 
             assert(ec == CC_MqttsnErrorCode_Success);
 
@@ -497,9 +496,9 @@ private:
             else {
                 infoLog() << "Adding topic ID " << subInfo.m_topicId << "\n";
                 config.m_topicId = subInfo.m_topicId;
-            }      
+            }
 
-            auto termSubReq = 
+            auto termSubReq =
                 [&subInfo]()
                 {
                     cc_mqttsn_##NAME##client_unsubscribe_cancel(subInfo.m_unsubHandle);
@@ -512,14 +511,14 @@ private:
                 errorLog() << "Unexpected failure in configuring unsubscription";
                 termSubReq();
                 continue;
-            }                  
+            }
 
             ec = cc_mqttsn_##NAME##client_unsubscribe_send(subInfo.m_unsubHandle, &AflFuzzImpl::unsubscribeCompleteCb, this);
             if (ec != CC_MqttsnErrorCode_Success) {
                 errorLog() << "Unexpected failure in sending unsubscribe request";
                 termSubReq();
                 continue;
-            }             
+            }
         }
     }
 
@@ -531,10 +530,10 @@ private:
                 [](auto& subInfo)
                 {
                     return subInfo.m_unsubscribed;
-                });        
+                });
     }
 
-    void doDisconnectIfNeeded() 
+    void doDisconnectIfNeeded()
     {
         if (m_state.m_disconnected || m_state.m_disconnectInProgress || (!m_state.m_connected)) {
             return;
@@ -544,14 +543,14 @@ private:
         if (ec != CC_MqttsnErrorCode_Success) {
             errorLog() << "Failed to send disconnect\n";
             return;
-        }     
+        }
 
         m_state.m_disconnectInProgress = true;
-    }    
+    }
 
     void doWillUpdateIfNeeded()
     {
-        if (m_state.m_willUpdateComplete || 
+        if (m_state.m_willUpdateComplete ||
             m_state.m_willUpdateInProgress) {
             return;
         }
@@ -569,13 +568,13 @@ private:
         auto updData = m_opts.willUpdData();
         config.m_topic = updTopic.c_str();
         config.m_data = reinterpret_cast<const std::uint8_t*>(updData.data());
-        config.m_dataLen = static_cast<decltype(config.m_dataLen)>(updData.size());        
+        config.m_dataLen = static_cast<decltype(config.m_dataLen)>(updData.size());
 
         auto ec = cc_mqttsn_##NAME##client_will(m_client.get(), &config, &AflFuzzImpl::willUpdateCompleteCb, this);
         if (ec == CC_MqttsnErrorCode_NotSupported) {
             infoLog() << "Will update is not supported\n";
             m_state.m_willUpdateComplete = true;
-            return;            
+            return;
         }
 
         if (ec != CC_MqttsnErrorCode_Success) {
@@ -589,7 +588,7 @@ private:
 
     void doSleepIfNeeded()
     {
-        if (m_state.m_sleepComplete || 
+        if (m_state.m_sleepComplete ||
             m_state.m_sleepInProgress) {
             return;
         }
@@ -604,33 +603,33 @@ private:
             infoLog() << "Sleep not supported\n";
             m_state.m_sleepComplete = true;
             m_state.m_sleepCheckCount = m_opts.sleepCheckCount();
-            return;            
-        }   
+            return;
+        }
 
         m_state.m_sleepInProgress = true;
-    }  
+    }
 
     void doCheckMessagesIfNeeded()
     {
         if (cc_mqttsn_##NAME##client_get_connection_status(m_client.get()) != CC_MqttsnConnectionStatus_Asleep) {
             return;
-        }  
+        }
 
         if (m_opts.sleepCheckCount() <= m_state.m_sleepCheckCount) {
             return;
-        }  
+        }
 
         infoLog() << "Checking messages in asleep mode\n";
         cc_mqttsn_##NAME##client_asleep_check_messages(m_client.get());
         ++m_state.m_sleepCheckCount;
-    }  
+    }
 
     bool createGeneratorIfNeeded()
     {
         auto inputFile = m_opts.genInputFile();
         if (inputFile.empty()) {
             return true;
-        }        
+        }
 
         m_generator = std::make_unique<Generator>(m_logger, m_opts.minPubCount());
         if (!m_generator->prepare(inputFile)) {
@@ -641,7 +640,7 @@ private:
             [this](const std::uint8_t* buf, std::size_t bufLen, unsigned broadcastRadius)
             {
                 static_cast<void>(broadcastRadius);
-            
+
                 m_inData.reserve(m_inData.size() + bufLen);
                 m_inData.insert(m_inData.end(), buf, buf + bufLen);
                 infoLog() << "Appended " << bufLen << " bytes to buffer, totaling " << m_inData.size() << " bytes\n";
@@ -670,7 +669,7 @@ private:
     static void sendOutputDataCb(void* data, const unsigned char* buf, unsigned bufLen, unsigned broadcastRadius)
     {
         auto& logger = asThis(data)->m_logger;
-        logger.infoLog() << "Sending " << bufLen << " bytes (broadcast=" << broadcastRadius << ")\n";    
+        logger.infoLog() << "Sending " << bufLen << " bytes (broadcast=" << broadcastRadius << ")\n";
         if (asThis(data)->m_verbose) {
             auto& out = logger.debugLog();
             out << "Sent bytes: " << std::hex;
@@ -699,13 +698,13 @@ private:
     {
         auto thisPtr = asThis(data);
 
-        auto iter = 
+        auto iter =
             std::find_if(
                 thisPtr->m_state.m_gateways.begin(), thisPtr->m_state.m_gateways.end(),
                 [info](auto gwId)
                 {
                     return gwId == info->m_gwId;
-                });        
+                });
 
         static const CC_MqttsnGwStatus AddStatuses[] = {
             CC_MqttsnGwStatus_AddedByGateway,
@@ -719,7 +718,7 @@ private:
             }
 
             return;
-        }        
+        }
 
         if (iter == thisPtr->m_state.m_gateways.end()) {
             thisPtr->errorLog() << "Unexpected report of gateway status when no gateway is registered" << std::endl;
@@ -733,7 +732,7 @@ private:
         auto removeIter = std::find(std::begin(RemoveStatuses), std::end(RemoveStatuses), status);
         if (removeIter == std::end(RemoveStatuses)) {
             return;
-        }                        
+        }
 
         thisPtr->m_state.m_gateways.erase(iter);
     }
@@ -742,8 +741,8 @@ private:
     {
         auto* thisPtr = asThis(data);
         auto* client = thisPtr->m_client.get();
-        thisPtr->m_logger.infoLog() << "Message Received: topic=\"" << 
-            std::string((info->m_topic != nullptr) ? info->m_topic : "") << 
+        thisPtr->m_logger.infoLog() << "Message Received: topic=\"" <<
+            std::string((info->m_topic != nullptr) ? info->m_topic : "") <<
             "; topicId=0x" << std::hex << info->m_topicId << "; qos=" << info->m_qos << "\n";
 
         assert(info != nullptr);
@@ -758,7 +757,7 @@ private:
         if (publish == nullptr) {
             thisPtr->errorLog() << "Unexpected failure in publish allocation\n";
             return;
-        }        
+        }
 
         CC_MqttsnPublishConfig config;
         ::cc_mqttsn_##NAME##client_publish_init_config(&config);
@@ -774,12 +773,12 @@ private:
             thisPtr->errorLog() << "Unexpected failure in publish configuration\n";
             ::cc_mqttsn_##NAME##client_publish_cancel(publish);
             return;
-        }    
+        }
 
         ec = cc_mqttsn_##NAME##client_publish_send(publish, &AflFuzzImpl::publishCompleteCb, thisPtr);
         if (ec != CC_MqttsnErrorCode_Success) {
             thisPtr->errorLog() << "Failure to publish message\n";
-        }        
+        }
     }
 
     static void errorLogCb(void* data, const char* msg)
@@ -807,7 +806,7 @@ private:
             return;
         } while (false);
 
-        state.m_searchRequired = true;  
+        state.m_searchRequired = true;
     }
 
     static void connectCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info)
@@ -850,21 +849,21 @@ private:
 
         state.m_connectRequired = true;
         state.m_connected = false;
-        state.m_reinitRequired = true;    
-    }  
+        state.m_reinitRequired = true;
+    }
 
     static void subscribeCompleteCb(void* data, CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, [[maybe_unused]] const CC_MqttsnSubscribeInfo* info)
     {
         auto* thisPtr = asThis(data);
         auto& state = thisPtr->m_state;
-        auto iter = 
+        auto iter =
             std::find_if(
                 state.m_subs.begin(), state.m_subs.end(),
                 [handle](auto& info)
                 {
                     return info.m_subHandle == handle;
                 });
-        
+
         if (iter == state.m_subs.end()) {
             thisPtr->errorLog() << "Unexpected handle of the subscribe completion\n";
             exit(-1);
@@ -878,12 +877,12 @@ private:
         }
 
         iter->m_acked = true;
-    } 
+    }
 
     static void publishCompleteCb(
-        void* data, 
-        [[maybe_unused]] CC_MqttsnPublishHandle handle, 
-        CC_MqttsnAsyncOpStatus status, 
+        void* data,
+        [[maybe_unused]] CC_MqttsnPublishHandle handle,
+        CC_MqttsnAsyncOpStatus status,
         [[maybe_unused]] const CC_MqttsnPublishInfo* info)
     {
         auto* thisPtr = asThis(data);
@@ -893,20 +892,20 @@ private:
         }
 
         ++thisPtr->m_state.m_publishCount;
-    }          
+    }
 
     static void unsubscribeCompleteCb(void* data, CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status)
     {
         auto* thisPtr = asThis(data);
         auto& state = thisPtr->m_state;
-        auto iter = 
+        auto iter =
             std::find_if(
                 state.m_subs.begin(), state.m_subs.end(),
                 [handle](auto& info)
                 {
                     return info.m_unsubHandle == handle;
                 });
-        
+
         if (iter == state.m_subs.end()) {
             thisPtr->errorLog() << "Unexpected handle of the unsubscribe completion\n";
             exit(-1);
@@ -920,7 +919,7 @@ private:
         }
 
         iter->m_unsubscribed = true;
-    }   
+    }
 
     static void disconnectCompleteCb(void* data, [[maybe_unused]] CC_MqttsnAsyncOpStatus status)
     {
@@ -930,7 +929,7 @@ private:
         state.m_disconnected = true;
         state.m_reinitRequired = true;
         state.m_connected = false;
-    }    
+    }
 
     static void willUpdateCompleteCb(void* data, CC_MqttsnAsyncOpStatus status, [[maybe_unused]] const CC_MqttsnWillInfo* info)
     {
@@ -944,7 +943,7 @@ private:
         }
 
         state.m_willUpdateComplete = true;
-    }  
+    }
 
     static void sleepCompleteCb(void* data, CC_MqttsnAsyncOpStatus status)
     {
@@ -960,7 +959,7 @@ private:
         state.m_sleepComplete = true;
         state.m_connected = false;
         thisPtr->infoLog() << "Sleeping\n";
-    }             
+    }
 
     const ProgramOptions& m_opts;
     Logger& m_logger;
@@ -969,12 +968,12 @@ private:
     std::vector<std::uint8_t> m_inData;
     State m_state;
     bool m_verbose = false;
-}; 
+};
 
-AflFuzz::AflFuzz(const ProgramOptions& opts, Logger& logger) : 
+AflFuzz::AflFuzz(const ProgramOptions& opts, Logger& logger) :
     m_impl(std::make_unique<AflFuzzImpl>(opts, logger))
 {
-}   
+}
 
 AflFuzz::~AflFuzz() = default;
 

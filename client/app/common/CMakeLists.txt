@@ -11,8 +11,8 @@ target_include_directories(
     ${COMMON_APPS_LIB} BEFORE
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-)    
+)
 
 target_compile_options(${COMMON_APPS_LIB} PUBLIC
     $<$<CXX_COMPILER_ID:MSVC>:/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS>
-) 
+)

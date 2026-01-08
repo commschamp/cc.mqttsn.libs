@@ -26,7 +26,7 @@ public:
     std::ostream& error();
     std::ostream& info();
     std::ostream& warning();
-    
+
 private:
     std::unique_ptr<std::ofstream> m_fstream;
     std::ostream* m_out = nullptr;

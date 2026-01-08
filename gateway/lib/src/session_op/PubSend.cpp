@@ -66,7 +66,7 @@ void PubSend::handle(RegackMsg_SN& msg)
     m_attempt = 0;
     m_registered = true;
     ++m_registerCount;
-    m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId()); 
+    m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId());
     doSend();
 }
 

@@ -50,7 +50,7 @@ std::size_t Encapsulate::encapsulatedData(const std::uint8_t* buf, std::size_t l
     assert(st.m_encapsulatedMsg);
     st.m_encapsulatedMsg = false;
 
-    auto onExit = 
+    auto onExit =
         comms::util::makeScopeGuard(
             [this]()
             {
@@ -84,7 +84,7 @@ void Encapsulate::handle(FwdMsg_SN& msg)
             break;
         }
 
-        std::tie(iter, std::ignore) = m_sessions.insert(std::make_pair(nodeId, std::make_unique<Session>()));        
+        std::tie(iter, std::ignore) = m_sessions.insert(std::make_pair(nodeId, std::make_unique<Session>()));
         assert(iter != m_sessions.end());
         auto sessionPtr = iter->second.get();
 
@@ -105,13 +105,13 @@ void Encapsulate::handle(FwdMsg_SN& msg)
             [this, nodeId](const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
             {
                 sendDataClientReqFromSession(nodeId, buf, bufSize, broadcastRadius);
-            });     
+            });
 
         sessionPtr->setTerminationReqCb(
             [this, sessionPtr]()
             {
                 terminationReqFromSession(sessionPtr);
-            });        
+            });
 
         if ((!sessionPtr->isRunning()) && (!sessionPtr->start())) {
             // Error failed to start session;
@@ -130,9 +130,9 @@ void Encapsulate::handle(FwdMsg_SN& msg)
 }
 
 void Encapsulate::sendDataClientReqFromSession(
-    const NodeId& nodeId, 
-    const std::uint8_t* buf, 
-    std::size_t bufSize, 
+    const NodeId& nodeId,
+    const std::uint8_t* buf,
+    std::size_t bufSize,
     unsigned broadcastRadius)
 {
     FwdMsg_SN fwdMsg;
@@ -151,7 +151,7 @@ void Encapsulate::sendDataClientReqFromSession(
 
 void Encapsulate::terminationReqFromSession(Session* sessionPtr)
 {
-    auto iter = 
+    auto iter =
         std::find_if(
             m_sessions.begin(), m_sessions.end(),
             [sessionPtr](auto& elem)

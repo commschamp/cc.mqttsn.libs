@@ -29,7 +29,7 @@ public:
     virtual ~SessionOp() = default;
 
     void timestampUpdated();
-    
+
     unsigned nextTick();
 
     void start()

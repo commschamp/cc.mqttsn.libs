@@ -36,7 +36,7 @@ bool GatewayIoBrokerSocket_Tcp::startImpl()
             reportConnected();
         }
     );
-    
+
     return true;
 }
 
@@ -70,7 +70,7 @@ void GatewayIoBrokerSocket_Tcp::doRead()
             if (ec) {
                 logger().error() << "TCP/IP read error: " << ec.message() << std::endl;
                 reportError();
-                return;                
+                return;
             }
 
             reportClientData(m_inData.data(), bytesCount);
@@ -121,8 +121,8 @@ void GatewayIoBrokerSocket_Tcp::doConnect()
                     doRead();
                     sendPendingWrites();
                 }
-            );            
-        });    
+            );
+        });
 }
 
 void GatewayIoBrokerSocket_Tcp::sendPendingWrites()
@@ -144,7 +144,7 @@ void GatewayIoBrokerSocket_Tcp::sendPendingWrites()
             if (ec) {
                 logger().error() << "TCP/IP write error: " << ec.message() << std::endl;
                 reportError();
-                return;                
+                return;
             }
 
             do {

@@ -16,7 +16,7 @@
 namespace cc_mqttsn_client_app
 {
 
-namespace 
+namespace
 {
 
 Pub* asThis(void* data)
@@ -24,10 +24,9 @@ Pub* asThis(void* data)
     return reinterpret_cast<Pub*>(data);
 }
 
-} // namespace 
-    
+} // namespace
 
-Pub::Pub(boost::asio::io_context& io, int& result) : 
+Pub::Pub(boost::asio::io_context& io, int& result) :
     Base(io, result),
     m_timer(io)
 {
@@ -37,7 +36,7 @@ Pub::Pub(boost::asio::io_context& io, int& result) :
     opts().addWill();
     opts().addEncapsulate();
     opts().addPublish();
-}    
+}
 
 bool Pub::startImpl()
 {
@@ -50,13 +49,13 @@ bool Pub::startImpl()
 
     if ((!topic.empty()) && (topicId != 0)) {
         logError() << "Both topic topic topic ID are specified" << std::endl;
-        return false;        
+        return false;
     }
 
     m_remCount = opts().pubCount();
     if (m_remCount == 0U) {
         logError() << "Amount of requested publishes needs to be at least 1." << std::endl;
-        return false;          
+        return false;
     }
 
     return doConnect();
@@ -151,9 +150,9 @@ void Pub::publishCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_Mqttsn
 }
 
 void Pub::publishCompleteCb(
-    void* data, 
-    [[maybe_unused]] CC_MqttsnPublishHandle handle, 
-    CC_MqttsnAsyncOpStatus status, 
+    void* data,
+    [[maybe_unused]] CC_MqttsnPublishHandle handle,
+    CC_MqttsnAsyncOpStatus status,
     const CC_MqttsnPublishInfo* info)
 {
     asThis(data)->publishCompleteInternal(status, info);

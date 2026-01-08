@@ -11,9 +11,8 @@
 
 namespace cc_mqttsn_gateway_app
 {
-    
 
-GatewayWrapper::GatewayWrapper(boost::asio::io_context& io, GatewayLogger& logger) : 
+GatewayWrapper::GatewayWrapper(boost::asio::io_context& io, GatewayLogger& logger) :
     m_logger(logger),
     m_timer(io)
 {
@@ -56,7 +55,6 @@ bool GatewayWrapper::start(const cc_mqttsn_gateway::Config& config)
         {
             m_broadcastReqCb(buf, bufSize);
         });
-        
 
     if (!m_gw.start()) {
         m_logger.error() << "Failed to start Gateway" << std::endl;

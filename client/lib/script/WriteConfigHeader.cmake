@@ -63,7 +63,7 @@ replace_in_text (CC_MQTTSN_CLIENT_MAX_QOS)
 file (WRITE "${OUT_FILE}.tmp" "${text}")
 
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OUT_FILE}.tmp" "${OUT_FILE}")    
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OUT_FILE}.tmp" "${OUT_FILE}")
 
 execute_process(
     COMMAND ${CMAKE_COMMAND} -E rm -rf "${OUT_FILE}.tmp")

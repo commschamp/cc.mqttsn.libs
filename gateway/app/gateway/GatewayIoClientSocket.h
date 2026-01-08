@@ -26,7 +26,7 @@ public:
     bool start();
 
     using DataReportCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize)>;
-    
+
     template <typename TFunc>
     void setDataReportCb(TFunc&& func)
     {
@@ -39,11 +39,11 @@ public:
     }
 
 protected:
-    GatewayIoClientSocket(boost::asio::io_context& io, GatewayLogger& logger) : 
+    GatewayIoClientSocket(boost::asio::io_context& io, GatewayLogger& logger) :
         m_io(io),
         m_logger(logger)
     {
-    };    
+    };
 
     virtual bool startImpl() = 0;
     virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius) = 0;
@@ -64,7 +64,7 @@ protected:
     }
 
 private:
-    boost::asio::io_context& m_io; 
+    boost::asio::io_context& m_io;
     GatewayLogger& m_logger;
     DataReportCb m_dataReportCb;
 };

@@ -12,7 +12,7 @@
 namespace cc_mqttsn_client_afl_fuzz
 {
 
-Logger::Logger() : 
+Logger::Logger() :
     m_out(&std::cout)
 {
 }
@@ -27,7 +27,7 @@ bool Logger::open(const ProgramOptions& opts)
         }
 
         m_out = &m_fileStream;
-    } 
+    }
     return true;
 }
 

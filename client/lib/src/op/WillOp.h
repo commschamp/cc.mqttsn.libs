@@ -36,7 +36,7 @@ public:
     void handle(WillmsgrespMsg& msg) override;
 
 protected:
-    virtual Type typeImpl() const override;    
+    virtual Type typeImpl() const override;
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status) override;
 
 private:
@@ -58,7 +58,7 @@ private:
 
     WilltopicupdMsg m_willtopicupdMsg;
     WillmsgupdMsg m_willmsgupdMsg;
-    TimerMgr::Timer m_timer;  
+    TimerMgr::Timer m_timer;
     unsigned m_stage = Stage_willTopic;
     unsigned m_origRetryCount = 0U;
     CC_MqttsnWillCompleteCb m_cb = nullptr;
@@ -72,4 +72,4 @@ private:
 
 } // namespace cc_mqttsn_client
 
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL        
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL

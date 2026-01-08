@@ -31,24 +31,24 @@ public:
     CC_MqttsnErrorCode cancel();
 
     using Base::handle;
-#if CC_MQTTSN_CLIENT_HAS_WILL    
+#if CC_MQTTSN_CLIENT_HAS_WILL
     void handle(WilltopicreqMsg& msg) override;
     void handle(WillmsgreqMsg& msg) override;
-#endif    
+#endif
     void handle(ConnackMsg& msg) override;
 
 protected:
-    virtual Type typeImpl() const override;    
+    virtual Type typeImpl() const override;
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status) override;
 
 private:
     enum Stage : unsigned
     {
         Stage_connect,
-#if CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL
         Stage_willTopic,
         Stage_willMsg,
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL        
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
         Stage_valuesLimit
     };
 
@@ -61,26 +61,25 @@ private:
 #if CC_MQTTSN_CLIENT_HAS_WILL
     const ProtMessage& getWilltopicMsg() const;
     const ProtMessage& getWillmsgMsg() const;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
     static void opTimeoutCb(void* data);
 
     ConnectMsg m_connectMsg;
-    TimerMgr::Timer m_timer;  
+    TimerMgr::Timer m_timer;
     unsigned m_stage = Stage_connect;
     unsigned m_origRetryCount = 0U;
     CC_MqttsnConnectCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;
 
-#if CC_MQTTSN_CLIENT_HAS_WILL      
+#if CC_MQTTSN_CLIENT_HAS_WILL
     WilltopicMsg m_willtopicMsg;
     WillmsgMsg m_willmsgMsg;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL       
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
     static_assert(ExtConfig::ConnectOpTimers == 1U);
 };
 
 } // namespace op
-
 
 } // namespace cc_mqttsn_client

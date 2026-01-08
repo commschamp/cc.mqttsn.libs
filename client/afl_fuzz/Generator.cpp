@@ -15,7 +15,7 @@
 namespace cc_mqttsn_client_afl_fuzz
 {
 
-namespace 
+namespace
 {
 
 std::string pubTopicFromFilter(const std::string& filter)
@@ -30,7 +30,7 @@ std::string pubTopicFromFilter(const std::string& filter)
 
         result.append(filter.substr(pos, wildcardPos - pos));
         pos = wildcardPos + 1U;
-        
+
         if (filter[wildcardPos] == '#') {
             result.append("hash");
             pos = filter.size();
@@ -48,8 +48,7 @@ std::string pubTopicFromFilter(const std::string& filter)
     return result;
 }
 
-} // namespace 
-    
+} // namespace
 
 bool Generator::prepare(const std::string& inputFile)
 {
@@ -87,7 +86,7 @@ void Generator::handle(const MqttsnConnectMsg& msg)
 
     if (msg.field_flags().field_mid().getBitValue_Will()) {
         MqttsnWilltopicreqMsg willTopicReqMsg;
-        sendMessage(willTopicReqMsg);    
+        sendMessage(willTopicReqMsg);
         return;
     }
 
@@ -99,18 +98,18 @@ void Generator::handle(const MqttsnWilltopicMsg& msg)
 {
     if (msg.field_willTopic().value().empty()) {
         MqttsnConnackMsg outMsg;
-        sendMessage(outMsg);     
-        return;   
+        sendMessage(outMsg);
+        return;
     }
 
     MqttsnWillmsgreqMsg willMsgReqMsg;
-    sendMessage(willMsgReqMsg);     
+    sendMessage(willMsgReqMsg);
 }
 
 void Generator::handle([[maybe_unused]] const MqttsnWillmsgMsg& msg)
 {
     MqttsnConnackMsg outMsg;
-    sendMessage(outMsg);     
+    sendMessage(outMsg);
 }
 
 void Generator::handle(const MqttsnRegackMsg& msg)
@@ -170,7 +169,7 @@ void Generator::handle(const MqttsnSubscribeMsg& msg)
     MqttsnSubackMsg outMsg;
     outMsg.field_flags().field_qos().setValue(msg.field_flags().field_qos().getValue());
     outMsg.field_msgId().setValue(msg.field_msgId().getValue());
-    sendMessage(outMsg);     
+    sendMessage(outMsg);
 
     PubInfo pub;
     pub.m_maxQos = static_cast<decltype(pub.m_maxQos)>(msg.field_flags().field_qos().getValue());
@@ -183,7 +182,7 @@ void Generator::handle(const MqttsnSubscribeMsg& msg)
         regMsg.field_topicId().setValue(pub.m_topicId);
         regMsg.field_msgId().setValue(allocPacketId());
         regMsg.field_topicName().setValue(pubTopicFromFilter(msg.field_topicName().field().getValue()));
-        sendMessage(regMsg); 
+        sendMessage(regMsg);
         return;
 
     }
@@ -264,7 +263,7 @@ void Generator::sendMessage(MqttsnMessage& msg, unsigned broadcastRadius)
     [[maybe_unused]] auto es = m_frame.write(msg, iter, outBuf.max_size());
     assert(es == comms::ErrorStatus::Success);
     assert(m_dataReportCb);
-    
+
     std::ostreambuf_iterator<char> outIter(m_stream);
     std::copy(outBuf.begin(), outBuf.end(), outIter);
     m_dataReportCb(outBuf.data(), outBuf.size(), broadcastRadius);
@@ -298,7 +297,7 @@ void Generator::doPublish(bool forceQos0)
     m_pubs.push_back(pub);
     sendMessage(outMsg);
     ++m_pubCount;
-} 
+}
 
 void Generator::doNextPublishIfNeeded()
 {
@@ -306,6 +305,5 @@ void Generator::doNextPublishIfNeeded()
         doPublish();
     }
 }
-
 
 } // namespace cc_mqttsn_client_afl_fuzz

@@ -12,9 +12,8 @@
 
 namespace cc_mqttsn_gateway_app
 {
-    
 
-GatewayApp::GatewayApp(boost::asio::io_context& io) : 
+GatewayApp::GatewayApp(boost::asio::io_context& io) :
     m_io(io),
     m_gwWrapper(io, m_logger)
 {
@@ -53,7 +52,7 @@ bool GatewayApp::start(int argc, const char* argv[])
         }
 
         m_config.read(stream);
-    } while (false);    
+    } while (false);
 
     m_logger.configure(m_config);
 
@@ -71,7 +70,7 @@ bool GatewayApp::start(int argc, const char* argv[])
             session->setTermReqCb(
                 [this, sessionPtr = session.get()]()
                 {
-                    auto iter = 
+                    auto iter =
                         std::find_if(
                             m_sessions.begin(), m_sessions.end(),
                             [sessionPtr](auto& ptr)
@@ -93,8 +92,8 @@ bool GatewayApp::start(int argc, const char* argv[])
                     if (clientId.empty()) {
                         return;
                     }
-                    
-                    auto iter = 
+
+                    auto iter =
                         std::find_if(
                             m_sessions.begin(), m_sessions.end(),
                             [sessionPtr, &clientId](auto& s)
@@ -116,12 +115,12 @@ bool GatewayApp::start(int argc, const char* argv[])
             }
 
             m_sessions.push_back(std::move(session));
-        });    
+        });
 
     if (!m_acceptor->start()) {
         m_logger.error() << "Failed to start client socket" << std::endl;
         return false;
-    }   
+    }
 
     m_gwWrapper.setBroadcastReqCb(
         [this](const std::uint8_t* buf, std::size_t bufSize)

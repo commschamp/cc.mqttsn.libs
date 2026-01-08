@@ -37,14 +37,14 @@ CC_MqttsnClientHandle cc_mqttsn_##NAME##client_alloc();
 
 /// @brief Free previously allocated client.
 /// @details When used communication channel to the gateway is no longer
-///     needed, the client data structes allocated with 
+///     needed, the client data structes allocated with
 ///     cc_mqttsn_##NAME##client_alloc() must be released using this function.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client);
 
 /// @brief Notify client about requested time expiry.
-/// @details The reported amount of milliseconds needs to be from the 
+/// @details The reported amount of milliseconds needs to be from the
 ///     last request to program timer via callback (set by
 ///     cc_mqttsn_##NAME##client_set_next_tick_program_callback()).
 ///     It can be less than actually requested via the callback. If this
@@ -59,7 +59,7 @@ void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle client);
 void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms);
 
 /// @brief Provide data, received over I/O link, to the library for processing.
-/// @details This call may cause invocation of some callbacks, such as 
+/// @details This call may cause invocation of some callbacks, such as
 ///     request to cancel the currently running time measurement, send some messages to
 ///     the gateway, report incoming application message, and (re)start time
 ///     measurement.
@@ -74,7 +74,7 @@ void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms);
 void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen, CC_MqttsnDataOrigin origin);
 
 /// @brief Set retry period to wait between resending unacknowledged message to the gateway (@b T<sub>retry</sub> from spec).
-/// @details Some messages, sent to the gateway, may require acknowledgement by 
+/// @details Some messages, sent to the gateway, may require acknowledgement by
 ///     the latter. The delay (in seconds) between such attempts to resend the
 ///     message may be specified using this function. The default value is
 ///     @b 10 seconds.
@@ -91,7 +91,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_period(CC_MqttsnCl
 unsigned cc_mqttsn_##NAME##client_get_default_retry_period(CC_MqttsnClientHandle client);
 
 /// @brief Set number of retry attempts to perform before reporting unsuccessful result of the operation (@b N<sub>retry</sub> from spec).
-/// @details Some messages, sent to the gateway, may require acknowledgement by 
+/// @details Some messages, sent to the gateway, may require acknowledgement by
 ///     the latter. The amount of retry attempts before reporting unsuccessful result
 ///     of the operation may be specified using this function. The default value
 ///     is @b 3.
@@ -112,7 +112,7 @@ unsigned cc_mqttsn_##NAME##client_get_default_retry_count(CC_MqttsnClientHandle 
 ///     messages. It contains the broadcast radius value. This value can be
 ///     set using this function. Default radius value is @b 3.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
-/// @param[in] value Broadcast radius. 
+/// @param[in] value Broadcast radius.
 /// @return Result code of the call.
 /// @pre The broadcast value cannot exceed 255.
 /// @ingroup client
@@ -145,7 +145,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_get_available_gateway_info(CC_Mqttsn
 
 /// @brief Update stored available gateway information
 /// @details The library will look for the inner data structure for the information
-///     containing the reported @ref CC_MqttsnGatewayInfo::m_gwId "gateway id" and update it 
+///     containing the reported @ref CC_MqttsnGatewayInfo::m_gwId "gateway id" and update it
 ///     accordingly. If no such information is present, new entry is going to be added.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] info Updated gateway information.
@@ -169,11 +169,11 @@ void cc_mqttsn_##NAME##client_discard_all_gateway_infos(CC_MqttsnClientHandle cl
 
 /// @brief Set default gateway advertise duration.
 /// @details When the client receives @b GWINFO message before @b ADVERTISE, the
-///     gateway is "alive", but its expiry timeout is not known yet. There is 
+///     gateway is "alive", but its expiry timeout is not known yet. There is
 ///     a need to assume some default value. Use this function to update it.
 ///     Defaults to 15 * 60 * 1000 = 15 minutes.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
-/// @param[in] ms Default advertise duration in milliseconds. 
+/// @param[in] ms Default advertise duration in milliseconds.
 /// @return Result code of the call.
 /// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_gw_adv_duration(CC_MqttsnClientHandle client, unsigned ms);
@@ -185,16 +185,16 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_gw_adv_duration(CC_Mqtts
 unsigned cc_mqttsn_##NAME##client_get_default_gw_adv_duration(CC_MqttsnClientHandle client);
 
 /// @brief Set number of allowed @b ADVERTISE message misses.
-/// @details When the client doesn't receive @b ADVERTISE message in time, it 
+/// @details When the client doesn't receive @b ADVERTISE message in time, it
 ///     maybe due to packet loss and not necessarily because gateway is offline.
-///     This function configures number of @b ADVERTISE packet losses before the 
+///     This function configures number of @b ADVERTISE packet losses before the
 ///     gateway is considered to be offline. When set to @b 0, means gateway is
 ///     offline if the next expected @b ADVERTISE doesn't arrive in time. When
 ///     set to @b 1, means one @b ADVERTISE can be missed and if the second one
 ///     doesn't arrive in time the gateway is considered to be offline.
 ///     Defaults to @b 1.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
-/// @param[in] count Number of allowed @b ADVERTISE message losses. 
+/// @param[in] count Number of allowed @b ADVERTISE message losses.
 /// @return Result code of the call.
 /// @ingroup client
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_allowed_adv_losses(CC_MqttsnClientHandle client, unsigned count);
@@ -245,7 +245,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_verify_incoming_msg_subscribed(C
 bool cc_mqttsn_##NAME##client_get_verify_incoming_msg_subscribed(CC_MqttsnClientHandle client);
 
 /// @brief Specify limit of the topic IDs stored for the outgoing messages
-/// @details When performing publish operations with the normal topic string there is a 
+/// @details When performing publish operations with the normal topic string there is a
 ///    need to be able to store the topic string <-> topic id mapping, which can be used
 ///    in the future publish operations as well. Use this function to set the runtime limit.
 ///    When the specified limit reached the least recently used mapping will be dropped to
@@ -263,7 +263,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_outgoing_topic_id_storage_limit(
 unsigned long long cc_mqttsn_##NAME##client_get_outgoing_topic_id_storage_limit(CC_MqttsnClientHandle client);
 
 /// @brief Specify limit of the topic IDs stored for the incoming messages
-/// @details When receiving messages from the gateway, the latter may register topic IDs. 
+/// @details When receiving messages from the gateway, the latter may register topic IDs.
 ///    Use this function to set the runtime limit of how many such registration are stored.
 ///    When the specified limit reached the least recently used mapping will be dropped to
 ///    accomodate the new one.
@@ -335,7 +335,7 @@ unsigned cc_mqttsn_##NAME##client_search_get_broadcast_radius(CC_MqttsnSearchHan
 /// @brief Send the "search" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_search_prepare() function.
 /// @param[in] cb Callback to be invoked when "search" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "search" operation can be discarded.
@@ -353,20 +353,20 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(CC_MqttsnSearchHandle ha
 /// @ingroup search
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel(CC_MqttsnSearchHandle handle);
 
-/// @brief Prepare and send "search" request in one go 
+/// @brief Prepare and send "search" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_search_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_search_send()
 ///
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback to be invoked when "search" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup search
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
     CC_MqttsnClientHandle handle,
-    CC_MqttsnSearchCompleteCb cb, 
+    CC_MqttsnSearchCompleteCb cb,
     void* cbData);
 
 /// @brief Prepare "connect" operation.
@@ -376,7 +376,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
 /// @post The "connect" operation is allocated, use either @ref cc_mqttsn_##NAME##client_connect_send()
 ///     or @ref cc_mqttsn_##NAME##client_connect_cancel() to prevent memory leaks.
 /// @ingroup connect
-CC_MqttsnConnectHandle cc_mqttsn_##NAME##client_connect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+CC_MqttsnConnectHandle cc_mqttsn_##NAME##client_connect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
 
 /// @brief Configure the retry period for the "connect" operation.
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
@@ -431,7 +431,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_config_will(CC_MqttsnConnect
 /// @brief Send the "connect" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_connect_prepare() function.
 /// @param[in] cb Callback to be invoked when "connect" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "connect" operation can be discarded.
@@ -449,7 +449,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_send(CC_MqttsnConnectHandle 
 /// @ingroup connect
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandle handle);
 
-/// @brief Prepare and send "connect" request in one go 
+/// @brief Prepare and send "connect" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_connect_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_connect_config()
@@ -460,7 +460,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandl
 /// @param[in] config Connection configuration. Can be NULL.
 /// @param[in] willConfig Will configuration. Can be NULL.
 /// @param[in] cb Callback to be invoked when "connect" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup connect
@@ -468,13 +468,13 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
     CC_MqttsnClientHandle client,
     const CC_MqttsnConnectConfig* config,
     const CC_MqttsnWillConfig* willConfig,
-    CC_MqttsnConnectCompleteCb cb, 
+    CC_MqttsnConnectCompleteCb cb,
     void* cbData);
 
 /// @brief Check the inner state of the library of whether it's connected to the gateway.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @ingroup connect
-CC_MqttsnConnectionStatus cc_mqttsn_##NAME##client_get_connection_status(CC_MqttsnClientHandle client);    
+CC_MqttsnConnectionStatus cc_mqttsn_##NAME##client_get_connection_status(CC_MqttsnClientHandle client);
 
 /// @brief Prepare "disconnect" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
@@ -483,7 +483,7 @@ CC_MqttsnConnectionStatus cc_mqttsn_##NAME##client_get_connection_status(CC_Mqtt
 /// @post The "disconnect" operation is allocated, use either @ref cc_mqttsn_##NAME##client_disconnect_send()
 ///     or @ref cc_mqttsn_##NAME##client_disconnect_cancel() to prevent memory leaks.
 /// @ingroup disconnect
-CC_MqttsnDisconnectHandle cc_mqttsn_##NAME##client_disconnect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+CC_MqttsnDisconnectHandle cc_mqttsn_##NAME##client_disconnect_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
 
 /// @brief Configure the retry period for the "disconnect" operation.
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
@@ -514,7 +514,7 @@ unsigned cc_mqttsn_##NAME##client_disconnect_get_retry_count(CC_MqttsnDisconnect
 /// @brief Send the "disconnect" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_disconnect_prepare() function.
 /// @param[in] cb Callback to be invoked when "disconnect" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "disconnect" operation can be discarded.
@@ -532,20 +532,20 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_send(CC_MqttsnDisconnectH
 /// @ingroup disconnect
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_cancel(CC_MqttsnDisconnectHandle handle);
 
-/// @brief Prepare and send "disconnect" request in one go 
+/// @brief Prepare and send "disconnect" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_disconnect_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_disconnect_send()
 ///
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback to be invoked when "disconnect" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup disconnect
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
     CC_MqttsnClientHandle client,
-    CC_MqttsnDisconnectCompleteCb cb, 
+    CC_MqttsnDisconnectCompleteCb cb,
     void* cbData);
 
 /// @brief Prepare "subscribe" operation.
@@ -555,7 +555,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
 /// @post The "subscribe" operation is allocated, use either @ref cc_mqttsn_##NAME##client_subscribe_send()
 ///     or @ref cc_mqttsn_##NAME##client_subscribe_cancel() to prevent memory leaks.
 /// @ingroup subscribe
-CC_MqttsnSubscribeHandle cc_mqttsn_##NAME##client_subscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+CC_MqttsnSubscribeHandle cc_mqttsn_##NAME##client_subscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
 
 /// @brief Configure the retry period for the "subscribe" operation.
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
@@ -598,7 +598,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_config(CC_MqttsnSubscribeH
 /// @brief Send the "subscribe" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_subscribe_prepare() function.
 /// @param[in] cb Callback to be invoked when "subscribe" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "subscribe" operation can be discarded.
@@ -616,7 +616,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_send(CC_MqttsnSubscribeHan
 /// @ingroup subscribe
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_cancel(CC_MqttsnSubscribeHandle handle);
 
-/// @brief Prepare and send "subscribe" request in one go 
+/// @brief Prepare and send "subscribe" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_subscribe_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_subscribe_config()
@@ -625,15 +625,15 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_cancel(CC_MqttsnSubscribeH
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] config Subscription configuration.
 /// @param[in] cb Callback to be invoked when "subscribe" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup subscribe
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
     CC_MqttsnClientHandle client,
     const CC_MqttsnSubscribeConfig* config,
-    CC_MqttsnSubscribeCompleteCb cb, 
-    void* cbData);    
+    CC_MqttsnSubscribeCompleteCb cb,
+    void* cbData);
 
 /// @brief Prepare "unsubscribe" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
@@ -642,7 +642,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
 /// @post The "unsubscribe" operation is allocated, use either @ref cc_mqttsn_##NAME##client_unsubscribe_send()
 ///     or @ref cc_mqttsn_##NAME##client_unsubscribe_cancel() to prevent memory leaks.
 /// @ingroup unsubscribe
-CC_MqttsnUnsubscribeHandle cc_mqttsn_##NAME##client_unsubscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+CC_MqttsnUnsubscribeHandle cc_mqttsn_##NAME##client_unsubscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
 
 /// @brief Configure the retry period for the "unsubscribe" operation.
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_unsubscribe_prepare() function.
@@ -685,7 +685,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_config(CC_MqttsnUnsubscr
 /// @brief Send the "unsubscribe" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_unsubscribe_prepare() function.
 /// @param[in] cb Callback to be invoked when "unsubscribe" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "unsubscribe" operation can be discarded.
@@ -703,7 +703,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_send(CC_MqttsnUnsubscrib
 /// @ingroup unsubscribe
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_cancel(CC_MqttsnUnsubscribeHandle handle);
 
-/// @brief Prepare and send "unsubscribe" request in one go 
+/// @brief Prepare and send "unsubscribe" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_unsubscribe_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_unsubscribe_config()
@@ -712,15 +712,15 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_cancel(CC_MqttsnUnsubscr
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] config Subscription configuration.
 /// @param[in] cb Callback to be invoked when "unsubscribe" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup unsubscribe
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
     CC_MqttsnClientHandle client,
     const CC_MqttsnUnsubscribeConfig* config,
-    CC_MqttsnUnsubscribeCompleteCb cb, 
-    void* cbData);    
+    CC_MqttsnUnsubscribeCompleteCb cb,
+    void* cbData);
 
 /// @brief Prepare "publish" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
@@ -729,7 +729,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
 /// @post The "publish" operation is allocated, use either @ref cc_mqttsn_##NAME##client_publish_send()
 ///     or @ref cc_mqttsn_##NAME##client_publish_cancel() to prevent memory leaks.
 /// @ingroup publish
-CC_MqttsnPublishHandle cc_mqttsn_##NAME##client_publish_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+CC_MqttsnPublishHandle cc_mqttsn_##NAME##client_publish_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
 
 /// @brief Configure the retry period for the "publish" operation.
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
@@ -772,7 +772,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_config(CC_MqttsnPublishHandl
 /// @brief Send the "publish" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_publish_prepare() function.
 /// @param[in] cb Callback to be invoked when "publish" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "publish" operation can be discarded.
@@ -790,7 +790,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_send(CC_MqttsnPublishHandle 
 /// @ingroup publish
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_cancel(CC_MqttsnPublishHandle handle);
 
-/// @brief Prepare and send "publish" request in one go 
+/// @brief Prepare and send "publish" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_publish_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_publish_config()
@@ -799,15 +799,15 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_cancel(CC_MqttsnPublishHandl
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] config Subscription configuration.
 /// @param[in] cb Callback to be invoked when "publish" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup publish
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
     CC_MqttsnClientHandle client,
     const CC_MqttsnPublishConfig* config,
-    CC_MqttsnPublishCompleteCb cb, 
-    void* cbData);    
+    CC_MqttsnPublishCompleteCb cb,
+    void* cbData);
 
 /// @brief Prepare "will" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
@@ -816,7 +816,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
 /// @post The "will" operation is allocated, use either @ref cc_mqttsn_##NAME##client_will_send()
 ///     or @ref cc_mqttsn_##NAME##client_will_cancel() to prevent memory leaks.
 /// @ingroup will
-CC_MqttsnWillHandle cc_mqttsn_##NAME##client_will_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+CC_MqttsnWillHandle cc_mqttsn_##NAME##client_will_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
 
 /// @brief Configure the retry period for the "will" operation.
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
@@ -859,7 +859,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_config(CC_MqttsnWillHandle hand
 /// @brief Send the "will" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_will_prepare() function.
 /// @param[in] cb Callback to be invoked when "will" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "will" operation can be discarded.
@@ -877,7 +877,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_send(CC_MqttsnWillHandle handle
 /// @ingroup will
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_cancel(CC_MqttsnWillHandle handle);
 
-/// @brief Prepare and send "will" request in one go 
+/// @brief Prepare and send "will" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_will_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_will_config()
@@ -886,16 +886,16 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_cancel(CC_MqttsnWillHandle hand
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] config Subscription configuration.
 /// @param[in] cb Callback to be invoked when "will" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup will
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will(
     CC_MqttsnClientHandle client,
     const CC_MqttsnWillConfig* config,
-    CC_MqttsnWillCompleteCb cb, 
-    void* cbData);  
-      
+    CC_MqttsnWillCompleteCb cb,
+    void* cbData);
+
 /// @brief Prepare "sleep" operation.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[out] ec Error code reporting result of the operation. Can be NULL.
@@ -903,7 +903,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will(
 /// @post The "sleep" operation is allocated, use either @ref cc_mqttsn_##NAME##client_sleep_send()
 ///     or @ref cc_mqttsn_##NAME##client_sleep_cancel() to prevent memory leaks.
 /// @ingroup sleep
-CC_MqttsnSleepHandle cc_mqttsn_##NAME##client_sleep_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);     
+CC_MqttsnSleepHandle cc_mqttsn_##NAME##client_sleep_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec);
 
 /// @brief Configure the retry period for the "sleep" operation.
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
@@ -946,7 +946,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_config(CC_MqttsnSleepHandle ha
 /// @brief Send the "sleep" operation
 /// @param[in] handle Handle returned by @ref cc_mqttsn_##NAME##client_sleep_prepare() function.
 /// @param[in] cb Callback to be invoked when "sleep" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @post The handle of the "sleep" operation can be discarded.
@@ -964,7 +964,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_send(CC_MqttsnSleepHandle hand
 /// @ingroup sleep
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_cancel(CC_MqttsnSleepHandle handle);
 
-/// @brief Prepare and send "sleep" request in one go 
+/// @brief Prepare and send "sleep" request in one go
 /// @details Abstracts away sequence of the following functions invocation:
 ///     @li @ref cc_mqttsn_##NAME##client_sleep_prepare()
 ///     @li @ref cc_mqttsn_##NAME##client_sleep_config()
@@ -973,42 +973,42 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_cancel(CC_MqttsnSleepHandle ha
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] config Subscription configuration.
 /// @param[in] cb Callback to be invoked when "sleep" operation is complete.
-/// @param[in] cbData Pointer to any user data structure. It will passed as one 
+/// @param[in] cbData Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @return Result code of the call.
 /// @ingroup sleep
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
     CC_MqttsnClientHandle client,
     const CC_MqttsnSleepConfig* config,
-    CC_MqttsnSleepCompleteCb cb, 
-    void* cbData); 
+    CC_MqttsnSleepCompleteCb cb,
+    void* cbData);
 
 // --------------------- Callbacks ---------------------
 
 /// @brief Set callback to call when time measurement is required.
-/// @details The MQTT-SN client may require to measure time. When such 
+/// @details The MQTT-SN client may require to measure time. When such
 ///     measurement is required, the provided callback will be invoked with
 ///     the timeout duration in milliseconds. After requested time expires,
 ///     the @ref cc_mqttsn_##NAME##client_tick() function must be invoked.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback function.
-/// @param[in] data Pointer to any user data structure. It will passed as one 
+/// @param[in] data Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_next_tick_program_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnNextTickProgramCb cb,
     void* data);
-    
+
 /// @brief Set callback to terminate current time measurement.
-/// @details The client may request termination of currently running time 
+/// @details The client may request termination of currently running time
 ///     measurement, previously requested via callback, which was set using
 ///     @ref cc_mqttsn_##NAME##client_set_next_tick_program_callback() function. This function
 ///     sets appropriate callback. When invoked, it must return number of
 ///     elapsed milliseconds since previoius time measurement request.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback function.
-/// @param[in] data Pointer to any user data structure. It will passed as one 
+/// @param[in] data Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
@@ -1019,67 +1019,67 @@ void cc_mqttsn_##NAME##client_set_cancel_next_tick_wait_callback(
 /// @brief Set callback to send raw data over I/O link.
 /// @details The callback is invoked when there is a need to send data
 ///     to the gateway. The callback is invoked for every single message
-///     that need to be sent as a single datagram. 
+///     that need to be sent as a single datagram.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback function.
-/// @param[in] data Pointer to any user data structure. It will passed as one 
+/// @param[in] data Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_send_output_data_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnSendOutputDataCb cb,
-    void* data);  
+    void* data);
 
 /// @brief Set callback to report status of the gateway.
 /// @details The callback is invoked when gateway status has changed.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback function.
-/// @param[in] data Pointer to any user data structure. It will passed as one 
+/// @param[in] data Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_gw_status_report_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnGwStatusReportCb cb,
-    void* data);  
+    void* data);
 
 /// @brief Set callback to report unsolicited disconnection of the gateway.
-/// @details The callback will be invoked when gateway sends unsolicited 
+/// @details The callback will be invoked when gateway sends unsolicited
 ///     @b DISCONNECT message or does not reply to @b PINGREQ message.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback function.
-/// @param[in] data Pointer to any user data structure. It will passed as one 
+/// @param[in] data Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_gw_disconnect_report_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnGwDisconnectedReportCb cb,
-    void* data); 
+    void* data);
 
 /// @brief Set callback to report incoming messages.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback function.
-/// @param[in] data Pointer to any user data structure. It will passed as one 
+/// @param[in] data Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_message_report_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnMessageReportCb cb,
-    void* data);  
+    void* data);
 
 /// @brief Set callback to report error messages.
 /// @param[in] client Handle returned by @ref cc_mqttsn_##NAME##client_alloc() function.
 /// @param[in] cb Callback function.
-/// @param[in] data Pointer to any user data structure. It will passed as one 
+/// @param[in] data Pointer to any user data structure. It will passed as one
 ///     of the parameters in callback invocation. May be NULL.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_error_log_callback(
     CC_MqttsnClientHandle client,
     CC_MqttsnErrorLogCb cb,
-    void* data);     
-            
+    void* data);
+
 /// @brief Set callback to request a random timeout to send @b GWINFO as a response to the @b SEARCHGW from other client.
 /// @details According to the MQTT-SN specification, the client can send @b GWINFO message on behalf of a gateway
-///     after some randrom amount of time. Use this function to allow the library to 
+///     after some randrom amount of time. Use this function to allow the library to
 ///     request such timeout. If not set, sending @b GWINFO on behalf of the gateway is @b disabled.
 /// @ingroup client
 void cc_mqttsn_##NAME##client_set_gwinfo_delay_request_callback(

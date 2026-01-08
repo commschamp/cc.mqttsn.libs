@@ -105,7 +105,7 @@ public:
 
     /// @brief Type of callback used to notify the application about forwarding encapsulation session being deleted.
     /// @details The application is responsible to remove any reference to the session object from its internal data structes.
-    /// @param[in] session Pointer to the created session object. Owned by the session object invoking the callback, 
+    /// @param[in] session Pointer to the created session object. Owned by the session object invoking the callback,
     ///     mustn't be deleted by the application.
     using FwdEncSessionDeletedReportCb = std::function<void (Session* session)>;
 
@@ -176,13 +176,13 @@ public:
     /// @param[in] func R-value reference to the callback object
     void setErrorReportCb(ErrorReportCb&& func);
 
-    /// @brief Set the callback to be invoked when the forwarding encapsulation session 
+    /// @brief Set the callback to be invoked when the forwarding encapsulation session
     ///     is detected and to notify application about such session creation.
     /// @details When not set, the forwarding enapsulation messages will be ignored
     /// @param[in] func R-value reference to the callback object
     void setFwdEncSessionCreatedReportCb(FwdEncSessionCreatedReportCb&& func);
 
-    /// @brief Set the callback to be invoked when the forwarding encapsulation session 
+    /// @brief Set the callback to be invoked when the forwarding encapsulation session
     ///     is about to be deleted.
     /// @param[in] func R-value reference to the callback object
     void setFwdEncSessionDeletedReportCb(FwdEncSessionDeletedReportCb&& func);

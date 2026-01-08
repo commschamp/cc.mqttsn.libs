@@ -38,7 +38,7 @@ public:
     }
 
 protected:
-    virtual Type typeImpl() const override;    
+    virtual Type typeImpl() const override;
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status) override;
 
 private:
@@ -51,7 +51,7 @@ private:
     static void opTimeoutCb(void* data);
 
     DisconnectMsg m_disconnectMsg;
-    TimerMgr::Timer m_timer;  
+    TimerMgr::Timer m_timer;
     CC_MqttsnDisconnectCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;
 
@@ -59,6 +59,5 @@ private:
 };
 
 } // namespace op
-
 
 } // namespace cc_mqttsn_client

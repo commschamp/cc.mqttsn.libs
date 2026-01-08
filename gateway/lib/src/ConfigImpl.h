@@ -26,7 +26,6 @@ public:
     using ClientConnectionType = Config::ClientConnectionType;
     using BrokerConnectionType = Config::BrokerConnectionType;
 
-
     ConfigImpl() = default;
     ~ConfigImpl() = default;
 

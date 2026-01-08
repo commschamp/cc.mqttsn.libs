@@ -59,10 +59,10 @@ if exist %COMMS_SRC_DIR%/.git (
     echo "Updating COMMS library..."
     cd "%COMMS_SRC_DIR%"
     git fetch --all
-    git checkout .    
+    git checkout .
     git checkout %COMMS_TAG%
     git pull --all
-    if %errorlevel% neq 0 exit /b %errorlevel%    
+    if %errorlevel% neq 0 exit /b %errorlevel%
 ) else (
     echo "Cloning COMMS library..."
     git clone -b %COMMS_TAG% %COMMS_REPO% %COMMS_SRC_DIR%
@@ -85,10 +85,10 @@ if exist %CC_MQTTSN_SRC_DIR%/.git (
     echo "Updating cc.mqttsn.generated library..."
     cd "%CC_MQTTSN_SRC_DIR%"
     git fetch --all
-    git checkout .    
+    git checkout .
     git checkout %CC_MQTTSN_TAG%
     git pull --all
-    if %errorlevel% neq 0 exit /b %errorlevel%    
+    if %errorlevel% neq 0 exit /b %errorlevel%
 ) else (
     echo "Cloning cc.mqttsn.generated library..."
     git clone -b %CC_MQTTSN_TAG% %CC_MQTTSN_REPO% %CC_MQTTSN_SRC_DIR%
@@ -111,10 +111,10 @@ if exist %CC_MQTT311_SRC_DIR%/.git (
     echo "Updating cc.mqtt311.generated library..."
     cd "%CC_MQTT311_SRC_DIR%"
     git fetch --all
-    git checkout .    
+    git checkout .
     git checkout %CC_MQTT311_TAG%
     git pull --all
-    if %errorlevel% neq 0 exit /b %errorlevel%    
+    if %errorlevel% neq 0 exit /b %errorlevel%
 ) else (
     echo "Cloning cc.mqtt311.generated library..."
     git clone -b %CC_MQTT311_TAG% %CC_MQTT311_REPO% %CC_MQTT311_SRC_DIR%

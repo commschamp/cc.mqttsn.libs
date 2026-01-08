@@ -7,7 +7,7 @@ class UnitTestBmBase : public UnitTestCommonBase
     using Base = UnitTestCommonBase;
 protected:
 
-    UnitTestBmBase(): 
+    UnitTestBmBase():
         Base(getFuncs())
     {
     }

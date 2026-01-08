@@ -32,7 +32,7 @@ class Generator
 public:
     using RawDataBuf = std::vector<std::uint8_t>;
 
-    using MqttsnMessage = 
+    using MqttsnMessage =
         cc_mqttsn::Message<
             comms::option::app::ReadIterator<const std::uint8_t*>,
             comms::option::app::WriteIterator<std::back_insert_iterator<RawDataBuf>>,

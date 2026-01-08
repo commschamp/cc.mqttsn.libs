@@ -67,7 +67,6 @@ T ConfigImpl::numericValue(const std::string& key, T defaultValue) const
     return defaultValue;
 }
 
-
 void ConfigImpl::read(std::istream& stream)
 {
     ConfigMap map;
@@ -324,7 +323,6 @@ ConfigImpl::TopicIdsRange ConfigImpl::topicIdAllocRange() const
             break;
         }
 
-
         auto maxNumPos = valStr.find_first_not_of(SpaceChars, firstSpacePos + 1);
         if (maxNumPos == std::string::npos) {
             break;
@@ -402,7 +400,7 @@ ConfigImpl::ClientConnectionType ConfigImpl::clientConnectionType() const
             break;
         }
 
-        result = iter->second;       
+        result = iter->second;
     } while (false);
 
     return result;
@@ -428,7 +426,7 @@ ConfigImpl::BrokerConnectionType ConfigImpl::brokerConnectionType() const
             break;
         }
 
-        result = iter->second;       
+        result = iter->second;
     } while (false);
 
     return result;

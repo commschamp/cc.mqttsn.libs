@@ -23,7 +23,7 @@ class ObjAllocator
     using InPlaceAlloc = comms::util::alloc::InPlacePool<TObj, TLimit>;
 
     template <typename... TParams>
-    using Alloc = 
+    using Alloc =
         typename comms::util::LazyShallowConditional<
             TLimit == 0U
         >::template Type<
@@ -32,7 +32,7 @@ class ObjAllocator
         >;
 
     using AllocType = Alloc<>;
-        
+
 public:
     using Ptr = typename AllocType::Ptr;
 

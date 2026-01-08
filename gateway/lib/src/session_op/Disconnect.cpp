@@ -66,5 +66,3 @@ void Disconnect::sendDisconnectSn()
 
 }  // namespace cc_mqttsn_gateway
 
-
-

@@ -1,6 +1,6 @@
 if (NOT BUILD_TESTING)
     return ()
-endif ()  
+endif ()
 
 set (COMPONENT_NAME "cc.mqttsn.gateway")
 set (COMMON_TEST_SESSION_LIB "CommonTestSession")
@@ -14,7 +14,7 @@ function (lib_common_test_session)
     add_library (${COMMON_TEST_SESSION_LIB} STATIC ${src})
     target_link_libraries(${COMMON_TEST_SESSION_LIB} PUBLIC cc::cc_mqtt311 cc::cc_mqttsn cc::comms)
     add_dependencies (${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME})
-    
+
 endfunction ()
 
 #################################################################
@@ -27,12 +27,12 @@ function (test_func test_suite_name)
     set (valgrand_args)
     if (VALGRIND_EXECUTABLE)
         set (valgrand_args VALGRIND_EXECUTABLE ${VALGRIND_EXECUTABLE})
-    endif ()     
+    endif ()
 
     cc_cxxtest_add_test(
         NAME ${name}
         SRC ${tests}
-        ${valgrand_args})    
+        ${valgrand_args})
 
     target_link_libraries(${name} PRIVATE ${COMMON_TEST_SESSION_LIB} ${MQTTSN_GATEWAY_LIB_NAME} cxxtest::cxxtest)
 endfunction ()

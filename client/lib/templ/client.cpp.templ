@@ -136,7 +136,7 @@ inline CC_MqttsnWillHandle handleFromWillOp(cc_mqttsn_client::op::WillOp* op)
 CC_MqttsnClientHandle cc_mqttsn_##NAME##client_alloc()
 {
     auto client = getClientAllocator().alloc();
-    return handleFromClient(client.release());   
+    return handleFromClient(client.release());
 }
 
 void cc_mqttsn_##NAME##client_free(CC_MqttsnClientHandle handle)
@@ -153,7 +153,7 @@ void cc_mqttsn_##NAME##client_tick(CC_MqttsnClientHandle client, unsigned ms)
 void cc_mqttsn_##NAME##client_process_data(CC_MqttsnClientHandle client, const unsigned char* buf, unsigned bufLen, CC_MqttsnDataOrigin origin)
 {
     COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->processData(buf, bufLen, origin);    
+    clientFromHandle(client)->processData(buf, bufLen, origin);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_period(CC_MqttsnClientHandle client, unsigned value)
@@ -172,7 +172,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_period(CC_MqttsnCl
 unsigned cc_mqttsn_##NAME##client_get_default_retry_period(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
-    return clientFromHandle(client)->configState().m_retryPeriod;    
+    return clientFromHandle(client)->configState().m_retryPeriod;
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_count(CC_MqttsnClientHandle client, unsigned value)
@@ -184,14 +184,14 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_retry_count(CC_MqttsnCli
     }
 
     COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->configState().m_retryCount = value;    
+    clientFromHandle(client)->configState().m_retryCount = value;
     return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_get_default_retry_count(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
-    return clientFromHandle(client)->configState().m_retryCount;      
+    return clientFromHandle(client)->configState().m_retryCount;
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_broadcast_radius(CC_MqttsnClientHandle client, unsigned value)
@@ -260,7 +260,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_Mqttsn
     }
 
     auto& gwInfos = clientImpl->clientState().m_gwInfos;
-    auto iter = 
+    auto iter =
         std::find_if(
             gwInfos.begin(), gwInfos.end(),
             [info](auto& storedInfo)
@@ -268,7 +268,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_Mqttsn
                 return storedInfo.m_gwId == info->m_gwId;
             });
 
-    auto updateFunc = 
+    auto updateFunc =
         [clientImpl, info](cc_mqttsn_client::ClientState::GwInfo& storedInfo)
         {
             if (storedInfo.m_addr.max_size() < info->m_addrLen) {
@@ -304,7 +304,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_discard_available_gateway_info(CC_Mq
     COMMS_ASSERT(client != nullptr);
     auto* clientImpl = clientFromHandle(client);
     auto& gwInfos = clientImpl->clientState().m_gwInfos;
-    auto iter = 
+    auto iter =
         std::find_if(
             gwInfos.begin(), gwInfos.end(),
             [gwId](auto& storedInfo)
@@ -315,7 +315,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_discard_available_gateway_info(CC_Mq
     if (iter == gwInfos.end()) {
         clientImpl->errorLog("Uknown gateway ID");
         return CC_MqttsnErrorCode_BadParam;
-    }            
+    }
 
     gwInfos.erase(iter);
     return CC_MqttsnErrorCode_Success;
@@ -324,7 +324,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_discard_available_gateway_info(CC_Mq
 void cc_mqttsn_##NAME##client_discard_all_gateway_infos(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
-    clientFromHandle(client)->clientState().m_gwInfos.clear();    
+    clientFromHandle(client)->clientState().m_gwInfos.clear();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_gw_adv_duration(CC_MqttsnClientHandle client, unsigned ms)
@@ -336,8 +336,8 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_default_gw_adv_duration(CC_Mqtts
         return CC_MqttsnErrorCode_BadParam;
     }
 
-    clientImpl->configState().m_gwAdvTimeoutMs = ms;    
-    return CC_MqttsnErrorCode_Success;    
+    clientImpl->configState().m_gwAdvTimeoutMs = ms;
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_get_default_gw_adv_duration(CC_MqttsnClientHandle client)
@@ -437,7 +437,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_outgoing_topic_id_storage_limit(
 unsigned long long cc_mqttsn_##NAME##client_get_outgoing_topic_id_storage_limit(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
-    return static_cast<unsigned long long>(clientFromHandle(client)->getOutgoingRegTopicsLimit());    
+    return static_cast<unsigned long long>(clientFromHandle(client)->getOutgoingRegTopicsLimit());
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_incoming_topic_id_storage_limit(CC_MqttsnClientHandle client, unsigned long long limit)
@@ -449,7 +449,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_incoming_topic_id_storage_limit(
 unsigned long long cc_mqttsn_##NAME##client_get_incoming_topic_id_storage_limit(CC_MqttsnClientHandle client)
 {
     COMMS_ASSERT(client != nullptr);
-    return static_cast<unsigned long long>(clientFromHandle(client)->getIncomingRegTopicsLimit());    
+    return static_cast<unsigned long long>(clientFromHandle(client)->getIncomingRegTopicsLimit());
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_asleep_check_messages(CC_MqttsnClientHandle client)
@@ -459,34 +459,34 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_asleep_check_messages(CC_MqttsnClien
 }
 
 CC_MqttsnSearchHandle cc_mqttsn_##NAME##client_search_prepare(
-    [[maybe_unused]] CC_MqttsnClientHandle client, 
+    [[maybe_unused]] CC_MqttsnClientHandle client,
     [[maybe_unused]] CC_MqttsnErrorCode* ec)
 {
-#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY       
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(client != nullptr);
     return handleFromSearchOp(clientFromHandle(client)->searchPrepare(ec));
-#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY   
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     clientFromHandle(client)->errorLog("Gateway discovery support was excluded from compilation");
     if (ec != nullptr) {
         *ec = CC_MqttsnErrorCode_NotSupported;
     }
     return nullptr;
-#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY   
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_period(
-    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
+    [[maybe_unused]] CC_MqttsnSearchHandle handle,
     [[maybe_unused]] unsigned ms)
 {
-#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
     if (ms == 0U) {
         searchOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    searchOpFromHandle(handle)->setRetryPeriod(ms);     
+    searchOpFromHandle(handle)->setRetryPeriod(ms);
     return CC_MqttsnErrorCode_Success;
 #else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     return CC_MqttsnErrorCode_NotSupported;
@@ -495,33 +495,33 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_period(
 
 unsigned cc_mqttsn_##NAME##client_search_get_retry_period([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
-#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
-    return searchOpFromHandle(handle)->getRetryPeriod();    
-#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+    return searchOpFromHandle(handle)->getRetryPeriod();
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(false); // Should not be called
     return 0U;
-#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_retry_count(
-    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
+    [[maybe_unused]] CC_MqttsnSearchHandle handle,
     [[maybe_unused]] unsigned count)
 {
-#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
-    searchOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;    
-#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+    searchOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
+#else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 }
 
 unsigned cc_mqttsn_##NAME##client_search_get_retry_count([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
-#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
-    return searchOpFromHandle(handle)->getRetryCount();       
+    return searchOpFromHandle(handle)->getRetryCount();
 #else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(false); // Should not be called
     return 0U;
@@ -529,7 +529,7 @@ unsigned cc_mqttsn_##NAME##client_search_get_retry_count([[maybe_unused]] CC_Mqt
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(
-    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
+    [[maybe_unused]] CC_MqttsnSearchHandle handle,
     [[maybe_unused]] unsigned broadcastRadius)
 {
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
@@ -537,10 +537,10 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_set_broadcast_radius(
     if (broadcastRadius == 0U) {
         searchOpFromHandle(handle)->client().errorLog("The broadcast radius must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
-    }    
-    
-    searchOpFromHandle(handle)->setBroadcastRadius(broadcastRadius);     
-    return CC_MqttsnErrorCode_Success;  
+    }
+
+    searchOpFromHandle(handle)->setBroadcastRadius(broadcastRadius);
+    return CC_MqttsnErrorCode_Success;
 #else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     return CC_MqttsnErrorCode_NotSupported;
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
@@ -550,7 +550,7 @@ unsigned cc_mqttsn_##NAME##client_search_get_broadcast_radius([[maybe_unused]] C
 {
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
-    return searchOpFromHandle(handle)->getBroadcastRadius();       
+    return searchOpFromHandle(handle)->getBroadcastRadius();
 #else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(false); // Should not be called
     return 0U;
@@ -558,8 +558,8 @@ unsigned cc_mqttsn_##NAME##client_search_get_broadcast_radius([[maybe_unused]] C
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(
-    [[maybe_unused]] CC_MqttsnSearchHandle handle, 
-    [[maybe_unused]] CC_MqttsnSearchCompleteCb cb, 
+    [[maybe_unused]] CC_MqttsnSearchHandle handle,
+    [[maybe_unused]] CC_MqttsnSearchCompleteCb cb,
     [[maybe_unused]] void* cbData)
 {
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
@@ -572,7 +572,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_send(
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
     CC_MqttsnClientHandle handle,
-    CC_MqttsnSearchCompleteCb cb, 
+    CC_MqttsnSearchCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -581,14 +581,14 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search(
         return ec;
     }
 
-    return cc_mqttsn_##NAME##client_search_send(search, cb, cbData);    
+    return cc_mqttsn_##NAME##client_search_send(search, cb, cbData);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_search_cancel([[maybe_unused]] CC_MqttsnSearchHandle handle)
 {
-#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY    
+#if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     COMMS_ASSERT(handle != nullptr);
-    return searchOpFromHandle(handle)->cancel();    
+    return searchOpFromHandle(handle)->cancel();
 #else // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     return CC_MqttsnErrorCode_NotSupported;
 #endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
@@ -607,29 +607,29 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_period(CC_MqttsnCo
         connectOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    connectOpFromHandle(handle)->setRetryPeriod(ms);     
+    connectOpFromHandle(handle)->setRetryPeriod(ms);
     return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_connect_get_retry_period(CC_MqttsnConnectHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return connectOpFromHandle(handle)->getRetryPeriod();    
+    return connectOpFromHandle(handle)->getRetryPeriod();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_set_retry_count(CC_MqttsnConnectHandle handle, unsigned count)
 {
     COMMS_ASSERT(handle != nullptr);
-    connectOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;  
+    connectOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_connect_get_retry_count(CC_MqttsnConnectHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return connectOpFromHandle(handle)->getRetryCount();     
+    return connectOpFromHandle(handle)->getRetryCount();
 }
 
 void cc_mqttsn_##NAME##client_connect_init_config(CC_MqttsnConnectConfig* config)
@@ -648,13 +648,13 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_config(CC_MqttsnConnectHandl
 void cc_mqttsn_##NAME##client_connect_init_config_will(CC_MqttsnWillConfig* config)
 {
     COMMS_ASSERT(config != nullptr);
-    *config = CC_MqttsnWillConfig();    
+    *config = CC_MqttsnWillConfig();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_config_will(CC_MqttsnConnectHandle handle, const CC_MqttsnWillConfig* config)
 {
     COMMS_ASSERT(handle != nullptr);
-    return connectOpFromHandle(handle)->willConfig(config);    
+    return connectOpFromHandle(handle)->willConfig(config);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_send(CC_MqttsnConnectHandle handle, CC_MqttsnConnectCompleteCb cb, void* cbData)
@@ -666,14 +666,14 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_send(CC_MqttsnConnectHandle 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect_cancel(CC_MqttsnConnectHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return connectOpFromHandle(handle)->cancel();    
+    return connectOpFromHandle(handle)->cancel();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
     CC_MqttsnClientHandle client,
     const CC_MqttsnConnectConfig* config,
     const CC_MqttsnWillConfig* willConfig,
-    CC_MqttsnConnectCompleteCb cb, 
+    CC_MqttsnConnectCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -682,12 +682,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
         return ec;
     }
 
-    auto cancelOnExitGuard = 
+    auto cancelOnExitGuard =
         comms::util::makeScopeGuard(
             [connect]()
             {
                 [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_connect_cancel(connect);
-            });    
+            });
 
     if (config != nullptr) {
         ec = cc_mqttsn_##NAME##client_connect_config(connect, config);
@@ -700,11 +700,11 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_connect(
         ec = cc_mqttsn_##NAME##client_connect_config_will(connect, willConfig);
         if (ec != CC_MqttsnErrorCode_Success) {
             return ec;
-        }        
+        }
     }
 
     cancelOnExitGuard.release();
-    return cc_mqttsn_##NAME##client_connect_send(connect, cb, cbData);    
+    return cc_mqttsn_##NAME##client_connect_send(connect, cb, cbData);
 }
 
 CC_MqttsnConnectionStatus cc_mqttsn_##NAME##client_get_connection_status(CC_MqttsnClientHandle client)
@@ -726,29 +726,29 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_set_retry_period(CC_Mqtts
         disconnectOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    disconnectOpFromHandle(handle)->setRetryPeriod(ms);     
+    disconnectOpFromHandle(handle)->setRetryPeriod(ms);
     return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_disconnect_get_retry_period(CC_MqttsnDisconnectHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return disconnectOpFromHandle(handle)->getRetryPeriod();    
+    return disconnectOpFromHandle(handle)->getRetryPeriod();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_set_retry_count(CC_MqttsnDisconnectHandle handle, unsigned count)
 {
     COMMS_ASSERT(handle != nullptr);
-    disconnectOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;  
+    disconnectOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_disconnect_get_retry_count(CC_MqttsnDisconnectHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return disconnectOpFromHandle(handle)->getRetryCount();     
+    return disconnectOpFromHandle(handle)->getRetryCount();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_send(CC_MqttsnDisconnectHandle handle, CC_MqttsnDisconnectCompleteCb cb, void* cbData)
@@ -760,12 +760,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_send(CC_MqttsnDisconnectH
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect_cancel(CC_MqttsnDisconnectHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return disconnectOpFromHandle(handle)->cancel();  
+    return disconnectOpFromHandle(handle)->cancel();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
     CC_MqttsnClientHandle client,
-    CC_MqttsnDisconnectCompleteCb cb, 
+    CC_MqttsnDisconnectCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -774,13 +774,13 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_disconnect(
         return ec;
     }
 
-    return cc_mqttsn_##NAME##client_disconnect_send(disconnect, cb, cbData);        
+    return cc_mqttsn_##NAME##client_disconnect_send(disconnect, cb, cbData);
 }
 
 CC_MqttsnSubscribeHandle cc_mqttsn_##NAME##client_subscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
 {
     COMMS_ASSERT(client != nullptr);
-    return handleFromSubscribeOp(clientFromHandle(client)->subscribePrepare(ec));    
+    return handleFromSubscribeOp(clientFromHandle(client)->subscribePrepare(ec));
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_set_retry_period(CC_MqttsnSubscribeHandle handle, unsigned ms)
@@ -790,29 +790,29 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_set_retry_period(CC_Mqttsn
         subscribeOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    subscribeOpFromHandle(handle)->setRetryPeriod(ms);     
-    return CC_MqttsnErrorCode_Success;    
+    subscribeOpFromHandle(handle)->setRetryPeriod(ms);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_subscribe_get_retry_period(CC_MqttsnSubscribeHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return subscribeOpFromHandle(handle)->getRetryPeriod();      
+    return subscribeOpFromHandle(handle)->getRetryPeriod();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_set_retry_count(CC_MqttsnSubscribeHandle handle, unsigned count)
 {
     COMMS_ASSERT(handle != nullptr);
-    subscribeOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;  
+    subscribeOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_subscribe_get_retry_count(CC_MqttsnSubscribeHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return subscribeOpFromHandle(handle)->getRetryCount();         
+    return subscribeOpFromHandle(handle)->getRetryCount();
 }
 
 void cc_mqttsn_##NAME##client_subscribe_init_config(CC_MqttsnSubscribeConfig* config)
@@ -825,25 +825,25 @@ void cc_mqttsn_##NAME##client_subscribe_init_config(CC_MqttsnSubscribeConfig* co
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_config(CC_MqttsnSubscribeHandle handle, const CC_MqttsnSubscribeConfig* config)
 {
     COMMS_ASSERT(handle != nullptr);
-    return subscribeOpFromHandle(handle)->config(config);    
+    return subscribeOpFromHandle(handle)->config(config);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_send(CC_MqttsnSubscribeHandle handle, CC_MqttsnSubscribeCompleteCb cb, void* cbData)
 {
     COMMS_ASSERT(handle != nullptr);
-    return subscribeOpFromHandle(handle)->send(cb, cbData);       
+    return subscribeOpFromHandle(handle)->send(cb, cbData);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe_cancel(CC_MqttsnSubscribeHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return subscribeOpFromHandle(handle)->cancel();  
+    return subscribeOpFromHandle(handle)->cancel();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
     CC_MqttsnClientHandle client,
     const CC_MqttsnSubscribeConfig* config,
-    CC_MqttsnSubscribeCompleteCb cb, 
+    CC_MqttsnSubscribeCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -852,12 +852,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
         return ec;
     }
 
-    auto cancelOnExitGuard = 
+    auto cancelOnExitGuard =
         comms::util::makeScopeGuard(
             [subscribe]()
             {
                 [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_subscribe_cancel(subscribe);
-            });    
+            });
 
     if (config != nullptr) {
         ec = cc_mqttsn_##NAME##client_subscribe_config(subscribe, config);
@@ -867,13 +867,13 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_subscribe(
     }
 
     cancelOnExitGuard.release();
-    return cc_mqttsn_##NAME##client_subscribe_send(subscribe, cb, cbData);     
+    return cc_mqttsn_##NAME##client_subscribe_send(subscribe, cb, cbData);
 }
 
 CC_MqttsnUnsubscribeHandle cc_mqttsn_##NAME##client_unsubscribe_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
 {
     COMMS_ASSERT(client != nullptr);
-    return handleFromUnsubscribeOp(clientFromHandle(client)->unsubscribePrepare(ec));    
+    return handleFromUnsubscribeOp(clientFromHandle(client)->unsubscribePrepare(ec));
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_set_retry_period(CC_MqttsnUnsubscribeHandle handle, unsigned ms)
@@ -883,29 +883,29 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_set_retry_period(CC_Mqtt
         unsubscribeOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    unsubscribeOpFromHandle(handle)->setRetryPeriod(ms);     
-    return CC_MqttsnErrorCode_Success;    
+    unsubscribeOpFromHandle(handle)->setRetryPeriod(ms);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_unsubscribe_get_retry_period(CC_MqttsnUnsubscribeHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return unsubscribeOpFromHandle(handle)->getRetryPeriod();      
+    return unsubscribeOpFromHandle(handle)->getRetryPeriod();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_set_retry_count(CC_MqttsnUnsubscribeHandle handle, unsigned count)
 {
     COMMS_ASSERT(handle != nullptr);
-    unsubscribeOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;  
+    unsubscribeOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_unsubscribe_get_retry_count(CC_MqttsnUnsubscribeHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return unsubscribeOpFromHandle(handle)->getRetryCount();         
+    return unsubscribeOpFromHandle(handle)->getRetryCount();
 }
 
 void cc_mqttsn_##NAME##client_unsubscribe_init_config(CC_MqttsnUnsubscribeConfig* config)
@@ -917,25 +917,25 @@ void cc_mqttsn_##NAME##client_unsubscribe_init_config(CC_MqttsnUnsubscribeConfig
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_config(CC_MqttsnUnsubscribeHandle handle, const CC_MqttsnUnsubscribeConfig* config)
 {
     COMMS_ASSERT(handle != nullptr);
-    return unsubscribeOpFromHandle(handle)->config(config);    
+    return unsubscribeOpFromHandle(handle)->config(config);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_send(CC_MqttsnUnsubscribeHandle handle, CC_MqttsnUnsubscribeCompleteCb cb, void* cbData)
 {
     COMMS_ASSERT(handle != nullptr);
-    return unsubscribeOpFromHandle(handle)->send(cb, cbData);       
+    return unsubscribeOpFromHandle(handle)->send(cb, cbData);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe_cancel(CC_MqttsnUnsubscribeHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return unsubscribeOpFromHandle(handle)->cancel();  
+    return unsubscribeOpFromHandle(handle)->cancel();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
     CC_MqttsnClientHandle client,
     const CC_MqttsnUnsubscribeConfig* config,
-    CC_MqttsnUnsubscribeCompleteCb cb, 
+    CC_MqttsnUnsubscribeCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -944,12 +944,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
         return ec;
     }
 
-    auto cancelOnExitGuard = 
+    auto cancelOnExitGuard =
         comms::util::makeScopeGuard(
             [unsubscribe]()
             {
                 [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_unsubscribe_cancel(unsubscribe);
-            });    
+            });
 
     if (config != nullptr) {
         ec = cc_mqttsn_##NAME##client_unsubscribe_config(unsubscribe, config);
@@ -959,13 +959,13 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_unsubscribe(
     }
 
     cancelOnExitGuard.release();
-    return cc_mqttsn_##NAME##client_unsubscribe_send(unsubscribe, cb, cbData);     
+    return cc_mqttsn_##NAME##client_unsubscribe_send(unsubscribe, cb, cbData);
 }
 
 CC_MqttsnPublishHandle cc_mqttsn_##NAME##client_publish_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
 {
     COMMS_ASSERT(client != nullptr);
-    return handleFromSendOp(clientFromHandle(client)->publishPrepare(ec));    
+    return handleFromSendOp(clientFromHandle(client)->publishPrepare(ec));
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_set_retry_period(CC_MqttsnPublishHandle handle, unsigned ms)
@@ -975,29 +975,29 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_set_retry_period(CC_MqttsnPu
         sendOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    sendOpFromHandle(handle)->setRetryPeriod(ms);     
-    return CC_MqttsnErrorCode_Success;    
+    sendOpFromHandle(handle)->setRetryPeriod(ms);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_publish_get_retry_period(CC_MqttsnPublishHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return sendOpFromHandle(handle)->getRetryPeriod();      
+    return sendOpFromHandle(handle)->getRetryPeriod();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_set_retry_count(CC_MqttsnPublishHandle handle, unsigned count)
 {
     COMMS_ASSERT(handle != nullptr);
-    sendOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;  
+    sendOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_publish_get_retry_count(CC_MqttsnPublishHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return sendOpFromHandle(handle)->getRetryCount();         
+    return sendOpFromHandle(handle)->getRetryCount();
 }
 
 void cc_mqttsn_##NAME##client_publish_init_config(CC_MqttsnPublishConfig* config)
@@ -1009,25 +1009,25 @@ void cc_mqttsn_##NAME##client_publish_init_config(CC_MqttsnPublishConfig* config
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_config(CC_MqttsnPublishHandle handle, const CC_MqttsnPublishConfig* config)
 {
     COMMS_ASSERT(handle != nullptr);
-    return sendOpFromHandle(handle)->config(config);    
+    return sendOpFromHandle(handle)->config(config);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_send(CC_MqttsnPublishHandle handle, CC_MqttsnPublishCompleteCb cb, void* cbData)
 {
     COMMS_ASSERT(handle != nullptr);
-    return sendOpFromHandle(handle)->send(cb, cbData);       
+    return sendOpFromHandle(handle)->send(cb, cbData);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish_cancel(CC_MqttsnPublishHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return sendOpFromHandle(handle)->cancel();  
+    return sendOpFromHandle(handle)->cancel();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
     CC_MqttsnClientHandle client,
     const CC_MqttsnPublishConfig* config,
-    CC_MqttsnPublishCompleteCb cb, 
+    CC_MqttsnPublishCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -1036,12 +1036,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
         return ec;
     }
 
-    auto cancelOnExitGuard = 
+    auto cancelOnExitGuard =
         comms::util::makeScopeGuard(
             [publish]()
             {
                 [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_publish_cancel(publish);
-            });    
+            });
 
     if (config != nullptr) {
         ec = cc_mqttsn_##NAME##client_publish_config(publish, config);
@@ -1051,73 +1051,73 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_publish(
     }
 
     cancelOnExitGuard.release();
-    return cc_mqttsn_##NAME##client_publish_send(publish, cb, cbData);     
+    return cc_mqttsn_##NAME##client_publish_send(publish, cb, cbData);
 }
 
 CC_MqttsnWillHandle cc_mqttsn_##NAME##client_will_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL       
+#if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(client != nullptr);
-    return handleFromWillOp(clientFromHandle(client)->willPrepare(ec));    
-#else // #if CC_MQTTSN_CLIENT_HAS_WILL   
+    return handleFromWillOp(clientFromHandle(client)->willPrepare(ec));
+#else // #if CC_MQTTSN_CLIENT_HAS_WILL
     clientFromHandle(client)->errorLog("Will support was excluded from compilation");
     if (ec != nullptr) {
         *ec = CC_MqttsnErrorCode_NotSupported;
     }
     return nullptr;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL   
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_set_retry_period(
-    [[maybe_unused]] CC_MqttsnWillHandle handle, 
+    [[maybe_unused]] CC_MqttsnWillHandle handle,
     [[maybe_unused]] unsigned ms)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL           
+#if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(handle != nullptr);
     if (ms == 0U) {
         willOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    willOpFromHandle(handle)->setRetryPeriod(ms);     
+    willOpFromHandle(handle)->setRetryPeriod(ms);
     return CC_MqttsnErrorCode_Success;
-#else // #if CC_MQTTSN_CLIENT_HAS_WILL   
+#else // #if CC_MQTTSN_CLIENT_HAS_WILL
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL   
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 unsigned cc_mqttsn_##NAME##client_will_get_retry_period([[maybe_unused]] CC_MqttsnWillHandle handle)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL               
+#if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(handle != nullptr);
-    return willOpFromHandle(handle)->getRetryPeriod();      
-#else // #if CC_MQTTSN_CLIENT_HAS_WILL 
-    return 0U;          
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+    return willOpFromHandle(handle)->getRetryPeriod();
+#else // #if CC_MQTTSN_CLIENT_HAS_WILL
+    return 0U;
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_set_retry_count(
-    [[maybe_unused]] CC_MqttsnWillHandle handle, 
+    [[maybe_unused]] CC_MqttsnWillHandle handle,
     [[maybe_unused]] unsigned count)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL    
+#if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(handle != nullptr);
-    willOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;  
+    willOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
 #else // #if CC_MQTTSN_CLIENT_HAS_WILL
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 unsigned cc_mqttsn_##NAME##client_will_get_retry_count([[maybe_unused]] CC_MqttsnWillHandle handle)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(handle != nullptr);
-    return willOpFromHandle(handle)->getRetryCount();         
-#else // #if CC_MQTTSN_CLIENT_HAS_WILL 
+    return willOpFromHandle(handle)->getRetryCount();
+#else // #if CC_MQTTSN_CLIENT_HAS_WILL
     return 0U;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL  
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 void cc_mqttsn_##NAME##client_will_init_config(CC_MqttsnWillConfig* config)
@@ -1127,44 +1127,44 @@ void cc_mqttsn_##NAME##client_will_init_config(CC_MqttsnWillConfig* config)
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_config(
-    [[maybe_unused]] CC_MqttsnWillHandle handle, 
+    [[maybe_unused]] CC_MqttsnWillHandle handle,
     [[maybe_unused]] const CC_MqttsnWillConfig* config)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL    
+#if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(handle != nullptr);
-    return willOpFromHandle(handle)->config(config);    
+    return willOpFromHandle(handle)->config(config);
 #else // #if CC_MQTTSN_CLIENT_HAS_WILL
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_send(
-    [[maybe_unused]] CC_MqttsnWillHandle handle, 
-    [[maybe_unused]] CC_MqttsnWillCompleteCb cb, 
+    [[maybe_unused]] CC_MqttsnWillHandle handle,
+    [[maybe_unused]] CC_MqttsnWillCompleteCb cb,
     [[maybe_unused]] void* cbData)
 {
 #if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(handle != nullptr);
-    return willOpFromHandle(handle)->send(cb, cbData);       
+    return willOpFromHandle(handle)->send(cb, cbData);
 #else // #if CC_MQTTSN_CLIENT_HAS_WILL
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will_cancel([[maybe_unused]] CC_MqttsnWillHandle handle)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL    
+#if CC_MQTTSN_CLIENT_HAS_WILL
     COMMS_ASSERT(handle != nullptr);
-    return willOpFromHandle(handle)->cancel();  
+    return willOpFromHandle(handle)->cancel();
 #else // #if CC_MQTTSN_CLIENT_HAS_WILL
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will(
     CC_MqttsnClientHandle client,
     const CC_MqttsnWillConfig* config,
-    CC_MqttsnWillCompleteCb cb, 
+    CC_MqttsnWillCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -1173,12 +1173,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will(
         return ec;
     }
 
-    auto cancelOnExitGuard = 
+    auto cancelOnExitGuard =
         comms::util::makeScopeGuard(
             [will]()
             {
                 [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_will_cancel(will);
-            });    
+            });
 
     if (config != nullptr) {
         ec = cc_mqttsn_##NAME##client_will_config(will, config);
@@ -1188,13 +1188,13 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_will(
     }
 
     cancelOnExitGuard.release();
-    return cc_mqttsn_##NAME##client_will_send(will, cb, cbData);     
+    return cc_mqttsn_##NAME##client_will_send(will, cb, cbData);
 }
 
 CC_MqttsnSleepHandle cc_mqttsn_##NAME##client_sleep_prepare(CC_MqttsnClientHandle client, CC_MqttsnErrorCode* ec)
 {
     COMMS_ASSERT(client != nullptr);
-    return sleepHandleFromDisconnectOp(clientFromHandle(client)->disconnectPrepare(ec));    
+    return sleepHandleFromDisconnectOp(clientFromHandle(client)->disconnectPrepare(ec));
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_set_retry_period(CC_MqttsnSleepHandle handle, unsigned ms)
@@ -1204,29 +1204,29 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_set_retry_period(CC_MqttsnSlee
         disconnectOpFromHandle(handle)->client().errorLog("The retry period must be greater than 0");
         return CC_MqttsnErrorCode_BadParam;
     }
-    
+
     COMMS_ASSERT(handle != nullptr);
-    disconnectOpFromHandle(handle)->setRetryPeriod(ms);     
-    return CC_MqttsnErrorCode_Success;    
+    disconnectOpFromHandle(handle)->setRetryPeriod(ms);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_sleep_get_retry_period(CC_MqttsnSleepHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return disconnectOpFromHandle(handle)->getRetryPeriod();      
+    return disconnectOpFromHandle(handle)->getRetryPeriod();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_set_retry_count(CC_MqttsnSleepHandle handle, unsigned count)
 {
     COMMS_ASSERT(handle != nullptr);
-    disconnectOpFromHandle(handle)->setRetryCount(count);     
-    return CC_MqttsnErrorCode_Success;  
+    disconnectOpFromHandle(handle)->setRetryCount(count);
+    return CC_MqttsnErrorCode_Success;
 }
 
 unsigned cc_mqttsn_##NAME##client_sleep_get_retry_count(CC_MqttsnSleepHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return disconnectOpFromHandle(handle)->getRetryCount();         
+    return disconnectOpFromHandle(handle)->getRetryCount();
 }
 
 void cc_mqttsn_##NAME##client_sleep_init_config(CC_MqttsnSleepConfig* config)
@@ -1238,7 +1238,7 @@ void cc_mqttsn_##NAME##client_sleep_init_config(CC_MqttsnSleepConfig* config)
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_config(CC_MqttsnSleepHandle handle, const CC_MqttsnSleepConfig* config)
 {
     COMMS_ASSERT(handle != nullptr);
-    return disconnectOpFromHandle(handle)->config(config);    
+    return disconnectOpFromHandle(handle)->config(config);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_send(CC_MqttsnSleepHandle handle, CC_MqttsnSleepCompleteCb cb, void* cbData)
@@ -1254,20 +1254,20 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_send(CC_MqttsnSleepHandle hand
         cc_mqttsn_##NAME##client_sleep_cancel(handle);
         return CC_MqttsnErrorCode_InsufficientConfig;
     }
-    
-    return op->send(cb, cbData);       
+
+    return op->send(cb, cbData);
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep_cancel(CC_MqttsnSleepHandle handle)
 {
     COMMS_ASSERT(handle != nullptr);
-    return disconnectOpFromHandle(handle)->cancel();  
+    return disconnectOpFromHandle(handle)->cancel();
 }
 
 CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
     CC_MqttsnClientHandle client,
     const CC_MqttsnSleepConfig* config,
-    CC_MqttsnSleepCompleteCb cb, 
+    CC_MqttsnSleepCompleteCb cb,
     void* cbData)
 {
     auto ec = CC_MqttsnErrorCode_Success;
@@ -1276,12 +1276,12 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
         return ec;
     }
 
-    auto cancelOnExitGuard = 
+    auto cancelOnExitGuard =
         comms::util::makeScopeGuard(
             [sleep]()
             {
                 [[maybe_unused]] auto ecTmp = cc_mqttsn_##NAME##client_sleep_cancel(sleep);
-            });    
+            });
 
     if (config != nullptr) {
         ec = cc_mqttsn_##NAME##client_sleep_config(sleep, config);
@@ -1291,7 +1291,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_sleep(
     }
 
     cancelOnExitGuard.release();
-    return cc_mqttsn_##NAME##client_sleep_send(sleep, cb, cbData);     
+    return cc_mqttsn_##NAME##client_sleep_send(sleep, cb, cbData);
 }
 
 // --------------------- Callbacks ---------------------

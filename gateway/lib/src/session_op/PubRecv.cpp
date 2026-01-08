@@ -162,5 +162,3 @@ void PubRecv::addPubInfo(PubInfoPtr info)
 
 }  // namespace cc_mqttsn_gateway
 
-
-

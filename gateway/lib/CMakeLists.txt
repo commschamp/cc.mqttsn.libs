@@ -7,11 +7,10 @@ find_package(cc_mqtt311 REQUIRED)
 ######################################################################
 
 set (GATEWAY_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-        
+
 if (CMAKE_COMPILER_IS_GNUCC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0")
 endif ()
-
 
 add_subdirectory (src)
 add_subdirectory (test)
@@ -27,7 +26,7 @@ find_package (Doxygen)
 if (DOXYGEN_FOUND)
     set (doc_output_dir "${CMAKE_INSTALL_FULL_DATAROOTDIR}/doc/cc_mqttsn_gateway")
     make_directory (${doc_output_dir})
-    
+
     set (match_str "OUTPUT_DIRECTORY[^\n]*")
     set (replacement_str "OUTPUT_DIRECTORY = ${doc_output_dir}")
     set (output_file "${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf")

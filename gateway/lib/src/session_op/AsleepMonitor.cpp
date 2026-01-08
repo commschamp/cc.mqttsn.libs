@@ -13,7 +13,7 @@
 namespace cc_mqttsn_gateway
 {
 
-namespace session_op    
+namespace session_op
 {
 
 AsleepMonitor::AsleepMonitor(SessionImpl& session) :

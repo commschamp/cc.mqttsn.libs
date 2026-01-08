@@ -86,7 +86,7 @@ unsigned short cc_mqttsn_gw_get_advertise_period(CC_MqttsnGatewayHandle gw)
         return 0U;
     }
 
-    return asGateway(gw)->getAdvertisePeriod();    
+    return asGateway(gw)->getAdvertisePeriod();
 }
 
 void cc_mqttsn_gw_set_id(CC_MqttsnGatewayHandle gw, unsigned char id)
@@ -104,7 +104,7 @@ unsigned char cc_mqttsn_gw_get_id(CC_MqttsnGatewayHandle gw)
         return 0U;
     }
 
-    return asGateway(gw)->getGatewayId();    
+    return asGateway(gw)->getGatewayId();
 }
 
 void cc_mqttsn_gw_set_tick_req_cb(CC_MqttsnGatewayHandle gw, CC_MqttsnGwTickReqCb cb, void* data)
@@ -165,7 +165,6 @@ void cc_mqttsn_gw_tick(CC_MqttsnGatewayHandle gw)
 
 /*===================== Session Object ======================*/
 
-
 CC_MqttsnSessionHandle cc_mqttsn_gw_session_alloc(void)
 {
     return fromSession(new Session);
@@ -223,7 +222,6 @@ void cc_mqttsn_gw_session_set_send_data_to_client_cb(
             cb(data, session, buf, static_cast<unsigned>(bufLen), broadcastRadius);
         });
 }
-
 
 void cc_mqttsn_gw_session_set_send_data_to_broker_cb(
     CC_MqttsnSessionHandle session,
@@ -336,13 +334,13 @@ void cc_mqttsn_gw_session_set_error_report_cb(
 {
     if (session == nullptr) {
         return;
-    }    
+    }
 
     asSession(session)->setErrorReportCb(
         [cb, data, session](const char* msg)
         {
             cb(data, session, msg);
-        });    
+        });
 }
 
 void cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(
@@ -357,13 +355,13 @@ void cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(
     if (cb == nullptr) {
         asSession(session)->setFwdEncSessionCreatedReportCb(nullptr);
         return;
-    }    
+    }
 
     asSession(session)->setFwdEncSessionCreatedReportCb(
         [cb, data](cc_mqttsn_gateway::Session* sessionPtr)
         {
             return cb(data, fromSession(sessionPtr));
-        });    
+        });
 }
 
 void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
@@ -378,13 +376,13 @@ void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
     if (cb == nullptr) {
         asSession(session)->setFwdEncSessionDeletedReportCb(nullptr);
         return;
-    }    
+    }
 
     asSession(session)->setFwdEncSessionDeletedReportCb(
         [cb, data](cc_mqttsn_gateway::Session* sessionPtr)
         {
             cb(data, fromSession(sessionPtr));
-        });    
+        });
 }
 
 void cc_mqttsn_gw_session_set_id(CC_MqttsnSessionHandle session, unsigned char id)
@@ -402,7 +400,7 @@ unsigned char cc_mqttsn_gw_session_get_id(CC_MqttsnSessionHandle session)
         return 0;
     }
 
-    return asSession(session)->getGatewayId();    
+    return asSession(session)->getGatewayId();
 }
 
 void cc_mqttsn_gw_session_set_retry_period(CC_MqttsnSessionHandle session, unsigned value)
@@ -420,7 +418,7 @@ unsigned cc_mqttsn_gw_session_get_retry_period(CC_MqttsnSessionHandle session)
         return 0U;
     }
 
-    return asSession(session)->getRetryPeriod();    
+    return asSession(session)->getRetryPeriod();
 }
 
 void cc_mqttsn_gw_session_set_retry_count(CC_MqttsnSessionHandle session, unsigned value)
@@ -438,7 +436,7 @@ unsigned cc_mqttsn_gw_session_get_retry_count(CC_MqttsnSessionHandle session)
         return 0U;
     }
 
-    return asSession(session)->getRetryCount();    
+    return asSession(session)->getRetryCount();
 }
 
 void cc_mqttsn_gw_session_set_sleeping_client_msg_limit(
@@ -458,7 +456,7 @@ unsigned long long cc_mqttsn_gw_session_get_sleeping_client_msg_limit(CC_MqttsnS
         return 0U;
     }
 
-    return static_cast<unsigned long long>(asSession(session)->getSleepingClientMsgLimit());    
+    return static_cast<unsigned long long>(asSession(session)->getSleepingClientMsgLimit());
 }
 
 void cc_mqttsn_gw_session_set_default_client_id(CC_MqttsnSessionHandle session, const char* clientId)
@@ -476,7 +474,7 @@ const char* cc_mqttsn_gw_session_get_default_client_id(CC_MqttsnSessionHandle se
         return nullptr;
     }
 
-    return asSession(session)->getDefaultClientId().c_str();    
+    return asSession(session)->getDefaultClientId().c_str();
 }
 
 void cc_mqttsn_gw_session_set_pub_only_keep_alive(
@@ -496,7 +494,7 @@ unsigned cc_mqttsn_gw_session_get_pub_only_keep_alive(CC_MqttsnSessionHandle ses
         return 0U;
     }
 
-    return asSession(session)->getPubOnlyKeepAlive();    
+    return asSession(session)->getPubOnlyKeepAlive();
 }
 
 bool cc_mqttsn_gw_session_start(CC_MqttsnSessionHandle session)
@@ -569,7 +567,7 @@ bool cc_mqttsn_gw_session_get_broker_connected(CC_MqttsnSessionHandle session)
         return false;
     }
 
-    return asSession(session)->getBrokerConnected();    
+    return asSession(session)->getBrokerConnected();
 }
 
 bool cc_mqttsn_gw_session_add_predefined_topic(
@@ -820,7 +818,7 @@ CC_MqttsnClientConnectionType cc_mqttsn_gw_config_client_connection_type(CC_Mqtt
 {
     if (config == nullptr) {
         return CC_MqttsnClientConnectionType_ValuesLimit;
-    }    
+    }
 
     return static_cast<CC_MqttsnClientConnectionType>(reinterpret_cast<const Config*>(config)->clientConnectionType());
 }
@@ -829,7 +827,7 @@ CC_MqttsnBrokerConnectionType cc_mqttsn_gw_config_broker_connection_type(CC_Mqtt
 {
     if (config == nullptr) {
         return CC_MqttsnBrokerConnectionType_ValuesLimit;
-    }    
+    }
 
     return static_cast<CC_MqttsnBrokerConnectionType>(reinterpret_cast<const Config*>(config)->brokerConnectionType());
 }

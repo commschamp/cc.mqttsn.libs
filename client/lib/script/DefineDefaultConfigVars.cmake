@@ -7,7 +7,7 @@ macro (set_default_var_value name val)
 endmacro()
 
 macro (replace_in_text var_name)
-    string (REPLACE "##${var_name}##" "${${var_name}}" text "${text}")    
+    string (REPLACE "##${var_name}##" "${${var_name}}" text "${text}")
 endmacro()
 
 set_default_var_value(CC_MQTTSN_CLIENT_CUSTOM_NAME "")

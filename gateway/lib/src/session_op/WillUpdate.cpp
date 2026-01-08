@@ -224,7 +224,6 @@ void WillUpdate::sendConnectMsg()
 
     auto& flagsField = msg.field_flags();
 
-
     if (!m_will.m_topic.empty()) {
         flagsField.field_low().setBitValue_willFlag(true);
         msg.field_willTopic().field().value() = m_will.m_topic;
@@ -258,6 +257,4 @@ void WillUpdate::sendFailureAndTerm()
 }  // namespace session_op
 
 }  // namespace cc_mqttsn_gateway
-
-
 

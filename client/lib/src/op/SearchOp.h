@@ -46,7 +46,7 @@ public:
     }
 
 protected:
-    virtual Type typeImpl() const override;    
+    virtual Type typeImpl() const override;
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status) override;
 
 private:
@@ -58,7 +58,7 @@ private:
     static void opTimeoutCb(void* data);
 
     SearchgwMsg m_searchgwMsg;
-    TimerMgr::Timer m_timer;  
+    TimerMgr::Timer m_timer;
     unsigned m_radius = 0U;
     CC_MqttsnSearchCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;

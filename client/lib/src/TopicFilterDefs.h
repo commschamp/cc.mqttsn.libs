@@ -15,7 +15,6 @@
 
 #include <iostream>
 
-
 namespace cc_mqttsn_client
 {
 
@@ -24,7 +23,7 @@ using TopicNameStr = SubscribeMsg::Field_topicName::Field::ValueType;
 struct RegTopicInfo
 {
     TopicNameStr m_topic;
-    CC_MqttsnTopicId m_topicId = 0U; 
+    CC_MqttsnTopicId m_topicId = 0U;
 
     template <typename T>
     RegTopicInfo(T&& topic, CC_MqttsnTopicId topicId) : m_topic(std::forward<T>(topic)), m_topicId(topicId) {}
@@ -44,16 +43,15 @@ struct TimestampStorage
 struct FullRegTopicInfo : public TimestampStorage, public RegTopicInfo
 {
     template <typename T>
-    FullRegTopicInfo(Timestamp timestamp, T&& topic, CC_MqttsnTopicId topicId) : 
-        TimestampStorage(timestamp), 
+    FullRegTopicInfo(Timestamp timestamp, T&& topic, CC_MqttsnTopicId topicId) :
+        TimestampStorage(timestamp),
         RegTopicInfo(std::forward<T>(topic), topicId)
     {
     }
 
     FullRegTopicInfo(Timestamp timestamp, const char* topic) : TimestampStorage(timestamp), RegTopicInfo(topic) {}
-    FullRegTopicInfo(Timestamp timestamp, CC_MqttsnTopicId topicId) : TimestampStorage(timestamp), RegTopicInfo(topicId) {}    
+    FullRegTopicInfo(Timestamp timestamp, CC_MqttsnTopicId topicId) : TimestampStorage(timestamp), RegTopicInfo(topicId) {}
 };
-
 
 using SubFiltersMap = ObjListType<RegTopicInfo, Config::SubFiltersLimit, Config::HasSubTopicVerification>; // key is m_topic
 using InRegTopicsMap = ObjListType<FullRegTopicInfo, Config::InRegTopicsLimit>; // key is m_topicId;

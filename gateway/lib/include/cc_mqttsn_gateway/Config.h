@@ -76,14 +76,14 @@ public:
     {
         ClientConnectionType_Udp, ///< UDP/IP
         ClientConnectionType_ValuesLimit ///< Limit to available values, must be last
-    };    
+    };
 
     /// @brief Broker I/O socket connection type
     enum BrokerConnectionType
     {
         BrokerConnectionType_Tcp, ///< TCP/IP
         BrokerConnectionType_ValuesLimit ///< Limit to available values, must be last
-    };        
+    };
 
     /// @brief Constructor
     Config();
@@ -164,12 +164,11 @@ public:
 
     /// @brief Get broker side I/O socket connection type
     /// @details Default value is @ref BrokerConnectionType_Tcp
-    BrokerConnectionType brokerConnectionType() const;    
+    BrokerConnectionType brokerConnectionType() const;
 
 private:
     std::unique_ptr<ConfigImpl> m_pImpl;
 };
 
 }  // namespace cc_mqttsn_gateway
-
 

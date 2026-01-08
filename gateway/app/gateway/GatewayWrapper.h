@@ -36,7 +36,7 @@ public:
 
 private:
     using Timer = boost::asio::steady_timer;
-    
+
     GatewayLogger& m_logger;
     Timer m_timer;
     cc_mqttsn_gateway::Gateway m_gw;

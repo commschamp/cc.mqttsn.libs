@@ -45,4 +45,3 @@ private:
 
 }  // namespace cc_mqttsn_gateway
 
-

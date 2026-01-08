@@ -21,7 +21,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline SubscribeOp* asSubscribeOp(void* data)
@@ -34,14 +34,13 @@ inline CC_MqttsnSubscribeHandle asHandle(SubscribeOp* op)
     return reinterpret_cast<CC_MqttsnSubscribeHandle>(op);
 }
 
-} // namespace 
-    
+} // namespace
 
-SubscribeOp::SubscribeOp(ClientImpl& client) : 
+SubscribeOp::SubscribeOp(ClientImpl& client) :
     Base(client),
     m_timer(client.timerMgr().allocTimer())
 {
-}   
+}
 
 SubscribeOp::~SubscribeOp()
 {
@@ -55,7 +54,7 @@ CC_MqttsnErrorCode SubscribeOp::config(const CC_MqttsnSubscribeConfig* config)
         return CC_MqttsnErrorCode_BadParam;
     }
 
-    bool emptyTopic = 
+    bool emptyTopic =
         (config->m_topic == nullptr) ||
         (config->m_topic[0] == '\0');
 
@@ -66,13 +65,13 @@ CC_MqttsnErrorCode SubscribeOp::config(const CC_MqttsnSubscribeConfig* config)
 
     if (static_cast<decltype(config->m_qos)>(Config::MaxQos) < config->m_qos) {
         errorLog("Bad subscription qos value.");
-        return CC_MqttsnErrorCode_BadParam;        
-    }    
+        return CC_MqttsnErrorCode_BadParam;
+    }
 
     if ((!emptyTopic) && (!verifySubFilter(config->m_topic))) {
         errorLog("Bad topic filter format in subscribe.");
         return CC_MqttsnErrorCode_BadParam;
-    }    
+    }
 
     m_subscribeMsg.field_flags().field_qos().setValue(config->m_qos);
 
@@ -84,8 +83,8 @@ CC_MqttsnErrorCode SubscribeOp::config(const CC_MqttsnSubscribeConfig* config)
     }
 
     if (isShortTopic(config->m_topic)) {
-        auto topicId = 
-            (static_cast<std::uint16_t>(config->m_topic[0]) << 8U) | 
+        auto topicId =
+            (static_cast<std::uint16_t>(config->m_topic[0]) << 8U) |
             (static_cast<std::uint8_t>(config->m_topic[1]));
         m_subscribeMsg.field_topicId().field().setValue(topicId);
         m_subscribeMsg.field_flags().field_topicIdType().value() = TopicIdType::ShortTopicName;
@@ -97,10 +96,10 @@ CC_MqttsnErrorCode SubscribeOp::config(const CC_MqttsnSubscribeConfig* config)
     return CC_MqttsnErrorCode_Success;
 }
 
-CC_MqttsnErrorCode SubscribeOp::send(CC_MqttsnSubscribeCompleteCb cb, void* cbData) 
+CC_MqttsnErrorCode SubscribeOp::send(CC_MqttsnSubscribeCompleteCb cb, void* cbData)
 {
     client().allowNextPrepare();
-    auto completeOnError = 
+    auto completeOnError =
         comms::util::makeScopeGuard(
             [this]()
             {
@@ -115,7 +114,7 @@ CC_MqttsnErrorCode SubscribeOp::send(CC_MqttsnSubscribeCompleteCb cb, void* cbDa
     if (!m_timer.isValid()) {
         errorLog("The library cannot allocate required number of timers.");
         return CC_MqttsnErrorCode_InternalError;
-    }    
+    }
 
     auto guard = client().apiEnter();
     m_cb = cb;
@@ -184,7 +183,7 @@ void SubscribeOp::handle(SubackMsg& msg)
     auto& filtersMap = client().reuseState().m_subFilters;
     do {
         if (topicPtr != nullptr) {
-            auto iter = 
+            auto iter =
                 std::lower_bound(
                     filtersMap.begin(), filtersMap.end(), topicPtr,
                     [](auto& elem, const char* topicParam)
@@ -193,16 +192,16 @@ void SubscribeOp::handle(SubackMsg& msg)
                     });
 
             if ((iter == filtersMap.end()) || (iter->m_topic != topicPtr)) {
-                filtersMap.emplace(iter, topicPtr);    
+                filtersMap.emplace(iter, topicPtr);
             }
 
             break;
         }
 
-        COMMS_ASSERT(m_subscribeMsg.field_topicId().doesExist());    
+        COMMS_ASSERT(m_subscribeMsg.field_topicId().doesExist());
         COMMS_ASSERT(m_subscribeMsg.field_topicId().field().value() != 0U);
 
-        auto iter = 
+        auto iter =
             std::find_if(
                 filtersMap.begin(), filtersMap.end(),
                 [](auto& elem)
@@ -248,7 +247,7 @@ void SubscribeOp::completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_Mqt
     auto* cbData = m_cbData;
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
-        cb(cbData, handle, status, info);    
+        cb(cbData, handle, status, info);
     }
 }
 
@@ -267,7 +266,7 @@ CC_MqttsnErrorCode SubscribeOp::sendInternal()
     if (ec == CC_MqttsnErrorCode_Success) {
         restartTimer();
     }
-    
+
     return ec;
 }
 
@@ -277,14 +276,14 @@ void SubscribeOp::timeoutInternal()
         errorLog("All retries of the subscribe operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
         return;
-    }  
+    }
 
     decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }  
+    }
 }
 
 void SubscribeOp::opTimeoutCb(void* data)

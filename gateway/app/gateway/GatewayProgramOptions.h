@@ -30,7 +30,6 @@ public:
     bool helpRequested() const;
     std::string configFile() const;
 
-
 private:
 
     boost::program_options::variables_map m_vm;

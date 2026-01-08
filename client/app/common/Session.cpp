@@ -57,7 +57,7 @@ void Session::reportNetworkError()
     }
 
     m_networkError = true;
-    
+
     assert(m_networkErrorReportCb);
     m_networkErrorReportCb();
 }

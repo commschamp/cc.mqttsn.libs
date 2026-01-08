@@ -30,7 +30,7 @@ public:
     bool start();
 
     using DataReportCb = std::function<void (const std::uint8_t* buf, std::size_t bufSize)>;
-    
+
     template <typename TFunc>
     void setDataReportCb(TFunc&& func)
     {
@@ -43,15 +43,15 @@ public:
     void setConnectedReportCb(TFunc&& func)
     {
         m_connectedReportCb = std::forward<TFunc>(func);
-    }      
+    }
 
     using ErrorReportCb = std::function<void ()>;
-    
+
     template <typename TFunc>
     void setErrorReportCb(TFunc&& func)
     {
         m_errorReportCb = std::forward<TFunc>(func);
-    }    
+    }
 
     void sendData(const std::uint8_t* buf, std::size_t bufSize)
     {
@@ -59,11 +59,11 @@ public:
     }
 
 protected:
-    GatewayIoBrokerSocket(boost::asio::io_context& io, GatewayLogger& logger) : 
+    GatewayIoBrokerSocket(boost::asio::io_context& io, GatewayLogger& logger) :
         m_io(io),
         m_logger(logger)
     {
-    };    
+    };
 
     virtual bool startImpl() = 0;
     virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize) = 0;
@@ -86,7 +86,7 @@ protected:
     void reportConnected()
     {
         m_connectedReportCb();
-    }    
+    }
 
     void reportError()
     {
@@ -94,7 +94,7 @@ protected:
     }
 
 private:
-    boost::asio::io_context& m_io; 
+    boost::asio::io_context& m_io;
     GatewayLogger& m_logger;
     DataReportCb m_dataReportCb;
     ConnectedReportCb m_connectedReportCb;

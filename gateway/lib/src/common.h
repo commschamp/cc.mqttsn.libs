@@ -24,7 +24,7 @@ static_assert(COMMS_MAKE_VERSION(3, 0, 5) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
 static_assert(COMMS_MAKE_VERSION(3, 0, 5) <= cc_mqtt311::version(),
-    "The version of cc.mqtt311.generated library is too old");    
+    "The version of cc.mqtt311.generated library is too old");
 
 namespace cc_mqttsn_gateway
 {
@@ -141,7 +141,7 @@ struct SessionState
     bool m_reconnectingBroker = false;
     bool m_terminating = false;
     bool m_pendingClientDisconnect = false;
-    bool m_clientConnectReported = false;    
+    bool m_clientConnectReported = false;
     bool m_encapsulatedMsg = false;
 };
 

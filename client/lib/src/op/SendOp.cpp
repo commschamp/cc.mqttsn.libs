@@ -21,7 +21,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline SendOp* asSendOp(void* data)
@@ -34,14 +34,13 @@ inline CC_MqttsnPublishHandle asHandle(SendOp* op)
     return reinterpret_cast<CC_MqttsnPublishHandle>(op);
 }
 
-} // namespace 
-    
+} // namespace
 
-SendOp::SendOp(ClientImpl& client) : 
+SendOp::SendOp(ClientImpl& client) :
     Base(client),
     m_timer(client.timerMgr().allocTimer())
 {
-}   
+}
 
 SendOp::~SendOp()
 {
@@ -55,7 +54,7 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
         return CC_MqttsnErrorCode_BadParam;
     }
 
-    bool emptyTopic = 
+    bool emptyTopic =
         (config->m_topic == nullptr) ||
         (config->m_topic[0] == '\0');
 
@@ -66,22 +65,22 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
 
     if (static_cast<decltype(config->m_qos)>(Config::MaxQos) < config->m_qos) {
         errorLog("Bad publish qos value.");
-        return CC_MqttsnErrorCode_BadParam;        
-    }    
+        return CC_MqttsnErrorCode_BadParam;
+    }
 
     if ((0U < config->m_dataLen) && (config->m_data == nullptr)) {
         errorLog("Bad publish message data.");
-        return CC_MqttsnErrorCode_BadParam;          
+        return CC_MqttsnErrorCode_BadParam;
     }
 
     if ((!emptyTopic) && (!client().verifyPubTopic(config->m_topic, true))) {
         errorLog("Bad topic filter format in publish.");
         return CC_MqttsnErrorCode_BadParam;
-    }    
+    }
 
     m_publishMsg.field_flags().field_qos().setValue(config->m_qos);
     m_publishMsg.field_flags().field_mid().setBitValue_Retain(config->m_retain);
-    
+
     if (0U < config->m_dataLen) {
         comms::util::assign(m_publishMsg.field_data().value(), config->m_data, config->m_data + config->m_dataLen);
     }
@@ -99,8 +98,8 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
         }
 
         if (isShortTopic(config->m_topic)) {
-            auto topicId = 
-                (static_cast<std::uint16_t>(config->m_topic[0]) << 8U) | 
+            auto topicId =
+                (static_cast<std::uint16_t>(config->m_topic[0]) << 8U) |
                 (static_cast<std::uint8_t>(config->m_topic[1]));
             m_publishMsg.field_topicId().setValue(topicId);
             m_publishMsg.field_flags().field_topicIdType().value() = TopicIdType::ShortTopicName;
@@ -110,15 +109,15 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
 
         m_registerMsg.field_topicName().value() = config->m_topic;
         m_publishMsg.field_flags().field_topicIdType().value() = TopicIdType::Normal;
-        
+
         auto& outRegMap = client().reuseState().m_outRegTopics;
-        auto outIter = 
+        auto outIter =
             std::lower_bound(
                 outRegMap.begin(), outRegMap.end(), config->m_topic,
                 [](auto& elem, const char* topicParam)
                 {
                     return elem.m_topic < topicParam;
-                });   
+                });
 
         if ((outIter != outRegMap.end()) && (outIter->m_topic == config->m_topic)) {
             m_publishMsg.field_topicId().setValue(outIter->m_topicId);
@@ -141,10 +140,10 @@ CC_MqttsnErrorCode SendOp::config(const CC_MqttsnPublishConfig* config)
     return CC_MqttsnErrorCode_Success;
 }
 
-CC_MqttsnErrorCode SendOp::send(CC_MqttsnPublishCompleteCb cb, void* cbData) 
+CC_MqttsnErrorCode SendOp::send(CC_MqttsnPublishCompleteCb cb, void* cbData)
 {
     client().allowNextPrepare();
-    auto completeOnError = 
+    auto completeOnError =
         comms::util::makeScopeGuard(
             [this]()
             {
@@ -159,7 +158,7 @@ CC_MqttsnErrorCode SendOp::send(CC_MqttsnPublishCompleteCb cb, void* cbData)
     if (!m_timer.isValid()) {
         errorLog("The library cannot allocate required number of timers.");
         return CC_MqttsnErrorCode_InternalError;
-    }    
+    }
 
     auto guard = client().apiEnter();
     m_cb = cb;
@@ -214,14 +213,14 @@ void SendOp::handle(RegackMsg& msg)
     if ((Stage_Register < m_stage) || (msg.field_msgId().value() != m_registerMsg.field_msgId().value())) {
         errorLog("Unexpected REGACK message, ignoring");
         return;
-    }    
+    }
 
     if (msg.field_returnCode().value() != RegackMsg::Field_returnCode::ValueType::Accepted) {
         auto info = CC_MqttsnPublishInfo();
         comms::cast_assign(info.m_returnCode) = msg.field_returnCode().value();
         completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
         return;
-    }    
+    }
 
     auto topicId = msg.field_topicId().value();
     if (!isValidTopicId(topicId)) {
@@ -233,7 +232,7 @@ void SendOp::handle(RegackMsg& msg)
     auto& topicStr = m_registerMsg.field_topicName().value();
     COMMS_ASSERT(!topicStr.empty());
 
-    auto findElem = 
+    auto findElem =
         [&regMap, &topicStr]()
         {
             return
@@ -242,7 +241,7 @@ void SendOp::handle(RegackMsg& msg)
                     [](auto& elem, auto& topicParam)
                     {
                         return elem.m_topic < topicParam;
-                    });             
+                    });
         };
 
     auto iter = findElem();
@@ -258,7 +257,7 @@ void SendOp::handle(RegackMsg& msg)
         COMMS_ASSERT(outRegTopicsLimit <= regMap.max_size());
         if (outRegTopicsLimit <= regMap.size()) {
             // Already full, need to drop least recently used
-            auto dropIter = 
+            auto dropIter =
                 std::min_element(
                     regMap.begin(), regMap.end(),
                     [](auto& info1, auto& info2)
@@ -275,7 +274,7 @@ void SendOp::handle(RegackMsg& msg)
         regMap.emplace(iter, client().clientState().m_timestamp, topicStr.c_str(), topicId);
     } while (false);
 
-    m_stage = Stage_Publish; 
+    m_stage = Stage_Publish;
     m_publishMsg.field_topicId().setValue(topicId);
     setRetryCount(m_origRetryCount);
     auto ec = sendInternal();
@@ -288,16 +287,16 @@ void SendOp::handle(RegackMsg& msg)
 void SendOp::handle(PubackMsg& msg)
 {
     if ((m_suspended) ||
-        (m_stage < Stage_Publish) || 
+        (m_stage < Stage_Publish) ||
         (msg.field_msgId().value() != m_publishMsg.field_msgId().value()) ||
         (msg.field_topicId().value() != m_publishMsg.field_topicId().value()))  {
         return;
     }
 
     auto info = CC_MqttsnPublishInfo();
-    info.m_returnCode = static_cast<decltype(info.m_returnCode)>(msg.field_returnCode().value());    
+    info.m_returnCode = static_cast<decltype(info.m_returnCode)>(msg.field_returnCode().value());
 
-    if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) && 
+    if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) &&
         (m_publishMsg.field_flags().field_qos().value() != Qos::AtLeastOnceDelivery)) {
         errorLog("Received PUBACK instead of PUBREC, ignoring...");
         return;
@@ -313,18 +312,18 @@ void SendOp::handle(PubackMsg& msg)
         auto topicIdType = m_publishMsg.field_flags().field_topicIdType().value();
 
         if (topicIdType == TopicIdType::PredefinedTopicId) {
-            break;              
-        }        
+            break;
+        }
 
         if (topicIdType != TopicIdType::Normal) {
             errorLog("Unexpected return code for the publish");
-            break;              
+            break;
         }
 
         if (m_fullRetryRemCount == 0U) {
             errorLog("Used topic ID was rejected, by the gateway");
-            break;        
-        }        
+            break;
+        }
 
         --m_fullRetryRemCount;
         m_stage = Stage_Register;
@@ -332,7 +331,7 @@ void SendOp::handle(PubackMsg& msg)
 
         // Re-allocate new packet IDs
         releasePacketIdsInternal();
-        allocPacketIdsInternal();      
+        allocPacketIdsInternal();
 
         setRetryCount(m_origRetryCount);
         auto ec = sendInternal();
@@ -350,8 +349,8 @@ void SendOp::handle(PubackMsg& msg)
 #if CC_MQTTSN_CLIENT_MAX_QOS >=2
 void SendOp::handle(PubrecMsg& msg)
 {
-    if ((m_suspended) || 
-        (m_stage < Stage_Publish) || 
+    if ((m_suspended) ||
+        (m_stage < Stage_Publish) ||
         (msg.field_msgId().value() != m_publishMsg.field_msgId().value()))  {
         return;
     }
@@ -359,7 +358,7 @@ void SendOp::handle(PubrecMsg& msg)
     if (m_publishMsg.field_flags().field_qos().value() != Qos::ExactlyOnceDelivery) {
         errorLog("Received PUBREC instead of PUBACK, ignoring...");
         return;
-    }    
+    }
 
     m_stage = Stage_Acked;
     setRetryCount(m_origRetryCount);
@@ -367,13 +366,13 @@ void SendOp::handle(PubrecMsg& msg)
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }    
+    }
 }
 
 void SendOp::handle(PubcompMsg& msg)
 {
-    if ((m_suspended) || 
-        (m_stage < Stage_Acked) || 
+    if ((m_suspended) ||
+        (m_stage < Stage_Acked) ||
         (msg.field_msgId().value() != m_publishMsg.field_msgId().value()))  {
         return;
     }
@@ -401,10 +400,10 @@ void SendOp::completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnPu
     if (status != CC_MqttsnAsyncOpStatus_Complete) {
         info = nullptr;
     }
-    
+
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
-        cb(cbData, handle, status, info);    
+        cb(cbData, handle, status, info);
     }
 }
 
@@ -440,8 +439,8 @@ CC_MqttsnErrorCode SendOp::sendInternal_Register()
     if (ec == CC_MqttsnErrorCode_Success) {
         restartTimer();
     }
-    
-    return ec;     
+
+    return ec;
 }
 
 CC_MqttsnErrorCode SendOp::sendInternal_Publish()
@@ -455,7 +454,7 @@ CC_MqttsnErrorCode SendOp::sendInternal_Publish()
             m_publishMsg.field_flags().field_high().setBitValue_Dup(true);
         }
     }
-    
+
     auto ec = sendMessage(m_publishMsg);
     if (ec != CC_MqttsnErrorCode_Success) {
         return ec;
@@ -468,7 +467,7 @@ CC_MqttsnErrorCode SendOp::sendInternal_Publish()
 
     COMMS_ASSERT(m_publishMsg.field_msgId().value() > 0U);
     restartTimer();
-    return CC_MqttsnErrorCode_Success; 
+    return CC_MqttsnErrorCode_Success;
 }
 
 CC_MqttsnErrorCode SendOp::sendInternal_Pubrel()
@@ -481,7 +480,7 @@ CC_MqttsnErrorCode SendOp::sendInternal_Pubrel()
             restartTimer();
         }
 
-        return ec;    
+        return ec;
     }
     else {
         return CC_MqttsnErrorCode_NotSupported;
@@ -494,7 +493,7 @@ void SendOp::timeoutInternal()
         errorLog("All retries of the publish operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
         return;
-    }  
+    }
 
     decRetryCount();
 
@@ -502,7 +501,7 @@ void SendOp::timeoutInternal()
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }  
+    }
 }
 
 void SendOp::opTimeoutCb(void* data)
@@ -513,7 +512,7 @@ void SendOp::opTimeoutCb(void* data)
 void SendOp::allocPacketIdsInternal()
 {
     if (m_stage == Stage_Register) {
-        m_registerMsg.field_msgId().setValue(allocPacketId());    
+        m_registerMsg.field_msgId().setValue(allocPacketId());
     }
 
     if (Qos::AtMostOnceDelivery < m_publishMsg.field_flags().field_qos().value()) {

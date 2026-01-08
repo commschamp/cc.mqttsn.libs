@@ -44,11 +44,11 @@ public:
     }
 
 protected:
-    GatewayIoClientAcceptor(boost::asio::io_context& io, GatewayLogger& logger) : 
+    GatewayIoClientAcceptor(boost::asio::io_context& io, GatewayLogger& logger) :
         m_io(io),
         m_logger(logger)
     {
-    };    
+    };
 
     virtual bool startImpl() = 0;
     virtual void broadcastDataImpl(const std::uint8_t* buf, std::size_t bufSize) = 0;
@@ -66,7 +66,7 @@ protected:
     void reportNewConnection(GatewayIoClientSocketPtr socket);
 
 private:
-    boost::asio::io_context& m_io; 
+    boost::asio::io_context& m_io;
     GatewayLogger& m_logger;
     NewConnectionReportCb m_newConnectionReportCb;
 };

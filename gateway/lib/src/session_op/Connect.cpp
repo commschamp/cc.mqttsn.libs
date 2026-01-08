@@ -63,7 +63,6 @@ void Connect::handle(ConnectMsg_SN& msg)
         return;
     }
 
-
     assert(st.m_clientId.empty() || (st.m_clientId == reqClientId));
     if (m_internalState.m_hasClientId) {
         m_internalState = State();
@@ -408,6 +407,4 @@ void Connect::clearInternalState()
 }  // namespace session_op
 
 }  // namespace cc_mqttsn_gateway
-
-
 

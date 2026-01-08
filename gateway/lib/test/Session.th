@@ -76,7 +76,7 @@ private:
         std::list<bool> m_termRequests;
         std::list<bool> m_brokerReconnectRequests;
         std::list<std::string> m_connectedClients;
-        std::list<cc_mqttsn_gateway::Session*> m_fwdEncSessions; 
+        std::list<cc_mqttsn_gateway::Session*> m_fwdEncSessions;
     };
 
     struct WillInfo
@@ -87,7 +87,7 @@ private:
         bool m_retain = false;
     };
 
-    static std::string toString(const DataBuf& buf) 
+    static std::string toString(const DataBuf& buf)
     {
         std::stringstream stream;
         for (auto ch : buf) {
@@ -373,7 +373,6 @@ private:
                 TS_TRACE("(BROKER) <-- UNSUBSCRIBE");
             });
 
-
         session.setRetryPeriod(DefaultRetryPeriod);
         session.setRetryCount(DefaultRetryCount);
         session.setGatewayId(gwId);
@@ -393,14 +392,14 @@ private:
         TS_ASSERT(state.m_sentToClient.empty());
         TS_ASSERT(state.m_sentToBroker.empty());
         TS_ASSERT(state.m_tickReq.empty());
-        TS_ASSERT(state.m_elapsed.empty());     
+        TS_ASSERT(state.m_elapsed.empty());
         bool result = session->start();
         TS_ASSERT(result);
         if (connectToBroker) {
             session->setBrokerConnected(true);
         }
-        
-        TS_ASSERT(session->isRunning());                
+
+        TS_ASSERT(session->isRunning());
         return session;
     }
 
@@ -481,7 +480,7 @@ private:
         }
 
         bool fwdSent = false;
-        auto oldFwCb = 
+        auto oldFwCb =
             handler.setFwdMsgHandler(
                 [&](const FwdMsg_SN& msg)
                 {
@@ -973,7 +972,6 @@ private:
         handler.setWillmsgrespMsgHandler(std::move(oldCb));
     }
 
-
     static void verifySentToBroker_ConnectMsg(
         State& state,
         TestMsgHandler& handler,
@@ -1382,7 +1380,7 @@ private:
     {
         TS_TRACE("[Forward sesssions]: " + std::to_string(state.m_fwdEncSessions.size()));
         TS_ASSERT_EQUALS(state.m_fwdEncSessions.size(), count);
-    }    
+    }
 
     static void verifyTermReq(State& state)
     {
@@ -1904,7 +1902,6 @@ void SessionTest::test10()
     auto session = allocSession(state, handler);
     static const std::string Topic1("this/is/topic1");
     static const std::uint16_t TopicId1 = 0x1111;
-
 
     session->addPredefinedTopic(Topic1, TopicId1);
     doConnect(*session, state, handler);
@@ -2773,7 +2770,6 @@ void SessionTest::test22()
     will1.m_msg = WillData1;
     will1.m_qos = WillQos1;
     will1.m_retain = WillRetain1;
-
 
     doConnect(*session, state, handler, &will1);
     verifyNoOtherEvent(state, handler);

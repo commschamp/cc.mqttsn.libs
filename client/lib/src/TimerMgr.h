@@ -81,7 +81,7 @@ public:
         Timer (TimerMgr& timerMgr) :
             m_timerMgr(timerMgr)
         {
-        }        
+        }
 
         TimerMgr& m_timerMgr;
         unsigned m_idx = InvalidIdx;

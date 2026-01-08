@@ -1,8 +1,8 @@
 /// @page cc_mqttsn_gw_config_page Config
 /// @tableofcontents
-/// The @b Config object is responsible to provide a common way to parse the 
-/// configuration file and provide a convenient interface to retrieve any 
-/// configuration values, which can later be applied to the @b Gateway and/or 
+/// The @b Config object is responsible to provide a common way to parse the
+/// configuration file and provide a convenient interface to retrieve any
+/// configuration values, which can later be applied to the @b Gateway and/or
 /// @b Session objects. The format of the configuration file is described in the
 /// example config file provided with the project.
 ///
@@ -26,7 +26,7 @@
 /// The gateway application may have multiple configuration options. These
 /// options and their parameters may be listed in a special configuration file.
 /// The expected format of the file is as following:
-/// 
+///
 /// - The comment starts with @b '#' symbol and ends with new line chracter.
 ///     The comments are ignored when parsing the file
 /// - The configuration option contains with key and value pair. The first
@@ -37,7 +37,7 @@
 /// The @b Config object assigns various default values to all the configuration
 /// options when constructed. It may be requested to read and parse the configuration
 /// file. In this case, the @b Config object will update the configuration values,
-/// recorded in its internal state, with new values read from file. If some 
+/// recorded in its internal state, with new values read from file. If some
 /// option does not appear to be listed in the file, the default value will
 /// be reported when inquired.
 ///
@@ -51,7 +51,7 @@
 /// @code
 /// cc_mqttsn_gw_config_read(handle, "/path/to/config/file");
 /// @endcode
-/// or parsing the string, if configuration file contents have been read from 
+/// or parsing the string, if configuration file contents have been read from
 /// file into a buffer earlier:
 /// @code
 /// char buf[4096] = {0};
@@ -324,7 +324,7 @@
 /// @endcode
 ///
 /// @section cc_mqttsn_gw_config_page_broker_addr Broker Address and Port
-/// The MQTT-SN gateway application must connect and forward traffic to 
+/// The MQTT-SN gateway application must connect and forward traffic to
 /// MQTT broker. Below are API functions that can be used to retrieve the
 /// TCP/IP address and port of the broker.
 ///
@@ -417,7 +417,7 @@
 /// The @b Config object has a list of predefined options it recognises in the
 /// configuration file. It also accumulates all the options it doesn't recognise.
 /// As a reminder: the first word (until the first white character) in the
-/// configuration line is considered to be a key, and the rest of the string 
+/// configuration line is considered to be a key, and the rest of the string
 /// (from the next non-white character until the end of the line) is considered
 /// to be a value. The @b Config option allows access to such values for the
 /// driving code to parse and use.
@@ -431,7 +431,7 @@
 ///     ... // Parse and use the value
 /// }
 /// @endcode
-/// @b NOTE, that cc_mqttsn_gateway::Config::ConfigMap type is a @b multimap, 
+/// @b NOTE, that cc_mqttsn_gateway::Config::ConfigMap type is a @b multimap,
 /// it allows multiple entries for the same key.
 ///
 /// @b C interface: @n

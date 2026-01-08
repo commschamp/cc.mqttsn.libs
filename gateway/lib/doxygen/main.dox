@@ -1,31 +1,31 @@
 /// @mainpage MQTT-SN Gateway Library
 /// @tableofcontents
 /// @section cc_mqttsn_gw_overview Overview
-/// The MQTT-SN Gateway Library provides simple, asynchronous, non-blocking, 
-/// and easy to use interface to implement and operate MQTT-SN gateway. 
-/// The library doesn't make any assumption on the system it is running on, 
+/// The MQTT-SN Gateway Library provides simple, asynchronous, non-blocking,
+/// and easy to use interface to implement and operate MQTT-SN gateway.
+/// The library doesn't make any assumption on the system it is running on,
 /// as well as on the type of I/O links being used to communicate with
 /// MQTT-SN clients as well as MQTT broker.
 ///
 /// Having a gateway library instead of stand alone application allows
 /// implementation of any custom gateway that is suitable for the environment
-/// it is running on, working with any I/O link, and using any other additional 
+/// it is running on, working with any I/O link, and using any other additional
 /// transport protocol to exchange data with clients and/or broker.
 ///
-/// The library is implemented in C++(11). It provides two separate APIs: @b C++ 
-/// and @b C. The @b C interface is a wrapper around @b C++ one, but provides 
+/// The library is implemented in C++(11). It provides two separate APIs: @b C++
+/// and @b C. The @b C interface is a wrapper around @b C++ one, but provides
 /// an interface to be used with any project developed using C.
 ///
 /// @section cc_mqttsn_client_io_links Various I/O Links
-/// MQTT-SN is designed to be a @b datagram protocol, i.e. if sent message is 
-/// received by the other side, it is received <b>in full</b> and 
+/// MQTT-SN is designed to be a @b datagram protocol, i.e. if sent message is
+/// received by the other side, it is received <b>in full</b> and
 /// <b>without errors</b>. If sent over UDP link, it can be used as is. The
-/// UDP transport cares about all the rest. However, when sent over other 
+/// UDP transport cares about all the rest. However, when sent over other
 /// I/O link, such as RS-232 serial connection, the protocol may require additional
 /// transport wrapping to insure correct delivery and differentiate between packets.
 ///
 /// The interface, this <b>MQTT-SN Gateway Library</b> provides, allows any
-/// sent or received data to be wrapped with or unwrapped from additional 
+/// sent or received data to be wrapped with or unwrapped from additional
 /// independent transport data, that insures safe and correct delivery.
 ///
 /// @section cc_mqttsn_gw_headers Headers
@@ -46,7 +46,7 @@
 /// @endcode
 ///
 /// @section cc_mqttsn_gw_entities Entities
-/// The gateway library works with and provides an interface for three 
+/// The gateway library works with and provides an interface for three
 /// intependent entities.
 /// - @b Gateway - Its main responsibility to advertise presence of the MQTT-SN
 ///     gateway to all the clients on the network. If there is no need to advertise
@@ -65,7 +65,7 @@
 ///     file and provide a convenient interface to retrieve any configuration
 ///     values, which can later be applied to the @b Gateway and/or @b Session
 ///     entities. The format of the configuration file is described in the
-///     example config file provided with the project. For API description and 
+///     example config file provided with the project. For API description and
 ///     tutorial, please read the @ref cc_mqttsn_gw_config_page page.
 ///
 /// @section cc_mqttsn_gw_thread_safety Thread Safety

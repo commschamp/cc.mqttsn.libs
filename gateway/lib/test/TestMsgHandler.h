@@ -39,8 +39,8 @@ using TestMqttMessage =
         comms::option::RefreshInterface
     >;
 
-CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES_DEFAULT_OPTIONS(, Msg_SN, TestMqttsnMessage)    
-CC_MQTT311_ALIASES_FOR_ALL_MESSAGES_DEFAULT_OPTIONS(, Msg, TestMqttMessage)   
+CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES_DEFAULT_OPTIONS(, Msg_SN, TestMqttsnMessage)
+CC_MQTT311_ALIASES_FOR_ALL_MESSAGES_DEFAULT_OPTIONS(, Msg, TestMqttMessage)
 
 using TestMqttsnFrame = cc_mqttsn::frame::Frame<TestMqttsnMessage>;
 using TestMqttFrame = cc_mqtt311::frame::Frame<TestMqttMessage>;
@@ -54,7 +54,6 @@ using TestMqttMsgHandler = comms::GenericHandler<
     TestMqttMessage,
     cc_mqtt311::input::AllMessages<TestMqttMessage>
 >;
-
 
 class TestMsgHandler : public TestMqttsnMsgHandler, public TestMqttMsgHandler
 {
@@ -272,7 +271,6 @@ public:
     using SubackReturnCodeVal = SubackMsg::Field_list::ValueType::value_type::ValueType;
     DataBuf prepareBrokerSuback(std::uint16_t packetId, SubackReturnCodeVal rc);
     DataBuf prepareBrokerUnsuback(std::uint16_t packetId);
-
 
 private:
     template <typename TStack>

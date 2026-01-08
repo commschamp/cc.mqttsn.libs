@@ -15,7 +15,7 @@
 namespace cc_mqttsn_client_app
 {
 
-namespace 
+namespace
 {
 
 GwDiscover* asThis(void* data)
@@ -23,17 +23,16 @@ GwDiscover* asThis(void* data)
     return reinterpret_cast<GwDiscover*>(data);
 }
 
-} // namespace 
-    
+} // namespace
 
-GwDiscover::GwDiscover(boost::asio::io_context& io, int& result) : 
+GwDiscover::GwDiscover(boost::asio::io_context& io, int& result) :
     Base(io, result),
     m_timeoutTimer(io)
 {
     opts().addCommon();
     opts().addNetwork();
     opts().addDiscover();
-}    
+}
 
 bool GwDiscover::startImpl()
 {
@@ -102,7 +101,7 @@ void GwDiscover::gwStatusReportInternal(CC_MqttsnGwStatus status, const CC_Mqtts
         }
     }
 
-    std::cout << prefixSuffixInfo.first << ' ' << static_cast<unsigned>(infoTmp.m_gwId) << 
+    std::cout << prefixSuffixInfo.first << ' ' << static_cast<unsigned>(infoTmp.m_gwId) <<
         ": " << addrToString(infoTmp) << prefixSuffixInfo.second << std::endl;
 
     if (opts().discoverExitOnFirst()) {

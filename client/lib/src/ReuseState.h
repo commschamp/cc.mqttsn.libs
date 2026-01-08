@@ -23,7 +23,7 @@ struct ReuseState
     OutRegTopicsMap m_outRegTopics;
     std::uint16_t m_lastRecvMsgId = 0U;
 
-#if CC_MQTTSN_CLIENT_HAS_WILL    
+#if CC_MQTTSN_CLIENT_HAS_WILL
     using WillTopicType = WilltopicMsg::Field_willTopic::ValueType;
     using WillMsgType = WillmsgMsg::Field_willMsg::ValueType;
 
@@ -37,7 +37,7 @@ struct ReuseState
 
     WillInfo m_prevWill;
 
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL       
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 };
 
 } // namespace cc_mqttsn_client

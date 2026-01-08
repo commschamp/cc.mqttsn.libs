@@ -28,7 +28,7 @@ class ObjListTypeHelper
     using StaticVector = comms::util::StaticVector<TObj, TLimit>;
 
     template <typename... TParams>
-    using Vector = 
+    using Vector =
         typename comms::util::LazyShallowConditional<
             (TLimit == 0U) && THasFeature
         >::template Type<

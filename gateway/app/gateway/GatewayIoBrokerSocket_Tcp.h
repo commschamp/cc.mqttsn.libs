@@ -26,7 +26,7 @@ public:
     static Ptr create(boost::asio::io_context& io, GatewayLogger& logger, const cc_mqttsn_gateway::Config& config);
 
 protected:
-    
+
     virtual bool startImpl() override;
     virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize) override;
 
@@ -55,6 +55,5 @@ private:
     DataBufsList m_sentData;
     std::array<std::uint8_t, 4096> m_inData;
 };
-
 
 } // namespace cc_mqttsn_gateway_app

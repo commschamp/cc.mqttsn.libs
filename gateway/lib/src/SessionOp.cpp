@@ -19,7 +19,7 @@ void SessionOp::timestampUpdated()
         m_nextTickTimestamp = 0;
         tickImpl();
     }
-}    
+}
 
 void SessionOp::sendToClient(const MqttsnMessage& msg)
 {
@@ -52,12 +52,12 @@ unsigned SessionOp::nextTick()
     }
 
     return static_cast<unsigned>(m_nextTickTimestamp - state().m_timestamp);
-}    
+}
 
 SessionState& SessionOp::state()
 {
     return m_session.state();
-}    
+}
 
 void SessionOp::sendDisconnectToClient()
 {
@@ -69,15 +69,15 @@ void SessionOp::sendDisconnectToClient()
 
 }
 
-void SessionOp::tickImpl() 
+void SessionOp::tickImpl()
 {
 }
 
-void SessionOp::startImpl() 
+void SessionOp::startImpl()
 {
 }
 
-void SessionOp::brokerConnectionUpdatedImpl() 
+void SessionOp::brokerConnectionUpdatedImpl()
 {
 }
 

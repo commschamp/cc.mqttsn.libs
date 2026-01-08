@@ -20,7 +20,6 @@ struct ConfigState
     static constexpr unsigned DefaultGwAdvTimeoutMs = 15 * 60 * 1000; //
     static constexpr unsigned DefautlAllowedAdvLosses = 1;
     static constexpr unsigned MaxBroadcastRadius = 255U;
-    
 
     unsigned m_retryPeriod = DefaultResponseTimeoutMs;
     unsigned m_retryCount = DefaultRetryCount;

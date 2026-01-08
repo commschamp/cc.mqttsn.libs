@@ -61,7 +61,6 @@ void TestMsgHandler::processOutputInternal(TFrame& frame, const DataBuf& data)
     assert(static_cast<unsigned>(std::distance(comms::readIteratorFor<MsgType>(data.data()), iter)) == data.size());
 }
 
-
 template <typename TFrame, typename TMsg>
 TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TFrame& frame, const TMsg& msg)
 {
@@ -887,5 +886,4 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerUnsuback(
     msg.field_packetId().value() = packetId;
     return prepareInput(msg);
 }
-
 

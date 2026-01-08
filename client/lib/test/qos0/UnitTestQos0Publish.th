@@ -27,7 +27,7 @@ void UnitTestQos0Publish::test1()
     auto* client = clientPtr.get();
 
     TS_ASSERT_DIFFERS(client, nullptr);
-    unitTestDoConnectBasic(client, __FUNCTION__); 
+    unitTestDoConnectBasic(client, __FUNCTION__);
 
     const CC_MqttsnTopicId TopicId = 123;
     const UnitTestData Data = { 0x1, 0x2, 0x3, 0x4, 0x5};
@@ -50,7 +50,6 @@ void UnitTestQos0Publish::test1()
     ec = apiPublishConfig(publish, &config);
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
 
-
     config.m_qos = CC_MqttsnQoS_AtMostOnceDelivery;
     ec = apiPublishConfig(publish, &config);
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
@@ -64,5 +63,5 @@ void UnitTestQos0Publish::test1()
 
     TS_ASSERT(unitTestHasOutputData());
     auto sentMsg = unitTestPopOutputMessage();
-    TS_ASSERT(sentMsg);      
+    TS_ASSERT(sentMsg);
 }

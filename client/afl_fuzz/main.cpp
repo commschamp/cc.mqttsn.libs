@@ -9,8 +9,7 @@
 #include "Logger.h"
 #include "ProgramOptions.h"
 
-
-int main(int argc, const char* argv[]) 
+int main(int argc, const char* argv[])
 {
     cc_mqttsn_client_afl_fuzz::ProgramOptions opts;
     opts.parseArgs(argc, argv);

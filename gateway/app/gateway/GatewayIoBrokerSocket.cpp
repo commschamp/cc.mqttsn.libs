@@ -36,7 +36,7 @@ GatewayIoBrokerSocket::Ptr GatewayIoBrokerSocket::create(boost::asio::io_context
     //     return Ptr();
     // }
 
-    return func(io, logger, config);    
+    return func(io, logger, config);
 }
 
 bool GatewayIoBrokerSocket::start()

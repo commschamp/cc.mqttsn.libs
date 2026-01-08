@@ -81,7 +81,6 @@ void GatewayTests::test1()
 
     TS_ASSERT_EQUALS(data, ExpMsg2);
 
-
     static const std::uint16_t AdvPeriod2 = 15 * 60;
     gw.setAdvertisePeriod(AdvPeriod2);
     expTickRequest = AdvPeriod2 * 1000;
