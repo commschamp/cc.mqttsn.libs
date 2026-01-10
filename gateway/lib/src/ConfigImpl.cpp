@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,7 +66,6 @@ T ConfigImpl::numericValue(const std::string& key, T defaultValue) const
 
     return defaultValue;
 }
-
 
 void ConfigImpl::read(std::istream& stream)
 {
@@ -324,7 +323,6 @@ ConfigImpl::TopicIdsRange ConfigImpl::topicIdAllocRange() const
             break;
         }
 
-
         auto maxNumPos = valStr.find_first_not_of(SpaceChars, firstSpacePos + 1);
         if (maxNumPos == std::string::npos) {
             break;
@@ -402,7 +400,7 @@ ConfigImpl::ClientConnectionType ConfigImpl::clientConnectionType() const
             break;
         }
 
-        result = iter->second;       
+        result = iter->second;
     } while (false);
 
     return result;
@@ -428,7 +426,7 @@ ConfigImpl::BrokerConnectionType ConfigImpl::brokerConnectionType() const
             break;
         }
 
-        result = iter->second;       
+        result = iter->second;
     } while (false);
 
     return result;

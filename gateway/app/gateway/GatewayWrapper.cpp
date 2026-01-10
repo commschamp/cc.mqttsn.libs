@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,9 +11,8 @@
 
 namespace cc_mqttsn_gateway_app
 {
-    
 
-GatewayWrapper::GatewayWrapper(boost::asio::io_context& io, GatewayLogger& logger) : 
+GatewayWrapper::GatewayWrapper(boost::asio::io_context& io, GatewayLogger& logger) :
     m_logger(logger),
     m_timer(io)
 {
@@ -56,7 +55,6 @@ bool GatewayWrapper::start(const cc_mqttsn_gateway::Config& config)
         {
             m_broadcastReqCb(buf, bufSize);
         });
-        
 
     if (!m_gw.start()) {
         m_logger.error() << "Failed to start Gateway" << std::endl;

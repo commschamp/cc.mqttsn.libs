@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline ConnectOp* asConnectOp(void* data)
@@ -29,14 +29,13 @@ inline ConnectOp* asConnectOp(void* data)
     return reinterpret_cast<ConnectOp*>(data);
 }
 
-} // namespace 
-    
+} // namespace
 
-ConnectOp::ConnectOp(ClientImpl& client) : 
+ConnectOp::ConnectOp(ClientImpl& client) :
     Base(client),
     m_timer(client.timerMgr().allocTimer())
 {
-}   
+}
 
 CC_MqttsnErrorCode ConnectOp::config(const CC_MqttsnConnectConfig* config)
 {
@@ -48,7 +47,7 @@ CC_MqttsnErrorCode ConnectOp::config(const CC_MqttsnConnectConfig* config)
     if (client().clientState().m_firstConnect && (!config->m_cleanSession) && client().configState().m_verifySubFilter) {
         errorLog("First connect must force clean session");
         return CC_MqttsnErrorCode_BadParam;
-    }    
+    }
 
     if (config->m_duration == 0U) {
         errorLog("The connect duration value must be greater than 0");
@@ -66,7 +65,7 @@ CC_MqttsnErrorCode ConnectOp::config(const CC_MqttsnConnectConfig* config)
 
 CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillConfig* config)
 {
-#if CC_MQTTSN_CLIENT_HAS_WILL    
+#if CC_MQTTSN_CLIENT_HAS_WILL
     if (config == nullptr) {
         errorLog("Will configuration is not provided.");
         return CC_MqttsnErrorCode_BadParam;
@@ -76,13 +75,13 @@ CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillCon
     if ((config->m_topic == nullptr) || (config->m_topic[0] == '\0')) {
         if (0U < config->m_dataLen) {
             errorLog("Will configuration contains empty topic and not empty message.");
-            return CC_MqttsnErrorCode_BadParam;            
+            return CC_MqttsnErrorCode_BadParam;
         }
 
         m_willtopicMsg.field_flags().setMissing();
         m_willtopicMsg.field_willTopic().value().clear();
         return CC_MqttsnErrorCode_Success;
-    } 
+    }
 
     if ((config->m_qos < CC_MqttsnQoS_AtMostOnceDelivery) || (CC_MqttsnQoS_ExactlyOnceDelivery < config->m_qos)) {
         errorLog("Invalid will QoS configuration.");
@@ -106,13 +105,13 @@ CC_MqttsnErrorCode ConnectOp::willConfig([[maybe_unused]] const CC_MqttsnWillCon
 #else // #if CC_MQTTSN_CLIENT_HAS_WILL
     errorLog("Will configuration is not supported");
     return CC_MqttsnErrorCode_NotSupported;
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 }
 
-CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData) 
+CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
 {
     client().allowNextPrepare();
-    auto completeOnError = 
+    auto completeOnError =
         comms::util::makeScopeGuard(
             [this]()
             {
@@ -129,22 +128,22 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
         return CC_MqttsnErrorCode_InsufficientConfig;
     }
 
-    if ((!m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) && 
-        (client().clientState().m_firstConnect) && 
+    if ((!m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) &&
+        (client().clientState().m_firstConnect) &&
         (client().configState().m_verifySubFilter)) {
         errorLog("Clean session flag needs to be set on the first connection attempt, perform configuration first.");
         return CC_MqttsnErrorCode_InsufficientConfig;
-    }      
+    }
 
     if (!m_timer.isValid()) {
         errorLog("The library cannot allocate required number of timers.");
         return CC_MqttsnErrorCode_InternalError;
-    }    
+    }
 
     auto guard = client().apiEnter();
     m_cb = cb;
     m_cbData = cbData;
-    
+
     m_origRetryCount = getRetryCount();
 
     auto ec = sendInternal();
@@ -158,7 +157,7 @@ CC_MqttsnErrorCode ConnectOp::send(CC_MqttsnConnectCompleteCb cb, void* cbData)
     if (m_connectMsg.field_flags().field_mid().getBitValue_CleanSession()) {
         // Don't wait for acknowledgement, assume state cleared upon send
         client().reuseState() = ReuseState();
-    }    
+    }
 
     completeOnError.release();
     return CC_MqttsnErrorCode_Success;
@@ -207,7 +206,7 @@ void ConnectOp::handle([[maybe_unused]] WillmsgreqMsg& msg)
 
     if (m_stage != Stage_willTopic) {
         errorLog("WILLMSGREQ before WILLTOPICREQ, ignoring");
-        return;        
+        return;
     }
 
     auto& prevWill = client().reuseState().m_prevWill;
@@ -215,7 +214,7 @@ void ConnectOp::handle([[maybe_unused]] WillmsgreqMsg& msg)
     prevWill.m_msg.clear();
     prevWill.m_qos = static_cast<decltype(prevWill.m_qos)>(m_willtopicMsg.field_flags().field().field_qos().value());
     prevWill.m_retain = m_willtopicMsg.field_flags().field().field_mid().getBitValue_Retain();
-    
+
     setRetryCount(m_origRetryCount);
     m_stage = Stage_willMsg;
 
@@ -234,9 +233,9 @@ void ConnectOp::handle(ConnackMsg& msg)
 
 #if CC_MQTTSN_CLIENT_HAS_WILL
     bool clearPrevWillInfo = (info.m_returnCode != CC_MqttsnReturnCode_Accepted);
-    
-    if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) && 
-        (m_stage < Stage_willMsg) && 
+
+    if ((info.m_returnCode == CC_MqttsnReturnCode_Accepted) &&
+        (m_stage < Stage_willMsg) &&
         (m_connectMsg.field_flags().field_mid().getBitValue_Will())) {
 
         errorLog("Connection accepted without full will inquiry");
@@ -251,7 +250,7 @@ void ConnectOp::handle(ConnackMsg& msg)
         comms::util::assign(client().reuseState().m_prevWill.m_msg, dataVec.begin(), dataVec.end());
     }
 
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
     if (info.m_returnCode == CC_MqttsnReturnCode_Accepted) {
         client().sessionState().m_clientId = m_connectMsg.field_clientId().value();
@@ -278,7 +277,7 @@ void ConnectOp::completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_Mqtts
     auto* cbData = m_cbData;
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
-        cb(cbData, status, info);    
+        cb(cbData, status, info);
     }
 }
 
@@ -292,10 +291,10 @@ CC_MqttsnErrorCode ConnectOp::sendInternal()
     using GetMsgFunc = const ProtMessage& (ConnectOp::*)() const;
     static const GetMsgFunc Map[] = {
         /* Stage_connect */ &ConnectOp::getConnectMsg,
-#if CC_MQTTSN_CLIENT_HAS_WILL        
+#if CC_MQTTSN_CLIENT_HAS_WILL
         /* Stage_willTopic */ &ConnectOp::getWilltopicMsg,
-        /* Stage_willMsg */ &ConnectOp::getWillmsgMsg,        
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL        
+        /* Stage_willMsg */ &ConnectOp::getWillmsgMsg,
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
     };
     static const std::size_t MapSize = std::extent<decltype(Map)>::value;
     static_assert(MapSize == Stage_valuesLimit);
@@ -310,7 +309,7 @@ CC_MqttsnErrorCode ConnectOp::sendInternal()
     if (ec == CC_MqttsnErrorCode_Success) {
         restartTimer();
     }
-    
+
     return ec;
 }
 
@@ -320,14 +319,14 @@ void ConnectOp::timeoutInternal()
         errorLog("All retries of the connect operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
         return;
-    }  
+    }
 
     decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }  
+    }
 }
 
 const ProtMessage& ConnectOp::getConnectMsg() const

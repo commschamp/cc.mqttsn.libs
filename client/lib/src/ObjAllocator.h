@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@ class ObjAllocator
     using InPlaceAlloc = comms::util::alloc::InPlacePool<TObj, TLimit>;
 
     template <typename... TParams>
-    using Alloc = 
+    using Alloc =
         typename comms::util::LazyShallowConditional<
             TLimit == 0U
         >::template Type<
@@ -32,7 +32,7 @@ class ObjAllocator
         >;
 
     using AllocType = Alloc<>;
-        
+
 public:
     using Ptr = typename AllocType::Ptr;
 

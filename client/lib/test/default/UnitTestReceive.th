@@ -32,7 +32,7 @@ private:
     virtual void tearDown() override
     {
         unitTestTearDown();
-    }    
+    }
 
     using TopicIdType = UnitTestPublishMsg::Field_flags::Field_topicIdType::ValueType;
     using RetCode = UnitTestPubackMsg::Field_returnCode::ValueType;
@@ -130,7 +130,7 @@ void UnitTestReceive::test2()
         TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), TopicId);
         TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), MsgId);
         TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::Accepted);
-    }       
+    }
 
     {
         TS_ASSERT(unitTestHasReceivedMessage());
@@ -188,7 +188,7 @@ void UnitTestReceive::test3()
         auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
         TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), MsgId);
-    }       
+    }
 
     {
         TS_ASSERT(unitTestHasReceivedMessage());
@@ -217,7 +217,7 @@ void UnitTestReceive::test3()
         TS_ASSERT_DIFFERS(pubcompMsg, nullptr);
         TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), MsgId);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }        
+    }
 
     TS_ASSERT(unitTestHasTickReq());
 }
@@ -316,7 +316,7 @@ void UnitTestReceive::test5()
         TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), topicId);
         TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), MsgId);
         TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::Accepted);
-    }       
+    }
 
     {
         TS_ASSERT(unitTestHasReceivedMessage());
@@ -331,7 +331,6 @@ void UnitTestReceive::test5()
 
     TS_ASSERT(unitTestHasTickReq());
 }
-
 
 void UnitTestReceive::test6()
 {
@@ -376,7 +375,7 @@ void UnitTestReceive::test6()
         auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
         TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), MsgId);
-    }       
+    }
 
     {
         TS_ASSERT(unitTestHasReceivedMessage());
@@ -405,7 +404,7 @@ void UnitTestReceive::test6()
         TS_ASSERT_DIFFERS(pubcompMsg, nullptr);
         TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), MsgId);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }        
+    }
 
     TS_ASSERT(unitTestHasTickReq());
 }
@@ -441,7 +440,7 @@ void UnitTestReceive::test7()
         registerMsg.field_msgId().setValue(RegMsgId);
         registerMsg.field_topicName().setValue(Topic);
         unitTestClientInputMessage(client, registerMsg);
-    }    
+    }
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -451,10 +450,10 @@ void UnitTestReceive::test7()
         TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId);
         TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId);
         TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
-    }    
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000); 
+    unitTestTick(client, 1000);
 
     {
         UnitTestPublishMsg publishMsg;
@@ -513,7 +512,7 @@ void UnitTestReceive::test8()
         registerMsg.field_msgId().setValue(RegMsgId);
         registerMsg.field_topicName().setValue(Topic);
         unitTestClientInputMessage(client, registerMsg);
-    }    
+    }
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -523,10 +522,10 @@ void UnitTestReceive::test8()
         TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId);
         TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId);
         TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
-    }     
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);    
+    unitTestTick(client, 1000);
 
     {
         UnitTestPublishMsg publishMsg;
@@ -548,7 +547,7 @@ void UnitTestReceive::test8()
         TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), TopicId);
         TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), PubMsgId);
         TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::Accepted);
-    }     
+    }
 
     {
         TS_ASSERT(unitTestHasReceivedMessage());
@@ -563,7 +562,6 @@ void UnitTestReceive::test8()
 
     TS_ASSERT(unitTestHasTickReq());
 }
-
 
 void UnitTestReceive::test9()
 {
@@ -597,7 +595,7 @@ void UnitTestReceive::test9()
         registerMsg.field_msgId().setValue(RegMsgId);
         registerMsg.field_topicName().setValue(Topic);
         unitTestClientInputMessage(client, registerMsg);
-    }    
+    }
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -607,10 +605,10 @@ void UnitTestReceive::test9()
         TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId);
         TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId);
         TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
-    }     
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);    
+    unitTestTick(client, 1000);
 
     {
         UnitTestPublishMsg publishMsg;
@@ -630,7 +628,7 @@ void UnitTestReceive::test9()
         auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
         TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), PubMsgId);
-    }     
+    }
 
     {
         TS_ASSERT(unitTestHasReceivedMessage());
@@ -642,7 +640,6 @@ void UnitTestReceive::test9()
         TS_ASSERT_EQUALS(msgInfo->m_retained, Retained);
         TS_ASSERT(!unitTestHasReceivedMessage());
     }
-
 
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 100);
@@ -660,7 +657,7 @@ void UnitTestReceive::test9()
         TS_ASSERT_DIFFERS(pubcompMsg, nullptr);
         TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), PubMsgId);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }        
+    }
 
     TS_ASSERT(unitTestHasTickReq());
 }
@@ -690,7 +687,7 @@ void UnitTestReceive::test10()
     unitTestTick(client, 1000);
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000); 
+    unitTestTick(client, 1000);
 
     {
         UnitTestPublishMsg publishMsg;
@@ -713,11 +710,10 @@ void UnitTestReceive::test10()
         TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), TopicId);
         TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), 0U);
         TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::InvalidTopicId);
-    } 
+    }
 
     TS_ASSERT(unitTestHasTickReq());
 }
-
 
 void UnitTestReceive::test11()
 {
@@ -761,7 +757,7 @@ void UnitTestReceive::test11()
         auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
         TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), MsgId);
-    }       
+    }
 
     {
         TS_ASSERT(unitTestHasReceivedMessage());
@@ -788,7 +784,7 @@ void UnitTestReceive::test11()
         publishMsg.field_data().value() = Data;
 
         unitTestClientInputMessage(client, publishMsg);
-    }    
+    }
 
     TS_ASSERT(!unitTestHasReceivedMessage()); // Duplicate message should not be reported
 
@@ -798,10 +794,10 @@ void UnitTestReceive::test11()
         auto* pubrecMsg = dynamic_cast<UnitTestPubrecMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(pubrecMsg, nullptr);
         TS_ASSERT_EQUALS(pubrecMsg->field_msgId().value(), MsgId);
-    }    
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 100);      
+    unitTestTick(client, 100);
 
     {
         UnitTestPubrelMsg pubrelMsg;
@@ -816,7 +812,7 @@ void UnitTestReceive::test11()
         TS_ASSERT_DIFFERS(pubcompMsg, nullptr);
         TS_ASSERT_EQUALS(pubcompMsg->field_msgId().value(), MsgId);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }        
+    }
 
     TS_ASSERT(unitTestHasTickReq());
 }
@@ -844,7 +840,7 @@ void UnitTestReceive::test12()
     UnitTestSubscribeResponseConfig subRespConfig;
     subRespConfig.m_topicId = TopicId;
 
-    apiSubscribeInitConfig(&config);    
+    apiSubscribeInitConfig(&config);
     config.m_topic = Topic.c_str();
     unitTestDoSubscribe(client, &config, &subRespConfig);
 
@@ -912,7 +908,7 @@ void UnitTestReceive::test13()
         registerMsg.field_msgId().setValue(RegMsgId1);
         registerMsg.field_topicName().setValue(Topic1);
         unitTestClientInputMessage(client, registerMsg);
-    }    
+    }
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -922,10 +918,10 @@ void UnitTestReceive::test13()
         TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId1);
         TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId1);
         TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
-    }    
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000); 
+    unitTestTick(client, 1000);
 
     UnitTestPublishMsg publishMsg1;
     publishMsg1.field_flags().field_qos().setValue(Qos);
@@ -946,7 +942,7 @@ void UnitTestReceive::test13()
     }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);     
+    unitTestTick(client, 1000);
 
     // Repeat Topic1 publish
     unitTestClientInputMessage(client, publishMsg1);
@@ -960,8 +956,7 @@ void UnitTestReceive::test13()
         TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
         TS_ASSERT_EQUALS(msgInfo->m_retained, false);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }    
-
+    }
 
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 1000);
@@ -973,7 +968,7 @@ void UnitTestReceive::test13()
         registerMsg.field_msgId().setValue(RegMsgId2);
         registerMsg.field_topicName().setValue(Topic2);
         unitTestClientInputMessage(client, registerMsg);
-    }    
+    }
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -983,10 +978,10 @@ void UnitTestReceive::test13()
         TS_ASSERT_EQUALS(regackMsg->field_topicId().value(), TopicId2);
         TS_ASSERT_EQUALS(regackMsg->field_msgId().value(), RegMsgId2);
         TS_ASSERT_EQUALS(regackMsg->field_returnCode().value(), RetCode::Accepted);
-    }   
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);     
+    unitTestTick(client, 1000);
 
     UnitTestPublishMsg publishMsg2;
     publishMsg2.field_flags().field_qos().setValue(Qos);
@@ -1004,10 +999,10 @@ void UnitTestReceive::test13()
         TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
         TS_ASSERT_EQUALS(msgInfo->m_retained, false);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }     
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);     
+    unitTestTick(client, 1000);
 
     // Repeat Topic2 message
     unitTestClientInputMessage(client, publishMsg2);
@@ -1021,11 +1016,11 @@ void UnitTestReceive::test13()
         TS_ASSERT_EQUALS(msgInfo->m_qos, Qos);
         TS_ASSERT_EQUALS(msgInfo->m_retained, false);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }   
+    }
 
-    // Repeat Topic1 message, expected to reject  
+    // Repeat Topic1 message, expected to reject
 
-    unitTestClientInputMessage(client, publishMsg1);      
+    unitTestClientInputMessage(client, publishMsg1);
 
     {
         TS_ASSERT(!unitTestHasReceivedMessage());
@@ -1035,7 +1030,7 @@ void UnitTestReceive::test13()
         TS_ASSERT_DIFFERS(pubackMsg, nullptr);
         TS_ASSERT_EQUALS(pubackMsg->field_topicId().value(), TopicId1);
         TS_ASSERT_EQUALS(pubackMsg->field_msgId().value(), 0U);
-        TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::InvalidTopicId);        
+        TS_ASSERT_EQUALS(pubackMsg->field_returnCode().value(), RetCode::InvalidTopicId);
     }
 
     TS_ASSERT(unitTestHasTickReq());
@@ -1057,12 +1052,11 @@ void UnitTestReceive::test14()
     unitTestDoSubscribeTopic(client, "#");
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);    
+    unitTestTick(client, 1000);
 
     const std::string Topic("some/topic");
     const UnitTestData Data = {1, 2, 3, 4};
     const CC_MqttsnTopicId TopicId = 123;
-
 
     CC_MqttsnPublishConfig pubConfig;
     apiPublishInitConfig(&pubConfig);
@@ -1076,7 +1070,7 @@ void UnitTestReceive::test14()
     unitTestDoPublish(client, &pubConfig, &pubResp);
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);  
+    unitTestTick(client, 1000);
 
     {
         UnitTestPublishMsg publishMsg;
@@ -1095,7 +1089,7 @@ void UnitTestReceive::test14()
         TS_ASSERT_EQUALS(msgInfo->m_topic, Topic);
         TS_ASSERT_EQUALS(msgInfo->m_data, Data);
         TS_ASSERT(!unitTestHasReceivedMessage());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasOutputData());
 }

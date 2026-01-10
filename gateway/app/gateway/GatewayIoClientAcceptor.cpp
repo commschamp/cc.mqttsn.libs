@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,9 +18,9 @@ namespace cc_mqttsn_gateway_app
 GatewayIoClientAcceptor::~GatewayIoClientAcceptor() = default;
 
 GatewayIoClientAcceptor::Ptr GatewayIoClientAcceptor::create(
-    boost::asio::io_context& io, 
-    GatewayLogger& logger, 
-    const cc_mqttsn_gateway::Config& config)    
+    boost::asio::io_context& io,
+    GatewayLogger& logger,
+    const cc_mqttsn_gateway::Config& config)
 {
     using CreateFunc = Ptr (*)(boost::asio::io_context&, GatewayLogger&, const cc_mqttsn_gateway::Config&);
     static const CreateFunc Map[] = {
@@ -57,7 +57,5 @@ void GatewayIoClientAcceptor::reportNewConnection(GatewayIoClientSocketPtr socke
     assert(m_newConnectionReportCb);
     m_newConnectionReportCb(std::move(socket));
 }
-
-
 
 } // namespace cc_mqttsn_gateway_app

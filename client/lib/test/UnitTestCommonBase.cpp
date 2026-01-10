@@ -5,7 +5,7 @@
 #include <cassert>
 #include <iostream>
 
-namespace 
+namespace
 {
 
 #define test_assert(cond_) \
@@ -18,10 +18,9 @@ namespace
 UnitTestCommonBase* asThis(void* data)
 {
     return reinterpret_cast<UnitTestCommonBase*>(data);
-}    
+}
 
-} // namespace 
-
+} // namespace
 
 UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     m_funcs(funcs)
@@ -33,8 +32,8 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_set_default_retry_period != nullptr);
     test_assert(m_funcs.m_get_default_retry_period != nullptr);
     test_assert(m_funcs.m_set_default_retry_count != nullptr);
-    test_assert(m_funcs.m_get_default_retry_count != nullptr);    
-    test_assert(m_funcs.m_set_default_broadcast_radius != nullptr); 
+    test_assert(m_funcs.m_get_default_retry_count != nullptr);
+    test_assert(m_funcs.m_set_default_broadcast_radius != nullptr);
     test_assert(m_funcs.m_init_gateway_info != nullptr);
     test_assert(m_funcs.m_get_available_gateway_info != nullptr);
     test_assert(m_funcs.m_set_available_gateway_info != nullptr);
@@ -47,11 +46,11 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_set_verify_outgoing_topic_enabled != nullptr);
     test_assert(m_funcs.m_get_verify_outgoing_topic_enabled != nullptr);
     test_assert(m_funcs.m_set_verify_incoming_topic_enabled != nullptr);
-    test_assert(m_funcs.m_get_verify_incoming_topic_enabled != nullptr);    
+    test_assert(m_funcs.m_get_verify_incoming_topic_enabled != nullptr);
     test_assert(m_funcs.m_set_verify_incoming_msg_subscribed != nullptr);
     test_assert(m_funcs.m_get_verify_incoming_msg_subscribed != nullptr);
     test_assert(m_funcs.m_set_outgoing_topic_id_storage_limit != nullptr);
-    test_assert(m_funcs.m_get_outgoing_topic_id_storage_limit != nullptr);    
+    test_assert(m_funcs.m_get_outgoing_topic_id_storage_limit != nullptr);
     test_assert(m_funcs.m_set_incoming_topic_id_storage_limit != nullptr);
     test_assert(m_funcs.m_get_incoming_topic_id_storage_limit != nullptr);
     test_assert(m_funcs.m_asleep_check_messages != nullptr);
@@ -85,7 +84,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_disconnect_get_retry_count != nullptr);
     test_assert(m_funcs.m_disconnect_send != nullptr);
     test_assert(m_funcs.m_disconnect_cancel != nullptr);
-    test_assert(m_funcs.m_disconnect != nullptr);  
+    test_assert(m_funcs.m_disconnect != nullptr);
     test_assert(m_funcs.m_subscribe_prepare != nullptr);
     test_assert(m_funcs.m_subscribe_set_retry_period != nullptr);
     test_assert(m_funcs.m_subscribe_get_retry_period != nullptr);
@@ -95,7 +94,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_subscribe_config != nullptr);
     test_assert(m_funcs.m_subscribe_send != nullptr);
     test_assert(m_funcs.m_subscribe_cancel != nullptr);
-    test_assert(m_funcs.m_subscribe != nullptr);     
+    test_assert(m_funcs.m_subscribe != nullptr);
     test_assert(m_funcs.m_unsubscribe_prepare != nullptr);
     test_assert(m_funcs.m_unsubscribe_set_retry_period != nullptr);
     test_assert(m_funcs.m_unsubscribe_get_retry_period != nullptr);
@@ -105,7 +104,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_unsubscribe_config != nullptr);
     test_assert(m_funcs.m_unsubscribe_send != nullptr);
     test_assert(m_funcs.m_unsubscribe_cancel != nullptr);
-    test_assert(m_funcs.m_unsubscribe != nullptr);       
+    test_assert(m_funcs.m_unsubscribe != nullptr);
     test_assert(m_funcs.m_publish_prepare != nullptr);
     test_assert(m_funcs.m_publish_set_retry_period != nullptr);
     test_assert(m_funcs.m_publish_get_retry_period != nullptr);
@@ -115,7 +114,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_publish_config != nullptr);
     test_assert(m_funcs.m_publish_send != nullptr);
     test_assert(m_funcs.m_publish_cancel != nullptr);
-    test_assert(m_funcs.m_publish != nullptr);    
+    test_assert(m_funcs.m_publish != nullptr);
     test_assert(m_funcs.m_will_prepare != nullptr);
     test_assert(m_funcs.m_will_set_retry_period != nullptr);
     test_assert(m_funcs.m_will_get_retry_period != nullptr);
@@ -125,7 +124,7 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_will_config != nullptr);
     test_assert(m_funcs.m_will_send != nullptr);
     test_assert(m_funcs.m_will_cancel != nullptr);
-    test_assert(m_funcs.m_will != nullptr);   
+    test_assert(m_funcs.m_will != nullptr);
     test_assert(m_funcs.m_sleep_prepare != nullptr);
     test_assert(m_funcs.m_sleep_set_retry_period != nullptr);
     test_assert(m_funcs.m_sleep_get_retry_period != nullptr);
@@ -135,15 +134,15 @@ UnitTestCommonBase::UnitTestCommonBase(const LibFuncs& funcs) :
     test_assert(m_funcs.m_sleep_config != nullptr);
     test_assert(m_funcs.m_sleep_send != nullptr);
     test_assert(m_funcs.m_sleep_cancel != nullptr);
-    test_assert(m_funcs.m_sleep != nullptr);        
-    test_assert(m_funcs.m_set_next_tick_program_callback != nullptr); 
-    test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr); 
-    test_assert(m_funcs.m_set_send_output_data_callback != nullptr); 
-    test_assert(m_funcs.m_set_gw_status_report_callback != nullptr); 
-    test_assert(m_funcs.m_set_gw_disconnect_report_callback != nullptr); 
-    test_assert(m_funcs.m_set_message_report_callback != nullptr); 
-    test_assert(m_funcs.m_set_error_log_callback != nullptr); 
-    test_assert(m_funcs.m_set_gwinfo_delay_request_callback != nullptr); 
+    test_assert(m_funcs.m_sleep != nullptr);
+    test_assert(m_funcs.m_set_next_tick_program_callback != nullptr);
+    test_assert(m_funcs.m_set_cancel_next_tick_wait_callback != nullptr);
+    test_assert(m_funcs.m_set_send_output_data_callback != nullptr);
+    test_assert(m_funcs.m_set_gw_status_report_callback != nullptr);
+    test_assert(m_funcs.m_set_gw_disconnect_report_callback != nullptr);
+    test_assert(m_funcs.m_set_message_report_callback != nullptr);
+    test_assert(m_funcs.m_set_error_log_callback != nullptr);
+    test_assert(m_funcs.m_set_gwinfo_delay_request_callback != nullptr);
 }
 
 UnitTestCommonBase::UnitTestOutputDataInfo::UnitTestOutputDataInfo(const std::uint8_t* buf, unsigned bufLen, unsigned broadcastRadius) :
@@ -192,7 +191,7 @@ UnitTestCommonBase::UnitTestConnectInfo& UnitTestCommonBase::UnitTestConnectInfo
     return *this;
 }
 
-UnitTestCommonBase::UnitTestConnectCompleteReport::UnitTestConnectCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info) : 
+UnitTestCommonBase::UnitTestConnectCompleteReport::UnitTestConnectCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnConnectInfo* info) :
     m_status(status)
 {
     if (info != nullptr) {
@@ -207,7 +206,7 @@ UnitTestCommonBase::UnitTestSubscribeInfo& UnitTestCommonBase::UnitTestSubscribe
     return *this;
 }
 
-UnitTestCommonBase::UnitTestSubscribeCompleteReport::UnitTestSubscribeCompleteReport(CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info) : 
+UnitTestCommonBase::UnitTestSubscribeCompleteReport::UnitTestSubscribeCompleteReport(CC_MqttsnSubscribeHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info) :
     m_handle(handle),
     m_status(status)
 {
@@ -216,7 +215,7 @@ UnitTestCommonBase::UnitTestSubscribeCompleteReport::UnitTestSubscribeCompleteRe
     }
 }
 
-UnitTestCommonBase::UnitTestUnsubscribeCompleteReport::UnitTestUnsubscribeCompleteReport(CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status) : 
+UnitTestCommonBase::UnitTestUnsubscribeCompleteReport::UnitTestUnsubscribeCompleteReport(CC_MqttsnUnsubscribeHandle handle, CC_MqttsnAsyncOpStatus status) :
     m_handle(handle),
     m_status(status)
 {
@@ -228,7 +227,7 @@ UnitTestCommonBase::UnitTestPublishInfo& UnitTestCommonBase::UnitTestPublishInfo
     return *this;
 }
 
-UnitTestCommonBase::UnitTestPublishCompleteReport::UnitTestPublishCompleteReport(CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info) : 
+UnitTestCommonBase::UnitTestPublishCompleteReport::UnitTestPublishCompleteReport(CC_MqttsnPublishHandle handle, CC_MqttsnAsyncOpStatus status, const CC_MqttsnPublishInfo* info) :
     m_handle(handle),
     m_status(status)
 {
@@ -244,7 +243,7 @@ UnitTestCommonBase::UnitTestWillInfo& UnitTestCommonBase::UnitTestWillInfo::oper
     return *this;
 }
 
-UnitTestCommonBase::UnitTestWillCompleteReport::UnitTestWillCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info) : 
+UnitTestCommonBase::UnitTestWillCompleteReport::UnitTestWillCompleteReport(CC_MqttsnAsyncOpStatus status, const CC_MqttsnWillInfo* info) :
     m_status(status)
 {
     if (info != nullptr) {
@@ -327,8 +326,8 @@ void UnitTestCommonBase::unitTestPushSearchgwResponseDelay(unsigned val)
 CC_MqttsnTopicId UnitTestCommonBase::unitTestShortTopicNameToId(const std::string& topic)
 {
     test_assert(topic.size() == 2U);
-    unsigned result = 
-        (static_cast<unsigned>(topic[0]) << 8U) | 
+    unsigned result =
+        (static_cast<unsigned>(topic[0]) << 8U) |
         (static_cast<unsigned>(topic[1]));
     return static_cast<CC_MqttsnTopicId>(result);
 }
@@ -442,7 +441,7 @@ UnitTestCommonBase::UnitTestGwInfoReportPtr UnitTestCommonBase::unitTestGetGwInf
 
     auto ptr = std::move(m_data.m_gwInfoReports.front());
     m_data.m_gwInfoReports.pop_front();
-    return ptr;       
+    return ptr;
 }
 
 bool UnitTestCommonBase::unitTestHasGwDisconnectReport() const
@@ -459,7 +458,7 @@ UnitTestCommonBase::UnitTestGwDisconnectReportPtr UnitTestCommonBase::unitTestGe
 
     auto ptr = std::move(m_data.m_gwDisconnectReports.front());
     m_data.m_gwDisconnectReports.pop_front();
-    return ptr;    
+    return ptr;
 }
 
 bool UnitTestCommonBase::unitTestHasSearchCompleteReport() const
@@ -476,7 +475,7 @@ UnitTestCommonBase::UnitTestSearchCompleteReportPtr UnitTestCommonBase::unitTest
 
     auto ptr = std::move(m_data.m_searchCompleteReports.front());
     m_data.m_searchCompleteReports.pop_front();
-    return ptr;      
+    return ptr;
 }
 
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestSearchSend(CC_MqttsnSearchHandle search, UnitTestSearchCompleteCb&& cb)
@@ -494,7 +493,7 @@ void UnitTestCommonBase::unitTestSearch(CC_MqttsnClient* client, UnitTestSearchC
         m_data.m_searchCompleteCallbacks.push_back(std::move(cb));
     }
 
-    m_funcs.m_search(client, &UnitTestCommonBase::unitTestSearchCompleteCb, this);    
+    m_funcs.m_search(client, &UnitTestCommonBase::unitTestSearchCompleteCb, this);
 }
 
 void UnitTestCommonBase::unitTestSearchUpdateAddr(CC_MqttsnClient* client, const UnitTestData& addr)
@@ -537,7 +536,7 @@ UnitTestCommonBase::UnitTestConnectCompleteReportPtr UnitTestCommonBase::unitTes
 
     auto ptr = std::move(m_data.m_connectCompleteReports.front());
     m_data.m_connectCompleteReports.pop_front();
-    return ptr;     
+    return ptr;
 }
 
 CC_MqttsnErrorCode UnitTestCommonBase::unitTestConnectSend(CC_MqttsnConnectHandle connect)
@@ -569,7 +568,7 @@ void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_Mqt
             test_assert(connectMsg->field_flags().field_mid().getBitValue_CleanSession() == config->m_cleanSession);
         }
         test_assert(!unitTestHasOutputData());
-    }    
+    }
 
     test_assert(!unitTestHasConnectCompleteReport());
     test_assert(unitTestHasTickReq());
@@ -589,11 +588,11 @@ void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_Mqt
             test_assert(willtopicMsg->field_flags().field().field_mid().getBitValue_Retain() == willConfig->m_retain);
             test_assert((willConfig->m_topic == nullptr) || (willtopicMsg->field_willTopic().value() == willConfig->m_topic));
             test_assert(!unitTestHasOutputData());
-        }    
+        }
 
         test_assert(!unitTestHasConnectCompleteReport());
         test_assert(unitTestHasTickReq());
-        unitTestTick(client, 100);         
+        unitTestTick(client, 100);
 
         UnitTestWillmsgreqMsg willmsgreqMsg;
         unitTestClientInputMessage(client, willmsgreqMsg);
@@ -604,17 +603,17 @@ void UnitTestCommonBase::unitTestDoConnect(CC_MqttsnClient* client, const CC_Mqt
             auto* willmsgMsg = dynamic_cast<UnitTestWillmsgMsg*>(sentMsg.get());
             test_assert(willmsgMsg != nullptr);
             test_assert((willConfig->m_data == nullptr) || (willmsgMsg->field_willMsg().value() == UnitTestData(willConfig->m_data, willConfig->m_data + willConfig->m_dataLen)));
-        }          
+        }
 
         test_assert(!unitTestHasConnectCompleteReport());
         test_assert(apiGetConnectionState(client) == CC_MqttsnConnectionStatus_Disconnected);
         test_assert(unitTestHasTickReq());
-        unitTestTick(client, 100);               
+        unitTestTick(client, 100);
     }
 
     UnitTestConnackMsg connackMsg;
     connackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
-    unitTestClientInputMessage(client, connackMsg);    
+    unitTestClientInputMessage(client, connackMsg);
 
     test_assert(unitTestHasConnectCompleteReport());
     auto connectReport = unitTestConnectCompleteReport();
@@ -628,7 +627,7 @@ void UnitTestCommonBase::unitTestDoConnectBasic(CC_MqttsnClient* client, const s
     CC_MqttsnConnectConfig config;
     apiConnectInitConfig(&config);
     config.m_clientId = clientId.c_str();
-    config.m_cleanSession = cleanSession;   
+    config.m_cleanSession = cleanSession;
     unitTestDoConnect(client, &config, nullptr);
 }
 
@@ -646,7 +645,7 @@ UnitTestCommonBase::UnitTestDisconnectCompleteReportPtr UnitTestCommonBase::unit
 
     auto ptr = std::move(m_data.m_disconnectCompleteReports.front());
     m_data.m_disconnectCompleteReports.pop_front();
-    return ptr;    
+    return ptr;
 
 }
 
@@ -662,14 +661,14 @@ void UnitTestCommonBase::unitTestDoDisconnect(CC_MqttsnClient* client)
         test_assert(disconnectMsg != nullptr);
         test_assert(disconnectMsg->field_duration().isMissing());
         test_assert(!unitTestHasOutputData());
-    }     
+    }
 
     test_assert(unitTestHasTickReq());
-    unitTestTick(client, 100); // timeout    
+    unitTestTick(client, 100); // timeout
 
     {
         UnitTestDisconnectMsg disconnectMsg;
-        unitTestClientInputMessage(client, disconnectMsg);    
+        unitTestClientInputMessage(client, disconnectMsg);
     }
 
     test_assert(unitTestHasDisconnectCompleteReport());
@@ -705,8 +704,8 @@ CC_MqttsnErrorCode UnitTestCommonBase::unitTestSubscribeSend(CC_MqttsnSubscribeH
 }
 
 void UnitTestCommonBase::unitTestDoSubscribe(
-    CC_MqttsnClient* client, 
-    const CC_MqttsnSubscribeConfig* config, 
+    CC_MqttsnClient* client,
+    const CC_MqttsnSubscribeConfig* config,
     const UnitTestSubscribeResponseConfig* respConfig)
 {
     auto ec = m_funcs.m_subscribe(client, config, &UnitTestCommonBase::unitTestSubscribeCompleteCb, this);
@@ -723,7 +722,7 @@ void UnitTestCommonBase::unitTestDoSubscribe(
     test_assert(subMsgId != 0U);
 
     test_assert(unitTestHasTickReq());
-    unitTestTick(client, 100); 
+    unitTestTick(client, 100);
 
     UnitTestSubackMsg subackMsg;
     subackMsg.field_flags().field_qos().setValue(config->m_qos);
@@ -734,7 +733,7 @@ void UnitTestCommonBase::unitTestDoSubscribe(
         subackMsg.field_topicId().setValue(respConfig->m_topicId);
     }
 
-    unitTestClientInputMessage(client, subackMsg);    
+    unitTestClientInputMessage(client, subackMsg);
 
     test_assert(unitTestHasSubscribeCompleteReport());
     auto subscribeReport = unitTestSubscribeCompleteReport();
@@ -801,8 +800,8 @@ UnitTestCommonBase::UnitTestPublishCompleteReportPtr UnitTestCommonBase::unitTes
 }
 
 void UnitTestCommonBase::unitTestDoPublish(
-    CC_MqttsnClient* client, 
-    const CC_MqttsnPublishConfig* config, 
+    CC_MqttsnClient* client,
+    const CC_MqttsnPublishConfig* config,
     const UnitTestPublishResponseConfig* respConfig)
 {
     auto ec = m_funcs.m_publish(client, config, &UnitTestCommonBase::unitTestPublishCompleteCb, this);
@@ -820,10 +819,10 @@ void UnitTestCommonBase::unitTestDoPublish(
             test_assert(!unitTestHasOutputData());
 
             regMsgId = registerMsg->field_msgId().value();
-        } 
+        }
 
         test_assert(unitTestHasTickReq());
-        unitTestTick(client, 100);    
+        unitTestTick(client, 100);
 
         {
             UnitTestRegackMsg regackMsg;
@@ -834,7 +833,7 @@ void UnitTestCommonBase::unitTestDoPublish(
 
             topicId = respConfig->m_regTopicId;
         }
-    }    
+    }
 
     unsigned pubMsgId = 0U;
     {
@@ -845,17 +844,17 @@ void UnitTestCommonBase::unitTestDoPublish(
         test_assert(!unitTestHasOutputData());
 
         pubMsgId = publishMsg->field_msgId().value();
-    } 
+    }
 
     if (config->m_qos == CC_MqttsnQoS_AtMostOnceDelivery) {
         test_assert(unitTestHasPublishCompleteReport());
         auto publishReport = unitTestPublishCompleteReport();
         test_assert(publishReport->m_status == CC_MqttsnAsyncOpStatus_Complete);
     }
-   
+
     if ((respConfig != nullptr) && (respConfig->m_pubackRetCode != CC_MqttsnReturnCode_Accepted)) {
         test_assert(unitTestHasTickReq());
-        unitTestTick(client, 100); 
+        unitTestTick(client, 100);
 
         UnitTestPubackMsg pubackMsg;
         pubackMsg.field_topicId().setValue(topicId);
@@ -870,7 +869,7 @@ void UnitTestCommonBase::unitTestDoPublish(
     }
 
     test_assert(unitTestHasTickReq());
-    unitTestTick(client, 100);     
+    unitTestTick(client, 100);
 
     if (config->m_qos == CC_MqttsnQoS_AtLeastOnceDelivery) {
         UnitTestPubackMsg pubackMsg;
@@ -883,14 +882,14 @@ void UnitTestCommonBase::unitTestDoPublish(
         auto publishReport = unitTestPublishCompleteReport();
         test_assert(publishReport->m_status == CC_MqttsnAsyncOpStatus_Complete);
         return;
-    }    
+    }
 
     test_assert(config->m_qos == CC_MqttsnQoS_ExactlyOnceDelivery);
 
     {
         UnitTestPubrecMsg pubrecMsg;
         pubrecMsg.field_msgId().setValue(pubMsgId);
-        unitTestClientInputMessage(client, pubrecMsg);        
+        unitTestClientInputMessage(client, pubrecMsg);
     }
 
     {
@@ -899,16 +898,16 @@ void UnitTestCommonBase::unitTestDoPublish(
         auto* pubrelMsg = dynamic_cast<UnitTestPubrelMsg*>(sentMsg.get());
         test_assert(pubrelMsg != nullptr);
         test_assert(!unitTestHasOutputData());
-    }     
+    }
 
     test_assert(unitTestHasTickReq());
-    unitTestTick(client, 100);  
+    unitTestTick(client, 100);
 
     {
         UnitTestPubcompMsg pubcompMsg;
         pubcompMsg.field_msgId().setValue(pubMsgId);
-        unitTestClientInputMessage(client, pubcompMsg);        
-    }       
+        unitTestClientInputMessage(client, pubcompMsg);
+    }
 
     test_assert(unitTestHasPublishCompleteReport());
     auto publishReport = unitTestPublishCompleteReport();
@@ -978,7 +977,7 @@ UnitTestCommonBase::UnitTestMessageInfoPtr UnitTestCommonBase::unitTestReceivedM
 
     auto ptr = std::move(m_data.m_recvMsgs.front());
     m_data.m_recvMsgs.pop_front();
-    return ptr;    
+    return ptr;
 }
 
 void UnitTestCommonBase::apiProcessData(CC_MqttsnClient* client, const unsigned char* buf, unsigned bufLen, CC_MqttsnDataOrigin origin)
@@ -1104,7 +1103,7 @@ void UnitTestCommonBase::unitTestTickProgramCb(void* data, unsigned duration)
         return;
     }
 
-    auto& info = thisPtr->m_data.m_ticks.front(); 
+    auto& info = thisPtr->m_data.m_ticks.front();
     test_assert(info.m_req == 0U);
     info.m_req = duration;
 }

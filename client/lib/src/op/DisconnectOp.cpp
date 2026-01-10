@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline DisconnectOp* asDisconnectOp(void* data)
@@ -28,14 +28,13 @@ inline DisconnectOp* asDisconnectOp(void* data)
     return reinterpret_cast<DisconnectOp*>(data);
 }
 
-} // namespace 
-    
+} // namespace
 
-DisconnectOp::DisconnectOp(ClientImpl& client) : 
+DisconnectOp::DisconnectOp(ClientImpl& client) :
     Base(client),
     m_timer(client.timerMgr().allocTimer())
 {
-}   
+}
 
 CC_MqttsnErrorCode DisconnectOp::config(const CC_MqttsnSleepConfig* config)
 {
@@ -54,7 +53,7 @@ CC_MqttsnErrorCode DisconnectOp::config(const CC_MqttsnSleepConfig* config)
     using DurationValueType = DisconnectMsg::Field_duration::Field::ValueType;
     if (std::numeric_limits<DurationValueType>::max() < config->m_duration) {
         errorLog("Sleep duration value is too high, doesn't fit into protocol");
-        return CC_MqttsnErrorCode_BadParam;        
+        return CC_MqttsnErrorCode_BadParam;
     }
 
     comms::units::setSeconds(m_disconnectMsg.field_duration().field(), config->m_duration);
@@ -62,10 +61,10 @@ CC_MqttsnErrorCode DisconnectOp::config(const CC_MqttsnSleepConfig* config)
     return CC_MqttsnErrorCode_Success;
 }
 
-CC_MqttsnErrorCode DisconnectOp::send(CC_MqttsnDisconnectCompleteCb cb, void* cbData) 
+CC_MqttsnErrorCode DisconnectOp::send(CC_MqttsnDisconnectCompleteCb cb, void* cbData)
 {
     client().allowNextPrepare();
-    auto completeOnError = 
+    auto completeOnError =
         comms::util::makeScopeGuard(
             [this]()
             {
@@ -80,12 +79,12 @@ CC_MqttsnErrorCode DisconnectOp::send(CC_MqttsnDisconnectCompleteCb cb, void* cb
     if (!m_timer.isValid()) {
         errorLog("The library cannot allocate required number of timers.");
         return CC_MqttsnErrorCode_InternalError;
-    }    
+    }
 
     auto guard = client().apiEnter();
     m_cb = cb;
     m_cbData = cbData;
-    
+
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         return ec;
@@ -116,7 +115,7 @@ void DisconnectOp::handle([[maybe_unused]] DisconnectMsg& msg)
         sleepDurationMs = comms::units::getMilliseconds<decltype(sleepDurationMs)>(m_disconnectMsg.field_duration().field());
     }
 
-    auto onExit = 
+    auto onExit =
         comms::util::makeScopeGuard(
             [&cl, sleepDurationMs]()
             {
@@ -147,7 +146,7 @@ void DisconnectOp::completeOpInternal(CC_MqttsnAsyncOpStatus status)
     auto* cbData = m_cbData;
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
-        cb(cbData, status);    
+        cb(cbData, status);
     }
 }
 
@@ -162,7 +161,7 @@ CC_MqttsnErrorCode DisconnectOp::sendInternal()
     if (ec == CC_MqttsnErrorCode_Success) {
         restartTimer();
     }
-    
+
     return ec;
 }
 
@@ -172,14 +171,14 @@ void DisconnectOp::timeoutInternal()
         errorLog("All retries of the disconnect or sleep operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
         return;
-    }  
+    }
 
     decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }  
+    }
 }
 
 void DisconnectOp::opTimeoutCb(void* data)

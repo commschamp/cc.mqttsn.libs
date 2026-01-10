@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,14 +25,14 @@ struct ExtConfig : public Config
     static constexpr unsigned KeepAliveOpTimers = 3U;
     static constexpr unsigned DisconnectOpsLimit = HasDynMemAlloc ? 0 : 1U;
     static constexpr unsigned DisconnectOpTimers = 1U;
-    static constexpr unsigned SubscribeOpTimers = 1U;    
-    static constexpr unsigned UnsubscribeOpTimers = 1U;    
-    static constexpr unsigned SendOpTimers = 1U;    
+    static constexpr unsigned SubscribeOpTimers = 1U;
+    static constexpr unsigned UnsubscribeOpTimers = 1U;
+    static constexpr unsigned SendOpTimers = 1U;
     static constexpr unsigned WillOpsLimit = HasDynMemAlloc ? 0 : 1U;
-    static constexpr unsigned WillOpTimers = 1U;   
-    static constexpr bool HasOpsLimit = 
-        (SearchOpsLimit > 0U) && 
-        (ConnectOpsLimit > 0U) && 
+    static constexpr unsigned WillOpTimers = 1U;
+    static constexpr bool HasOpsLimit =
+        (SearchOpsLimit > 0U) &&
+        (ConnectOpsLimit > 0U) &&
         (KeepAliveOpsLimit > 0U) &&
         (DisconnectOpsLimit > 0U) &&
         (SubscribeOpsLimit > 0U) &&
@@ -40,33 +40,33 @@ struct ExtConfig : public Config
         (SendOpsLimit > 0U) &&
         (HasWill && (WillOpsLimit > 0U));
     static constexpr unsigned MaxTimersLimit =
-        (DiscoveryTimers) +  
-        (SearchOpsLimit * SearchOpTimers) + 
-        (ConnectOpsLimit * ConnectOpTimers) + 
-        (DisconnectOpsLimit * DisconnectOpTimers) + 
-        (KeepAliveOpsLimit * KeepAliveOpTimers) + 
-        (DisconnectOpsLimit * DisconnectOpTimers) + 
+        (DiscoveryTimers) +
+        (SearchOpsLimit * SearchOpTimers) +
+        (ConnectOpsLimit * ConnectOpTimers) +
+        (DisconnectOpsLimit * DisconnectOpTimers) +
+        (KeepAliveOpsLimit * KeepAliveOpTimers) +
+        (DisconnectOpsLimit * DisconnectOpTimers) +
         (SubscribeOpsLimit * SubscribeOpTimers) +
-        (UnsubscribeOpsLimit * UnsubscribeOpTimers) + 
-        (SendOpsLimit * SendOpTimers) + 
+        (UnsubscribeOpsLimit * UnsubscribeOpTimers) +
+        (SendOpsLimit * SendOpTimers) +
         (WillOpsLimit * WillOpTimers);
     static constexpr unsigned TimersLimit = HasOpsLimit ? MaxTimersLimit : 0U;
 
-    static const unsigned MaxOpsLimit = 
-        ConnectOpsLimit + 
-        KeepAliveOpsLimit + 
-        DisconnectOpsLimit + 
-        SubscribeOpsLimit + 
-        UnsubscribeOpsLimit + 
-        SendOpsLimit + 
+    static const unsigned MaxOpsLimit =
+        ConnectOpsLimit +
+        KeepAliveOpsLimit +
+        DisconnectOpsLimit +
+        SubscribeOpsLimit +
+        UnsubscribeOpsLimit +
+        SendOpsLimit +
         WillOpsLimit;
 
     static const unsigned OpsLimit = HasOpsLimit ? MaxOpsLimit : 0U;
 
-    static const unsigned PacketIdsLimitSumTmp = 
-        SubscribeOpsLimit + 
-        UnsubscribeOpsLimit + 
-        SendOpsLimit;    
+    static const unsigned PacketIdsLimitSumTmp =
+        SubscribeOpsLimit +
+        UnsubscribeOpsLimit +
+        SendOpsLimit;
 
     static const unsigned PacketIdsLimit = HasDynMemAlloc ? 0U : PacketIdsLimitSumTmp;
 

@@ -27,7 +27,7 @@ void UnitTestQos0Subscribe::test1()
     auto* client = clientPtr.get();
 
     TS_ASSERT_DIFFERS(client, nullptr);
-    unitTestDoConnectBasic(client, __FUNCTION__); 
+    unitTestDoConnectBasic(client, __FUNCTION__);
 
     CC_MqttsnSubscribeConfig subscribeConfig;
     apiSubscribeInitConfig(&subscribeConfig);
@@ -42,7 +42,7 @@ void UnitTestQos0Subscribe::test1()
 
     subscribeConfig.m_qos = CC_MqttsnQoS_AtLeastOnceDelivery;
     ec = apiSubscribeConfig(subscribe, &subscribeConfig);
-    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);    
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_BadParam);
 
     subscribeConfig.m_qos = CC_MqttsnQoS_AtMostOnceDelivery;
     ec = apiSubscribeConfig(subscribe, &subscribeConfig);
@@ -53,7 +53,7 @@ void UnitTestQos0Subscribe::test1()
 
     auto sentMsg = unitTestPopOutputMessage();
     TS_ASSERT(sentMsg);
-    TS_ASSERT_EQUALS(sentMsg->getId(), cc_mqttsn::MsgId_Subscribe);    
+    TS_ASSERT_EQUALS(sentMsg->getId(), cc_mqttsn::MsgId_Subscribe);
     auto* subscribeMsg = dynamic_cast<UnitTestSubscribeMsg*>(sentMsg.get());
     TS_ASSERT_DIFFERS(subscribeMsg, nullptr);
 }

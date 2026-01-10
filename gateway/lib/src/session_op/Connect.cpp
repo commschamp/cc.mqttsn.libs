@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,6 @@ void Connect::handle(ConnectMsg_SN& msg)
         termRequest();
         return;
     }
-
 
     assert(st.m_clientId.empty() || (st.m_clientId == reqClientId));
     if (m_internalState.m_hasClientId) {
@@ -408,6 +407,4 @@ void Connect::clearInternalState()
 }  // namespace session_op
 
 }  // namespace cc_mqttsn_gateway
-
-
 

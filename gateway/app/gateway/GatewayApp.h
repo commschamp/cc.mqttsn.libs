@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ public:
 private:
     using SessionsList = std::list<GatewaySessionPtr>;
 
-    boost::asio::io_context& m_io; 
+    boost::asio::io_context& m_io;
     cc_mqttsn_gateway::Config m_config;
     GatewayLogger m_logger;
     GatewayIoClientAcceptorPtr m_acceptor;

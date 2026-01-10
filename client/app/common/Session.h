@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,7 +54,6 @@ public:
         m_networkErrorReportCb = std::forward<TFunc>(func);
     }
 
-
 protected:
     Session(boost::asio::io_context& io, const ProgramOptions& opts);
 
@@ -77,7 +76,7 @@ protected:
     virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufLen, unsigned broadcastRadius) = 0;
 
 private:
-    boost::asio::io_context& m_io; 
+    boost::asio::io_context& m_io;
     const ProgramOptions& m_opts;
     DataReportCb m_dataReportCb;
     NetworkErrorReportCb m_networkErrorReportCb;

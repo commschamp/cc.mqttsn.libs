@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@
 namespace cc_mqttsn_client_app
 {
 
-namespace 
+namespace
 {
 
 Sub* asThis(void* data)
@@ -23,10 +23,9 @@ Sub* asThis(void* data)
     return reinterpret_cast<Sub*>(data);
 }
 
-} // namespace 
-    
+} // namespace
 
-Sub::Sub(boost::asio::io_context& io, int& result) : 
+Sub::Sub(boost::asio::io_context& io, int& result) :
     Base(io, result)
 {
     opts().addCommon();
@@ -35,7 +34,7 @@ Sub::Sub(boost::asio::io_context& io, int& result) :
     opts().addWill();
     opts().addEncapsulate();
     opts().addSubscribe();
-}    
+}
 
 bool Sub::startImpl()
 {
@@ -52,7 +51,7 @@ void Sub::messageReceivedImpl(const CC_MqttsnMessageInfo* info)
 
     if (opts().verbose()) {
         print(*info);
-    }   
+    }
     else {
         std::cout << info->m_topic << ": " << toString(info->m_data, info->m_dataLen, opts().subBinary()) << std::endl;
     }
@@ -70,9 +69,9 @@ void Sub::connectCompleteImpl()
 
     if (opts().verbose()) {
         logInfo() << "Subscribing..." << std::endl;
-    }     
+    }
 
-    auto doSubscribe = 
+    auto doSubscribe =
         [this](const std::string& topic, std::uint16_t topicId)
         {
             auto config = CC_MqttsnSubscribeConfig();
@@ -100,14 +99,14 @@ void Sub::connectCompleteImpl()
 
             ++m_subCount;
         };
-    
+
     for (auto& t : topics) {
         doSubscribe(t, 0U);
     }
 
     for (auto id : topicIds) {
         doSubscribe(std::string(), id);
-    }    
+    }
 }
 
 void Sub::subscribeCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnSubscribeInfo* info)
@@ -132,9 +131,9 @@ void Sub::subscribeCompleteInternal(CC_MqttsnAsyncOpStatus status, const CC_Mqtt
 }
 
 void Sub::subscribeCompleteCb(
-    void* data, 
-    [[maybe_unused]] CC_MqttsnSubscribeHandle handle, 
-    CC_MqttsnAsyncOpStatus status, 
+    void* data,
+    [[maybe_unused]] CC_MqttsnSubscribeHandle handle,
+    CC_MqttsnAsyncOpStatus status,
     const CC_MqttsnSubscribeInfo* info)
 {
     asThis(data)->subscribeCompleteInternal(status, info);

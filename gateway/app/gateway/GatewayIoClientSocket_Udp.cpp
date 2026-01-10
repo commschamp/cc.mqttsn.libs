@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,12 +10,12 @@
 namespace cc_mqttsn_gateway_app
 {
 
-GatewayIoClientSocket_Udp::GatewayIoClientSocket_Udp(boost::asio::io_context& io, GatewayLogger& loggerParam, const Endpoint& endpoint) : 
+GatewayIoClientSocket_Udp::GatewayIoClientSocket_Udp(boost::asio::io_context& io, GatewayLogger& loggerParam, const Endpoint& endpoint) :
     Base(io, loggerParam),
     m_endpoint(endpoint)
 {
     logger().info() << "New UDP client connection from: " << m_endpoint << std::endl;
-};    
+};
 
 GatewayIoClientSocket_Udp::~GatewayIoClientSocket_Udp()
 {
@@ -52,7 +52,7 @@ bool GatewayIoClientSocket_Udp::startImpl()
         });
 
     return true;
-} 
+}
 
 void GatewayIoClientSocket_Udp::sendDataImpl(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
 {

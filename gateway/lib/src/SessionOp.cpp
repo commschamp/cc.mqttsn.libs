@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@ void SessionOp::timestampUpdated()
         m_nextTickTimestamp = 0;
         tickImpl();
     }
-}    
+}
 
 void SessionOp::sendToClient(const MqttsnMessage& msg)
 {
@@ -52,12 +52,12 @@ unsigned SessionOp::nextTick()
     }
 
     return static_cast<unsigned>(m_nextTickTimestamp - state().m_timestamp);
-}    
+}
 
 SessionState& SessionOp::state()
 {
     return m_session.state();
-}    
+}
 
 void SessionOp::sendDisconnectToClient()
 {
@@ -69,15 +69,15 @@ void SessionOp::sendDisconnectToClient()
 
 }
 
-void SessionOp::tickImpl() 
+void SessionOp::tickImpl()
 {
 }
 
-void SessionOp::startImpl() 
+void SessionOp::startImpl()
 {
 }
 
-void SessionOp::brokerConnectionUpdatedImpl() 
+void SessionOp::brokerConnectionUpdatedImpl()
 {
 }
 

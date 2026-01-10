@@ -1,5 +1,5 @@
 //
-// Copyright 2023 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2023 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ class Generator
 public:
     using RawDataBuf = std::vector<std::uint8_t>;
 
-    using MqttsnMessage = 
+    using MqttsnMessage =
         cc_mqttsn::Message<
             comms::option::app::ReadIterator<const std::uint8_t*>,
             comms::option::app::WriteIterator<std::back_insert_iterator<RawDataBuf>>,

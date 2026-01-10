@@ -66,7 +66,7 @@ const UnitTestBmBase::LibFuncs& UnitTestBmBase::getFuncs()
     funcs.m_disconnect_get_retry_count = &cc_mqttsn_bm_client_disconnect_get_retry_count;
     funcs.m_disconnect_send = &cc_mqttsn_bm_client_disconnect_send;
     funcs.m_disconnect_cancel = &cc_mqttsn_bm_client_disconnect_cancel;
-    funcs.m_disconnect = &cc_mqttsn_bm_client_disconnect;   
+    funcs.m_disconnect = &cc_mqttsn_bm_client_disconnect;
     funcs.m_subscribe_prepare = &cc_mqttsn_bm_client_subscribe_prepare;
     funcs.m_subscribe_set_retry_period = &cc_mqttsn_bm_client_subscribe_set_retry_period;
     funcs.m_subscribe_get_retry_period = &cc_mqttsn_bm_client_subscribe_get_retry_period;
@@ -76,7 +76,7 @@ const UnitTestBmBase::LibFuncs& UnitTestBmBase::getFuncs()
     funcs.m_subscribe_config = &cc_mqttsn_bm_client_subscribe_config;
     funcs.m_subscribe_send = &cc_mqttsn_bm_client_subscribe_send;
     funcs.m_subscribe_cancel = &cc_mqttsn_bm_client_subscribe_cancel;
-    funcs.m_subscribe = &cc_mqttsn_bm_client_subscribe;     
+    funcs.m_subscribe = &cc_mqttsn_bm_client_subscribe;
     funcs.m_unsubscribe_prepare = &cc_mqttsn_bm_client_unsubscribe_prepare;
     funcs.m_unsubscribe_set_retry_period = &cc_mqttsn_bm_client_unsubscribe_set_retry_period;
     funcs.m_unsubscribe_get_retry_period = &cc_mqttsn_bm_client_unsubscribe_get_retry_period;
@@ -86,7 +86,7 @@ const UnitTestBmBase::LibFuncs& UnitTestBmBase::getFuncs()
     funcs.m_unsubscribe_config = &cc_mqttsn_bm_client_unsubscribe_config;
     funcs.m_unsubscribe_send = &cc_mqttsn_bm_client_unsubscribe_send;
     funcs.m_unsubscribe_cancel = &cc_mqttsn_bm_client_unsubscribe_cancel;
-    funcs.m_unsubscribe = &cc_mqttsn_bm_client_unsubscribe;      
+    funcs.m_unsubscribe = &cc_mqttsn_bm_client_unsubscribe;
     funcs.m_publish_prepare = &cc_mqttsn_bm_client_publish_prepare;
     funcs.m_publish_set_retry_period = &cc_mqttsn_bm_client_publish_set_retry_period;
     funcs.m_publish_get_retry_period = &cc_mqttsn_bm_client_publish_get_retry_period;
@@ -96,7 +96,7 @@ const UnitTestBmBase::LibFuncs& UnitTestBmBase::getFuncs()
     funcs.m_publish_config = &cc_mqttsn_bm_client_publish_config;
     funcs.m_publish_send = &cc_mqttsn_bm_client_publish_send;
     funcs.m_publish_cancel = &cc_mqttsn_bm_client_publish_cancel;
-    funcs.m_publish = &cc_mqttsn_bm_client_publish;    
+    funcs.m_publish = &cc_mqttsn_bm_client_publish;
     funcs.m_will_prepare = &cc_mqttsn_bm_client_will_prepare;
     funcs.m_will_set_retry_period = &cc_mqttsn_bm_client_will_set_retry_period;
     funcs.m_will_get_retry_period = &cc_mqttsn_bm_client_will_get_retry_period;
@@ -106,7 +106,7 @@ const UnitTestBmBase::LibFuncs& UnitTestBmBase::getFuncs()
     funcs.m_will_config = &cc_mqttsn_bm_client_will_config;
     funcs.m_will_send = &cc_mqttsn_bm_client_will_send;
     funcs.m_will_cancel = &cc_mqttsn_bm_client_will_cancel;
-    funcs.m_will = &cc_mqttsn_bm_client_will;  
+    funcs.m_will = &cc_mqttsn_bm_client_will;
     funcs.m_sleep_prepare = &cc_mqttsn_bm_client_sleep_prepare;
     funcs.m_sleep_set_retry_period = &cc_mqttsn_bm_client_sleep_set_retry_period;
     funcs.m_sleep_get_retry_period = &cc_mqttsn_bm_client_sleep_get_retry_period;
@@ -116,7 +116,7 @@ const UnitTestBmBase::LibFuncs& UnitTestBmBase::getFuncs()
     funcs.m_sleep_config = &cc_mqttsn_bm_client_sleep_config;
     funcs.m_sleep_send = &cc_mqttsn_bm_client_sleep_send;
     funcs.m_sleep_cancel = &cc_mqttsn_bm_client_sleep_cancel;
-    funcs.m_sleep = &cc_mqttsn_bm_client_sleep;       
+    funcs.m_sleep = &cc_mqttsn_bm_client_sleep;
     funcs.m_set_next_tick_program_callback = &cc_mqttsn_bm_client_set_next_tick_program_callback;
     funcs.m_set_cancel_next_tick_wait_callback = &cc_mqttsn_bm_client_set_cancel_next_tick_wait_callback;
     funcs.m_set_send_output_data_callback = &cc_mqttsn_bm_client_set_send_output_data_callback;
@@ -125,6 +125,6 @@ const UnitTestBmBase::LibFuncs& UnitTestBmBase::getFuncs()
     funcs.m_set_message_report_callback = &cc_mqttsn_bm_client_set_message_report_callback;
     funcs.m_set_error_log_callback = &cc_mqttsn_bm_client_set_error_log_callback;
     funcs.m_set_gwinfo_delay_request_callback = &cc_mqttsn_bm_client_set_gwinfo_delay_request_callback;
-    
+
     return funcs;
 }

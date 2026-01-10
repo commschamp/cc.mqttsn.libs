@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ bool UdpSession::startImpl()
     if (ec) {
         logError() << "Failed to resolve broadcast address: " << ec.message() << std::endl;
         return false;
-    }    
+    }
 
     m_broadcastEndpoint = *broadcastEndpoints.begin();
 
@@ -51,7 +51,6 @@ bool UdpSession::startImpl()
             return false;
         }
 
-        
         m_socket.bind(Endpoint(boost::asio::ip::udp::v4(), localPort), ec);
         if (ec) {
             logError() << "Failed to bind local port " << localPort << ": " << ec.message() << std::endl;
@@ -63,7 +62,7 @@ bool UdpSession::startImpl()
         if (ec) {
             logError() << "Failed to connect to remote address: " << ec.message() << std::endl;
             return false;
-        }        
+        }
     }
 
     doRead();
@@ -83,7 +82,7 @@ void UdpSession::sendDataImpl(const std::uint8_t* buf, std::size_t bufLen, unsig
     m_socket.set_option(boost::asio::ip::unicast::hops(ttl), ec);
     if (ec) {
         logError() << "Failed to update outgoing packet TTL: " << ec.message() << std::endl;
-    }    
+    }
 
     auto written = m_socket.send_to(boost::asio::buffer(buf, bufLen), *endpoint, 0, ec);
     if (ec) {
@@ -94,8 +93,7 @@ void UdpSession::sendDataImpl(const std::uint8_t* buf, std::size_t bufLen, unsig
         logError() << "Failed to write data: " << ec.message() << std::endl;
         reportNetworkError();
         return;
-    }    
-
+    }
 
     if (written != bufLen) {
         logError() << "Not all data has been written." << std::endl;
@@ -105,7 +103,7 @@ void UdpSession::sendDataImpl(const std::uint8_t* buf, std::size_t bufLen, unsig
 void UdpSession::doRead()
 {
     m_socket.async_receive_from(
-        boost::asio::buffer(m_inBuf), 
+        boost::asio::buffer(m_inBuf),
         m_senderEndpoint,
         [this](boost::system::error_code ec, std::size_t bytesCount)
         {
@@ -128,7 +126,7 @@ void UdpSession::doRead()
 
             reportData(m_inBuf.data(), bytesCount, addrToReport, origin);
             doRead();
-        });    
+        });
 }
 
 } // namespace cc_mqttsn_client_app

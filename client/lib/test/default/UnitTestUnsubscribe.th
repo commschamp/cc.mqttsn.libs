@@ -24,7 +24,7 @@ private:
     virtual void tearDown() override
     {
         unitTestTearDown();
-    }    
+    }
 
     using TopicIdType = UnitTestUnsubscribeMsg::Field_flags::Field_topicIdType::ValueType;
 };
@@ -75,7 +75,7 @@ void UnitTestUnsubscribe::test1()
         TS_ASSERT(!unitTestHasOutputData());
         unsubMsgId = unsubscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(unsubMsgId, 0U);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -141,7 +141,7 @@ void UnitTestUnsubscribe::test2()
         TS_ASSERT(!unitTestHasOutputData());
         unsubMsgId = unsubscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(unsubMsgId, 0U);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -209,7 +209,7 @@ void UnitTestUnsubscribe::test3()
         TS_ASSERT(!unitTestHasOutputData());
         unsubMsgId = unsubscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(unsubMsgId, 0U);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -276,7 +276,7 @@ void UnitTestUnsubscribe::test4()
         TS_ASSERT(!unitTestHasOutputData());
         unsubMsgId = unsubscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(unsubMsgId, 0U);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -315,15 +315,15 @@ void UnitTestUnsubscribe::test5()
 
     unitTestDoSubscribeTopic(client, Topic1);
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 100);    
+    unitTestTick(client, 100);
 
     unitTestDoSubscribeTopic(client, Topic2);
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 100);        
+    unitTestTick(client, 100);
 
     unitTestDoSubscribeTopicId(client, TopicId3);
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);   
+    unitTestTick(client, 1000);
 
     {
         auto unsubscribe1 = apiUnsubscribePrepare(client);
@@ -354,7 +354,7 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT(!unitTestHasOutputData());
         unsubMsgId1 = unsubscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(unsubMsgId1, 0U);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -373,17 +373,17 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
 
         ec = unitTestUnsubscribeSend(unsubscribe2);
-        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
         TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous unsubscribe is complete
     }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 10);    
+    unitTestTick(client, 10);
 
     {
         auto unsubscribe3 = apiUnsubscribePrepare(client);
-        TS_ASSERT_DIFFERS(unsubscribe3, nullptr);    
+        TS_ASSERT_DIFFERS(unsubscribe3, nullptr);
 
         CC_MqttsnUnsubscribeConfig config3;
         apiUnsubscribeInitConfig(&config3);
@@ -394,8 +394,8 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
 
         ec = unitTestUnsubscribeSend(unsubscribe3);
-        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
-        TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous unsubscribe is complete    
+        TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
+        TS_ASSERT(!unitTestHasOutputData()); // Will wait until previous unsubscribe is complete
     }
 
     {
@@ -423,11 +423,11 @@ void UnitTestUnsubscribe::test5()
         unsubMsgId2 = unsubscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(unsubMsgId2, 0U);
         TS_ASSERT_DIFFERS(unsubMsgId2, unsubMsgId1);
-    }      
+    }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 10);     
+    unitTestTick(client, 10);
 
     {
         UnitTestUnsubackMsg unsubackMsg2;
@@ -457,11 +457,11 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT_DIFFERS(unsubMsgId3, 0U);
         TS_ASSERT_DIFFERS(unsubMsgId3, unsubMsgId2);
         TS_ASSERT_DIFFERS(unsubMsgId3, unsubMsgId1);
-    }       
+    }
 
     TS_ASSERT(!unitTestHasUnsubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 10);   
+    unitTestTick(client, 10);
 
     {
         UnitTestUnsubackMsg unsubackMsg;
@@ -473,9 +473,9 @@ void UnitTestUnsubscribe::test5()
         TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
         auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
         TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
-    }       
+    }
 
-    TS_ASSERT(unitTestHasTickReq());       
+    TS_ASSERT(unitTestHasTickReq());
 }
 
 void UnitTestUnsubscribe::test6()
@@ -496,7 +496,7 @@ void UnitTestUnsubscribe::test6()
 
     unitTestDoSubscribeTopic(client, Topic1);
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);    
+    unitTestTick(client, 1000);
 
     {
         auto subscribe = apiSubscribePrepare(client);
@@ -528,11 +528,11 @@ void UnitTestUnsubscribe::test6()
         TS_ASSERT(!unitTestHasOutputData());
         subMsgId1 = subscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(subMsgId1, 0U);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasSubscribeCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 10);    
+    unitTestTick(client, 10);
 
     {
         auto unsubscribe = apiUnsubscribePrepare(client);
@@ -558,15 +558,15 @@ void UnitTestUnsubscribe::test6()
         subackMsg.field_msgId().setValue(subMsgId1);
         subackMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, subackMsg);
-    }  
+    }
 
     {
         TS_ASSERT(unitTestHasSubscribeCompleteReport());
         auto subscribeReport = unitTestSubscribeCompleteReport();
         TS_ASSERT_EQUALS(subscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(subscribeReport->m_info.m_returnCode, CC_MqttsnReturnCode_Accepted);
-        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);    
-    }    
+        TS_ASSERT_EQUALS(subscribeReport->m_info.m_qos, AckQos);
+    }
 
     auto unsubMsgId1 = 0U;
     {
@@ -582,7 +582,7 @@ void UnitTestUnsubscribe::test6()
         unsubMsgId1 = unsubscribeMsg->field_msgId().value();
         TS_ASSERT_DIFFERS(unsubMsgId1, 0U);
         TS_ASSERT_DIFFERS(unsubMsgId1, subMsgId1);
-    }    
+    }
 
     {
         UnitTestUnsubackMsg unsubackMsg;
@@ -594,6 +594,6 @@ void UnitTestUnsubscribe::test6()
         TS_ASSERT(unitTestHasUnsubscribeCompleteReport());
         auto unsubscribeReport = unitTestUnsubscribeCompleteReport();
         TS_ASSERT_EQUALS(unsubscribeReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
-    }          
+    }
 }
 

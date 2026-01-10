@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ public:
     virtual void handle(ProtMessage& msg) override;
 
 protected:
-    virtual Type typeImpl() const override;    
+    virtual Type typeImpl() const override;
 
 private:
     void restartPingTimer();
@@ -48,13 +48,12 @@ private:
     static void pingTimeoutCb(void* data);
 
     TimerMgr::Timer m_pingTimer;
-    TimerMgr::Timer m_recvTimer;  
-    TimerMgr::Timer m_respTimer;  
+    TimerMgr::Timer m_recvTimer;
+    TimerMgr::Timer m_respTimer;
 
     static_assert(ExtConfig::KeepAliveOpTimers == 3U);
 };
 
 } // namespace op
-
 
 } // namespace cc_mqttsn_client

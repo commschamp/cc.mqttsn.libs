@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -201,7 +201,7 @@ typedef void (*CC_MqttsnSessionAuthInfoReqCb)(
 /// @param[in] userData User data passed as the last parameter to the setting function.
 /// @param[in] session Handle of session performing the request
 /// @param[in] msg Error message
-typedef void (*CC_MqttsnSessionErrorReportCb)(void* userData, CC_MqttsnSessionHandle session, const char* msg);    
+typedef void (*CC_MqttsnSessionErrorReportCb)(void* userData, CC_MqttsnSessionHandle session, const char* msg);
 
 /// @brief Type of callback used to report forwarding encapsulated session creation.
 /// @details The application is responsible to perform the necessary session configuration
@@ -338,7 +338,7 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
     void* data);
 
 /// @brief Set the callback to be used to report error messages detected by the session.
-/// @details This is an optional callback. 
+/// @details This is an optional callback.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] cb Pointer to callback function
 /// @param[in] data Pointer to any user data, will be passed back as first
@@ -346,9 +346,9 @@ void cc_mqttsn_gw_session_set_auth_info_req_cb(
 void cc_mqttsn_gw_session_set_error_report_cb(
     CC_MqttsnSessionHandle session,
     CC_MqttsnSessionErrorReportCb cb,
-    void* data);    
+    void* data);
 
-/// @brief Set the callback to be invoked when the forwarding encapsulation session 
+/// @brief Set the callback to be invoked when the forwarding encapsulation session
 ///     is detected and to notify application about such session creation.
 /// @details When not set, the forwarding enapsulation messages will be ignored
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
@@ -360,7 +360,7 @@ void cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(
     CC_MqttsnSessionFwdEncSessionCreatedCb cb,
     void* data);
 
-/// @brief Set the callback to be invoked when the forwarding encapsulation session 
+/// @brief Set the callback to be invoked when the forwarding encapsulation session
 ///     is about to be deleted.
 /// @param[in] session Handle returned by cc_mqttsn_gw_session_alloc() function.
 /// @param[in] cb Pointer to callback function
@@ -369,7 +369,7 @@ void cc_mqttsn_gw_session_set_fwd_enc_session_created_cb(
 void cc_mqttsn_gw_session_set_fwd_enc_session_deleted_cb(
     CC_MqttsnSessionHandle session,
     CC_MqttsnSessionFwdEncSessionDeletedCb cb,
-    void* data);    
+    void* data);
 
 /// @brief Set gateway numeric ID to be reported when requested.
 /// @details If not set, default value @b 0 is assumed.
@@ -558,14 +558,14 @@ typedef enum
 {
     CC_MqttsnClientConnectionType_Udp, ///< UDP/IP
     CC_MqttsnClientConnectionType_ValuesLimit ///< Limit to available values, must be last
-} CC_MqttsnClientConnectionType;    
+} CC_MqttsnClientConnectionType;
 
 /// @brief Broker I/O socket connection type
 typedef enum
 {
     CC_MqttsnBrokerConnectionType_Tcp, ///< TCP/IP
     CC_MqttsnBrokerConnectionType_ValuesLimit ///< Limit to available values, must be last
-} CC_MqttsnBrokerConnectionType;    
+} CC_MqttsnBrokerConnectionType;
 
 /// @brief Declaration of the struct for the @ref CC_MqttsnConfigHandle definition.
 struct CC_MqttsnConfig;
@@ -714,9 +714,7 @@ unsigned cc_mqttsn_gw_config_values_count(CC_MqttsnConfigHandle config, const ch
 ///     If the configuration value doesn't exist, @b NULL is returned.
 const char* cc_mqttsn_gw_config_get_value(CC_MqttsnConfigHandle config, const char* key, unsigned idx);
 
-
 #ifdef __cplusplus
 }
 #endif
-
 

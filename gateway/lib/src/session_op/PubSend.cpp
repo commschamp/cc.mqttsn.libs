@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,7 +66,7 @@ void PubSend::handle(RegackMsg_SN& msg)
     m_attempt = 0;
     m_registered = true;
     ++m_registerCount;
-    m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId()); 
+    m_currMsgId = static_cast<decltype(m_currMsgId)>(allocMsgId());
     doSend();
 }
 

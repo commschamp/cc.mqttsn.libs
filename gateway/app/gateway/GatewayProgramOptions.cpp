@@ -1,5 +1,5 @@
 //
-// Copyright 2023 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2023 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,10 +22,10 @@ GatewayProgramOptions::GatewayProgramOptions()
     opts.add_options()
         ("help,h", "Display help message")
         ("config,c", po::value<std::string>()->default_value(std::string()), "Configuration file.")
-    ;    
+    ;
 
     m_desc.add(opts);
-}    
+}
 
 void GatewayProgramOptions::printHelp()
 {
@@ -35,7 +35,7 @@ void GatewayProgramOptions::printHelp()
 bool GatewayProgramOptions::parseArgs(int argc, const char* argv[])
 {
     po::store(po::parse_command_line(argc, argv, m_desc), m_vm);
-    po::notify(m_vm);  
+    po::notify(m_vm);
 
     return true;
 }

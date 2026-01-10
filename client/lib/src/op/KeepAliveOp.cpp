@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline KeepAliveOp* asKeepAliveOp(void* data)
@@ -22,9 +22,9 @@ inline KeepAliveOp* asKeepAliveOp(void* data)
     return reinterpret_cast<KeepAliveOp*>(data);
 }
 
-} // namespace     
+} // namespace
 
-KeepAliveOp::KeepAliveOp(ClientImpl& client) : 
+KeepAliveOp::KeepAliveOp(ClientImpl& client) :
     Base(client),
     m_pingTimer(client.timerMgr().allocTimer()),
     m_recvTimer(client.timerMgr().allocTimer()),
@@ -35,7 +35,7 @@ KeepAliveOp::KeepAliveOp(ClientImpl& client) :
     COMMS_ASSERT(m_respTimer.isValid());
 
     restartPingTimer();
-}    
+}
 
 void KeepAliveOp::forceSendPing()
 {

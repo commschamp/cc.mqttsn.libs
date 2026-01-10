@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -76,14 +76,14 @@ public:
     {
         ClientConnectionType_Udp, ///< UDP/IP
         ClientConnectionType_ValuesLimit ///< Limit to available values, must be last
-    };    
+    };
 
     /// @brief Broker I/O socket connection type
     enum BrokerConnectionType
     {
         BrokerConnectionType_Tcp, ///< TCP/IP
         BrokerConnectionType_ValuesLimit ///< Limit to available values, must be last
-    };        
+    };
 
     /// @brief Constructor
     Config();
@@ -164,12 +164,11 @@ public:
 
     /// @brief Get broker side I/O socket connection type
     /// @details Default value is @ref BrokerConnectionType_Tcp
-    BrokerConnectionType brokerConnectionType() const;    
+    BrokerConnectionType brokerConnectionType() const;
 
 private:
     std::unique_ptr<ConfigImpl> m_pImpl;
 };
 
 }  // namespace cc_mqttsn_gateway
-
 

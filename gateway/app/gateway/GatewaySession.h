@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,17 +32,17 @@ public:
 
     // Used by the GatewayApp
     explicit GatewaySession(
-        boost::asio::io_context& io, 
-        GatewayLogger& logger, 
-        const cc_mqttsn_gateway::Config& config, 
+        boost::asio::io_context& io,
+        GatewayLogger& logger,
+        const cc_mqttsn_gateway::Config& config,
         GatewayIoClientSocketPtr clientSocket);
 
     // Used when forwarding encapsulated session is reported
     explicit GatewaySession(
-        boost::asio::io_context& io, 
-        GatewayLogger& logger, 
-        const cc_mqttsn_gateway::Config& config, 
-        cc_mqttsn_gateway::Session* session);        
+        boost::asio::io_context& io,
+        GatewayLogger& logger,
+        const cc_mqttsn_gateway::Config& config,
+        cc_mqttsn_gateway::Session* session);
 
     ~GatewaySession();
 
@@ -82,7 +82,7 @@ private:
 
     std::ostream& logError();
     std::ostream& logInfo();
-    
+
     boost::asio::io_context& m_io;
     GatewayLogger& m_logger;
     const cc_mqttsn_gateway::Config& m_config;

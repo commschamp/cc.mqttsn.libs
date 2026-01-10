@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,6 @@ public:
 
     SessionImpl();
     ~SessionImpl() = default;
-
 
     template <typename TFunc>
     void setNextTickProgramReqCb(TFunc&& func)
@@ -109,7 +108,7 @@ public:
     void setFwdEncSessionDeletedReportCb(TFunc&& func)
     {
         m_fwdEncSessionDeletedReportCb = std::forward<TFunc>(func);
-    }    
+    }
 
     void setGatewayId(std::uint8_t value)
     {
@@ -139,7 +138,7 @@ public:
     unsigned getRetryCount() const
     {
         return m_state.m_retryCount;
-    }    
+    }
 
     void setSleepingClientMsgLimit(std::size_t value)
     {
@@ -192,7 +191,7 @@ public:
 
     bool getBrokerConnected() const
     {
-        return m_state.m_brokerConnected;    
+        return m_state.m_brokerConnected;
     }
 
     bool addPredefinedTopic(const std::string& topic, std::uint16_t topicId);
@@ -275,5 +274,4 @@ private:
 };
 
 }  // namespace cc_mqttsn_gateway
-
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,7 +84,6 @@ bool SessionImpl::start()
     return true;
 }
 
-
 void SessionImpl::tick()
 {
     if ((!isRunning()) || m_state.m_terminating) {
@@ -119,7 +118,7 @@ std::size_t SessionImpl::dataFromClient(const std::uint8_t* buf, std::size_t len
         if (m_state.m_encapsulatedMsg) {
             bufTmp += m_encapsulateOp->encapsulatedData(bufTmp, remLen);
             continue;
-        }        
+        }
 
         using MsgPtr = typename MqttsnFrame::MsgPtr;
         using MsgType = typename MsgPtr::element_type;
@@ -447,5 +446,4 @@ auto SessionImpl::apiCall() -> decltype(comms::util::makeScopeGuard(std::bind(&S
 #endif // #ifdef _MSC_VER
 
 }  // namespace cc_mqttsn_gateway
-
 

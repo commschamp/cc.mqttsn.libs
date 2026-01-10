@@ -25,7 +25,7 @@ private:
     virtual void tearDown() override
     {
         unitTestTearDown();
-    }    
+    }
 };
 
 void UnitTestConnect::test1()
@@ -58,7 +58,7 @@ void UnitTestConnect::test1()
         TS_ASSERT_EQUALS(connectMsg->field_duration().value(), 60U);
         TS_ASSERT(connectMsg->field_flags().field_mid().getBitValue_CleanSession());
         TS_ASSERT(!unitTestHasOutputData());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -115,7 +115,7 @@ void UnitTestConnect::test2()
 
     ec = apiConnectConfigWill(connect, &willConfig);
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
-    ec = unitTestConnectSend(connect);    
+    ec = unitTestConnectSend(connect);
 
     {
         auto sentMsg = unitTestPopOutputMessage();
@@ -125,7 +125,7 @@ void UnitTestConnect::test2()
         TS_ASSERT_EQUALS(connectMsg->field_duration().value(), 60U);
         TS_ASSERT(connectMsg->field_flags().field_mid().getBitValue_CleanSession());
         TS_ASSERT(!unitTestHasOutputData());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -145,7 +145,7 @@ void UnitTestConnect::test2()
         TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicMsg->field_flags().field().field_qos().getValue()), WillQos);
         TS_ASSERT_EQUALS(willtopicMsg->field_flags().field().field_mid().getBitValue_Retain(), WillRetain);
         TS_ASSERT_EQUALS(willtopicMsg->field_willTopic().value(), WillTopic);
-    }     
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -154,7 +154,7 @@ void UnitTestConnect::test2()
     {
         UnitTestWillmsgreqMsg willmsgreqMsg;
         unitTestClientInputMessage(client, willmsgreqMsg);
-    }  
+    }
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -162,12 +162,12 @@ void UnitTestConnect::test2()
         auto* willmsgMsg = dynamic_cast<UnitTestWillmsgMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(willmsgMsg, nullptr);
         TS_ASSERT_EQUALS(willmsgMsg->field_willMsg().value(), WillData);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 100);             
+    unitTestTick(client, 100);
 
     {
         UnitTestConnackMsg connackMsg;
@@ -218,7 +218,7 @@ void UnitTestConnect::test3()
         TS_ASSERT_EQUALS(connectMsg->field_duration().value(), 60U);
         TS_ASSERT(connectMsg->field_flags().field_mid().getBitValue_CleanSession());
         TS_ASSERT(!unitTestHasOutputData());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -234,17 +234,17 @@ void UnitTestConnect::test3()
         TS_ASSERT_EQUALS(connectMsg->field_duration().value(), 60U);
         TS_ASSERT(connectMsg->field_flags().field_mid().getBitValue_CleanSession());
         TS_ASSERT(!unitTestHasOutputData());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client);   
+    unitTestTick(client);
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
     auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
-    TS_ASSERT(!unitTestHasTickReq()); 
+    TS_ASSERT(!unitTestHasTickReq());
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
@@ -287,7 +287,7 @@ void UnitTestConnect::test4()
 
     ec = apiConnectConfigWill(connect, &willConfig);
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
-    ec = unitTestConnectSend(connect);    
+    ec = unitTestConnectSend(connect);
 
     {
         auto sentMsg = unitTestPopOutputMessage();
@@ -297,7 +297,7 @@ void UnitTestConnect::test4()
         TS_ASSERT_EQUALS(connectMsg->field_duration().value(), 60U);
         TS_ASSERT(connectMsg->field_flags().field_mid().getBitValue_CleanSession());
         TS_ASSERT(!unitTestHasOutputData());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -317,7 +317,7 @@ void UnitTestConnect::test4()
         TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicMsg->field_flags().field().field_qos().getValue()), WillQos);
         TS_ASSERT_EQUALS(willtopicMsg->field_flags().field().field_mid().getBitValue_Retain(), WillRetain);
         TS_ASSERT_EQUALS(willtopicMsg->field_willTopic().value(), WillTopic);
-    }     
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -332,7 +332,7 @@ void UnitTestConnect::test4()
         TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicMsg->field_flags().field().field_qos().getValue()), WillQos);
         TS_ASSERT_EQUALS(willtopicMsg->field_flags().field().field_mid().getBitValue_Retain(), WillRetain);
         TS_ASSERT_EQUALS(willtopicMsg->field_willTopic().value(), WillTopic);
-    } 
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -342,10 +342,9 @@ void UnitTestConnect::test4()
     auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
-    TS_ASSERT(!unitTestHasTickReq()); 
+    TS_ASSERT(!unitTestHasTickReq());
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
-
 
 void UnitTestConnect::test5()
 {
@@ -386,7 +385,7 @@ void UnitTestConnect::test5()
 
     ec = apiConnectConfigWill(connect, &willConfig);
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
-    ec = unitTestConnectSend(connect);    
+    ec = unitTestConnectSend(connect);
 
     {
         auto sentMsg = unitTestPopOutputMessage();
@@ -396,7 +395,7 @@ void UnitTestConnect::test5()
         TS_ASSERT_EQUALS(connectMsg->field_duration().value(), 60U);
         TS_ASSERT(connectMsg->field_flags().field_mid().getBitValue_CleanSession());
         TS_ASSERT(!unitTestHasOutputData());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -416,7 +415,7 @@ void UnitTestConnect::test5()
         TS_ASSERT_EQUALS(static_cast<CC_MqttsnQoS>(willtopicMsg->field_flags().field().field_qos().getValue()), WillQos);
         TS_ASSERT_EQUALS(willtopicMsg->field_flags().field().field_mid().getBitValue_Retain(), WillRetain);
         TS_ASSERT_EQUALS(willtopicMsg->field_willTopic().value(), WillTopic);
-    }     
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -425,7 +424,7 @@ void UnitTestConnect::test5()
     {
         UnitTestWillmsgreqMsg willmsgreqMsg;
         unitTestClientInputMessage(client, willmsgreqMsg);
-    }  
+    }
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -433,12 +432,12 @@ void UnitTestConnect::test5()
         auto* willmsgMsg = dynamic_cast<UnitTestWillmsgMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(willmsgMsg, nullptr);
         TS_ASSERT_EQUALS(willmsgMsg->field_willMsg().value(), WillData);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client);      
+    unitTestTick(client);
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -446,18 +445,18 @@ void UnitTestConnect::test5()
         auto* willmsgMsg = dynamic_cast<UnitTestWillmsgMsg*>(sentMsg.get());
         TS_ASSERT_DIFFERS(willmsgMsg, nullptr);
         TS_ASSERT_EQUALS(willmsgMsg->field_willMsg().value(), WillData);
-    }   
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client);                   
+    unitTestTick(client);
 
     TS_ASSERT(unitTestHasConnectCompleteReport());
     auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
-    TS_ASSERT(!unitTestHasTickReq()); 
+    TS_ASSERT(!unitTestHasTickReq());
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
@@ -495,7 +494,7 @@ void UnitTestConnect::test6()
         TS_ASSERT_EQUALS(connectMsg->field_duration().value(), 60U);
         TS_ASSERT(connectMsg->field_flags().field_mid().getBitValue_CleanSession());
         TS_ASSERT(!unitTestHasOutputData());
-    }    
+    }
 
     TS_ASSERT(!unitTestHasConnectCompleteReport());
     TS_ASSERT(unitTestHasTickReq());
@@ -505,7 +504,7 @@ void UnitTestConnect::test6()
     auto connectReport = unitTestConnectCompleteReport();
     TS_ASSERT_EQUALS(connectReport->m_status, CC_MqttsnAsyncOpStatus_Timeout)
 
-    TS_ASSERT(!unitTestHasTickReq()); 
+    TS_ASSERT(!unitTestHasTickReq());
     TS_ASSERT_EQUALS(apiGetConnectionState(client), CC_MqttsnConnectionStatus_Disconnected);
 }
 
@@ -516,13 +515,13 @@ void UnitTestConnect::test7()
     auto* client = clientPtr.get();
 
     const std::string ClientId("bla");
-    unitTestDoConnectBasic(client, ClientId);     
+    unitTestDoConnectBasic(client, ClientId);
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);    
+    unitTestTick(client, 1000);
 
-    unitTestDoConnectBasic(client, ClientId);     
+    unitTestDoConnectBasic(client, ClientId);
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 1000);       
+    unitTestTick(client, 1000);
 }

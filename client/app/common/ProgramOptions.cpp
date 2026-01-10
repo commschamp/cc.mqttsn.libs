@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,14 +14,13 @@ namespace po = boost::program_options;
 namespace cc_mqttsn_client_app
 {
 
-namespace 
+namespace
 {
 
 constexpr std::uint16_t DefaultPort = 1883U;
 constexpr unsigned DefaultKeepAlive = 60;
 
-} // namespace 
-    
+} // namespace
 
 void ProgramOptions::addCommon()
 {
@@ -29,7 +28,7 @@ void ProgramOptions::addCommon()
     opts.add_options()
         ("help,h", "Display help message")
         ("verbose,v", "Verbose output")
-    ;    
+    ;
 
     m_desc.add(opts);
 }
@@ -42,7 +41,7 @@ void ProgramOptions::addNetwork()
         ("network-broadcast,b", po::value<std::string>()->default_value("255.255.255.255"), "Address to broadcast to")
         ("network-port,p", po::value<std::uint16_t>()->default_value(DefaultPort), "Network remote port")
         ("network-local-port,P", po::value<std::uint16_t>()->default_value(0), "Network local port")
-    ;    
+    ;
 
     m_desc.add(opts);
 }
@@ -53,7 +52,7 @@ void ProgramOptions::addDiscover()
     opts.add_options()
         ("discover-exit-on-first,f", "Exit after first discovered gateway.")
         ("discover-timeout,t", po::value<unsigned>()->default_value(0), "Terminate after specified number of seconds, 0 means infinite");
-    ;    
+    ;
 
     m_desc.add(opts);
 }
@@ -65,7 +64,7 @@ void ProgramOptions::addConnect()
         ("connect-client-id,c", po::value<std::string>()->default_value(std::string()), "Client ID")
         ("connect-keep-alive,k", po::value<unsigned>()->default_value(DefaultKeepAlive), "Protocol \"keep alive\" configuration")
         ("connect-no-clean-session,l", "Do not force clean session upon connection")
-    ;    
+    ;
 
     m_desc.add(opts);
 }
@@ -77,7 +76,7 @@ void ProgramOptions::addWill()
         ("will-topic", po::value<std::string>()->default_value(std::string()), "Will topic, when not provided means no will")
         ("will-message", po::value<std::string>()->default_value(std::string()), "Will message data, use \"\\x\" prefix before hex value of each byte for binary string")
         ("will-qos", po::value<unsigned>()->default_value(0U), "Will QoS value")
-    ;    
+    ;
 
     m_desc.add(opts);
 }
@@ -87,7 +86,7 @@ void ProgramOptions::addEncapsulate()
     po::options_description opts("Forwarder Encapsulation");
     opts.add_options()
         ("fwd-enc-node-id", po::value<std::string>()->default_value(std::string()), "Emulate forwarder encapsulation with specified node ID (passed as binary data). Use \"\\x\" prefix before hex value of each byte")
-    ;    
+    ;
 
     m_desc.add(opts);
 }
@@ -104,7 +103,7 @@ void ProgramOptions::addPublish()
         ("pub-no-disconnect", "Do not gracefuly disconnect when publish is complete")
         ("pub-count", po::value<unsigned>()->default_value(1U), "Number of publishes to perform")
         ("pub-delay", po::value<unsigned>()->default_value(100U), "Delay in ms between publishes")
-    ;    
+    ;
 
     m_desc.add(opts);
 }
@@ -116,9 +115,9 @@ void ProgramOptions::addSubscribe()
         ("sub-topic,t", po::value<std::vector<std::string>>(), "Subscribe to topic, can be used multiple times.")
         ("sub-topic-id,i", po::value<std::vector<std::uint16_t>>(), "Subscribe topic id, can be used multiple times")
         ("sub-qos,q", po::value<unsigned>()->default_value(2U), "Subscribe max QoS value")
-        ("sub-no-retained", "Ignore retained messages")       
-        ("sub-binary", "Force binary output of the received message data")        
-    ;    
+        ("sub-no-retained", "Ignore retained messages")
+        ("sub-binary", "Force binary output of the received message data")
+    ;
 
     m_desc.add(opts);
 }
@@ -131,7 +130,7 @@ void ProgramOptions::printHelp()
 bool ProgramOptions::parseArgs(int argc, const char* argv[])
 {
     po::store(po::parse_command_line(argc, argv, m_desc), m_vm);
-    po::notify(m_vm);  
+    po::notify(m_vm);
 
     return true;
 }
@@ -274,7 +273,7 @@ std::vector<std::uint16_t> ProgramOptions::subTopicIds() const
         result = m_vm["sub-topic-id"].as<std::vector<std::uint16_t>>();
     }
 
-    return result;    
+    return result;
 }
 
 unsigned ProgramOptions::subQos() const

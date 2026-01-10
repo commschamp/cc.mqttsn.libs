@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,7 @@ public:
     }
 
 protected:
-    
+
     virtual bool startImpl() override;
     virtual void sendDataImpl(const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius) override;
 
@@ -59,6 +59,5 @@ private:
     SendDataCb m_sendDataCb;
     SocketDeletedCb m_socketDeletedCb;
 };
-
 
 } // namespace cc_mqttsn_gateway_app

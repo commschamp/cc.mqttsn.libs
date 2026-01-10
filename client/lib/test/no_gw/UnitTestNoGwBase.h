@@ -7,7 +7,7 @@ class UnitTestNoGwBase : public UnitTestCommonBase
     using Base = UnitTestCommonBase;
 protected:
 
-    UnitTestNoGwBase(): 
+    UnitTestNoGwBase():
         Base(getFuncs())
     {
     }

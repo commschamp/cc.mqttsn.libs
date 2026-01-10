@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,13 +47,13 @@ public:
     using Base::handle;
     void handle(RegackMsg& msg) override;
     void handle(PubackMsg& msg) override;
-#if CC_MQTTSN_CLIENT_MAX_QOS >=2    
+#if CC_MQTTSN_CLIENT_MAX_QOS >=2
     void handle(PubrecMsg& msg) override;
     void handle(PubcompMsg& msg) override;
-#endif // CC_MQTTSN_CLIENT_MAX_QOS >=2    
+#endif // CC_MQTTSN_CLIENT_MAX_QOS >=2
 
 protected:
-    virtual Type typeImpl() const override;    
+    virtual Type typeImpl() const override;
     virtual void terminateOpImpl(CC_MqttsnAsyncOpStatus status) override;
 
 private:
@@ -79,7 +79,7 @@ private:
 
     RegisterMsg m_registerMsg;
     PublishMsg m_publishMsg;
-    TimerMgr::Timer m_timer;  
+    TimerMgr::Timer m_timer;
     CC_MqttsnPublishCompleteCb m_cb = nullptr;
     void* m_cbData = nullptr;
     Stage m_stage = Stage_Register;
@@ -91,6 +91,5 @@ private:
 };
 
 } // namespace op
-
 
 } // namespace cc_mqttsn_client

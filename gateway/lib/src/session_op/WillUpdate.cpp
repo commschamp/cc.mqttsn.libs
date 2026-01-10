@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -224,7 +224,6 @@ void WillUpdate::sendConnectMsg()
 
     auto& flagsField = msg.field_flags();
 
-
     if (!m_will.m_topic.empty()) {
         flagsField.field_low().setBitValue_willFlag(true);
         msg.field_willTopic().field().value() = m_will.m_topic;
@@ -258,6 +257,4 @@ void WillUpdate::sendFailureAndTerm()
 }  // namespace session_op
 
 }  // namespace cc_mqttsn_gateway
-
-
 

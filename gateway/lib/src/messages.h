@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,7 @@ using MqttMessage =
         comms::option::LengthInfoInterface
     >;
 
-using MqttsnGwOptions = 
+using MqttsnGwOptions =
     cc_mqttsn::options::DataViewDefaultOptionsT<
         cc_mqttsn::options::ServerDefaultOptions
     >;
@@ -52,27 +52,26 @@ using MqttsnGwOptions =
 /// using AdvertiseMsg_SN = cc_mqttsn::message::Advertise<MqttsnMessage, MqttsnGwOptions>;
 /// using SearchgwMsg_SN = cc_mqttsn::message::Searchgw<MqttsnMessage, MqttsnGwOptions>;
 /// ...
-CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES(, Msg_SN, MqttsnMessage, MqttsnGwOptions)    
+CC_MQTTSN_ALIASES_FOR_ALL_MESSAGES(, Msg_SN, MqttsnMessage, MqttsnGwOptions)
 
 template <typename TMsgBase>
 using InputMqttsnMessages = cc_mqttsn::input::GwServerInputMessages<TMsgBase, MqttsnGwOptions>;
 
 using MqttsnFrame =
     cc_mqttsn::frame::Frame<MqttsnMessage, InputMqttsnMessages<MqttsnMessage>, MqttsnGwOptions>;
-    
-    
+
 using Mqtt311GwOptions = cc_mqtt311::options::ClientDefaultOptions;
 
 // Aliases to all MQTT-SN messages:
 /// using ConnectMsg = cc_mqtt311::message::Connect<MqttsnMessage, MqttsnGwOptions>;
 /// using ConnackMsg = cc_mqtt311::message::Connack<MqttsnMessage, MqttsnGwOptions>;
 /// ...
-CC_MQTT311_ALIASES_FOR_ALL_MESSAGES(, Msg, MqttMessage, Mqtt311GwOptions)   
+CC_MQTT311_ALIASES_FOR_ALL_MESSAGES(, Msg, MqttMessage, Mqtt311GwOptions)
 
 template <typename TMsgBase>
 using InputMqtt311Messages = cc_mqtt311::input::ClientInputMessages<TMsgBase, Mqtt311GwOptions>;
 
-using MqttFrame = 
+using MqttFrame =
     cc_mqtt311::frame::Frame<MqttMessage, InputMqtt311Messages<MqttMessage>, Mqtt311GwOptions> ;
 
 }  // namespace cc_mqttsn_gateway

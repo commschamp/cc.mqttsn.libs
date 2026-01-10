@@ -29,7 +29,7 @@ private:
     virtual void tearDown() override
     {
         unitTestTearDown();
-    }    
+    }
 };
 
 void UnitTestWill::test1()
@@ -80,7 +80,7 @@ void UnitTestWill::test1()
     }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 100);    
+    unitTestTick(client, 100);
 
     {
         UnitTestWilltopicrespMsg respMsg;
@@ -103,14 +103,14 @@ void UnitTestWill::test1()
         UnitTestWillmsgrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT(!unitTestHasWillCompleteReport());
@@ -129,7 +129,6 @@ void UnitTestWill::test2()
     const UnitTestData ConnectWillData{1, 2, 3, 4, 5, 6};
     const CC_MqttsnQoS ConnectWillQos = CC_MqttsnQoS_AtLeastOnceDelivery;
     const bool ConnectWillRetain = false;
-
 
     CC_MqttsnConnectConfig connectConfig;
     apiConnectInitConfig(&connectConfig);
@@ -184,7 +183,7 @@ void UnitTestWill::test2()
     }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 100);    
+    unitTestTick(client, 100);
 
     {
         UnitTestWilltopicrespMsg respMsg;
@@ -207,14 +206,14 @@ void UnitTestWill::test2()
         UnitTestWillmsgrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT(!unitTestHasWillCompleteReport());
@@ -284,14 +283,14 @@ void UnitTestWill::test3()
         UnitTestWillmsgrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT(!unitTestHasWillCompleteReport());
@@ -363,14 +362,14 @@ void UnitTestWill::test4()
         UnitTestWilltopicrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
         TS_ASSERT(!unitTestHasWillCompleteReport());
@@ -409,18 +408,18 @@ void UnitTestWill::test4()
         UnitTestWilltopicrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
         TS_ASSERT(!unitTestHasWillCompleteReport());
-    }    
+    }
 
     const bool WillRetain = !config2.m_retain;
     auto config3 = config2;
@@ -455,18 +454,18 @@ void UnitTestWill::test4()
         UnitTestWilltopicrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
         TS_ASSERT(!unitTestHasWillCompleteReport());
-    }        
+    }
 }
 
 void UnitTestWill::test5()
@@ -511,12 +510,12 @@ void UnitTestWill::test5()
         TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
     }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
         TS_ASSERT(!unitTestHasWillCompleteReport());
@@ -544,7 +543,7 @@ void UnitTestWill::test7()
     auto* client = clientPtr.get();
 
     const std::string ClientId("bla");
-    unitTestDoConnectBasic(client, ClientId);    
+    unitTestDoConnectBasic(client, ClientId);
 
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 1000);
@@ -600,7 +599,7 @@ void UnitTestWill::test8()
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
 
     ec = unitTestWillSend(will);
-    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
 
     {
         TS_ASSERT(unitTestHasOutputData());
@@ -616,16 +615,16 @@ void UnitTestWill::test8()
         UnitTestWilltopicrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_ValuesLimit);
         TS_ASSERT(!unitTestHasWillCompleteReport());
-    }        
+    }
 }
 
 void UnitTestWill::test9()
@@ -688,7 +687,7 @@ void UnitTestWill::test9()
         TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), Retain);
         TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), Topic);
         TS_ASSERT(!unitTestHasOutputData());
-    }  
+    }
 
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 100);
@@ -720,27 +719,27 @@ void UnitTestWill::test9()
         TS_ASSERT_DIFFERS(willmsgupdMsg, nullptr);
         TS_ASSERT_EQUALS(willmsgupdMsg->field_willMsg().value(), Data);
         TS_ASSERT(!unitTestHasOutputData());
-    }   
+    }
 
     TS_ASSERT(unitTestHasTickReq());
-    unitTestTick(client, 100);     
+    unitTestTick(client, 100);
 
     {
         UnitTestWillmsgrespMsg respMsg;
         respMsg.field_returnCode().setValue(CC_MqttsnReturnCode_Accepted);
         unitTestClientInputMessage(client, respMsg);
-    }    
+    }
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Complete);
         TS_ASSERT_EQUALS(willReport->m_info.m_topicUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT_EQUALS(willReport->m_info.m_msgUpdReturnCode, CC_MqttsnReturnCode_Accepted);
         TS_ASSERT(!unitTestHasWillCompleteReport());
-    }       
+    }
 }
 
 void UnitTestWill::test10()
@@ -806,19 +805,19 @@ void UnitTestWill::test10()
         TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), Retain);
         TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), Topic);
         TS_ASSERT(!unitTestHasOutputData());
-    }  
+    }
 
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client); // timeout
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);
         TS_ASSERT(!unitTestHasWillCompleteReport());
-    }       
+    }
 }
 
 void UnitTestWill::test11()
@@ -851,7 +850,7 @@ void UnitTestWill::test11()
     TS_ASSERT_DIFFERS(will, nullptr);
 
     auto ec = apiWillSetRetryCount(will, 1U);
-    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);    
+    TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
 
     ec = apiWillConfig(will, &config);
     TS_ASSERT_EQUALS(ec, CC_MqttsnErrorCode_Success);
@@ -884,7 +883,7 @@ void UnitTestWill::test11()
         TS_ASSERT_EQUALS(willtopicupdMsg->field_flags().field().field_mid().getBitValue_Retain(), Retain);
         TS_ASSERT_EQUALS(willtopicupdMsg->field_willTopic().value(), Topic);
         TS_ASSERT(!unitTestHasOutputData());
-    }  
+    }
 
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client, 100);
@@ -916,21 +915,18 @@ void UnitTestWill::test11()
         TS_ASSERT_DIFFERS(willmsgupdMsg, nullptr);
         TS_ASSERT_EQUALS(willmsgupdMsg->field_willMsg().value(), Data);
         TS_ASSERT(!unitTestHasOutputData());
-    }   
+    }
 
     TS_ASSERT(unitTestHasTickReq());
     unitTestTick(client); // timeout
 
-    TS_ASSERT(!unitTestHasOutputData());    
+    TS_ASSERT(!unitTestHasOutputData());
 
     {
         TS_ASSERT(unitTestHasWillCompleteReport());
         auto willReport = unitTestWillCompleteReport();
-        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);        
+        TS_ASSERT_EQUALS(willReport->m_status, CC_MqttsnAsyncOpStatus_Timeout);
         TS_ASSERT(!unitTestHasWillCompleteReport());
-    }       
+    }
 }
-
-
-
 

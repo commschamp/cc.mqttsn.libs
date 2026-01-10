@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -60,7 +60,6 @@ void TestMsgHandler::processOutputInternal(TFrame& frame, const DataBuf& data)
 
     assert(static_cast<unsigned>(std::distance(comms::readIteratorFor<MsgType>(data.data()), iter)) == data.size());
 }
-
 
 template <typename TFrame, typename TMsg>
 TestMsgHandler::DataBuf TestMsgHandler::prepareInputInternal(TFrame& frame, const TMsg& msg)
@@ -887,5 +886,4 @@ TestMsgHandler::DataBuf TestMsgHandler::prepareBrokerUnsuback(
     msg.field_packetId().value() = packetId;
     return prepareInput(msg);
 }
-
 

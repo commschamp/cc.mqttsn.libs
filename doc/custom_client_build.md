@@ -1,17 +1,17 @@
 # Custom Client Build
 The [BUILD.md](BUILD.md) file described general build process and explained
-usage of **CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES** option. Such option specifies 
+usage of **CC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES** option. Such option specifies
 a single custom client build configuration file or a list of such files. These
-files get included during the [CMake](https://cmake.org) parsing stage and 
+files get included during the [CMake](https://cmake.org) parsing stage and
 are expected to specify multiple variables, which in turn influence on the
 way the client library is built.
 
 This page describes and explains the meaning of these variables.
 
 ## Variables
-In general, the client library will use 
-[std::string](http://en.cppreference.com/w/cpp/string/basic_string) type to 
-hold strings and 
+In general, the client library will use
+[std::string](http://en.cppreference.com/w/cpp/string/basic_string) type to
+hold strings and
 [std::vector](http://en.cppreference.com/w/cpp/container/vector) type to hold
 various lists, because there is no known and predefined limit on string length
 and/or number of elements in the list. However if such limit is specified, the
@@ -24,11 +24,11 @@ and can be suitable for bare-metal systems.
 ### CC_MQTTSN_CUSTOM_CLIENT_NAME
 This variable specifies the name of the custom client library.
 It will influence the names of the API functions. The **default** client build
-(controlled by **CC_MQTTSN_CLIENT_DEFAULT_LIB** option) prefixes all the 
-functions with `cc_mqttsn_client_`, while client with custom name will produce 
+(controlled by **CC_MQTTSN_CLIENT_DEFAULT_LIB** option) prefixes all the
+functions with `cc_mqttsn_client_`, while client with custom name will produce
 functions having `cc_mqttsn_<custom_name>_client_` prefix. For example having the
 `set (CC_MQTTSN_CUSTOM_CLIENT_NAME "my_name")` statement in configuration file
-will produce a library which prefixes all API functions with 
+will produce a library which prefixes all API functions with
 `cc_mqttsn_my_name_client_`.
 
 The **CC_MQTTSN_CUSTOM_CLIENT_NAME** variable is a **must have** one, without it
@@ -324,7 +324,6 @@ set (CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT 1)
 
 Having **CC_MQTTSN_CLIENT_HAS_DYN_MEM_ALLOC** set to **FALSE** requires setting
 of the **CC_MQTTSN_CLIENT_IN_REG_TOPICS_LIMIT** to a non-**0** value.
-
 
 ---
 ### CC_MQTTSN_CLIENT_OUT_REG_TOPICS_LIMIT

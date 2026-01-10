@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline UnsubscribeOp* asUnsubscribeOp(void* data)
@@ -34,14 +34,13 @@ inline CC_MqttsnUnsubscribeHandle asHandle(UnsubscribeOp* op)
     return reinterpret_cast<CC_MqttsnUnsubscribeHandle>(op);
 }
 
-} // namespace 
-    
+} // namespace
 
-UnsubscribeOp::UnsubscribeOp(ClientImpl& client) : 
+UnsubscribeOp::UnsubscribeOp(ClientImpl& client) :
     Base(client),
     m_timer(client.timerMgr().allocTimer())
 {
-}   
+}
 
 UnsubscribeOp::~UnsubscribeOp()
 {
@@ -55,7 +54,7 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
         return CC_MqttsnErrorCode_BadParam;
     }
 
-    bool emptyTopic = 
+    bool emptyTopic =
         (config->m_topic == nullptr) ||
         (config->m_topic[0] == '\0');
 
@@ -67,7 +66,7 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
     if ((!emptyTopic) && (!verifySubFilter(config->m_topic))) {
         errorLog("Bad topic filter format in unsubscribe.");
         return CC_MqttsnErrorCode_BadParam;
-    }  
+    }
 
     if constexpr (Config::HasSubTopicVerification) {
         do {
@@ -77,7 +76,7 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
 
             auto& filtersMap = client().reuseState().m_subFilters;
             if (!emptyTopic) {
-                auto iter = 
+                auto iter =
                     std::lower_bound(
                         filtersMap.begin(), filtersMap.end(), config->m_topic,
                         [](auto& elem, const char* topicParam)
@@ -94,7 +93,7 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
             }
 
             COMMS_ASSERT(isValidTopicId(config->m_topicId));
-            auto iter = 
+            auto iter =
                 std::find_if(
                     filtersMap.begin(), filtersMap.end(),
                     [config](auto& elem)
@@ -107,7 +106,7 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
                 return CC_MqttsnErrorCode_BadParam;
             }
         } while (false);
-    }         
+    }
 
     using TopicIdType = UnsubscribeMsg::Field_flags::Field_topicIdType::ValueType;
     if (emptyTopic) {
@@ -117,8 +116,8 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
     }
 
     if (isShortTopic(config->m_topic)) {
-        auto topicId = 
-            (static_cast<std::uint16_t>(config->m_topic[0]) << 8U) | 
+        auto topicId =
+            (static_cast<std::uint16_t>(config->m_topic[0]) << 8U) |
             (static_cast<std::uint8_t>(config->m_topic[1]));
         m_unsubscribeMsg.field_topicId().field().setValue(topicId);
         m_unsubscribeMsg.field_flags().field_topicIdType().value() = TopicIdType::ShortTopicName;
@@ -130,10 +129,10 @@ CC_MqttsnErrorCode UnsubscribeOp::config(const CC_MqttsnUnsubscribeConfig* confi
     return CC_MqttsnErrorCode_Success;
 }
 
-CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* cbData) 
+CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* cbData)
 {
     client().allowNextPrepare();
-    auto completeOnError = 
+    auto completeOnError =
         comms::util::makeScopeGuard(
             [this]()
             {
@@ -148,7 +147,7 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
     if (!m_timer.isValid()) {
         errorLog("The library cannot allocate required number of timers.");
         return CC_MqttsnErrorCode_InternalError;
-    }    
+    }
 
     auto guard = client().apiEnter();
     m_cb = cb;
@@ -177,12 +176,12 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
     COMMS_ASSERT((topicPtr != nullptr) || (topicId != 0U));
 
     client().removeInRegTopic(topicPtr, topicId);
-        
+
     if constexpr (Config::HasSubTopicVerification) {
         do {
             auto& filtersMap = client().reuseState().m_subFilters;
             if (topicPtr != nullptr) {
-                auto iter = 
+                auto iter =
                     std::lower_bound(
                         filtersMap.begin(), filtersMap.end(), topicPtr,
                         [](auto& elem, const char* topicParam)
@@ -199,7 +198,7 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
 
             COMMS_ASSERT(topicId != 0U);
 
-            auto iter = 
+            auto iter =
                 std::find_if(
                     filtersMap.begin(), filtersMap.end(),
                     [topicId](auto& elem) {
@@ -209,7 +208,7 @@ CC_MqttsnErrorCode UnsubscribeOp::send(CC_MqttsnUnsubscribeCompleteCb cb, void* 
             if (iter != filtersMap.end()) {
                 filtersMap.erase(iter);
             }
-        } while (false);  
+        } while (false);
     }
 
     completeOnError.release();
@@ -269,7 +268,7 @@ void UnsubscribeOp::completeOpInternal(CC_MqttsnAsyncOpStatus status)
     auto* cbData = m_cbData;
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
-        cb(cbData, handle, status);    
+        cb(cbData, handle, status);
     }
 }
 
@@ -288,7 +287,7 @@ CC_MqttsnErrorCode UnsubscribeOp::sendInternal()
     if (ec == CC_MqttsnErrorCode_Success) {
         restartTimer();
     }
-    
+
     return ec;
 }
 
@@ -298,14 +297,14 @@ void UnsubscribeOp::timeoutInternal()
         errorLog("All retries of the unsubscribe operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
         return;
-    }  
+    }
 
     decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }  
+    }
 }
 
 void UnsubscribeOp::opTimeoutCb(void* data)

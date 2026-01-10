@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ class AppClient
     };
 
 public:
-    bool start(int argc, const char* argv[]);    
+    bool start(int argc, const char* argv[]);
 
     static std::string toString(CC_MqttsnErrorCode val);
     //static std::string toString(CC_MqttsnAsyncOpStatus val);

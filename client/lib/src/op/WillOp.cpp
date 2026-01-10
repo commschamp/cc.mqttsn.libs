@@ -1,10 +1,9 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
 
 #include "op/WillOp.h"
 
@@ -25,7 +24,7 @@ namespace cc_mqttsn_client
 namespace op
 {
 
-namespace 
+namespace
 {
 
 inline WillOp* asWillOp(void* data)
@@ -41,14 +40,14 @@ CC_MqttsnWillInfo initWillInfo()
     return info;
 }
 
-} // namespace 
+} // namespace
 
-WillOp::WillOp(ClientImpl& client) : 
+WillOp::WillOp(ClientImpl& client) :
     Base(client),
     m_timer(client.timerMgr().allocTimer()),
     m_info(initWillInfo())
 {
-}   
+}
 
 CC_MqttsnErrorCode WillOp::config(const CC_MqttsnWillConfig* config)
 {
@@ -59,18 +58,18 @@ CC_MqttsnErrorCode WillOp::config(const CC_MqttsnWillConfig* config)
 
     if ((0U < config->m_dataLen) && (config->m_topic == nullptr)) {
         errorLog("Will data is provided without will topic.");
-        return CC_MqttsnErrorCode_BadParam;          
-    }    
+        return CC_MqttsnErrorCode_BadParam;
+    }
 
     if ((0U < config->m_dataLen) && (config->m_data == nullptr)) {
         errorLog("Bad will message data.");
-        return CC_MqttsnErrorCode_BadParam;          
+        return CC_MqttsnErrorCode_BadParam;
     }
 
     if (static_cast<decltype(config->m_qos)>(Config::MaxQos) < config->m_qos) {
         errorLog("Bad will qos value.");
-        return CC_MqttsnErrorCode_BadParam;        
-    }       
+        return CC_MqttsnErrorCode_BadParam;
+    }
 
     m_willtopicupdMsg.field_willTopic().value().clear();
     m_willtopicupdMsg.field_flags().setMissing();
@@ -90,10 +89,10 @@ CC_MqttsnErrorCode WillOp::config(const CC_MqttsnWillConfig* config)
     return CC_MqttsnErrorCode_Success;
 }
 
-CC_MqttsnErrorCode WillOp::send(CC_MqttsnWillCompleteCb cb, void* cbData) 
+CC_MqttsnErrorCode WillOp::send(CC_MqttsnWillCompleteCb cb, void* cbData)
 {
     client().allowNextPrepare();
-    auto completeOnError = 
+    auto completeOnError =
         comms::util::makeScopeGuard(
             [this]()
             {
@@ -116,7 +115,7 @@ CC_MqttsnErrorCode WillOp::send(CC_MqttsnWillCompleteCb cb, void* cbData)
         (prevWill.m_qos == static_cast<decltype(prevWill.m_qos)>(m_willtopicupdMsg.field_flags().field().field_qos().value())) &&
         (prevWill.m_retain == m_willtopicupdMsg.field_flags().field().field_mid().getBitValue_Retain())) {
         m_stage = Stage_willMsg;
-    }    
+    }
 
     if ((m_stage == Stage_willMsg) &&
         (m_willmsgupdMsg.field_willMsg().value() == prevWill.m_msg)) {
@@ -178,7 +177,7 @@ void WillOp::handle(WilltopicrespMsg& msg)
     m_stage = Stage_willMsg;
     if (m_willmsgupdMsg.field_willMsg().value() == prevWill.m_msg) {
         auto info = m_info; // copy
-        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);    
+        completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
         return;
     }
 
@@ -188,7 +187,7 @@ void WillOp::handle(WilltopicrespMsg& msg)
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }     
+    }
 }
 
 void WillOp::handle(WillmsgrespMsg& msg)
@@ -205,7 +204,7 @@ void WillOp::handle(WillmsgrespMsg& msg)
 
     m_info.m_msgUpdReturnCode = rc;
     auto info = m_info; // copy
-    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);    
+    completeOpInternal(CC_MqttsnAsyncOpStatus_Complete, &info);
 }
 
 Op::Type WillOp::typeImpl() const
@@ -224,7 +223,7 @@ void WillOp::completeOpInternal(CC_MqttsnAsyncOpStatus status, const CC_MqttsnWi
     auto* cbData = m_cbData;
     opComplete(); // mustn't access data members after destruction
     if (cb != nullptr) {
-        cb(cbData, status, info);    
+        cb(cbData, status, info);
     }
 }
 
@@ -238,7 +237,7 @@ CC_MqttsnErrorCode WillOp::sendInternal()
     using GetMsgFunc = const ProtMessage& (WillOp::*)() const;
     static const GetMsgFunc Map[] = {
         /* Stage_willTopic */ &WillOp::getWilltopicupdMsg,
-        /* Stage_willMsg */ &WillOp::getWillmsgupdMsg,        
+        /* Stage_willMsg */ &WillOp::getWillmsgupdMsg,
     };
     static const std::size_t MapSize = std::extent<decltype(Map)>::value;
     static_assert(MapSize == Stage_valuesLimit);
@@ -253,7 +252,7 @@ CC_MqttsnErrorCode WillOp::sendInternal()
     if (ec == CC_MqttsnErrorCode_Success) {
         restartTimer();
     }
-    
+
     return ec;
 }
 
@@ -263,14 +262,14 @@ void WillOp::timeoutInternal()
         errorLog("All retries of the will operation have been exhausted.");
         completeOpInternal(CC_MqttsnAsyncOpStatus_Timeout);
         return;
-    }  
+    }
 
     decRetryCount();
     auto ec = sendInternal();
     if (ec != CC_MqttsnErrorCode_Success) {
         completeOpInternal(translateErrorCodeToAsyncOpStatus(ec));
         return;
-    }  
+    }
 }
 
 void WillOp::opTimeoutCb(void* data)
@@ -292,4 +291,4 @@ const ProtMessage& WillOp::getWillmsgupdMsg() const
 
 } // namespace cc_mqttsn_client
 
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL        
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL

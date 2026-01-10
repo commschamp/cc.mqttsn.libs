@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,17 +10,16 @@
 namespace cc_mqttsn_gateway_app
 {
 
-namespace 
+namespace
 {
 
 const std::string WildcardStr("*");
 
-} // namespace 
-    
+} // namespace
 
 GatewaySession::GatewaySession(
-    boost::asio::io_context& io, 
-    GatewayLogger& logger, 
+    boost::asio::io_context& io,
+    GatewayLogger& logger,
     const cc_mqttsn_gateway::Config& config,
     GatewayIoClientSocketPtr clientSocket) :
     m_io(io),
@@ -34,13 +33,13 @@ GatewaySession::GatewaySession(
 {
 
     logInfo() << "New primary session" << std::endl;
-}    
+}
 
 GatewaySession::GatewaySession(
-    boost::asio::io_context& io, 
-    GatewayLogger& logger, 
-    const cc_mqttsn_gateway::Config& config, 
-    cc_mqttsn_gateway::Session* session) : 
+    boost::asio::io_context& io,
+    GatewayLogger& logger,
+    const cc_mqttsn_gateway::Config& config,
+    cc_mqttsn_gateway::Session* session) :
     m_io(io),
     m_logger(logger),
     m_config(config),
@@ -58,7 +57,7 @@ GatewaySession::~GatewaySession()
     m_fwdEncSessions.clear();
 }
 
-bool GatewaySession::start()  
+bool GatewaySession::start()
 {
     assert(m_termReqCb);
     if (!startSession()) {
@@ -71,17 +70,17 @@ bool GatewaySession::start()
             {
                 assert(m_sessionPtr.get() == m_session);
                 [[maybe_unused]] auto consumed = m_session->dataFromClient(buf, bufSize);
-            });    
+            });
 
         if (!m_clientSocket->start()) {
             logError() << "Failed to start client socket" << std::endl;
             return false;
-        }      
-    }  
+        }
+    }
 
     doBrokerConnect();
     return true;
-}  
+}
 
 void GatewaySession::doTerminate()
 {
@@ -106,7 +105,7 @@ void GatewaySession::doBrokerConnect()
         logError() << "Failed to allocate broker socket " << std::endl;
         doTerminate();
         return;
-    }    
+    }
 
     m_brokerSocket->setDataReportCb(
         [this](const std::uint8_t* buf, std::size_t bufSize)
@@ -141,7 +140,7 @@ void GatewaySession::doBrokerConnect()
             m_brokerConnected = true;
             m_session->setBrokerConnected(true);
         }
-    );        
+    );
 
     m_brokerSocket->setErrorReportCb(
         [this]()
@@ -149,10 +148,10 @@ void GatewaySession::doBrokerConnect()
             if (m_brokerConnected) {
                 m_session->setBrokerConnected(false);
             }
-            
+
             m_brokerConnected = false;
             doBrokerReconnect();
-        });    
+        });
 
     if (!m_brokerSocket->start()) {
         logError() << "Failed to start TCP/IP socket" << std::endl;
@@ -212,7 +211,7 @@ bool GatewaySession::startSession()
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_tickReqTs);
             return static_cast<unsigned>(elapsed.count());
         }
-    );    
+    );
 
     m_session->setSendDataBrokerReqCb(
         [this](const std::uint8_t* buf, std::size_t bufSize)
@@ -220,13 +219,13 @@ bool GatewaySession::startSession()
             m_hadBrokerData = true;
             assert(m_brokerSocket);
             m_brokerSocket->sendData(buf, bufSize);
-        }); 
+        });
 
     m_session->setBrokerReconnectReqCb(
         [this]()
         {
             doBrokerReconnect();
-        }); 
+        });
 
     m_session->setClientConnectedReportCb(
         [this](const std::string& clientId)
@@ -239,10 +238,10 @@ bool GatewaySession::startSession()
 
             auto& predefinedTopics = m_config.predefinedTopics();
 
-            auto applyForClient = 
+            auto applyForClient =
                 [this, &predefinedTopics](const std::string& id)
                 {
-                    auto iter = 
+                    auto iter =
                         std::lower_bound(
                             predefinedTopics.begin(), predefinedTopics.end(), id,
                             [](auto& info, const std::string& idParam)
@@ -263,17 +262,17 @@ bool GatewaySession::startSession()
                         ++iter;
                     }
                 };
-            
+
             applyForClient(clientId);
             applyForClient(WildcardStr);
         });
-    
+
     m_session->setAuthInfoReqCb(
         [this](const std::string& clientId)
         {
             return getAuthInfoFor(clientId);
         }
-    );     
+    );
 
     m_session->setFwdEncSessionCreatedReportCb(
         [this](cc_mqttsn_gateway::Session* fwdEncSession) -> bool
@@ -285,7 +284,7 @@ bool GatewaySession::startSession()
             sessionPtr->setTermReqCb(
                 [this, fwdSessionPtr = sessionPtr.get()]()
                 {
-                    auto iter = 
+                    auto iter =
                         std::find_if(
                             m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
                             [fwdSessionPtr](auto& sPtr)
@@ -296,7 +295,7 @@ bool GatewaySession::startSession()
                     assert(iter != m_fwdEncSessions.end());
                     if (iter == m_fwdEncSessions.end()) {
                         return;
-                    }            
+                    }
 
                     m_fwdEncSessions.erase(iter);
                 });
@@ -311,7 +310,7 @@ bool GatewaySession::startSession()
                         return;
                     }
 
-                    auto iter = 
+                    auto iter =
                         std::find_if(
                             m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
                             [fwdSessionPtr, &clientId](auto& s)
@@ -330,7 +329,7 @@ bool GatewaySession::startSession()
                         {
                             m_fwdEncSessions.erase(iter);
                         });
-                });            
+                });
 
             if (!sessionPtr->start()) {
                 logError() << "Failed to start forwarder encapsulated session" << std::endl;
@@ -338,7 +337,7 @@ bool GatewaySession::startSession()
             }
 
             return true;
-        }); 
+        });
 
     m_session->setFwdEncSessionDeletedReportCb(
         [this](cc_mqttsn_gateway::Session* fwdEncSession)
@@ -346,13 +345,13 @@ bool GatewaySession::startSession()
             if (m_destructing) {
                 return;
             }
-            
+
             assert(fwdEncSession != nullptr);
             boost::asio::post(
                 m_io,
                 [this, fwdEncSession]()
                 {
-                    auto iter = 
+                    auto iter =
                         std::find_if(
                             m_fwdEncSessions.begin(), m_fwdEncSessions.end(),
                             [fwdEncSession](auto& sPtr)
@@ -365,7 +364,7 @@ bool GatewaySession::startSession()
                     assert(iter != m_fwdEncSessions.end());
                     if (iter == m_fwdEncSessions.end()) {
                         return;
-                    }            
+                    }
 
                     m_fwdEncSessions.erase(iter);
 
@@ -373,7 +372,7 @@ bool GatewaySession::startSession()
                         doTerminate();
                     }
                 });
-        }); 
+        });
 
     m_session->setErrorReportCb(
         [this](const char* msg)
@@ -384,7 +383,7 @@ bool GatewaySession::startSession()
     if (!m_sessionPtr) {
         // Forwarder encapsulated session
         return true;
-    }   
+    }
 
     assert(m_sessionPtr.get() == m_session);
     m_session->setSendDataClientReqCb(
@@ -392,14 +391,13 @@ bool GatewaySession::startSession()
         {
             assert(m_clientSocket);
             m_clientSocket->sendData(buf, bufSize, broadcastRadius);
-        });  
+        });
 
     m_session->setTerminationReqCb(
         [this]()
         {
             doTerminate();
-        });            
-
+        });
 
     if (!m_session->start()) {
         logError() << "Failed to start client session" << std::endl;

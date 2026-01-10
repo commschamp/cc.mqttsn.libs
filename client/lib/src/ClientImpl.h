@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,7 +77,7 @@ public:
     CC_MqttsnErrorCode setOutgoingRegTopicsLimit(std::size_t limit);
     std::size_t getOutgoingRegTopicsLimit() const;
     CC_MqttsnErrorCode setIncomingRegTopicsLimit(std::size_t limit);
-    std::size_t getIncomingRegTopicsLimit() const;    
+    std::size_t getIncomingRegTopicsLimit() const;
     CC_MqttsnErrorCode asleepCheckMessages();
 
     void setNextTickProgramCallback(CC_MqttsnNextTickProgramCb cb, void* data)
@@ -118,13 +118,13 @@ public:
             m_gatewayDisconnectedReportCb = cb;
             m_gatewayDisconnectedReportData = data;
         }
-    }    
+    }
 
     void setMessageReceivedCallback(CC_MqttsnMessageReportCb cb, void* data)
     {
         if (cb != nullptr) {
             m_messageReceivedReportCb = cb;
-            m_messageReceivedReportData = data;            
+            m_messageReceivedReportData = data;
         }
     }
 
@@ -147,7 +147,7 @@ public:
     virtual void handle(AdvertiseMsg& msg) override;
     virtual void handle(SearchgwMsg& msg) override;
     virtual void handle(GwinfoMsg& msg) override;
-#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY        
+#endif // #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
 
     virtual void handle(RegisterMsg& msg) override;
     virtual void handle(PublishMsg& msg) override;
@@ -167,12 +167,12 @@ public:
     void opComplete(const op::Op* op);
     void gatewayConnected();
     void gatewayDisconnected(
-        CC_MqttsnGatewayDisconnectReason reason = CC_MqttsnGatewayDisconnectReason_ValuesLimit,  
+        CC_MqttsnGatewayDisconnectReason reason = CC_MqttsnGatewayDisconnectReason_ValuesLimit,
         CC_MqttsnAsyncOpStatus status = CC_MqttsnAsyncOpStatus_GatewayDisconnected);
     void enterSleepMode(unsigned durationMs);
     void allowNextPrepare();
     void storeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
-    bool removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);    
+    bool removeInRegTopic(const char* topic, CC_MqttsnTopicId topicId);
     CC_MqttsnTopicId findInRegTopicId(const char* topic);
     void storeOutRegTopic(const char* topic, CC_MqttsnTopicId topicId);
 
@@ -194,12 +194,12 @@ public:
     ClientState& clientState()
     {
         return m_clientState;
-    }    
+    }
 
     const ClientState& clientState() const
     {
         return m_clientState;
-    }       
+    }
 
     SessionState& sessionState()
     {
@@ -209,12 +209,12 @@ public:
     const SessionState& sessionState() const
     {
         return m_sessionState;
-    }    
+    }
 
     ReuseState& reuseState()
     {
         return m_reuseState;
-    }    
+    }
 
     inline void errorLog(const char* msg)
     {
@@ -231,7 +231,7 @@ public:
         else {
             return true;
         }
-    }       
+    }
 
 private:
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
@@ -261,7 +261,6 @@ private:
     using WillOpAlloc = ObjAllocator<op::WillOp, ExtConfig::WillOpsLimit>;
     using WillOpsList = ObjListType<WillOpAlloc::Ptr, ExtConfig::WillOpsLimit>;
 #endif // #if CC_MQTTSN_CLIENT_HAS_WILL
-
 
     using OpPtrsList = ObjListType<op::Op*, ExtConfig::OpsLimit>;
     using OutputBuf = ObjListType<std::uint8_t, ExtConfig::MaxOutputPacketSize>;
@@ -311,7 +310,7 @@ private:
     void* m_gatewayDisconnectedReportData = nullptr;
 
     CC_MqttsnMessageReportCb m_messageReceivedReportCb = nullptr;
-    void* m_messageReceivedReportData = nullptr;      
+    void* m_messageReceivedReportData = nullptr;
 
     CC_MqttsnErrorLogCb m_errorLogCb = nullptr;
     void* m_errorLogData = nullptr;
@@ -325,8 +324,8 @@ private:
     ReuseState m_reuseState;
 
     TimerMgr m_timerMgr;
-    TimerMgr::Timer m_gwDiscoveryTimer;  
-    TimerMgr::Timer m_sendGwinfoTimer;  
+    TimerMgr::Timer m_gwDiscoveryTimer;
+    TimerMgr::Timer m_sendGwinfoTimer;
     unsigned m_apiEnterCount = 0U;
 
     OutputBuf m_buf;
@@ -335,7 +334,7 @@ private:
 
 #if CC_MQTTSN_CLIENT_HAS_GATEWAY_DISCOVERY
     SearchOpAlloc m_searchOpAlloc;
-    SearchOpsList m_searchOps;    
+    SearchOpsList m_searchOps;
 #endif
 
     ConnectOpAlloc m_connectOpAlloc;
@@ -358,8 +357,8 @@ private:
 
 #if CC_MQTTSN_CLIENT_HAS_WILL
     WillOpAlloc m_willOpAlloc;
-    WillOpsList m_willOps;    
-#endif // #if CC_MQTTSN_CLIENT_HAS_WILL    
+    WillOpsList m_willOps;
+#endif // #if CC_MQTTSN_CLIENT_HAS_WILL
 
     OpPtrsList m_ops;
     unsigned m_pendingGwinfoBroadcastRadius = 0U;

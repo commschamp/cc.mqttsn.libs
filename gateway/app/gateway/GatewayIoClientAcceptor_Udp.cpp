@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,7 +10,7 @@
 namespace cc_mqttsn_gateway_app
 {
 
-namespace 
+namespace
 {
 
 const std::string UdpListenPortKey("udp_listen_port");
@@ -73,13 +73,12 @@ unsigned getBroadcastTtl(GatewayLogger& logger, const cc_mqttsn_gateway::Config&
     return static_cast<unsigned>(getUnsignedConfigValue(logger, config, UdpBroadcastRadiusKey, DefaultBroadcastRadius));
 }
 
-} // namespace 
-    
+} // namespace
 
 GatewayIoClientAcceptor_Udp::GatewayIoClientAcceptor_Udp(
-    boost::asio::io_context& io, 
-    GatewayLogger& logger, 
-    const cc_mqttsn_gateway::Config& config) : 
+    boost::asio::io_context& io,
+    GatewayLogger& logger,
+    const cc_mqttsn_gateway::Config& config) :
     Base(io, logger),
     m_socket(io),
     m_acceptPort(getListenPort(logger, config)),
@@ -92,7 +91,7 @@ GatewayIoClientAcceptor_Udp::GatewayIoClientAcceptor_Udp(
 GatewayIoClientAcceptor_Udp::~GatewayIoClientAcceptor_Udp() = default;
 
 GatewayIoClientAcceptor_Udp::Ptr GatewayIoClientAcceptor_Udp::create(
-    boost::asio::io_context& io, 
+    boost::asio::io_context& io,
     GatewayLogger& logger,
     const cc_mqttsn_gateway::Config& config)
 {
@@ -110,7 +109,7 @@ bool GatewayIoClientAcceptor_Udp::startImpl()
 
     m_broadcastEndpoint.address(asioBroadcastAddr);
     m_broadcastEndpoint.port(m_broadcastPort);
-    
+
     m_socket.open(boost::asio::ip::udp::v4(), ec);
     if (ec) {
         logger().error() << "Failed to open local UDP socket: " << ec.message() << std::endl;
@@ -121,7 +120,7 @@ bool GatewayIoClientAcceptor_Udp::startImpl()
     m_socket.get_option(defaultTtl, ec);
     if (ec) {
         logger().error() << "Failed to retrieve defaultTTL: " << ec.message() << ", assuming " << m_defaultTtl << std::endl;
-    }    
+    }
     else {
         m_defaultTtl = defaultTtl.value();
     }
@@ -150,7 +149,7 @@ void GatewayIoClientAcceptor_Udp::broadcastDataImpl(const std::uint8_t* buf, std
 void GatewayIoClientAcceptor_Udp::doAccept()
 {
     m_socket.async_receive_from(
-        boost::asio::buffer(m_inBuf), 
+        boost::asio::buffer(m_inBuf),
         m_senderEndpoint,
         [this](boost::system::error_code ec, std::size_t bytesCount)
         {
@@ -173,7 +172,7 @@ void GatewayIoClientAcceptor_Udp::doAccept()
                         break;
                     }
 
-                    if ((m_lastBroadcastData.size() != bytesCount) || 
+                    if ((m_lastBroadcastData.size() != bytesCount) ||
                         (!std::equal(m_lastBroadcastData.begin(), m_lastBroadcastData.end(), m_inBuf.begin()))) {
                         break;
                     }
@@ -196,7 +195,7 @@ void GatewayIoClientAcceptor_Udp::doAccept()
                 auto socketPtr = std::make_unique<GatewayIoClientSocket_Udp>(io(), logger(), m_senderEndpoint);
                 socketPtr->setSendDataCb(
                     std::bind(
-                        &GatewayIoClientAcceptor_Udp::sendData, this, 
+                        &GatewayIoClientAcceptor_Udp::sendData, this,
                         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
                 socketPtr->setSocketDeletedCb(
@@ -213,7 +212,7 @@ void GatewayIoClientAcceptor_Udp::doAccept()
             } while (false);
 
             doAccept();
-        });    
+        });
 }
 
 void GatewayIoClientAcceptor_Udp::sendData(const Endpoint& endpoint, const std::uint8_t* buf, std::size_t bufSize, unsigned broadcastRadius)
@@ -272,14 +271,14 @@ void GatewayIoClientAcceptor_Udp::sendPendingWrites()
 
             } while (false);
 
-            if ((info.m_endpoint == m_broadcastEndpoint) && 
+            if ((info.m_endpoint == m_broadcastEndpoint) &&
                 (m_socket.local_endpoint().port() == m_broadcastEndpoint.port())) {
                 m_lastBroadcastData = std::move(m_pendingWrites.front().m_data);
             }
 
             m_pendingWrites.pop_front();
             sendPendingWrites();
-        });    
+        });
 }
 
 } // namespace cc_mqttsn_gateway_app

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,6 @@ struct ConfigState
     static constexpr unsigned DefaultGwAdvTimeoutMs = 15 * 60 * 1000; //
     static constexpr unsigned DefautlAllowedAdvLosses = 1;
     static constexpr unsigned MaxBroadcastRadius = 255U;
-    
 
     unsigned m_retryPeriod = DefaultResponseTimeoutMs;
     unsigned m_retryCount = DefaultRetryCount;

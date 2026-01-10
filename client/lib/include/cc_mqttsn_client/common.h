@@ -1,5 +1,5 @@
 //
-// Copyright 2016 - 2025 (C). Alex Robenko. All rights reserved.
+// Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#else // #ifdef __cplusplus  
+#else // #ifdef __cplusplus
 #include <stdbool.h>
 #endif // #ifdef __cplusplus
 
@@ -26,7 +26,7 @@ extern "C" {
 
 /// @brief Patch level of the library
 /// @ingroup global
-#define CC_MQTTSN_CLIENT_PATCH_VERSION 10U
+#define CC_MQTTSN_CLIENT_PATCH_VERSION 11U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define CC_MQTTSN_CLIENT_MAKE_VERSION(major_, minor_, patch_) \
@@ -52,7 +52,7 @@ typedef enum
 typedef enum
 {
     CC_MqttsnErrorCode_Success = 0, ///< The requested operation was successfully started.
-    CC_MqttsnErrorCode_InternalError = 1, ///< Internal library error, please submit bug report    
+    CC_MqttsnErrorCode_InternalError = 1, ///< Internal library error, please submit bug report
     CC_MqttsnErrorCode_NotIntitialized = 2, ///< The allocated client hasn't been initialized.
     CC_MqttsnErrorCode_Busy = 3, ///< The client library is in the middle of previous operation(s), cannot start a new one.
     CC_MqttsnErrorCode_NotConnected = 4, ///< The client library is not connected to the gateway. Returned by operations that require connection to the gateway.
@@ -86,7 +86,7 @@ typedef enum
 typedef enum
 {
     CC_MqttsnAsyncOpStatus_Complete = 0, ///< The requested operation has been completed, refer to reported extra details for information
-    CC_MqttsnAsyncOpStatus_InternalError = 1, ///< Internal library error, please submit bug report    
+    CC_MqttsnAsyncOpStatus_InternalError = 1, ///< Internal library error, please submit bug report
     CC_MqttsnAsyncOpStatus_Timeout = 2, ///< The required response from broker hasn't been received in time
     CC_MqttsnAsyncOpStatus_Aborted = 3, ///< The operation has been aborted before completion due to client's side operation.
     CC_MqttsnAsyncOpStatus_OutOfMemory = 4, ///< The client library wasn't able to allocate necessary memory.
@@ -227,7 +227,7 @@ typedef struct
     const char* m_topic; ///< Topic the message was published with. May be NULL if message is reported with predefined topic ID.
     const unsigned char* m_data; ///< Pointer to reported message binary data.
     unsigned m_dataLen; ///< Number of bytes in reported message binary data.
-    CC_MqttsnTopicId m_topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.    
+    CC_MqttsnTopicId m_topicId; ///< Predefined topic ID. This data member is used only if topic field has value NULL.
     CC_MqttsnQoS m_qos; ///< QoS level the message was received with.
     bool m_retained; ///< Retain flag of the message.
 } CC_MqttsnMessageInfo;
@@ -324,7 +324,7 @@ typedef struct
 /// @ingroup sleep
 typedef struct
 {
-    unsigned m_duration; ///< Duration configuration in seconds. 
+    unsigned m_duration; ///< Duration configuration in seconds.
 } CC_MqttsnSleepConfig;
 
 /// @brief Callback used to request time measurement.
@@ -396,7 +396,7 @@ typedef void (*CC_MqttsnMessageReportCb)(void* data, const CC_MqttsnMessageInfo*
 /// @ingroup client
 typedef void (*CC_MqttsnErrorLogCb)(void* data, const char* msg);
 
-/// @brief Callback used to request delay (in ms) to wait before 
+/// @brief Callback used to request delay (in ms) to wait before
 ///     responding with @b GWINFO message on behalf of a gateway.
 /// @details In case function return 0U, the response on behalf of the gateway is disabled.
 /// @return Number of milliseconds to wait for another @b GWINFO to cancel the intended send of @b GWINFO on behalf of the gateway.
@@ -432,8 +432,8 @@ typedef void (*CC_MqttsnDisconnectCompleteCb)(void* data, CC_MqttsnAsyncOpStatus
 /// @brief Callback used to report completion of the subscribe operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
-/// @param[in] handle Handle returned by @b cc_mqttsn_client_subscribe_prepare() function. When the 
-///     callback is invoked the handle is already invalid and cannot be used in any relevant 
+/// @param[in] handle Handle returned by @b cc_mqttsn_client_subscribe_prepare() function. When the
+///     callback is invoked the handle is already invalid and cannot be used in any relevant
 ///     function invocation, but it allows end application to identify the original "subscribe" operation
 ///     and use the same callback function in parallel requests.
 /// @param[in] status Status of the "subscribe" operation.
@@ -446,8 +446,8 @@ typedef void (*CC_MqttsnSubscribeCompleteCb)(void* data, CC_MqttsnSubscribeHandl
 /// @brief Callback used to report completion of the unsubscribe operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
-/// @param[in] handle Handle returned by @b cc_mqttsn_client_unsubscribe_prepare() function. When the 
-///     callback is invoked the handle is already invalid and cannot be used in any relevant 
+/// @param[in] handle Handle returned by @b cc_mqttsn_client_unsubscribe_prepare() function. When the
+///     callback is invoked the handle is already invalid and cannot be used in any relevant
 ///     function invocation, but it allows end application to identify the original "unsubscribe" operation
 ///     and use the same callback function in parallel requests.
 /// @param[in] status Status of the "unsubscribe" operation.
@@ -458,8 +458,8 @@ typedef void (*CC_MqttsnUnsubscribeCompleteCb)(void* data, CC_MqttsnUnsubscribeH
 /// @brief Callback used to report completion of the publish operation.
 /// @param[in] data Pointer to user data object, passed as the last parameter to
 ///     the request call.
-/// @param[in] handle Handle returned by @b cc_mqttsn_client_publish_prepare() function. When the 
-///     callback is invoked the handle is already invalid and cannot be used in any relevant 
+/// @param[in] handle Handle returned by @b cc_mqttsn_client_publish_prepare() function. When the
+///     callback is invoked the handle is already invalid and cannot be used in any relevant
 ///     function invocation, but it allows end application to identify the original "publish" operation
 ///     and use the same callback function in parallel requests.
 /// @param[in] status Status of the "publish" operation.
@@ -487,7 +487,6 @@ typedef void (*CC_MqttsnWillCompleteCb)(void* data, CC_MqttsnAsyncOpStatus statu
 /// @post The data members of the reported response can NOT be accessed after the function returns.
 /// @ingroup sleep
 typedef void (*CC_MqttsnSleepCompleteCb)(void* data, CC_MqttsnAsyncOpStatus status);
-
 
 #ifdef __cplusplus
 }
