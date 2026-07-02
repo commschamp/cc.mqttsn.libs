@@ -79,7 +79,7 @@ void UdpSession::sendDataImpl(const std::uint8_t* buf, std::size_t bufLen, unsig
         ttl = broadcastRadius;
     }
 
-    m_socket.set_option(boost::asio::ip::unicast::hops(ttl), ec);
+    m_socket.set_option(boost::asio::ip::unicast::hops(static_cast<int>(ttl)), ec);
     if (ec) {
         logError() << "Failed to update outgoing packet TTL: " << ec.message() << std::endl;
     }

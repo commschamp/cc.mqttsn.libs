@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
+#include <iterator>
+#include <type_traits>
 
 namespace cc_mqttsn_client_afl_fuzz
 {
@@ -181,7 +183,9 @@ public:
                 static const auto MaxLen = std::numeric_limits<unsigned>::max();
 
                 if (MaxLen < m_inData.size()) {
-                    m_inData.erase(m_inData.begin(), m_inData.begin() + (m_inData.size() - MaxLen));
+                    using IterType = std::decay_t<decltype(m_inData.begin())>;
+                    using DiffType = std::iterator_traits<IterType>::difference_type;
+                    m_inData.erase(m_inData.begin(), m_inData.begin() + static_cast<DiffType>(m_inData.size() - MaxLen));
                 }
 
                 dataPtr = m_inData.data();
@@ -246,7 +250,7 @@ public:
                 continue;
             }
 
-            m_inData.erase(m_inData.begin(), m_inData.begin() + processLen);
+            m_inData.erase(m_inData.begin(), m_inData.begin() + static_cast<int>(processLen));
             infoLog() << "Keeping " << m_inData.size() << " bytes for the next iteration\n";
         }
 

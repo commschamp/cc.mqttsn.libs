@@ -1499,7 +1499,7 @@ private:
 
         if (hasWill) {
             verifySentToClient_WilltopicreqMsg(state, handler);
-            verifyTickReq(state, DefaultRetryPeriod * 1000);
+            verifyTickReq(state, DefaultRetryPeriod * 1000U);
             verifyNoOtherEvent(state, handler);
 
             state.m_elapsed.push_back(1000);
@@ -1508,7 +1508,7 @@ private:
 
             if (!willInfo->m_topic.empty()) {
                 verifySentToClient_WillmsgreqMsg(state, handler);
-                verifyTickReq(state, DefaultRetryPeriod * 1000);
+                verifyTickReq(state, DefaultRetryPeriod * 1000U);
                 verifyNoOtherEvent(state, handler);
 
                 state.m_elapsed.push_back(1000);
@@ -1519,7 +1519,7 @@ private:
 
         if (expectReconnect) {
             verifySentToBroker_DisconnectMsg(state, handler);
-            verifyTickReq(state, DefaultRetryPeriod * 1000);
+            verifyTickReq(state, DefaultRetryPeriod * 1000U);
             verifyBrokerReconnectReq(state);
             verifyNoOtherEvent(state, handler);
 
@@ -1542,7 +1542,7 @@ private:
         if (expectClientReport) {
             verifyConnectedClient(state, DefaultClientId);
         }
-        verifyTickReq(state, DefaultKeepAlivePeriod * 1000);
+        verifyTickReq(state, DefaultKeepAlivePeriod * 1000U);
         verifyNoOtherEvent(state, handler);
     }
 
@@ -1593,7 +1593,7 @@ void SessionTest::test2()
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, cc_mqttsn::field::ReturnCodeVal::Accepted);
     verifyConnectedClient(state, ClientId);
-    verifyTickReq(state, KeepAlive * 1000);
+    verifyTickReq(state, KeepAlive * 1000U);
     verifyNoOtherEvent(state, handler);
 }
 
@@ -1620,14 +1620,14 @@ void SessionTest::test3()
     dataFromBroker(*session, connackMsg, "CONNACK");
     verifySentToClient_ConnackMsg(state, handler, cc_mqttsn::field::ReturnCodeVal::Accepted);
     verifyConnectedClient(state, ClientId);
-    verifyTickReq(state, KeepAlive * 1000);
+    verifyTickReq(state, KeepAlive * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(500);
 
     dataFromClient(*session, connectMsg, "CONNECT");
     verifySentToClient_ConnackMsg(state, handler, cc_mqttsn::field::ReturnCodeVal::Accepted);
-    verifyTickReq(state, KeepAlive * 1000);
+    verifyTickReq(state, KeepAlive * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(500);
@@ -1638,7 +1638,7 @@ void SessionTest::test3()
     auto connectMsg2 = handler.prepareClientConnect(ClientId, KeepAlive2, false, CleanSession2);
     dataFromClient(*session, connectMsg2, "CONNECT");
     verifySentToBroker_DisconnectMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyBrokerReconnectReq(state);
     verifyNoOtherEvent(state, handler);
 
@@ -1680,7 +1680,7 @@ void SessionTest::test4()
     auto connectMsg = handler.prepareClientConnect(ClientId, KeepAlive, true, CleanSession);
     dataFromClient(*session, connectMsg, "CONNECT");
     verifySentToClient_WilltopicreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
 
     static const std::string WillTopic("this/is/will");
     static const DataBuf WillMsg = {0, 1, 2, 3, 4, 5};
@@ -1691,7 +1691,7 @@ void SessionTest::test4()
     auto willtopicMsg = handler.prepareClientWilltopic(WillTopic, WillQos, WillRetain);
     dataFromClient(*session, willtopicMsg, "WILLTOPIC");
     verifySentToClient_WillmsgreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
 
     WillInfo willInfo;
     willInfo.m_topic = WillTopic;
@@ -1742,24 +1742,24 @@ void SessionTest::test6()
     dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
     verifySentToClient_DisconnectMsg(state, handler);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
-    doTick(state, *session, DefaultRetryPeriod * 1000);
+    doTick(state, *session, DefaultRetryPeriod * 1000U);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pingrespMsg = handler.prepareBrokerPingresp();
     dataFromBroker(*session, pingrespMsg, "PINGRESP");
-    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000U - 1000U;
     verifyTickReq(state, expectedTickReq);
     verifyNoOtherEvent(state, handler);
 
     doTick(state, *session, expectedTickReq);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -1783,13 +1783,13 @@ void SessionTest::test7()
     dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
     verifySentToClient_DisconnectMsg(state, handler);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pingrespMsg = handler.prepareBrokerPingresp();
     dataFromBroker(*session, pingrespMsg, "PINGRESP");
-    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000U - 1000U;
     verifyTickReq(state, expectedTickReq);
     verifyNoOtherEvent(state, handler);
 
@@ -1827,13 +1827,13 @@ void SessionTest::test8()
     dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
     verifySentToClient_DisconnectMsg(state, handler);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pingrespMsg = handler.prepareBrokerPingresp();
     dataFromBroker(*session, pingrespMsg, "PINGRESP");
-    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000U - 1000U;
     verifyTickReq(state, expectedTickReq);
     verifyNoOtherEvent(state, handler);
 
@@ -1975,7 +1975,7 @@ void SessionTest::test12()
     dataFromBroker(*session, publishMsg, "PUBLISH");
     verifySentToBroker_PubackMsg(state, handler, MsgId);
     auto msgId = verifySentToClient_PublishMsg(state, handler, TopicId, Data, TopicIdTypeVal::PredefinedTopicId, translateQos(Qos), Retain, false);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(2000);
@@ -1987,7 +1987,7 @@ void SessionTest::test12()
 
     doTick(state, *session, DefaultRetryPeriod * 1000 - 2000);
     auto msgId2 = verifySentToClient_PublishMsg(state, handler, TopicId, Data, TopicIdTypeVal::PredefinedTopicId, translateQos(Qos), Retain, true);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
     TS_ASSERT_EQUALS(msgId, msgId2);
 
@@ -1995,7 +1995,7 @@ void SessionTest::test12()
     auto pubackMsg = handler.prepareClientPuback(TopicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromClient(*session, pubackMsg, "PUBACK");
     auto msgId3 = verifySentToClient_PublishMsg(state, handler, TopicId, Data, TopicIdTypeVal::PredefinedTopicId, translateQos(Qos), Retain, true);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
     TS_ASSERT_DIFFERS(msgId, msgId3);
 }
@@ -2026,39 +2026,39 @@ void SessionTest::test13()
     dataFromBroker(*session, pubrelMsg, "PUBREL");
     verifySentToBroker_PubcompMsg(state, handler, MsgId);
     verifySentToClient_RegisterMsg(state, handler, Topic);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     std::uint16_t topicId = 0U;
     std::uint16_t msgId = 0U;
-    doTick(state, *session, DefaultRetryPeriod * 1000);
+    doTick(state, *session, DefaultRetryPeriod * 1000U);
     std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto regackMsg = handler.prepareClientRegack(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromClient(*session, regackMsg, "REGACK");
     verifySentToClient_PublishMsg(state, handler, topicId, Data, TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     std::uint16_t pubMsgId = 0U;
-    doTick(state, *session, DefaultRetryPeriod * 1000);
+    doTick(state, *session, DefaultRetryPeriod * 1000U);
     pubMsgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, TopicIdTypeVal::Normal, translateQos(Qos), Retain, true);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pubrecMsg = handler.prepareClientPubrec(pubMsgId);
     dataFromClient(*session, pubrecMsg, "PUBREC");
     verifySentToClient_PubrelMsg(state, handler, pubMsgId);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
-    doTick(state, *session, DefaultRetryPeriod * 1000);
+    doTick(state, *session, DefaultRetryPeriod * 1000U);
     verifySentToClient_PubrelMsg(state, handler, pubMsgId);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2094,7 +2094,7 @@ void SessionTest::test14()
     std::uint16_t topicId = 0U;
     std::uint16_t msgId = 0U;
     std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2116,21 +2116,21 @@ void SessionTest::test14()
     dataFromBroker(*session, publishMsg, "PUBLISH");
     verifySentToBroker_PubackMsg(state, handler, MsgId);
     msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, TopicIdTypeVal::Normal, translateQos(Qos2), Retain, false);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pubackMsg = handler.prepareClientPuback(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromClient(*session, pubackMsg, "PUBACK");
     std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     regackMsg = handler.prepareClientRegack(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromClient(*session, regackMsg, "REGACK");
     msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, TopicIdTypeVal::Normal, translateQos(Qos2), Retain, false);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2162,42 +2162,42 @@ void SessionTest::test15()
     std::uint16_t topicId = 0U;
     std::uint16_t msgId = 0U;
     std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto regackMsg = handler.prepareClientRegack(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromClient(*session, regackMsg, "REGACK");
     msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pubackMsg = handler.prepareClientPuback(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromClient(*session, pubackMsg, "PUBACK");
     std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     regackMsg = handler.prepareClientRegack(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromClient(*session, regackMsg, "REGACK");
     msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     pubackMsg = handler.prepareClientPuback(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::InvalidTopicId);
     dataFromClient(*session, pubackMsg, "PUBACK");
     std::tie(topicId, msgId) = verifySentToClient_RegisterMsg(state, handler, Topic);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     regackMsg = handler.prepareClientRegack(topicId, msgId, cc_mqttsn::field::ReturnCodeVal::Accepted);
     dataFromClient(*session, regackMsg, "REGACK");
     msgId = verifySentToClient_PublishMsg(state, handler, topicId, Data, TopicIdTypeVal::Normal, translateQos(Qos), Retain, false);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2226,7 +2226,7 @@ void SessionTest::test16()
     dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
     verifySentToClient_DisconnectMsg(state, handler);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2354,13 +2354,13 @@ void SessionTest::test17()
     dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
     verifySentToClient_DisconnectMsg(state, handler);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pingrespMsg = handler.prepareBrokerPingresp();
     dataFromBroker(*session, pingrespMsg, "PINGRESP");
-    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000U - 1000U;
     verifyTickReq(state, expectedTickReq);
     verifyNoOtherEvent(state, handler);
 
@@ -2498,7 +2498,7 @@ void SessionTest::test19()
     dataFromBroker(*session, pub2, "PUBLISH");
     verifySentToBroker_PubackMsg(state, handler, MsgId2);
     auto msgId1 = verifySentToClient_PublishMsg(state, handler, TopicId, Data2, TopicIdTypeVal::PredefinedTopicId, translateQos(Qos1), Retain, Dup);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2526,7 +2526,7 @@ void SessionTest::test19()
     dataFromBroker(*session, b_rec, "PUBREC");
     verifySentToBroker_PubcompMsg(state, handler, MsgId1);
     auto msgId2 = verifySentToClient_PublishMsg(state, handler, TopicId, Data1, TopicIdTypeVal::PredefinedTopicId, translateQos(Qos2), Retain, Dup);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2540,21 +2540,21 @@ void SessionTest::test19()
     auto rec2 = handler.prepareClientPubrec(msgId2);
     dataFromClient(*session, rec2, "PUBREC");
     verifySentToClient_PubrelMsg(state, handler, msgId2);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto comp = handler.prepareClientPubcomp(msgId2);
     dataFromClient(*session, comp, "PUBCOMP");
     auto msgId3 = verifySentToClient_PublishMsg(state, handler, TopicId, Data4, TopicIdTypeVal::PredefinedTopicId, translateQos(Qos2), Retain, Dup);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto rec3 = handler.prepareClientPubrec(msgId3);
     dataFromClient(*session, rec3, "PUBREC");
     verifySentToClient_PubrelMsg(state, handler, msgId3);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2813,7 +2813,7 @@ void SessionTest::test23()
     dataFromClient(*session, willTopicUpdMsg2, "WILLTOPICUPD");
     verifySentToBroker_DisconnectMsg(state, handler);
     verifyBrokerReconnectReq(state);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2829,7 +2829,7 @@ void SessionTest::test23()
     state.m_elapsed.push_back(1000);
     doBrokerConnect(*session);
     verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &updWillInfo, Username, Pass);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     using ConnackResponseCodeVal = ConnackMsg::Field_returnCode::ValueType;
@@ -2846,7 +2846,7 @@ void SessionTest::test23()
     dataFromClient(*session, willTopicUpdMsg3, "WILLTOPICUPD");
     verifySentToBroker_DisconnectMsg(state, handler);
     verifyBrokerReconnectReq(state);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2861,7 +2861,7 @@ void SessionTest::test23()
     state.m_elapsed.push_back(1000);
     doBrokerConnect(*session);
     verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &updWillInfo, Username, Pass);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     using ConnackResponseCodeVal = ConnackMsg::Field_returnCode::ValueType;
@@ -2887,7 +2887,7 @@ void SessionTest::test23()
     dataFromClient(*session, willTopicUpdMsg4, "WILLTOPICUPD");
     verifySentToBroker_DisconnectMsg(state, handler);
     verifyBrokerReconnectReq(state);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2900,10 +2900,10 @@ void SessionTest::test23()
     state.m_elapsed.push_back(1000);
     doBrokerConnect(*session);
     verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &updWillInfo);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
-    doTick(state, *session, DefaultRetryPeriod * 1000);
+    doTick(state, *session, DefaultRetryPeriod * 1000U);
     verifySentToClient_WilltopicrespMsg(state, handler, cc_mqttsn::field::ReturnCodeVal::NotSupported);
     verifySentToClient_DisconnectMsg(state, handler);
     verifyTermReq(state);
@@ -2945,7 +2945,7 @@ void SessionTest::test24()
     dataFromClient(*session, willMsgUpdMsg2, "WILLMSGUPD");
     verifySentToBroker_DisconnectMsg(state, handler);
     verifyBrokerReconnectReq(state);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2957,7 +2957,7 @@ void SessionTest::test24()
     state.m_elapsed.push_back(1000);
     doBrokerConnect(*session);
     verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &will, Username, Pass);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     using ConnackResponseCodeVal = ConnackMsg::Field_returnCode::ValueType;
@@ -2972,7 +2972,7 @@ void SessionTest::test24()
     dataFromClient(*session, willMsgUpdMsg1, "WILLMSGUPD");
     verifySentToBroker_DisconnectMsg(state, handler);
     verifyBrokerReconnectReq(state);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -2984,7 +2984,7 @@ void SessionTest::test24()
     state.m_elapsed.push_back(1000);
     doBrokerConnect(*session);
     verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &will, Username, Pass);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -3002,7 +3002,7 @@ void SessionTest::test24()
     dataFromClient(*session, willMsgUpdMsg2, "WILLMSGUPD");
     verifySentToBroker_DisconnectMsg(state, handler);
     verifyBrokerReconnectReq(state);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -3014,7 +3014,7 @@ void SessionTest::test24()
     state.m_elapsed.push_back(1000);
     doBrokerConnect(*session);
     verifySentToBroker_ConnectMsg(state, handler, DefaultClientId, DefaultKeepAlivePeriod, false, &will);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     using ConnackResponseCodeVal = ConnackMsg::Field_returnCode::ValueType;
@@ -3046,13 +3046,13 @@ void SessionTest::test25()
     dataFromClient(*session, disconnectSnMsg, "DISCONNECT");
     verifySentToClient_DisconnectMsg(state, handler);
     verifySentToBroker_PingreqMsg(state, handler);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     auto pingrespMsg = handler.prepareBrokerPingresp();
     dataFromBroker(*session, pingrespMsg, "PINGRESP");
-    auto expectedTickReq = DefaultKeepAlivePeriod * 1000 - 1000;
+    auto expectedTickReq = DefaultKeepAlivePeriod * 1000U - 1000U;
     verifyTickReq(state, expectedTickReq);
     verifyNoOtherEvent(state, handler);
 
@@ -3064,29 +3064,29 @@ void SessionTest::test25()
     state.m_elapsed.push_back(1000);
     auto publishMsg = handler.prepareBrokerPublish(Topic, Data, MsgId, Qos, Retain, false);
     dataFromBroker(*session, publishMsg, "PUBLISH");
-    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 2000);
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000U - 2000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     dataFromBroker(*session, publishMsg, "PUBLISH");
-    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 3000);
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000U - 3000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     dataFromBroker(*session, publishMsg, "PUBLISH");
-    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 4000);
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000U - 4000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
     dataFromBroker(*session, publishMsg, "PUBLISH");
-    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 5000);
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000U - 5000U);
     verifyNoOtherEvent(state, handler);
 
     static const DataBuf Data2 = {0, 1, 2, 3, 4, 10};
     state.m_elapsed.push_back(1000);
     auto publishMsg2 = handler.prepareBrokerPublish(Topic, Data2, MsgId, Qos, Retain, false);
     dataFromBroker(*session, publishMsg2, "PUBLISH");
-    verifyTickReq(state, DefaultKeepAlivePeriod * 1000 - 6000);
+    verifyTickReq(state, DefaultKeepAlivePeriod * 1000U - 6000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);
@@ -3120,19 +3120,19 @@ void SessionTest::test26()
     auto pub1 = handler.prepareClientPublish(Data1, TopicId, MsgId, TopicIdTypeVal::PredefinedTopicId, cc_mqttsn::field::QosVal::NoGwPublish, false, false);
     dataFromClient(*session, pub1, "PUBLISH");
     verifySentToBroker_ConnectMsg(state, handler, ClientId, DefaultKeepAlivePeriod, true);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
-    doTick(state, *session, DefaultRetryPeriod * 1000);
+    doTick(state, *session, DefaultRetryPeriod * 1000U);
     verifySentToBroker_ConnectMsg(state, handler, ClientId, DefaultKeepAlivePeriod, true);
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     static const DataBuf Data2 = {0, 1, 2, 5, 8, 10, 16};
     state.m_elapsed.push_back(1000);
     auto pub2 = handler.prepareClientPublish(Data2, TopicId, static_cast<std::uint16_t>(MsgId + 1), TopicIdTypeVal::PredefinedTopicId, cc_mqttsn::field::QosVal::NoGwPublish, false, false);
     dataFromClient(*session, pub2, "PUBLISH");
-    verifyTickReq(state, DefaultRetryPeriod * 1000 - 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U - 1000U);
     verifyNoOtherEvent(state, handler);
 
     using ConnackResponseCodeVal = ConnackMsg::Field_returnCode::ValueType;
@@ -3188,17 +3188,17 @@ void SessionTest::test28()
 
     auto connectMsg = handler.prepareClientConnect(DefaultClientId, DefaultKeepAlivePeriod, false, true);
     dataFromClient(*session, connectMsg, "CONNECT");
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
-    doTick(state, *session, DefaultRetryPeriod * 1000);
+    doTick(state, *session, DefaultRetryPeriod * 1000U);
     verifySentToClient_ConnackMsg(state, handler, cc_mqttsn::field::ReturnCodeVal::Congestion);
     verifyTermReq(state);
     verifyNoOtherEvent(state, handler);
 
     session = allocSession(state, handler, DefaultGwId, nullptr, nullptr, false);
     dataFromClient(*session, connectMsg, "CONNECT");
-    verifyTickReq(state, DefaultRetryPeriod * 1000);
+    verifyTickReq(state, DefaultRetryPeriod * 1000U);
     verifyNoOtherEvent(state, handler);
 
     state.m_elapsed.push_back(1000);

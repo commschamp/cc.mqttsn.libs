@@ -7,6 +7,9 @@
 
 #include "GatewaySession.h"
 
+#include <iterator>
+#include <type_traits>
+
 namespace cc_mqttsn_gateway_app
 {
 
@@ -131,7 +134,9 @@ void GatewaySession::doBrokerConnect()
                 return;
             }
 
-            m_brokerData.erase(m_brokerData.begin(), m_brokerData.begin() + consumed);
+            using IterType = std::decay_t<decltype(m_brokerData.begin())>;
+            using DiffType = std::iterator_traits<IterType>::difference_type;
+            m_brokerData.erase(m_brokerData.begin(), m_brokerData.begin() + static_cast<DiffType>(consumed));
         });
 
     m_brokerSocket->setConnectedReportCb(

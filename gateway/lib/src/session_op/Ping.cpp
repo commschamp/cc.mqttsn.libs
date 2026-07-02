@@ -61,7 +61,7 @@ void Ping::restartPingTimer()
 
     m_attempt = 0U;
     assert(0U < st.m_keepAlive);
-    auto nextPingTick = (st.m_keepAlive * 1000);
+    auto nextPingTick = (st.m_keepAlive * 1000U);
     nextTickReq(nextPingTick);
 }
 

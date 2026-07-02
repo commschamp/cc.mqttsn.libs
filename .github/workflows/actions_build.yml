@@ -8,9 +8,9 @@ on:
       - '**'
 
 env:
-  COMMS_TAG: v5.5
-  CC_MQTTSN_TAG: v3.0.5
-  CC_MQTT311_TAG: v3.0.5
+  COMMS_TAG: v5.5.2
+  CC_MQTTSN_TAG: v3.0.6
+  CC_MQTT311_TAG: v3.0.6
   WIN_BOOST_VERSION: "1.87.0"
   WIN_BOOST_DIR: "C:/local/boost_1_87_0"
 
@@ -290,14 +290,14 @@ jobs:
       shell: cmd
       run: ctest -V
 
-  build_msvc_2025:
+  build_msvc_2026:
     runs-on: windows-2025
     strategy:
       fail-fast: false
       matrix:
         type: [Debug, Release]
         arch: [Win32, x64]
-        cpp: [17, 20]
+        cpp: [17, 20, 23]
 
     steps:
     - uses: actions/checkout@v4
