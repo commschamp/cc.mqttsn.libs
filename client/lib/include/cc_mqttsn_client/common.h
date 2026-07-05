@@ -28,7 +28,7 @@ extern "C" {
 
 /// @brief Patch level of the library
 /// @ingroup global
-#define CC_MQTTSN_CLIENT_PATCH_VERSION 12U
+#define CC_MQTTSN_CLIENT_PATCH_VERSION 13U
 
 /// @brief Macro to create numeric version as single unsigned number
 #define CC_MQTTSN_CLIENT_MAKE_VERSION(major_, minor_, patch_) \
