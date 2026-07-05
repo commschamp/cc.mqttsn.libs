@@ -1,11 +1,16 @@
 //
 // Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
+// SPDX-License-Identifier: MPL-2.0
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "GatewaySession.h"
+
+#include <iterator>
+#include <type_traits>
 
 namespace cc_mqttsn_gateway_app
 {
@@ -131,7 +136,9 @@ void GatewaySession::doBrokerConnect()
                 return;
             }
 
-            m_brokerData.erase(m_brokerData.begin(), m_brokerData.begin() + consumed);
+            using IterType = std::decay_t<decltype(m_brokerData.begin())>;
+            using DiffType = std::iterator_traits<IterType>::difference_type;
+            m_brokerData.erase(m_brokerData.begin(), m_brokerData.begin() + static_cast<DiffType>(consumed));
         });
 
     m_brokerSocket->setConnectedReportCb(

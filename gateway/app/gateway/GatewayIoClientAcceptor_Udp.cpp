@@ -1,6 +1,8 @@
 //
 // Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
+// SPDX-License-Identifier: MPL-2.0
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -122,7 +124,7 @@ bool GatewayIoClientAcceptor_Udp::startImpl()
         logger().error() << "Failed to retrieve defaultTTL: " << ec.message() << ", assuming " << m_defaultTtl << std::endl;
     }
     else {
-        m_defaultTtl = defaultTtl.value();
+        m_defaultTtl = static_cast<decltype(m_defaultTtl)>(defaultTtl.value());
     }
 
     m_socket.set_option(boost::asio::socket_base::broadcast(true), ec);
@@ -245,7 +247,7 @@ void GatewayIoClientAcceptor_Udp::sendPendingWrites()
     auto& info = m_pendingWrites.front();
 
     boost::system::error_code ecTmp;
-    m_socket.set_option(boost::asio::ip::unicast::hops(info.m_ttl), ecTmp);
+    m_socket.set_option(boost::asio::ip::unicast::hops(static_cast<int>(info.m_ttl)), ecTmp);
     if (ecTmp) {
         logger().error() << "Failed to update outgoing packet TTL: " << ecTmp.message() << std::endl;
     }

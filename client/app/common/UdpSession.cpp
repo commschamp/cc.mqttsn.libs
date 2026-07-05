@@ -1,6 +1,8 @@
 //
 // Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
+// SPDX-License-Identifier: MPL-2.0
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -79,7 +81,7 @@ void UdpSession::sendDataImpl(const std::uint8_t* buf, std::size_t bufLen, unsig
         ttl = broadcastRadius;
     }
 
-    m_socket.set_option(boost::asio::ip::unicast::hops(ttl), ec);
+    m_socket.set_option(boost::asio::ip::unicast::hops(static_cast<int>(ttl)), ec);
     if (ec) {
         logError() << "Failed to update outgoing packet TTL: " << ec.message() << std::endl;
     }

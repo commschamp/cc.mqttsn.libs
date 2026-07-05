@@ -1,6 +1,8 @@
 //
 // Copyright 2016 - 2026 (C). Alex Robenko. All rights reserved.
 //
+// SPDX-License-Identifier: MPL-2.0
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -14,6 +16,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <type_traits>
 
 namespace cc_mqttsn_gateway
 {
@@ -92,7 +95,9 @@ void ConfigImpl::read(std::istream& stream)
             continue;
         }
 
-        std::string key(str.begin(), str.begin() + spacePos);
+        using IterType = std::decay_t<decltype(str.begin())>;
+        using DiffType = std::iterator_traits<IterType>::difference_type;
+        std::string key(str.begin(), str.begin() + static_cast<DiffType>(spacePos));
         auto valuePos = str.find_first_not_of(SpaceChars, spacePos + 1);
         if (valuePos == std::string::npos) {
             map.insert(std::make_pair(str, std::string()));
@@ -106,7 +111,7 @@ void ConfigImpl::read(std::istream& stream)
             assert(valuePos <= valueEndPos);
         }
 
-        map.insert(std::make_pair(std::move(key), std::string(str.begin() + valuePos, str.begin() + valueEndPos)));
+        map.insert(std::make_pair(std::move(key), std::string(str.begin() + static_cast<DiffType>(valuePos), str.begin() + static_cast<DiffType>(valueEndPos))));
     }
 
     m_map.swap(map);
@@ -159,7 +164,7 @@ const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
     }
 
     decltype(m_topics) topicsList;
-    topicsList.reserve(std::distance(topics.first, topics.second));
+    topicsList.reserve(static_cast<std::size_t>(std::distance(topics.first, topics.second)));
     for (auto iter = topics.first; iter != topics.second; ++iter) {
         try {
             auto& valStr = iter->second;
@@ -184,7 +189,9 @@ const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
                 continue;
             }
 
-            std::string topicIdStr(valStr.begin() + topicIdPos, valStr.end());
+            using IterType = std::decay_t<decltype(valStr.begin())>;
+            using DiffType = std::iterator_traits<IterType>::difference_type;
+            std::string topicIdStr(valStr.begin() + static_cast<DiffType>(topicIdPos), valStr.end());
             auto thirdSpacePos = valStr.find_first_of(SpaceChars, topicIdPos + 1);
             if (thirdSpacePos != std::string::npos) {
                 topicIdStr.resize(thirdSpacePos - topicIdPos);
@@ -204,8 +211,8 @@ const ConfigImpl::PredefinedTopicsList& ConfigImpl::predefinedTopics() const
             }
 
             PredefinedTopicInfo info;
-            info.clientId.assign(valStr.begin(), valStr.begin() + firstSpacePos);
-            info.topic.assign(valStr.begin() + topicPos, valStr.begin() + secondSpacePos);
+            info.clientId.assign(valStr.begin(), valStr.begin() + static_cast<DiffType>(firstSpacePos));
+            info.topic.assign(valStr.begin() + static_cast<DiffType>(topicPos), valStr.begin() + static_cast<DiffType>(secondSpacePos));
             info.topicId = topicId;
             topicsList.push_back(std::move(info));
         }
@@ -236,7 +243,7 @@ const ConfigImpl::AuthInfosList& ConfigImpl::authInfos() const
     }
 
     decltype(m_authInfos) authInfos;
-    authInfos.reserve(std::distance(auth.first, auth.second));
+    authInfos.reserve(static_cast<std::size_t>(std::distance(auth.first, auth.second)));
     for (auto iter = auth.first; iter != auth.second; ++iter) {
         auto& valStr = iter->second;
 
@@ -248,7 +255,9 @@ const ConfigImpl::AuthInfosList& ConfigImpl::authInfos() const
                 break;
             }
 
-            info.clientId.assign(valStr.begin(), valStr.begin() + firstSpacePos);
+            using IterType = std::decay_t<decltype(valStr.begin())>;
+            using DiffType = std::iterator_traits<IterType>::difference_type;
+            info.clientId.assign(valStr.begin(), valStr.begin() + static_cast<DiffType>(firstSpacePos));
             auto usernamePos = valStr.find_first_not_of(SpaceChars, firstSpacePos + 1);
             if (usernamePos == std::string::npos) {
                 break;
@@ -256,11 +265,11 @@ const ConfigImpl::AuthInfosList& ConfigImpl::authInfos() const
 
             auto secondSpacePos = valStr.find_first_of(SpaceChars, usernamePos + 1);
             if (secondSpacePos == std::string::npos) {
-                info.username.assign(valStr.begin() + usernamePos, valStr.end());
+                info.username.assign(valStr.begin() + static_cast<DiffType>(usernamePos), valStr.end());
                 break;
             }
 
-            info.username.assign(valStr.begin() + usernamePos, valStr.begin() + secondSpacePos);
+            info.username.assign(valStr.begin() + static_cast<DiffType>(usernamePos), valStr.begin() + static_cast<DiffType>(secondSpacePos));
 
             auto passwordPos = valStr.find_first_not_of(SpaceChars, secondSpacePos + 1);
             if (passwordPos == std::string::npos) {
@@ -269,7 +278,7 @@ const ConfigImpl::AuthInfosList& ConfigImpl::authInfos() const
 
             auto endOfPasswordPos = valStr.find_last_not_of(SpaceChars) + 1;
             assert(passwordPos < endOfPasswordPos);
-            info.password.assign(valStr.begin() + passwordPos, valStr.begin() + endOfPasswordPos);
+            info.password.assign(valStr.begin() + static_cast<DiffType>(passwordPos), valStr.begin() + static_cast<DiffType>(endOfPasswordPos));
         } while (false);
 
         if (!info.clientId.empty()) {
@@ -303,13 +312,16 @@ ConfigImpl::TopicIdsRange ConfigImpl::topicIdAllocRange() const
             break;
         }
 
+        using IterType = std::decay_t<decltype(valStr.begin())>;
+        using DiffType = std::iterator_traits<IterType>::difference_type;
+
         std::string minNumStr;
         auto firstSpacePos = valStr.find_first_of(SpaceChars);
         if (firstSpacePos == std::string::npos) {
             minNumStr = valStr;
         }
         else {
-            minNumStr.assign(valStr.begin(), valStr.begin() + firstSpacePos);
+            minNumStr.assign(valStr.begin(), valStr.begin() + static_cast<DiffType>(firstSpacePos));
         }
 
         try {
@@ -331,10 +343,10 @@ ConfigImpl::TopicIdsRange ConfigImpl::topicIdAllocRange() const
         std::string maxNumStr;
         auto secondSpacePos = valStr.find_first_of(SpaceChars, maxNumPos + 1);
         if (secondSpacePos == std::string::npos) {
-            maxNumStr.assign(valStr.begin() + maxNumPos, valStr.end());
+            maxNumStr.assign(valStr.begin() + static_cast<DiffType>(maxNumPos), valStr.end());
         }
         else {
-            maxNumStr.assign(valStr.begin() + maxNumPos, valStr.begin() + secondSpacePos);
+            maxNumStr.assign(valStr.begin() + static_cast<DiffType>(maxNumPos), valStr.begin() + static_cast<DiffType>(secondSpacePos));
         }
 
         try {
@@ -468,17 +480,19 @@ void ConfigImpl::readBrokerAddrInfo() const
         return;
     }
 
-    m_brokerAddress.assign(valStr.begin(), valStr.begin() + firstSpacePos);
+    using IterType = std::decay_t<decltype(valStr.begin())>;
+    using DiffType = std::iterator_traits<IterType>::difference_type;
+    m_brokerAddress.assign(valStr.begin(), valStr.begin() + static_cast<DiffType>(firstSpacePos));
 
     auto portPos = valStr.find_first_not_of(SpaceChars, firstSpacePos + 1);
     if (portPos == std::string::npos) {
         return;
     }
 
-    std::string portStr(valStr.begin() + portPos, valStr.end());
+    std::string portStr(valStr.begin() + static_cast<DiffType>(portPos), valStr.end());
     auto secondSpacePos = valStr.find_first_of(SpaceChars, portPos + 1);
     if (secondSpacePos != std::string::npos) {
-        portStr.assign(valStr.begin() + portPos, valStr.begin() + secondSpacePos);
+        portStr.assign(valStr.begin() + static_cast<DiffType>(portPos), valStr.begin() + static_cast<DiffType>(secondSpacePos));
     }
 
     try {

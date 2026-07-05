@@ -1,11 +1,16 @@
 //
 // Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
+// SPDX-License-Identifier: MPL-2.0
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "GatewayIoBrokerSocket_Tcp.h"
+
+#include <iterator>
+#include <type_traits>
 
 namespace cc_mqttsn_gateway_app
 {
@@ -153,7 +158,9 @@ void GatewayIoBrokerSocket_Tcp::sendPendingWrites()
                     break;
                 }
 
-                buf.erase(buf.begin(), buf.begin() + bytesCount);
+            using IterType = std::decay_t<decltype(buf.begin())>;
+            using DiffType = std::iterator_traits<IterType>::difference_type;
+                buf.erase(buf.begin(), buf.begin() + static_cast<DiffType>(bytesCount));
             } while (false);
 
             sendPendingWrites();

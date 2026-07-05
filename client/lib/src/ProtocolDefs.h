@@ -1,6 +1,8 @@
 //
 // Copyright 2024 - 2026 (C). Alex Robenko. All rights reserved.
 //
+// SPDX-License-Identifier: MPL-2.0
+//
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -20,7 +22,7 @@
 
 #include <cstdint>
 
-static_assert(COMMS_MAKE_VERSION(3, 0, 5) <= cc_mqttsn::version(),
+static_assert(COMMS_MAKE_VERSION(3, 0, 6) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
 namespace cc_mqttsn_client
