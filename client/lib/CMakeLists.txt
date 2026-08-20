@@ -207,6 +207,12 @@ function (gen_lib_mqttsn_client config_file)
     set (patch_ver ${CMAKE_MATCH_1})
     set (CC_MQTTSN_CLIENT_VERSION "${major_ver}.${minor_ver}.${patch_ver}")
 
+    set_target_properties(
+        ${lib_name} PROPERTIES
+        VERSION "${CC_MQTTSN_CLIENT_VERSION}"
+        SOVERSION "${major_ver}.${minor_ver}"
+    )     
+
     write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/${lib_name}ConfigVersion.cmake
         VERSION ${CC_MQTTSN_CLIENT_VERSION}
