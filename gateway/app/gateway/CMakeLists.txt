@@ -17,7 +17,7 @@ function (bin_cc_mqttsn_gateway_app)
     )
 
     add_executable(${name} ${src})
-    target_link_libraries(${name} cc::${MQTTSN_GATEWAY_LIB_NAME} Boost::system Boost::program_options ${EXTRA_BOOST_TARGETS} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${name} cc::${MQTTSN_GATEWAY_LIB_NAME} Boost::program_options ${EXTRA_BOOST_TARGETS} ${CMAKE_THREAD_LIBS_INIT})
 
     install (
         TARGETS ${name}
@@ -33,7 +33,7 @@ endfunction ()
 ###########################################################
 
 find_package (Threads REQUIRED)
-find_package(Boost COMPONENTS system program_options)
+find_package(Boost COMPONENTS program_options)
 
 set (EXTRA_BOOST_TARGETS)
 if (WIN32)

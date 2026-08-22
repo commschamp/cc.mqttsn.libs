@@ -6,7 +6,7 @@ set (src
 )
 
 add_library(${COMMON_APPS_LIB} STATIC ${src})
-target_link_libraries(${COMMON_APPS_LIB} PUBLIC cc::cc_mqttsn_client Boost::system Boost::program_options ${EXTRA_BOOST_TARGETS} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${COMMON_APPS_LIB} PUBLIC cc::cc_mqttsn_client Boost::program_options ${EXTRA_BOOST_TARGETS} ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(
     ${COMMON_APPS_LIB} BEFORE
         PUBLIC
