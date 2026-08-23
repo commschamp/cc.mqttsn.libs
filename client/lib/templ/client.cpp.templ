@@ -275,7 +275,7 @@ CC_MqttsnErrorCode cc_mqttsn_##NAME##client_set_available_gateway_info(CC_Mqttsn
         [clientImpl, info](cc_mqttsn_client::ClientState::GwInfo& storedInfo)
         {
             COMMS_GNU_WARNING_PUSH
-            COMMS_GNU_WARNING_DISABLE(-Wtautological-constant-out-of-range-compare)
+            COMMS_GNU_WARNING_DISABLE("-Wtautological-constant-out-of-range-compare")
             if (storedInfo.m_addr.max_size() < info->m_addrLen) {
                 clientImpl->errorLog("The address cannot be stored");
                 return CC_MqttsnErrorCode_OutOfMemory;
