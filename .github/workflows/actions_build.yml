@@ -322,9 +322,8 @@ jobs:
       run: |
         cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_PREFIX_PATH="${{runner.workspace}}/build/install;%BOOST_DIR%" -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
-          -DCMAKE_POLICY_DEFAULT_CMP0167=NEW -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
+          -DCMAKE_POLICY_DEFAULT_CMP0167=NEW -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_AFL_FUZZ=${{env.HAS_BOOST}} ^
           -DCC_MQTTSN_CLIENT_APPS=${{env.HAS_BOOST}} -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}} ^
-          -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_AFL_FUZZ=${{env.HAS_BOOST}} ^
           -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="%GITHUB_WORKSPACE%/client/lib/script/BareMetalTestConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/NoGwDiscoverConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos1Config.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos0Config.cmake"
       env:
         HAS_BOOST: "${{ matrix.arch == 'x64' && 'ON' || 'OFF' }}"
@@ -384,9 +383,8 @@ jobs:
       run: |
         cmake %GITHUB_WORKSPACE% -A ${{matrix.arch}} -DCMAKE_BUILD_TYPE=${{matrix.type}} -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_PREFIX_PATH="${{runner.workspace}}/build/install;%BOOST_DIR%" -DCMAKE_CXX_STANDARD=${{matrix.cpp}} ^
-          -DCMAKE_POLICY_DEFAULT_CMP0167=NEW -DCC_MQTTSN_BUILD_UNIT_TESTS=ON ^
+          -DCMAKE_POLICY_DEFAULT_CMP0167=NEW -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_AFL_FUZZ=${{env.HAS_BOOST}} ^
           -DCC_MQTTSN_CLIENT_APPS=${{env.HAS_BOOST}} -DCC_MQTTSN_GATEWAY_APPS=${{env.HAS_BOOST}} ^
-          -DCC_MQTTSN_BUILD_UNIT_TESTS=ON -DCC_MQTTSN_AFL_FUZZ=${{env.HAS_BOOST}} ^
           -DCC_MQTTSN_CUSTOM_CLIENT_CONFIG_FILES="%GITHUB_WORKSPACE%/client/lib/script/BareMetalTestConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/NoGwDiscoverConfig.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos1Config.cmake;%GITHUB_WORKSPACE%/client/lib/script/Qos0Config.cmake"
       env:
         HAS_BOOST: "${{ matrix.arch == 'x64' && 'ON' || 'OFF' }}"
