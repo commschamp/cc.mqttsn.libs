@@ -211,7 +211,7 @@ function (gen_lib_mqttsn_client config_file)
         ${lib_name} PROPERTIES
         VERSION "${CC_MQTTSN_CLIENT_VERSION}"
         SOVERSION "${major_ver}.${minor_ver}"
-    )     
+    )
 
     write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/${lib_name}ConfigVersion.cmake
