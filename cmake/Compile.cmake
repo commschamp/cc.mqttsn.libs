@@ -28,6 +28,12 @@ macro (cc_mqttsn_compile)
         )
     endif ()
 
+    if (CMAKE_COMPILER_IS_GNUCC)
+        if ((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12) AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13))
+            list (APPEND extra_flags_list "-Wno-stringop-overflow")
+        endif()
+    endif ()
+
     if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") AND ("${CMAKE_CXX_STANDARD}" STREQUAL "20"))
         list (APPEND extra_flags_list
             "-Wno-tautological-constant-out-of-range-compare"
