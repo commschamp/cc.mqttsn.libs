@@ -22,7 +22,7 @@
 
 #include <cstdint>
 
-static_assert(COMMS_MAKE_VERSION(3, 0, 6) <= cc_mqttsn::version(),
+static_assert(COMMS_MAKE_VERSION(3, 0, 7) <= cc_mqttsn::version(),
     "The version of cc.mqttsn.generated library is too old");
 
 namespace cc_mqttsn_client
