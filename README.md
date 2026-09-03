@@ -1,5 +1,5 @@
 # Overview
-The [MQTT-SN](https://www.oasis-open.org/committees/download.php/66091/MQTT-SN_spec_v1.2.pdf)
+The [MQTT-SN](https://groups.oasis-open.org/higherlogic/ws/public/download/66091/MQTT-SN_spec_v1.2.pdf)
 protocol is a sibling of [MQTT](http://mqtt.org). While **MQTT** is designed to be
 used over a **reliable stream** transport protocol (such as TCP/IP), the **MQTT-SN**
 was designed to be used over a **datagram** transport protocol. It means, that

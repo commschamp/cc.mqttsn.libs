@@ -8,7 +8,7 @@ if (NOT CC_MQTTSN_CLIENT_DEFAULT_LIB)
 endif ()
 
 find_package (Threads REQUIRED)
-find_package (Boost REQUIRED COMPONENTS system program_options)
+find_package (Boost REQUIRED COMPONENTS program_options)
 
 set (EXTRA_BOOST_TARGETS)
 if (WIN32)

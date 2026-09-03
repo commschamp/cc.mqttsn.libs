@@ -65,6 +65,13 @@ function (lib_mqttsn_gateway)
     string (REGEX MATCH "CC_MQTTSN_GW_PATCH_VERSION ([0-9]*)U*" _ ${version_file})
     set (patch_ver ${CMAKE_MATCH_1})
     set (CC_MQTTSN_GW_VERSION "${major_ver}.${minor_ver}.${patch_ver}")
+
+    set_target_properties(
+        ${name} PROPERTIES
+        VERSION "${CC_MQTTSN_GW_VERSION}"
+        SOVERSION "${major_ver}.${minor_ver}"
+    )    
+
     write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/${name}ConfigVersion.cmake
         VERSION ${CC_MQTTSN_GW_VERSION}

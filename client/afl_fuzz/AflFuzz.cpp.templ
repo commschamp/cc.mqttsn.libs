@@ -865,9 +865,9 @@ private:
         auto iter =
             std::find_if(
                 state.m_subs.begin(), state.m_subs.end(),
-                [handle](auto& info)
+                [handle](auto& infoParam)
                 {
-                    return info.m_subHandle == handle;
+                    return infoParam.m_subHandle == handle;
                 });
 
         if (iter == state.m_subs.end()) {
@@ -907,9 +907,9 @@ private:
         auto iter =
             std::find_if(
                 state.m_subs.begin(), state.m_subs.end(),
-                [handle](auto& info)
+                [handle](auto& infoParam)
                 {
-                    return info.m_unsubHandle == handle;
+                    return infoParam.m_unsubHandle == handle;
                 });
 
         if (iter == state.m_subs.end()) {
